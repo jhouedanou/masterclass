@@ -43,9 +43,19 @@ export interface Programme {
   seo: SeoFields
 }
 
+export interface LigneScript {
+  /** Timecode « mm:ss » — cliquable pour déplacer la lecture. */
+  temps: string
+  texte: string
+}
+
 export interface Chapitre {
   libelle: string
   titre: string
+  dureeMinutes?: number
+  /** Script synchronisé avec la lecture. Vide tant que la transcription
+   *  de production n'a pas été importée. */
+  script?: LigneScript[]
 }
 
 export interface QuestionReponse {
@@ -173,4 +183,81 @@ export interface Commande {
   moyen: 'mobile-money' | 'wave' | 'djamo' | 'visa'
   statut: 'attente' | 'verification' | 'confirmee' | 'echec'
   creeeLe: string
+}
+
+export interface Transaction {
+  reference: string
+  utilisateurId: string
+  moduleId: string
+  moyen: 'Orange Money' | 'MTN Money' | 'Moov Money' | 'Wave' | 'Djamo' | 'Visa'
+  montant: number
+  statut: 'reussie' | 'echouee' | 'en-attente'
+  date: string
+}
+
+export interface DemandeCoachingPrive {
+  id: string
+  utilisateurId: string
+  apprenant: string
+  moduleId: string
+  besoins: string
+  disponibilites: string
+  heures: number
+  statut: 'en-attente' | 'confirmee-attente-paiement' | 'payee' | 'realisee'
+  creneau?: string
+  recueLe: string
+}
+
+export interface CandidatureFormateur {
+  id: string
+  nom: string
+  expertise: string
+  message: string
+  whatsapp: string
+  lien?: string
+  statut: 'nouvelle' | 'en-etude' | 'refusee'
+  recueLe: string
+}
+
+export interface EntreeJournal {
+  id: string
+  auteur: string
+  action: string
+  cible: string
+  date: string
+}
+
+/** Persona apprenant — contexte transmis aux formateurs avant une session. */
+export interface Persona {
+  age?: number
+  secteur?: string
+  experience?: string
+  reseaux?: string
+  objectif?: string
+}
+
+export interface SujetSession {
+  id: string
+  sessionId: string
+  utilisateurId: string
+  apprenant: string
+  preoccupation: string
+  attente: string
+  soumisLe: string
+}
+
+export interface NoteFormateur {
+  id: string
+  formateurId: string
+  utilisateurId: string
+  origine: 'collective' | 'privee'
+  note: number
+  commentaire?: string
+  date: string
+}
+
+export interface InscriptionSession {
+  sessionId: string
+  utilisateurId: string
+  inscritLe: string
 }

@@ -1,3 +1,4 @@
+import { notesFormateurs, sujetsSessions } from '../../data/db'
 import { revenusFormateur, sessionsFormateur, statistiquesModules } from '../../utils/formateur'
 import { exigerFormateur } from '../../utils/session'
 
@@ -17,26 +18,27 @@ export default defineEventHandler((event) => {
       : 0,
     nbModules: publies.length,
     presenceMoyenne: 82,
-    noteMoyenne: 4.8,
-    nbNotes: 64,
+    noteMoyenne: (() => {
+      const siennes = notesFormateurs.filter((n) => n.formateurId === formateurId)
+      return siennes.length
+        ? Math.round((siennes.reduce((s, n) => s + n.note, 0) / siennes.length) * 10) / 10
+        : 0
+    })(),
+    nbNotes: notesFormateurs.filter((n) => n.formateurId === formateurId).length,
     remunerationDuMois: revenusFormateur(formateurId).total.remuneration,
     prochaineSession: sessions.find((s) => s.statut === 'planifiee') ?? null,
-    // Les sujets sont soumis par les apprenants avant chaque session.
-    sujets: [
-      { apprenant: 'Awa K.', sujet: 'Mes accroches sont vues mais ne génèrent presque aucun clic.' },
-      {
-        apprenant: 'Moussa D.',
-        sujet: 'Adapter une même accroche à Instagram et LinkedIn sans la réécrire.',
-      },
-      {
-        apprenant: 'Fatou B.',
-        sujet: 'Faire relire 3 accroches pour ma marque de cosmétiques.',
-      },
-    ],
-    dernieresNotes: [
-      { note: 5, commentaire: 'Cas pratiques très concrets', origine: 'session 12/08' },
-      { note: 4, commentaire: 'J’aurais aimé plus de temps', origine: 'privé 28/07' },
-      { note: 5, commentaire: 'Retours précis sur mes accroches', origine: 'privé 20/07' },
-    ],
+    // Sujets réellement soumis par les apprenants avant la prochaine session.
+    sujets: sujetsSessions
+      .filter((s) => s.sessionId === sessions.find((x) => x.statut === 'planifiee')?.id)
+      .map((s) => ({ apprenant: s.apprenant, sujet: s.preoccupation })),
+    dernieresNotes: notesFormateurs
+      .filter((n) => n.formateurId === formateurId)
+      .slice(-3)
+      .reverse()
+      .map((n) => ({
+        note: n.note,
+        commentaire: n.commentaire ?? '',
+        origine: `${n.origine === 'collective' ? 'session' : 'privé'} ${n.date}`,
+      })),
   }
 })

@@ -1,15 +1,24 @@
 import type {
   Acces,
   Article,
+  CandidatureFormateur,
   Certificat,
   Chapitre,
   Commande,
+  DemandeCoachingPrive,
+  EntreeJournal,
   Formateur,
+  InscriptionSession,
+  LigneScript,
   Module,
+  NoteFormateur,
+  Persona,
   Programme,
   QuestionReponse,
   SessionCoaching,
   Thematique,
+  SujetSession,
+  Transaction,
   Utilisateur,
 } from '#shared/types'
 
@@ -179,10 +188,29 @@ const faqCommune: QuestionReponse[] = [
   },
 ]
 
+/** Script de démonstration : la transcription réelle sera importée à la production. */
+function scriptType(titre: string): LigneScript[] {
+  return [
+    { temps: '00:12', texte: `Dans ce passage, nous posons le cadre : ${titre.toLowerCase()}.` },
+    { temps: '04:30', texte: 'On déroule la méthode pas à pas, sur un cas réel.' },
+    { temps: '09:05', texte: 'Puis on met en pratique, avec vos propres données.' },
+  ]
+}
+
 function chapitres(...titres: string[]): Chapitre[] {
   return [
-    { libelle: 'Introduction', titre: 'Présentation du module et de votre formateur' },
-    ...titres.map((titre, i) => ({ libelle: `Chapitre ${i + 1}`, titre })),
+    {
+      libelle: 'Introduction',
+      titre: 'Présentation du module et de votre formateur',
+      dureeMinutes: 6,
+      script: scriptType('la présentation du module'),
+    },
+    ...titres.map((titre, i) => ({
+      libelle: `Chapitre ${i + 1}`,
+      titre,
+      dureeMinutes: 18,
+      script: scriptType(titre),
+    })),
   ]
 }
 
@@ -818,7 +846,7 @@ export const sessionsCoaching: SessionCoaching[] = [
     heure: '18:00',
     dureeMinutes: COACHING_COLLECTIF.dureeMinutes,
     places: COACHING_COLLECTIF.places,
-    inscrits: 25,
+    inscrits: 19,
     statut: 'planifiee',
   },
   {
@@ -998,6 +1026,26 @@ export const utilisateurs: Utilisateur[] = [
     ficheCompletee: true,
   },
   {
+    id: 'usr-moussa',
+    prenom: 'Moussa',
+    nom: 'Diabaté',
+    email: 'moussa@example.ci',
+    whatsapp: '+225 05 00 00 00 00',
+    pays: 'Côte d’Ivoire',
+    role: 'apprenant',
+    ficheCompletee: true,
+  },
+  {
+    id: 'usr-fatou',
+    prenom: 'Fatou',
+    nom: 'Bamba',
+    email: 'fatou@example.bj',
+    whatsapp: '+229 96 00 00 00',
+    pays: 'Bénin',
+    role: 'apprenant',
+    ficheCompletee: false,
+  },
+  {
     id: 'usr-admin',
     prenom: 'Fatou',
     nom: 'Diarra',
@@ -1070,3 +1118,213 @@ export const reglagesSeo = {
 
 /** Redirections permanentes créées lors des changements de slug (spec SEO §5). */
 export const redirections: { de: string; vers: string; creeeLe: string }[] = []
+
+// ---------------------------------------------------------------------------
+// Back-office (planche C)
+// ---------------------------------------------------------------------------
+
+/** Paramètres de répartition, modifiables par l'admin principal (journalisé). */
+export const reglagesFinanciers = {
+  fraisPaiementPourcent: 4,
+  partBigFivePourcent: 70,
+  partFormateurPourcent: 30,
+  objectifInscriptionsMensuel: 450,
+  objectifCaMensuel: 4_500_000,
+}
+
+export const transactions: Transaction[] = [
+  {
+    reference: 'FP-2609-0412',
+    utilisateurId: 'usr-aya',
+    moduleId: 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting',
+    moyen: 'Orange Money',
+    montant: PRIX_MODULE_FCFA,
+    statut: 'reussie',
+    date: '2026-09-26',
+  },
+  {
+    reference: 'FP-2609-0411',
+    utilisateurId: 'usr-moussa',
+    moduleId: 'mod-vendre-sans-site-web-whatsapp-business',
+    moyen: 'Wave',
+    montant: PRIX_MODULE_FCFA,
+    statut: 'reussie',
+    date: '2026-09-26',
+  },
+  {
+    reference: 'FP-2609-0410',
+    utilisateurId: 'usr-fatou',
+    moduleId: 'mod-instagram-formats-et-croissance',
+    moyen: 'Visa',
+    montant: PRIX_MODULE_FCFA,
+    statut: 'echouee',
+    date: '2026-09-25',
+  },
+  {
+    reference: 'FP-2509-0388',
+    utilisateurId: 'usr-aya',
+    moduleId: 'mod-fixer-le-juste-prix-de-ses-produits-et-services',
+    moyen: 'Djamo',
+    montant: PRIX_MODULE_FCFA,
+    statut: 'reussie',
+    date: '2026-09-15',
+  },
+]
+
+export const demandesCoachingPrive: DemandeCoachingPrive[] = [
+  {
+    id: 'dcp-001',
+    utilisateurId: 'usr-aya',
+    apprenant: 'Awa Koné',
+    moduleId: 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting',
+    besoins:
+      'Retravailler mes accroches pour un client dans la restauration, je n’arrive pas à dépasser 2 % d’engagement.',
+    disponibilites: 'Soirs de semaine après 18 h, samedi matin.',
+    heures: 2,
+    statut: 'en-attente',
+    recueLe: '2026-09-24',
+  },
+  {
+    id: 'dcp-002',
+    utilisateurId: 'usr-moussa',
+    apprenant: 'Moussa Diabaté',
+    moduleId: 'mod-vendre-sans-site-web-whatsapp-business',
+    besoins: 'Structurer mes relances WhatsApp après un premier échange.',
+    disponibilites: 'Samedi matin.',
+    heures: 2,
+    statut: 'payee',
+    creneau: 'Samedi 12/09, 10h – 12h',
+    recueLe: '2026-09-02',
+  },
+  {
+    id: 'dcp-003',
+    utilisateurId: 'usr-fatou',
+    apprenant: 'Fatou Bamba',
+    moduleId: 'mod-instagram-formats-et-croissance',
+    besoins: 'Construire une présence Instagram pour ma marque de cosmétiques.',
+    disponibilites: 'Mercredi après-midi.',
+    heures: 1,
+    statut: 'confirmee-attente-paiement',
+    recueLe: '2026-09-18',
+  },
+]
+
+export const candidaturesFormateurs: CandidatureFormateur[] = [
+  {
+    id: 'cand-001',
+    nom: 'Éric N’Guessan',
+    expertise: 'Publicité Meta Ads',
+    message:
+      '6 ans de gestion de campagnes pour des PME ivoiriennes, je veux enseigner la publicité payante aux SMM.',
+    whatsapp: '+225 05 44 00 00 00',
+    lien: 'https://www.linkedin.com/',
+    statut: 'nouvelle',
+    recueLe: '2026-09-20',
+  },
+  {
+    id: 'cand-002',
+    nom: 'Salimata Traoré',
+    expertise: 'Branding & identité visuelle',
+    message: 'Directrice artistique, je souhaite proposer un module sur l’identité de marque.',
+    whatsapp: '+225 07 11 00 00 00',
+    statut: 'en-etude',
+    recueLe: '2026-09-12',
+  },
+]
+
+export const journal: EntreeJournal[] = [
+  {
+    id: 'j-001',
+    auteur: 'Fatou Diarra',
+    action: 'a publié le module',
+    cible: 'Accroches qui stoppent le scroll & IA copywriting',
+    date: '2026-09-26T09:10:00Z',
+  },
+  {
+    id: 'j-002',
+    auteur: 'Marc Assi',
+    action: 'a modifié la fiche',
+    cible: 'Vendre sans site web : WhatsApp Business de A à Z',
+    date: '2026-09-26T07:40:00Z',
+  },
+  {
+    id: 'j-003',
+    auteur: 'Fatou Diarra',
+    action: 'a attribué un accès gratuit',
+    cible: 'motif : lot concours',
+    date: '2026-09-25T16:05:00Z',
+  },
+]
+
+/** Personas apprenants, transmis aux formateurs avant les sessions. */
+export const personas: Record<string, Persona> = {
+  'usr-aya': {
+    age: 27,
+    secteur: 'Agence digitale',
+    experience: '1 à 3 ans',
+    reseaux: 'Instagram, TikTok',
+    objectif: 'Signer 3 clients d’ici décembre',
+  },
+  'usr-moussa': {
+    age: 34,
+    secteur: 'Commerce de détail',
+    experience: '3 à 5 ans',
+    reseaux: 'WhatsApp, Facebook',
+    objectif: 'Doubler les commandes entrantes',
+  },
+}
+
+export function enregistrerJournal(auteur: string, action: string, cible: string) {
+  journal.unshift({
+    id: `j-${journal.length + 1}`,
+    auteur,
+    action,
+    cible,
+    date: new Date().toISOString(),
+  })
+}
+
+
+export const inscriptionsSessions: InscriptionSession[] = []
+
+export const sujetsSessions: SujetSession[] = [
+  {
+    id: 'suj-001',
+    sessionId: 'ses-002',
+    utilisateurId: 'usr-aya',
+    apprenant: 'Awa K.',
+    preoccupation: 'Mes accroches sont vues mais ne génèrent presque aucun clic.',
+    attente: 'Une méthode pour tester plusieurs accroches rapidement.',
+    soumisLe: '2026-09-05',
+  },
+  {
+    id: 'suj-002',
+    sessionId: 'ses-002',
+    utilisateurId: 'usr-moussa',
+    apprenant: 'Moussa D.',
+    preoccupation: 'Adapter une même accroche à Instagram et LinkedIn sans la réécrire.',
+    attente: 'Des repères concrets par plateforme.',
+    soumisLe: '2026-09-06',
+  },
+]
+
+export const notesFormateurs: NoteFormateur[] = [
+  {
+    id: 'note-001',
+    formateurId: 'for-othniel',
+    utilisateurId: 'usr-moussa',
+    origine: 'collective',
+    note: 5,
+    commentaire: 'Cas pratiques très concrets',
+    date: '2026-08-12',
+  },
+  {
+    id: 'note-002',
+    formateurId: 'for-othniel',
+    utilisateurId: 'usr-fatou',
+    origine: 'privee',
+    note: 4,
+    commentaire: 'J’aurais aimé plus de temps',
+    date: '2026-07-28',
+  },
+]

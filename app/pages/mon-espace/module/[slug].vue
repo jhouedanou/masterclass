@@ -51,15 +51,18 @@ async function marquerTermine() {
 
     <div class="mt-6 grid gap-8 lg:grid-cols-[1fr_300px]">
       <div>
-        <div class="grid aspect-16/9 w-full place-items-center rounded-carte bg-encre text-[#8f8a9c]">
-          <div class="text-center">
+        <NuxtLink
+          :to="`/mon-espace/lecture/${moduleCourant.slug}?chapitre=${chapitreActif}`"
+          class="grid aspect-16/9 w-full place-items-center rounded-carte bg-encre text-[#8f8a9c] transition hover:text-white"
+        >
+          <span class="text-center">
             <Icon name="ph:play-circle" size="56" />
-            <p class="mt-3 px-6 text-[13.5px]">
-              Lecteur vidéo à brancher — {{ moduleCourant.chapitres[chapitreActif]?.libelle }} :
+            <span class="mt-3 block px-6 text-[13.5px]">
+              Ouvrir le lecteur — {{ moduleCourant.chapitres[chapitreActif]?.libelle }} :
               {{ moduleCourant.chapitres[chapitreActif]?.titre }}
-            </p>
-          </div>
-        </div>
+            </span>
+          </span>
+        </NuxtLink>
 
         <section class="editorial mt-8">
           <h2>Pourquoi ce module ?</h2>

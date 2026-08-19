@@ -88,11 +88,19 @@ officiel et le motif proviennent de `maquettes/maquettes/assets/`.
 /mon-espace/certificats  /mon-espace/profil
 /certificats/[numero]                certificat imprimable (A4 paysage)
 /verifier/[numero]                   cible du QR code, accessible sans compte
+/mon-espace/lecture/[slug]           lecteur vidéo, watermark nominatif, script synchronisé
+/mon-espace/session/[id]             salle de coaching collectif (Zoom SDK à intégrer)
 /formateur                           tableau de bord formateur
 /formateur/modules  /formateur/sessions  /formateur/coaching-prive
 /formateur/revenus  /formateur/profil
-/admin  /admin/modules  /admin/formateurs  /admin/sessions
-/admin/apprenants  /admin/blog  /admin/referencement
+/admin                               vue d'ensemble
+/admin/contenus                      arbre programme → thématique → module
+/admin/sessions                      calendrier, création, report, annulation notifiée
+/admin/apprenants                    liste, fiche persona, attribution d'accès
+/admin/coaching-prive                demandes + statistiques par formateur
+/admin/formateurs                    profils, ordre public, candidatures
+/admin/performances  /admin/revenus  /admin/transactions (droit restreint)
+/admin/blog  /admin/referencement  /admin/historique  /admin/parametres
 ```
 
 ## Conformité à la spec SEO
@@ -129,6 +137,23 @@ squelette « Attestation de suivi de module » fourni par le client.
 - Délivrance déclenchée à 100 % de progression (`POST /api/certificats`).
 - QR code produit côté serveur, pointant vers `/verifier/<numero>`.
 - Export PDF via l'impression du navigateur (feuille `@media print`, A4 paysage).
+
+## Règles métier appliquées
+
+- **Coaching collectif** : une session par couple thématique–formateur, 2 h, 25 places. Elle
+  n'apparaît que chez les apprenants possédant un module de la thématique. La réservation exige
+  une fiche apprenant complète **et** la soumission de deux réponses obligatoires, transmises au
+  formateur avant la séance (`POST /api/mon-espace/sessions/reserver`).
+- **Notation** : proposée après chaque séance, visible de l'administration et du formateur, jamais
+  publiée sur le site. La note moyenne du tableau de bord formateur est calculée sur ces entrées.
+- **Annulation de session** : les inscrits sont comptés et notifiés (e-mail + WhatsApp), l'action
+  est journalisée.
+- **Attribution d'accès** : motif obligatoire, marquée « Attribution admin » et distincte d'un
+  achat, apprenant notifié, action journalisée.
+- **Transactions** et **paramètres financiers** : réservés à l'administrateur supérieur ; l'API
+  répond 403 aux autres, l'écran affiche le bloc verrouillé.
+- **Lecteur** : watermark nominatif affiché en permanence, script cliquable par timecode, et
+  mention explicite que l'avance rapide ne validera pas la progression.
 
 ## Modèle économique implémenté
 
@@ -176,14 +201,14 @@ formateurs et le partage d'articles.
   vérification / succès / échec sont en place côté interface, le prestataire reste à brancher.
 - **Envoi d'e-mails et WhatsApp transactionnel** : formulaires et réinitialisation de mot de passe
   journalisent seulement.
-- **Lecteur vidéo et script synchronisé** (planche B) : la zone est en place, l'hébergeur reste à
-  choisir.
-- **Questions obligatoires et notation post-session** (planche B, écran 8b) : l'espace formateur
-  affiche déjà les sujets soumis et les notes reçues, mais l'écran apprenant qui les produit reste
-  à construire.
-- **Écrans admin restants** (planche C) : calendrier des sessions, création de module et
-  prévisualisation, transactions, performances/funnel/ventes, CMS et journal, paramètres de
-  tracking. Les écrans Contenus, Formateurs, Sessions, Apprenants, Blog et Référencement sont en
-  place, ce dernier avec sa logique complète.
+- **Lecteur vidéo** : l'écran, le watermark et le script synchronisé sont en place ; le flux HLS et
+  les URL signées restent à brancher, de même que l'enregistrement du temps réel de visionnage.
+- **Écrans admin restants** (planche C) : création/édition de module avec prévisualisation, CMS du
+  site vitrine, onglets détaillés Funnel / Ventes / Visites / Clients, paramètres de tracking et
+  administration fine des droits. Les écrans Vue d'ensemble, Contenus, Sessions, Apprenants,
+  Coaching privé, Formateurs, Performances, Revenus, Transactions, Historique, Paramètres, Blog et
+  Référencement sont en place.
+- **Zoom Meeting SDK** : la salle de session est en place côté interface ; le jeton serveur, la
+  sélection Component/Client View et le contrôle de compatibilité restent à brancher.
 - **PWA, GA4 et Search Console** (spec §11–12).
 - **Bandeau cookies** (planche A, écran 10).
