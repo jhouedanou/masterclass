@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540" role="img" aria-label="Accroches &amp; IA copywriting">
+  <defs>
+    <pattern id="p" width="40" height="40" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <rect width="40" height="40" fill="#f3f0f8"/>
+      <rect width="20" height="40" fill="#eae5f2"/>
+    </pattern>
+  </defs>
+  <rect width="960" height="540" fill="url(#p)"/>
+  <text x="480" y="270" text-anchor="middle" font-family="Jost, sans-serif" font-size="43" fill="#6d6a75">Accroches &amp; IA copywriting</text>
+</svg>

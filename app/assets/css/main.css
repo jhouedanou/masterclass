@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+/*
+  Jetons repris de la maquette Claude Design (planches A à D).
+  Violet #80368D = programme Social Média, bleu #29358B = programme Entrepreneurs.
+  Titres en Jost (graisses 300/400/500/600), textes en Mulish (400/600/700/800).
+*/
+@theme {
+  --font-title: "Jost", "Century Gothic", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Mulish", ui-sans-serif, system-ui, sans-serif;
+
+  /* Programme Social Média */
+  --color-social: #80368d;
+  --color-social-fonce: #6a2b75;
+  --color-social-clair: #cfa6de;
+  --color-social-voile: #f4ecf7;
+  --color-social-bordure: #e8dced;
+
+  /* Programme Entrepreneurs */
+  --color-entrepreneurs: #29358b;
+  --color-entrepreneurs-fonce: #202b73;
+  --color-entrepreneurs-clair: #8f98d4;
+  --color-entrepreneurs-voile: #eff0f8;
+  --color-entrepreneurs-bordure: #dfe2f2;
+
+  /* Neutres */
+  --color-encre: #17151c;
+  --color-encre-800: #221f2b;
+  --color-texte: #4b4855;
+  --color-discret: #6d6a75;
+  --color-discret-clair: #8a8695;
+  --color-ligne: #dcd7e6;
+  --color-ligne-claire: #eeebf3;
+  --color-ligne-douce: #e6e1ef;
+  --color-ligne-tendre: #e0dbe9;
+  --color-fond: #edeaf2;
+  --color-fond-clair: #faf9fc;
+  --color-fond-voile: #f3f0f8;
+  --color-fond-blanc-casse: #fdfcfe;
+
+  /* Signalétique */
+  --color-succes: #1a8747;
+  --color-whatsapp: #1fa855;
+  --color-succes-voile: #e7f7ee;
+  --color-alerte: #a06a12;
+  --color-alerte-voile: #fff4e2;
+  --color-erreur: #c03434;
+  --color-erreur-fonce: #a3242f;
+
+  --radius-carte: 16px;
+  --radius-bloc: 14px;
+  --radius-champ: 12px;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    color: var(--color-encre);
+    background-color: #ffffff;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* La maquette compose ses titres en Jost Light : ne pas les alourdir. */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-title);
+    font-weight: 300;
+    color: var(--color-encre);
+    line-height: 1.15;
+  }
+
+  a {
+    color: var(--color-social);
+  }
+  a:hover {
+    color: var(--color-entrepreneurs);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-social);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .conteneur {
+    @apply mx-auto w-full max-w-[1440px] px-6 sm:px-10 lg:px-16;
+  }
+
+  /* Sur-titre commun à toutes les sections de la maquette. */
+  .surtitre {
+    @apply text-[13px] font-bold tracking-[0.16em] uppercase;
+  }
+
+  .rayures-social {
+    background: repeating-linear-gradient(45deg, #fdfcfe, #fdfcfe 18px, #f6f3fa 18px, #f6f3fa 36px);
+  }
+  .rayures-entrepreneurs {
+    background: repeating-linear-gradient(45deg, #fdfdfe, #fdfdfe 18px, #f3f4fa 18px, #f3f4fa 36px);
+  }
+  .rayures-visuel-social {
+    background: repeating-linear-gradient(45deg, #f3f0f8, #f3f0f8 16px, #eae5f2 16px, #eae5f2 32px);
+  }
+  .rayures-visuel-entrepreneurs {
+    background: repeating-linear-gradient(45deg, #eff0f8, #eff0f8 16px, #e4e6f2 16px, #e4e6f2 32px);
+  }
+  .rayures-sombres {
+    background: repeating-linear-gradient(45deg, #39324a, #39324a 8px, #2d2839 8px, #2d2839 16px);
+  }
+
+  .editorial :where(p) {
+    @apply my-4 text-[15.5px] leading-relaxed text-texte;
+  }
+  .editorial :where(h2) {
+    @apply mt-10 mb-3 font-title text-[27px] font-light;
+  }
+  .editorial :where(h3) {
+    @apply mt-8 mb-2 font-title text-[21px] font-light;
+  }
+  .editorial :where(ul) {
+    @apply my-4 list-disc space-y-1.5 pl-6 text-[15.5px] text-texte;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+}

@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+@font-face{font-family:'Jost';src:url('assets/fonts/Jost-Light.ttf') format('truetype');font-weight:300;font-style:normal;font-display:swap;}
+@font-face{font-family:'Jost';src:url('assets/fonts/Jost-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:'Jost';src:url('assets/fonts/Jost-Medium.ttf') format('truetype');font-weight:500;font-style:normal;font-display:swap;}
+@font-face{font-family:'Jost';src:url('assets/fonts/Jost-SemiBold.ttf') format('truetype');font-weight:600;font-style:normal;font-display:swap;}
+@font-face{font-family:'Mulish';src:url('assets/fonts/Mulish-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:'Mulish';src:url('assets/fonts/Mulish-Italic.ttf') format('truetype');font-weight:400;font-style:italic;font-display:swap;}
+@font-face{font-family:'Mulish';src:url('assets/fonts/Mulish-SemiBold.ttf') format('truetype');font-weight:600;font-style:normal;font-display:swap;}
+@font-face{font-family:'Mulish';src:url('assets/fonts/Mulish-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:swap;}
+@font-face{font-family:'Mulish';src:url('assets/fonts/Mulish-ExtraBold.ttf') format('truetype');font-weight:800;font-style:normal;font-display:swap;}
+
+body{margin:0;background:#edeaf2;font-family:'Mulish',sans-serif;color:#17151c;}
+a{color:#80368D;text-decoration:none;}a:hover{color:#29358B;}
+</style>
+</helmet>
+<div style="padding:48px;display:flex;flex-direction:column;gap:64px;">
+<div style="max-width:1440px;">
+<div style="font-family:'Mulish',sans-serif;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6d6a75;margin-bottom:10px;">Maquettes E-Masterclass — A. Site vitrine · <a href="B - Dashboard Apprenant.dc.html">B. Dashboard apprenant</a> · <a href="C - Dashboard Admin.dc.html">C. Dashboard admin</a> · <a href="D - Dashboard Formateur.dc.html">D. Dashboard formateur</a> · <a href="E - Diagramme des parcours.dc.html">E. Diagramme des parcours</a></div>
+<div style="background:#fff;border:1px solid #dcd7e6;border-radius:10px;padding:16px 20px;font-size:13px;color:#4b4855;line-height:1.6;">Typographie : <b>Jost</b> (titres) et <b>Mulish</b> (textes), polices officielles du design system Big Five, embarquées dans les maquettes (Jost en graisses Light/Regular/Medium pour rester proche de l'épaisseur d'origine). Couleurs programmes : violet <b style="color:#80368D">#80368D</b> (Social Média) · bleu <b style="color:#29358B">#29358B</b> (Entrepreneurs).</div>
+</div>
+
+<!-- ===================== 1. ACCUEIL ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">01 · PAGE D'ACCUEIL — / (desktop 1440)</div>
+<div style="width:1440px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;overflow:hidden;position:relative;">
+  <!-- header blanc -->
+  <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:18px 64px;">
+    <img src="assets/logo.png" alt="E-Masterclass Programme | Big Five" style="height:58px;display:block;">
+    <nav style="display:flex;align-items:center;gap:32px;font-size:15px;font-weight:600;">
+      <a href="#" style="color:#17151c;">Accueil</a>
+      <a href="#" style="color:#80368D;">Social Média</a>
+      <a href="#" style="color:#29358B;">Entrepreneurs</a>
+      <a href="#" style="color:#17151c;">Formateurs</a>
+      <a href="#" style="color:#17151c;">Blog</a><a href="#" style="color:#17151c;">Contact &amp; FAQ</a>
+      <a href="#" style="background:#17151c;color:#fff;padding:11px 22px;border-radius:999px;font-size:14px;">Mon espace</a>
+    </nav>
+  </header>
+  <!-- hero — BANNIÈRE COULISSANTE : 1 slide par programme · copywriting à gauche, support publicitaire à droite · visuels, accroches et ordre gérés depuis le CMS -->
+  <div style="position:relative;border-bottom:1px solid #eeebf3;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;min-height:500px;">
+      <div style="position:relative;display:flex;flex-direction:column;justify-content:center;padding:56px 56px 76px 64px;background:repeating-linear-gradient(45deg,#fdfcfe,#fdfcfe 18px,#f6f3fa 18px,#f6f3fa 36px);overflow:hidden;">
+        <div style="position:relative;">
+          <div style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#80368D;margin-bottom:16px;">Programme Social Média</div>
+          <h1 style="font-family:'Jost',sans-serif;font-size:58px;line-height:1.06;margin:0 0 22px;font-weight:500;color:#17151c;">Montez en<br>compétences.<br><span style="color:#80368D;">Restez dans<br>la course.</span></h1>
+          <p style="font-size:17px;line-height:1.6;color:#4b4855;margin:0 0 26px;max-width:460px;">Choisissez parmi 9 modules de 60 minutes pour renforcer des compétences précises en stratégie, contenu et plateformes Social Media. Accès à vie et sessions de coaching collectif.</p>
+          <a href="#" style="display:inline-block;background:#80368D;color:#fff;padding:16px 30px;border-radius:999px;font-size:16px;font-weight:700;">Découvrir le programme Social Média</a>
+        </div>
+      </div>
+      <div style="position:relative;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 16px,#eae5f2 16px,#eae5f2 32px);display:flex;align-items:center;justify-content:center;">
+        <span style="font-family:monospace;font-size:12px;color:#6d6a75;background:#fff;padding:7px 13px;border-radius:8px;border:1px solid #dcd7e6;text-align:center;max-width:320px;line-height:1.5;">visuel du programme Social Média</span>
+      </div>
+    </div>
+    <span style="position:absolute;left:18px;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid #dcd7e6;display:flex;align-items:center;justify-content:center;font-size:18px;color:#17151c;box-shadow:0 4px 14px rgba(23,21,28,.10);">‹</span>
+    <span style="position:absolute;right:18px;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid #dcd7e6;display:flex;align-items:center;justify-content:center;font-size:18px;color:#17151c;box-shadow:0 4px 14px rgba(23,21,28,.10);">›</span>
+    <div style="position:absolute;left:64px;bottom:22px;display:flex;gap:8px;align-items:center;">
+      <span style="width:26px;height:8px;border-radius:999px;background:#80368D;"></span>
+      <span style="width:8px;height:8px;border-radius:50%;background:#cfc8dd;"></span>
+    </div>
+  </div>
+  <div style="font-family:monospace;font-size:11px;letter-spacing:.08em;color:#6d6a75;padding:10px 64px;background:#faf9fc;border-bottom:1px solid #eeebf3;">SLIDE 2 DU HERO — ENTREPRENEURS</div>
+  <div style="position:relative;border-bottom:1px solid #eeebf3;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;min-height:460px;">
+      <div style="position:relative;display:flex;flex-direction:column;justify-content:center;padding:52px 56px 72px 64px;background:repeating-linear-gradient(45deg,#fdfdfe,#fdfdfe 18px,#f3f4fa 18px,#f3f4fa 36px);overflow:hidden;">
+        <div style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#29358B;margin-bottom:16px;">Programme Entrepreneurs</div>
+        <h1 style="font-family:'Jost',sans-serif;font-size:54px;line-height:1.06;margin:0 0 22px;font-weight:500;color:#17151c;">Montez en<br>compétences.<br><span style="color:#29358B;">Soyez à jour.</span></h1>
+        <p style="font-size:17px;line-height:1.6;color:#4b4855;margin:0 0 26px;max-width:460px;">Choisissez parmi 9 modules de 60 minutes pour renforcer les compétences utiles au développement de votre activité : valider une idée, fixer vos prix, vendre et gagner en visibilité.</p>
+        <a href="#" style="display:inline-block;background:#29358B;color:#fff;padding:16px 30px;border-radius:999px;font-size:16px;font-weight:700;align-self:flex-start;">Découvrir le programme Entrepreneurs</a>
+      </div>
+      <div style="position:relative;background:repeating-linear-gradient(45deg,#eff0f8,#eff0f8 16px,#e4e6f2 16px,#e4e6f2 32px);display:flex;align-items:center;justify-content:center;">
+        <span style="font-family:monospace;font-size:12px;color:#6d6a75;background:#fff;padding:7px 13px;border-radius:8px;border:1px solid #dcd7e6;text-align:center;max-width:320px;line-height:1.5;">visuel du programme Entrepreneurs</span>
+      </div>
+    </div>
+    <div style="position:absolute;left:64px;bottom:22px;display:flex;gap:8px;align-items:center;">
+      <span style="width:8px;height:8px;border-radius:50%;background:#cfc8dd;"></span>
+      <span style="width:26px;height:8px;border-radius:999px;background:#29358B;"></span>
+    </div>
+  </div>
+  <div style="display:flex;gap:28px;padding:18px 64px;font-size:14px;color:#4b4855;border-bottom:1px solid #eeebf3;">
+    <span><b style="color:#17151c;">18 modules</b> disponibles</span>
+    <span><b style="color:#17151c;">10 000 FCFA TTC</b> par module</span>
+    <span><b style="color:#17151c;">Accès à vie</b> après l'achat</span>
+  </div>
+  <!-- programmes -->
+  <div style="padding:56px 64px;background:#faf9fc;border-top:1px solid #eeebf3;">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#6d6a75;">Nos programmes</div>
+    <h2 style="font-family:'Jost',sans-serif;font-size:34px;font-weight:300;margin:10px 0 10px;">Deux programmes pour renforcer les compétences qui font la différence</h2>
+    <p style="font-size:16px;color:#4b4855;line-height:1.6;margin:0 0 30px;max-width:720px;">Choisissez votre univers, puis le module qui répond à votre besoin du moment.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;">
+      <div style="background:#fff;border:1px solid #e6e1ef;border-top:5px solid #80368D;border-radius:16px;padding:34px;">
+        <h3 style="font-family:'Jost',sans-serif;font-size:27px;font-weight:300;margin:0 0 8px;color:#80368D;">Social Média</h3>
+        <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#4b4855;">Pour les professionnels du Social Media et de la communication qui souhaitent actualiser leurs pratiques et renforcer des compétences précises.</p>
+        <div style="display:flex;gap:20px;font-size:14px;color:#4b4855;margin-bottom:22px;"><span><b style="color:#17151c;">9 modules</b></span><span><b style="color:#17151c;">3 thématiques</b></span><span><b style="color:#17151c;">Sessions</b> de coaching collectif</span></div>
+        <a href="#" style="display:inline-block;background:#80368D;color:#fff;padding:13px 24px;border-radius:999px;font-size:15px;font-weight:700;">Découvrir le programme Social Média</a>
+      </div>
+      <div style="background:#fff;border:1px solid #e6e1ef;border-top:5px solid #29358B;border-radius:16px;padding:34px;">
+        <h3 style="font-family:'Jost',sans-serif;font-size:27px;font-weight:300;margin:0 0 8px;color:#29358B;">Entrepreneurs</h3>
+        <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#4b4855;">Pour les entrepreneurs en activité ou en lancement qui souhaitent renforcer les compétences utiles au développement de leur activité.</p>
+        <div style="display:flex;gap:20px;font-size:14px;color:#4b4855;margin-bottom:22px;"><span><b style="color:#17151c;">9 modules</b></span><span><b style="color:#17151c;">3 thématiques</b></span><span><b style="color:#17151c;">Sessions</b> de coaching collectif</span></div>
+        <a href="#" style="display:inline-block;background:#29358B;color:#fff;padding:13px 24px;border-radius:999px;font-size:15px;font-weight:700;">Découvrir le programme Entrepreneurs</a>
+      </div>
+    </div>
+  </div>
+  <!-- thématiques accordéon -->
+  <div style="padding:56px 64px;">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#6d6a75;">Les thématiques</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;">
+      <h2 style="font-family:'Jost',sans-serif;font-size:34px;font-weight:300;margin:10px 0 6px;">Explorez les thématiques de chaque programme</h2>
+      <div style="display:flex;gap:8px;background:#f0ecf5;border-radius:999px;padding:5px;font-size:14px;font-weight:700;">
+        <span style="background:#80368D;color:#fff;border-radius:999px;padding:10px 22px;">Social Média</span>
+        <span style="color:#4b4855;border-radius:999px;padding:10px 22px;">Entrepreneurs</span>
+      </div>
+    </div>
+    <p style="font-size:15px;color:#4b4855;line-height:1.6;margin:0 0 28px;max-width:760px;">Sélectionnez un programme, puis explorez les modules disponibles dans chaque thématique. Chaque module peut être choisi et acheté indépendamment.</p>
+    <!-- accordéon ouvert -->
+    <div style="border:1px solid #e0dbe9;border-radius:14px;overflow:hidden;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 28px;background:#80368D;color:#fff;">
+        <div style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300">1 · Fondations stratégiques</div>
+        <div style="display:flex;gap:18px;align-items:center;font-size:14px;"><span>3 modules</span><span style="font-size:20px;">−</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;padding:24px 28px;background:#fdfcfe;">
+        <div style="border:1px solid #e6e1ef;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:10px;">
+          <div style="font-size:12px;font-weight:700;color:#80368D;letter-spacing:.1em;">MODULE 01</div>
+          <div style="font-family:'Jost',sans-serif;font-size:18px;line-height:1.3;font-weight:300">Comprendre le business du client</div>
+          <div style="font-size:13px;color:#6d6a75;">Jérémie De Clercq · 60 min · 10 000 FCFA TTC</div>
+          <a href="#" style="font-size:14px;font-weight:700;">Découvrir le module →</a>
+        </div>
+        <div style="border:1px solid #e6e1ef;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:10px;">
+          <div style="font-size:12px;font-weight:700;color:#80368D;letter-spacing:.1em;">MODULE 02</div>
+          <div style="font-family:'Jost',sans-serif;font-size:18px;line-height:1.3;font-weight:300">Plan d'action social media : Stratégie &amp; Ciblage</div>
+          <div style="font-size:13px;color:#6d6a75;">Kevine Waffo · 60 min · 10 000 FCFA TTC</div>
+          <a href="#" style="font-size:14px;font-weight:700;">Découvrir le module →</a>
+        </div>
+        <div style="border:1px solid #e6e1ef;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:10px;">
+          <div style="font-size:12px;font-weight:700;color:#80368D;letter-spacing:.1em;">MODULE 03</div>
+          <div style="font-family:'Jost',sans-serif;font-size:18px;line-height:1.3;font-weight:300">Plan d'action social media : Planning éditorial</div>
+          <div style="font-size:13px;color:#6d6a75;">Kevine Waffo · 60 min · 10 000 FCFA TTC</div>
+          <a href="#" style="font-size:14px;font-weight:700;">Découvrir le module →</a>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 28px;border:1px solid #e0dbe9;border-radius:14px;margin-bottom:14px;">
+      <div style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300">2 · Copywriting &amp; contenu</div>
+      <div style="display:flex;gap:18px;align-items:center;font-size:14px;color:#6d6a75;"><span>3 modules</span><span style="font-size:20px;">+</span></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 28px;border:1px solid #e0dbe9;border-radius:14px;">
+      <div style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300">3 · Plateformes</div>
+      <div style="display:flex;gap:18px;align-items:center;font-size:14px;color:#6d6a75;"><span>3 modules</span><span style="font-size:20px;">+</span></div>
+    </div>
+    <!-- état 2 du sélecteur : Entrepreneurs -->
+    <div style="margin-top:40px;border-top:1px dashed #dcd7e6;padding-top:32px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div style="font-family:monospace;font-size:12px;color:#6d6a75;">SÉLECTEUR EN POSITION ENTREPRENEURS</div>
+        <div style="display:flex;gap:8px;background:#f0ecf5;border-radius:999px;padding:5px;font-size:14px;font-weight:700;">
+          <span style="color:#4b4855;border-radius:999px;padding:10px 22px;">Social Média</span>
+          <span style="background:#29358B;color:#fff;border-radius:999px;padding:10px 22px;">Entrepreneurs</span>
+        </div>
+      </div>
+      <div style="border:1px solid #e0dbe9;border-radius:14px;overflow:hidden;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 28px;background:#29358B;color:#fff;">
+          <div style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300">1 · Fondations du business</div>
+          <div style="display:flex;gap:18px;align-items:center;font-size:14px;"><span>3 modules</span><span style="font-size:20px;">−</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;padding:24px 28px;background:#fcfcfe;">
+          <div style="border:1px solid #e2e4f0;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:10px;">
+            <div style="font-size:12px;font-weight:700;color:#29358B;letter-spacing:.1em;">MODULE 01</div>
+            <div style="font-family:'Jost',sans-serif;font-size:18px;line-height:1.3;font-weight:300">Valider son idée de business avant d'investir</div>
+            <div style="font-size:13px;color:#6d6a75;">Jérémie De Clercq · 60 min · 10 000 FCFA TTC</div>
+            <a href="#" style="font-size:14px;font-weight:700;color:#29358B;">Découvrir le module →</a>
+          </div>
+          <div style="border:1px solid #e2e4f0;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:10px;">
+            <div style="font-size:12px;font-weight:700;color:#29358B;letter-spacing:.1em;">MODULE 02</div>
+            <div style="font-family:'Jost',sans-serif;font-size:18px;line-height:1.3;font-weight:300">Fixer le juste prix de ses produits et services</div>
+            <div style="font-size:13px;color:#6d6a75;">Jérémie De Clercq · 60 min · 10 000 FCFA TTC</div>
+            <a href="#" style="font-size:14px;font-weight:700;color:#29358B;">Découvrir le module →</a>
+          </div>
+          <div style="border:1px solid #e2e4f0;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:10px;">
+            <div style="font-size:12px;font-weight:700;color:#29358B;letter-spacing:.1em;">MODULE 03</div>
+            <div style="font-family:'Jost',sans-serif;font-size:18px;line-height:1.3;font-weight:300">Structurer une offre claire qui se vend</div>
+            <div style="font-size:13px;color:#6d6a75;">Emmanuel Cocou · 60 min · 10 000 FCFA TTC</div>
+            <a href="#" style="font-size:14px;font-weight:700;color:#29358B;">Découvrir le module →</a>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 28px;border:1px solid #e0dbe9;border-radius:14px;margin-bottom:14px;">
+        <div style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300">2 · Vente &amp; acquisition</div>
+        <div style="display:flex;gap:18px;align-items:center;font-size:14px;color:#6d6a75;"><span>3 modules</span><span style="font-size:20px;">+</span></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 28px;border:1px solid #e0dbe9;border-radius:14px;">
+        <div style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300">3 · Visibilité</div>
+        <div style="display:flex;gap:18px;align-items:center;font-size:14px;color:#6d6a75;"><span>3 modules</span><span style="font-size:20px;">+</span></div>
+      </div>
+    </div>
+  </div>
+  <!-- formateurs -->
+  <div style="padding:56px 64px;background:#17151c;color:#fff;">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#b9a8d8;">Nos formateurs</div>
+    <h2 style="font-family:'Jost',sans-serif;font-size:34px;font-weight:300;margin:10px 0 10px;color:#fff;">Des professionnels de terrain pour transmettre ce qu'ils pratiquent</h2>
+    <p style="font-size:15.5px;line-height:1.6;color:#b9b4c4;margin:0 0 32px;max-width:760px;">Chaque module est conçu et animé par un professionnel expérimenté, qui prolonge l'apprentissage lors des sessions de coaching collectif.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:22px;">
+      <div style="background:#221f2b;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="width:84px;height:84px;border-radius:50%;background:repeating-linear-gradient(45deg,#39324a,#39324a 8px,#2d2839 8px,#2d2839 16px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:10px;color:#b9a8d8;">photo</div>
+        <div><div style="font-family:'Jost',sans-serif;font-size:19px;font-weight:300">Jérémie De Clercq</div><div style="font-size:13px;color:#b9b4c4;margin-top:4px;">Stratégie business &amp; entrepreneuriat</div><div style="font-size:12.5px;color:#8f8a9c;margin-top:6px;">Entrepreneurs · 4 modules</div></div>
+        <a href="#" style="font-size:13px;font-weight:700;color:#cfa6de;">Voir le profil →</a>
+      </div>
+      <div style="background:#221f2b;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="width:84px;height:84px;border-radius:50%;background:repeating-linear-gradient(45deg,#39324a,#39324a 8px,#2d2839 8px,#2d2839 16px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:10px;color:#b9a8d8;">photo</div>
+        <div><div style="font-family:'Jost',sans-serif;font-size:19px;font-weight:300">Coury Othniel</div><div style="font-size:13px;color:#b9b4c4;margin-top:4px;">Copywriting &amp; contenu</div><div style="font-size:12.5px;color:#8f8a9c;margin-top:6px;">Social Média · 3 modules</div></div>
+        <a href="#" style="font-size:13px;font-weight:700;color:#cfa6de;">Voir le profil →</a>
+      </div>
+      <div style="background:#221f2b;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="width:84px;height:84px;border-radius:50%;background:repeating-linear-gradient(45deg,#39324a,#39324a 8px,#2d2839 8px,#2d2839 16px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:10px;color:#b9a8d8;">photo</div>
+        <div><div style="font-family:'Jost',sans-serif;font-size:19px;font-weight:300">Lyle Soboro</div><div style="font-size:13px;color:#b9b4c4;margin-top:4px;">Vente, TikTok &amp; acquisition client</div><div style="font-size:12.5px;color:#8f8a9c;margin-top:6px;">Entrepreneurs · 4 modules</div></div>
+        <a href="#" style="font-size:13px;font-weight:700;color:#cfa6de;">Voir le profil →</a>
+      </div>
+      <div style="background:#221f2b;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="width:84px;height:84px;border-radius:50%;background:repeating-linear-gradient(45deg,#39324a,#39324a 8px,#2d2839 8px,#2d2839 16px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:10px;color:#b9a8d8;">photo</div>
+        <div><div style="font-family:'Jost',sans-serif;font-size:19px;font-weight:300">Maurice Nontondji</div><div style="font-size:13px;color:#b9b4c4;margin-top:4px;">LinkedIn : algorithme &amp; prospection</div><div style="font-size:12.5px;color:#8f8a9c;margin-top:6px;">Social Média · 2 modules</div></div>
+        <a href="#" style="font-size:13px;font-weight:700;color:#cfa6de;">Voir le profil →</a>
+      </div>
+    </div>
+    <div style="margin-top:26px;"><a href="#" style="display:inline-block;background:#fff;color:#17151c;padding:13px 26px;border-radius:999px;font-size:15px;font-weight:700;">Découvrir tous les formateurs</a></div>
+  </div>
+  <!-- FAQ -->
+  <div style="padding:56px 64px;">
+    <div style="display:grid;grid-template-columns:.8fr 1.2fr;gap:48px;">
+      <div>
+        <div style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#6d6a75;">Questions fréquentes</div>
+        <h2 style="font-family:'Jost',sans-serif;font-size:34px;font-weight:300;margin:10px 0 16px;">Avant de commencer, voici l'essentiel</h2>
+        <p style="font-size:15px;color:#4b4855;line-height:1.6;margin:0 0 22px;">Retrouvez les réponses aux principales questions concernant l'achat, l'accès aux modules et les sessions de coaching.</p>
+        <div style="background:#faf9fc;border:1px solid #e6e1ef;border-radius:14px;padding:20px 22px;">
+          <p style="margin:0 0 14px;font-size:14.5px;line-height:1.6;color:#4b4855;">Vous avez une autre question ? Contactez directement notre équipe sur WhatsApp.</p>
+          <a href="#" style="display:inline-flex;align-items:center;gap:10px;background:#1fa855;color:#fff;padding:13px 24px;border-radius:999px;font-size:15px;font-weight:700;">Discuter sur WhatsApp</a>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:18px 24px;">
+          <div style="display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:16px;"><span>Puis-je acheter un seul module ?</span><span>−</span></div>
+          <p style="margin:10px 0 0;font-size:14.5px;line-height:1.6;color:#4b4855;">Oui. Chaque module est indépendant et peut être acheté séparément selon vos besoins.</p>
+        </div>
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:18px 24px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:16px;"><span>Combien coûte un module et comment payer ?</span><span>+</span></div>
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:18px 24px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:16px;"><span>Combien de temps puis-je accéder à mon module ?</span><span>+</span></div>
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:18px 24px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:16px;"><span>Comment participer aux sessions de coaching collectif ?</span><span>+</span></div>
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:18px 24px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:16px;"><span>Est-ce qu'un certificat est délivré ?</span><span>+</span></div>
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:18px 24px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:16px;"><span>Puis-je suivre les modules depuis mon téléphone ?</span><span>+</span></div>
+      </div>
+    </div>
+  </div>
+  <!-- footer -->
+  <footer style="border-top:1px solid #e6e1ef;background:#faf9fc;padding:48px 64px 28px;">
+    <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:40px;">
+      <div>
+        <img src="assets/logo.png" alt="E-Masterclass | Big Five" style="height:36px;display:block;margin-bottom:14px;">
+        <p style="font-size:13.5px;color:#6d6a75;line-height:1.6;margin:0;">E-Masterclass Big Five propose des modules de formation en ligne conçus pour aider les professionnels du Social Media et les entrepreneurs d'Afrique francophone à renforcer des compétences précises.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px;font-size:14px;"><b style="font-family:'Jost',sans-serif;font-weight:300;font-size:15px;margin-bottom:4px;">Programmes</b><a href="#">Social Média</a><a href="#">Entrepreneurs</a><a href="#">Calendrier des sessions</a></div>
+      <div style="display:flex;flex-direction:column;gap:9px;font-size:14px;"><b style="font-family:'Jost',sans-serif;font-weight:300;font-size:15px;margin-bottom:4px;">Plateforme</b><a href="#">Formateurs</a><a href="#">Devenir formateur</a><a href="#">Blog</a><a href="#">Contact &amp; FAQ</a><a href="#">Mon espace</a></div>
+      <div style="display:flex;flex-direction:column;gap:9px;font-size:14px;"><b style="font-family:'Jost',sans-serif;font-weight:300;font-size:15px;margin-bottom:4px;">Légal</b><a href="#">Mentions légales</a><a href="#">CGU</a><a href="#">CGV</a><a href="#">Confidentialité</a><a href="#">Cookies</a></div>
+    </div>
+    <div style="border-top:1px solid #e6e1ef;margin-top:36px;padding-top:18px;display:flex;justify-content:space-between;font-size:12.5px;color:#6d6a75;">
+      <span>© 2026 BigFiveAbidjan SARL — RCCM CI-ABJ-2017-B-27600 — Abidjan, Côte d'Ivoire</span>
+    </div>
+  </footer>
+  <!-- whatsapp flottant -->
+  <div style="position:absolute;right:28px;bottom:400px;width:58px;height:58px;border-radius:50%;background:#1fa855;box-shadow:0 8px 24px rgba(31,168,85,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:12px;">WA</div>
+</div>
+</section>
+
+<!-- ===================== 2. PAGE PROGRAMME ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">02 · PAGE PROGRAMME — /programmes/social-media (desktop 1440)</div>
+<div style="width:1440px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;overflow:hidden;">
+  <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 64px;">
+    <img src="assets/logo.png" alt="E-Masterclass | Big Five" style="height:36px;display:block;">
+    <nav style="display:flex;align-items:center;gap:32px;font-size:15px;font-weight:600;"><a href="#" style="color:#17151c;">Accueil</a><a href="#" style="color:#80368D;border-bottom:2px solid #80368D;padding-bottom:3px;">Social Média</a><a href="#" style="color:#29358B;">Entrepreneurs</a><a href="#" style="color:#17151c;">Formateurs</a><a href="#" style="color:#17151c;">Blog</a><a href="#" style="color:#17151c;">Contact &amp; FAQ</a><a href="#" style="background:#17151c;color:#fff;padding:11px 22px;border-radius:999px;font-size:14px;">Mon espace</a></nav>
+  </header>
+  <div style="background:linear-gradient(120deg,#80368D,#5c2a70);color:#fff;padding:64px;position:relative;overflow:hidden;">
+    <img src="assets/pattern.png" alt="" style="position:absolute;right:0;top:0;height:100%;width:340px;object-fit:cover;opacity:.28;">
+    <div style="position:relative;max-width:760px;">
+      <div style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#e6c7f0;">Programme</div>
+      <h1 style="font-family:'Jost',sans-serif;font-size:56px;font-weight:300;margin:12px 0 16px;">Social Média</h1>
+      <p style="font-size:17px;line-height:1.65;margin:0 0 26px;color:#f0e4f5;">Des modules indépendants conçus pour les Social Media Managers, Community Managers et professionnels de la communication qui souhaitent actualiser leurs pratiques et renforcer des compétences ciblées.</p>
+      <div style="display:flex;gap:14px;font-size:14px;flex-wrap:wrap;">
+        <span style="background:rgba(255,255,255,.14);padding:9px 16px;border-radius:999px;">9 modules disponibles</span>
+        <span style="background:rgba(255,255,255,.14);padding:9px 16px;border-radius:999px;">10 000 FCFA TTC par module</span>
+        <span style="background:rgba(255,255,255,.14);padding:9px 16px;border-radius:999px;">Accès à vie après l'achat</span>
+        <span style="background:rgba(255,255,255,.14);padding:9px 16px;border-radius:999px;">Coaching collectif de 2 heures — 25 places</span>
+      </div>
+    </div>
+  </div>
+  <div style="padding:44px 64px;">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#6d6a75;">Les modules du programme</div>
+    <h2 style="font-family:'Jost',sans-serif;font-size:32px;font-weight:300;margin:10px 0 10px;">Choisissez la compétence que vous souhaitez renforcer</h2>
+    <p style="font-size:15.5px;color:#4b4855;line-height:1.6;margin:0 0 28px;max-width:760px;">Parcourez les modules par thématique. Chacun peut être acheté et suivi indépendamment, sans ordre imposé.</p>
+    <div style="display:flex;gap:12px;margin-bottom:32px;flex-wrap:wrap;">
+      <span style="background:#80368D;color:#fff;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:700;">Tous</span>
+      <span style="border:1.5px solid #dcd7e6;color:#4b4855;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;">Fondations stratégiques</span>
+      <span style="border:1.5px solid #dcd7e6;color:#4b4855;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;">Copywriting &amp; contenu</span>
+      <span style="border:1.5px solid #dcd7e6;color:#4b4855;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;">Plateformes</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+      <div style="border:1px solid #e6e1ef;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><span style="font-size:12px;font-weight:700;color:#80368D;letter-spacing:.1em;">MODULE 01 · FONDATIONS STRATÉGIQUES</span><span style="background:#eaf7ef;color:#1fa855;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;">Disponible</span></div>
+        <div style="font-family:'Jost',sans-serif;font-size:20px;line-height:1.3;font-weight:300">Comprendre le business du client</div>
+        <div style="font-size:13.5px;color:#6d6a75;">Jérémie De Clercq · 60 min</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;"><b style="font-size:16px;">10 000 FCFA</b><a href="#" style="background:#17151c;color:#fff;padding:10px 18px;border-radius:999px;font-size:13.5px;font-weight:700;">Découvrir le module</a></div>
+      </div>
+      <div style="border:1px solid #e6e1ef;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><span style="font-size:12px;font-weight:700;color:#80368D;letter-spacing:.1em;">MODULE 05 · COPYWRITING &amp; CONTENU</span><span style="background:#eaf7ef;color:#1fa855;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;">Disponible</span></div>
+        <div style="font-family:'Jost',sans-serif;font-size:20px;line-height:1.3;font-weight:300">Accroches qui stoppent le scroll &amp; IA copywriting</div>
+        <div style="font-size:13.5px;color:#6d6a75;">Coury Othniel · 60 min</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;"><b style="font-size:16px;">10 000 FCFA</b><a href="#" style="background:#17151c;color:#fff;padding:10px 18px;border-radius:999px;font-size:13.5px;font-weight:700;">Découvrir le module</a></div>
+      </div>
+      <div style="border:1px solid #e6e1ef;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><span style="font-size:12px;font-weight:700;color:#80368D;letter-spacing:.1em;">MODULE 07 · PLATEFORMES</span><span style="background:#eaf7ef;color:#1fa855;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;">Disponible</span></div>
+        <div style="font-family:'Jost',sans-serif;font-size:20px;line-height:1.3;font-weight:300">LinkedIn : algorithme &amp; prospection</div>
+        <div style="font-size:13.5px;color:#6d6a75;">Maurice Nontondji · 60 min</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;"><b style="font-size:16px;">10 000 FCFA</b><a href="#" style="background:#17151c;color:#fff;padding:10px 18px;border-radius:999px;font-size:13.5px;font-weight:700;">Découvrir le module</a></div>
+      </div>
+    </div>
+  </div>
+  <div style="padding:0 64px 48px;">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#6d6a75;">FAQ du programme</div>
+    <h2 style="font-family:'Jost',sans-serif;font-size:26px;font-weight:300;margin:10px 0 18px;">Vos questions sur le programme Social Média</h2>
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:900px;">
+      <div style="border:1px solid #e0dbe9;border-radius:12px;padding:16px 22px;">
+        <div style="display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:15px;"><span>Dans quel ordre suivre les modules ?</span><span>−</span></div>
+        <p style="margin:10px 0 0;font-size:14.5px;line-height:1.65;color:#4b4855;">Aucun ordre n'est imposé. Vous pouvez commencer par le module qui correspond à votre besoin actuel. Les modules de la thématique « Fondations stratégiques » sont recommandés si vous souhaitez d'abord consolider vos bases.</p>
+      </div>
+      <div style="border:1px solid #e0dbe9;border-radius:12px;padding:16px 22px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:15px;"><span>Faut-il déjà travailler dans le Social Media ?</span><span>+</span></div>
+      <div style="border:1px solid #e0dbe9;border-radius:12px;padding:16px 22px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:15px;"><span>Comment participer aux coachings du programme ?</span><span>+</span></div>
+      <div style="border:1px solid #e0dbe9;border-radius:12px;padding:16px 22px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:15px;"><span>Puis-je acheter des modules dans les deux programmes ?</span><span>+</span></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 2b. PAGE PROGRAMME ENT ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">02b · PAGE PROGRAMME — /programmes/entrepreneurs (desktop 1440, identité bleue)</div>
+<div style="width:1440px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;overflow:hidden;">
+  <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 64px;">
+    <img src="assets/logo.png" alt="E-Masterclass | Big Five" style="height:36px;display:block;">
+    <nav style="display:flex;align-items:center;gap:32px;font-size:15px;font-weight:600;"><a href="#" style="color:#17151c;">Accueil</a><a href="#" style="color:#80368D;">Social Média</a><a href="#" style="color:#29358B;border-bottom:2px solid #29358B;padding-bottom:3px;">Entrepreneurs</a><a href="#" style="color:#17151c;">Formateurs</a><a href="#" style="color:#17151c;">Blog</a><a href="#" style="color:#17151c;">Contact &amp; FAQ</a><a href="#" style="background:#17151c;color:#fff;padding:11px 22px;border-radius:999px;font-size:14px;">Mon espace</a></nav>
+  </header>
+  <div style="background:linear-gradient(120deg,#29358B,#1c2560);color:#fff;padding:64px;position:relative;overflow:hidden;">
+    <img src="assets/pattern.png" alt="" style="position:absolute;right:0;top:0;height:100%;width:340px;object-fit:cover;opacity:.24;">
+    <div style="position:relative;max-width:760px;">
+      <div style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#c3c9ef;">Programme</div>
+      <h1 style="font-family:'Jost',sans-serif;font-size:56px;font-weight:300;margin:12px 0 16px;">Entrepreneurs</h1>
+      <p style="font-size:17px;line-height:1.65;margin:0 0 26px;color:#e3e6f7;">Des modules indépendants conçus pour les entrepreneurs en activité ou en lancement qui souhaitent renforcer des compétences pratiques et faire évoluer leur activité.</p>
+      <div style="display:flex;gap:14px;font-size:14px;flex-wrap:wrap;">
+        <span style="background:rgba(255,255,255,.14);padding:9px 16px;border-radius:999px;">9 modules disponibles</span>
+        <span style="background:rgba(255,255,255,.14);padding:9px 16px;border-radius:999px;">10 000 FCFA TTC par module</span>
+        <span style="background:rgba(255,255,255,.14);padding:9px 16px;border-radius:999px;">Accès à vie après l'achat</span>
+        <span style="background:rgba(255,255,255,.14);padding:9px 16px;border-radius:999px;">Coaching collectif de 2 heures — 25 places</span>
+      </div>
+    </div>
+  </div>
+  <div style="padding:44px 64px 48px;">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#6d6a75;">Les modules du programme</div>
+    <h2 style="font-family:'Jost',sans-serif;font-size:32px;font-weight:300;margin:10px 0 10px;">Choisissez la compétence que vous souhaitez renforcer</h2>
+    <p style="font-size:15.5px;color:#4b4855;line-height:1.6;margin:0 0 28px;max-width:760px;">Parcourez les modules par thématique. Chacun peut être acheté et suivi indépendamment, selon les besoins actuels de votre activité.</p>
+    <div style="display:flex;gap:12px;margin-bottom:32px;flex-wrap:wrap;">
+      <span style="background:#29358B;color:#fff;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:700;">Tous</span>
+      <span style="border:1.5px solid #dcd7e6;color:#4b4855;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;">Fondations du business</span>
+      <span style="border:1.5px solid #dcd7e6;color:#4b4855;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;">Vente &amp; acquisition</span>
+      <span style="border:1.5px solid #dcd7e6;color:#4b4855;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;">Visibilité</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+      <div style="border:1px solid #e6e1ef;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><span style="font-size:12px;font-weight:700;color:#29358B;letter-spacing:.1em;">MODULE 01 · FONDATIONS DU BUSINESS</span><span style="background:#eaf7ef;color:#1fa855;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;">Disponible</span></div>
+        <div style="font-family:'Jost',sans-serif;font-size:20px;line-height:1.3;font-weight:300">Valider son idée de business avant d'investir</div>
+        <div style="font-size:13.5px;color:#6d6a75;">Jérémie De Clercq · 60 min</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;"><b style="font-size:16px;">10 000 FCFA</b><a href="#" style="background:#17151c;color:#fff;padding:10px 18px;border-radius:999px;font-size:13.5px;font-weight:700;">Découvrir le module</a></div>
+      </div>
+      <div style="border:1px solid #e6e1ef;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><span style="font-size:12px;font-weight:700;color:#29358B;letter-spacing:.1em;">MODULE 02 · FONDATIONS DU BUSINESS</span><span style="background:#eaf7ef;color:#1fa855;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;">Disponible</span></div>
+        <div style="font-family:'Jost',sans-serif;font-size:20px;line-height:1.3;font-weight:300">Fixer le juste prix de ses produits et services</div>
+        <div style="font-size:13.5px;color:#6d6a75;">Jérémie De Clercq · 60 min</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;"><b style="font-size:16px;">10 000 FCFA</b><a href="#" style="background:#17151c;color:#fff;padding:10px 18px;border-radius:999px;font-size:13.5px;font-weight:700;">Découvrir le module</a></div>
+      </div>
+      <div style="border:1px solid #e6e1ef;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;"><span style="font-size:12px;font-weight:700;color:#29358B;letter-spacing:.1em;">MODULE 05 · VENTE &amp; ACQUISITION</span><span style="background:#eaf7ef;color:#1fa855;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;">Disponible</span></div>
+        <div style="font-family:'Jost',sans-serif;font-size:20px;line-height:1.3;font-weight:300">Vendre sans site web : WhatsApp Business de A à Z</div>
+        <div style="font-size:13.5px;color:#6d6a75;">Lyle Soboro · 60 min</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;"><b style="font-size:16px;">10 000 FCFA</b><a href="#" style="background:#17151c;color:#fff;padding:10px 18px;border-radius:999px;font-size:13.5px;font-weight:700;">Découvrir le module</a></div>
+      </div>
+    </div>
+    <div style="margin-top:40px;">
+      <div style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#6d6a75;">FAQ du programme</div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:26px;font-weight:300;margin:10px 0 18px;">Vos questions sur le programme Entrepreneurs</h2>
+      <div style="display:flex;flex-direction:column;gap:10px;max-width:900px;">
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:16px 22px;">
+          <div style="display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:15px;"><span>Faut-il avoir déjà lancé son activité ?</span><span>−</span></div>
+          <p style="margin:10px 0 0;font-size:14.5px;line-height:1.65;color:#4b4855;">Non. Certains modules s'adressent aux porteurs de projet, tandis que d'autres répondent aux besoins d'entrepreneurs déjà en activité. Le public concerné est précisé sur chaque fiche module.</p>
+        </div>
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:16px 22px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:15px;"><span>Dans quel ordre suivre les modules ?</span><span>+</span></div>
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:16px 22px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:15px;"><span>Les modules sont-ils adaptés à tous les secteurs ?</span><span>+</span></div>
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:16px 22px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:15px;"><span>Comment participer aux coachings du programme ?</span><span>+</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 3. FICHE MODULE ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">03 · FICHE MODULE — /modules/accroches-qui-stoppent-le-scroll-et-ia-copywriting (desktop 1440)</div>
+<div style="width:1440px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;overflow:hidden;">
+  <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 64px;">
+    <img src="assets/logo.png" alt="E-Masterclass | Big Five" style="height:36px;display:block;">
+    <nav style="display:flex;align-items:center;gap:32px;font-size:15px;font-weight:600;"><a href="#" style="color:#17151c;">Accueil</a><a href="#" style="color:#80368D;">Social Média</a><a href="#" style="color:#29358B;">Entrepreneurs</a><a href="#" style="color:#17151c;">Formateurs</a><a href="#" style="color:#17151c;">Blog</a><a href="#" style="color:#17151c;">Contact &amp; FAQ</a><a href="#" style="background:#17151c;color:#fff;padding:11px 22px;border-radius:999px;font-size:14px;">Mon espace</a></nav>
+  </header>
+  <div style="display:grid;grid-template-columns:1fr 400px;gap:56px;padding:48px 64px 64px;align-items:start;">
+    <div>
+      <div style="font-size:13px;color:#6d6a75;margin-bottom:18px;"><a href="#">Social Média</a> / <a href="#">Copywriting &amp; contenu</a> / <span style="color:#17151c;">Module 05</span></div>
+      <h1 style="font-family:'Jost',sans-serif;font-size:40px;font-weight:300;line-height:1.15;margin:0 0 16px;text-wrap:pretty;">Accroches qui stoppent le scroll &amp; IA copywriting</h1>
+      <p style="font-size:18px;line-height:1.6;color:#17151c;font-weight:600;margin:0 0 28px;">Apprenez à construire plus rapidement des accroches capables de retenir l'attention, avec une méthode claire et l'IA comme assistant.</p>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 16px;">Pourquoi ce module ?</h2>
+      <p style="font-size:15.5px;line-height:1.75;color:#4b4855;margin:0 0 30px;">Une publication peut être utile, bien conçue et correctement ciblée sans retenir l'attention si son ouverture manque d'impact. Ce module vous aide à structurer vos premiers mots, varier vos angles et produire plus rapidement sans déléguer votre réflexion à l'IA.</p>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 16px;">Pour qui ?</h2>
+      <div style="background:#17151c;color:#fff;border-radius:16px;padding:26px 30px;display:grid;grid-template-columns:1.4fr 1fr;gap:32px;margin-bottom:32px;">
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.12em;color:#c9a2d4;text-transform:uppercase;margin-bottom:12px;">Pour qui</div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.55;color:#e6e2ee;">
+            <span>— Vous gérez les réseaux sociaux d'une marque ou de plusieurs clients.</span>
+            <span>— Vos contenus peinent à retenir l'attention.</span>
+            <span>— Vous souhaitez produire plus rapidement sans sacrifier la qualité.</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.12em;color:#c9a2d4;text-transform:uppercase;margin-bottom:12px;">Prérequis</div>
+          <div style="font-size:14px;line-height:1.55;color:#e6e2ee;">Aucun prérequis particulier. La méthode est expliquée et appliquée progressivement pendant le module.</div>
+        </div>
+      </div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 16px;">Programme</h2>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:32px;">
+        <div style="display:flex;gap:16px;align-items:center;border:1px solid #e6e1ef;border-radius:12px;padding:15px 20px;"><span style="font-size:12px;font-weight:700;color:#80368D;">INTRO</span><span style="font-size:15px;font-weight:600;">Présentation du module et de votre formateur</span></div>
+        <div style="display:flex;gap:16px;align-items:center;border:1px solid #e6e1ef;border-radius:12px;padding:15px 20px;"><span style="font-size:12px;font-weight:700;color:#80368D;">CH. 1</span><span style="font-size:15px;font-weight:600;">Anatomie d'une accroche qui stoppe le scroll</span></div>
+        <div style="display:flex;gap:16px;align-items:center;border:1px solid #e6e1ef;border-radius:12px;padding:15px 20px;"><span style="font-size:12px;font-weight:700;color:#80368D;">CH. 2</span><span style="font-size:15px;font-weight:600;">Écrire 10 accroches en 15 minutes : la méthode</span></div>
+        <div style="display:flex;gap:16px;align-items:center;border:1px solid #e6e1ef;border-radius:12px;padding:15px 20px;"><span style="font-size:12px;font-weight:700;color:#80368D;">CH. 3</span><span style="font-size:15px;font-weight:600;">Utiliser l'IA comme assistant copywriting, pas comme remplaçant</span></div>
+      </div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 16px;">Acquis</h2>
+      <div style="background:#faf7fc;border:1px solid #ecdff2;border-radius:16px;padding:24px 28px;display:flex;flex-direction:column;gap:10px;font-size:14.5px;line-height:1.55;color:#4b4855;margin-bottom:32px;">
+        <span><b style="color:#80368D;">✓</b> reconnaître les éléments qui rendent une accroche plus efficace ;</span>
+        <span><b style="color:#80368D;">✓</b> produire plusieurs propositions rapidement ;</span>
+        <span><b style="color:#80368D;">✓</b> utiliser l'IA pour enrichir la réflexion et varier les angles.</span>
+      </div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 16px;">Livrable</h2>
+      <p style="font-size:15.5px;line-height:1.75;color:#4b4855;margin:0 0 30px;">Une bibliothèque personnelle de 30 accroches adaptées à votre secteur, accompagnée d'une routine de travail pour produire plus rapidement de nouvelles propositions avec l'aide de l'IA.</p>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 16px;">Points forts</h2>
+      <div style="border:1px solid #e6e1ef;border-radius:14px;padding:20px 24px;font-size:14.5px;line-height:1.7;color:#4b4855;margin-bottom:32px;">Une méthode issue d'une pratique quotidienne du copywriting, des exemples adaptés aux marchés d'Afrique francophone et des exercices applicables à votre propre activité.</div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6d6a75;margin-bottom:8px;">Votre formateur</div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 16px;">Coury Othniel</h2>
+      <div style="display:flex;align-items:flex-start;gap:18px;border:1px solid #e6e1ef;border-radius:14px;padding:22px;margin-bottom:32px;">
+        <div style="width:64px;height:64px;flex-shrink:0;border-radius:50%;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 8px,#eae5f2 8px,#eae5f2 16px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:9px;color:#6d6a75;">photo</div>
+        <div>
+          <div style="font-size:13.5px;color:#80368D;font-weight:700;margin-bottom:8px;">Copywriter · Formateur de la thématique Copywriting &amp; contenu</div>
+          <p style="font-size:14.5px;line-height:1.7;color:#4b4855;margin:0 0 10px;">Coury Othniel accompagne des marques dans la conception de contenus et de messages capables de retenir l'attention et de soutenir leurs objectifs de communication. Dans ce module, il partage une méthode issue de sa pratique quotidienne du copywriting.</p>
+          <div style="font-size:13.5px;color:#6d6a75;margin-bottom:12px;">3 modules disponibles dans la thématique Copywriting &amp; contenu</div>
+          <a href="#" style="font-size:13.5px;font-weight:700;">Découvrir le profil du formateur →</a>
+        </div>
+      </div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 14px;">FAQ du module</h2>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;">
+          <div style="display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Ai-je besoin d'un outil d'IA payant ?</span><span>−</span></div>
+          <p style="margin:9px 0 0;font-size:14px;line-height:1.65;color:#4b4855;">Non. Le module ne dépend pas d'un outil payant particulier. Les fonctionnalités nécessaires et les différentes options sont présentées pendant le module.</p>
+        </div>
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>La méthode peut-elle s'appliquer à tous les secteurs ?</span><span>+</span></div>
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>La session de coaching collectif est-elle comprise dans le prix ?</span><span>+</span></div>
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Puis-je revoir le module après l'avoir terminé ?</span><span>+</span></div>
+      </div>
+    </div>
+    <!-- carte achat sticky -->
+    <div style="border:1px solid #e0dbe9;border-radius:18px;padding:28px;box-shadow:0 12px 32px rgba(23,21,28,.07);position:sticky;top:24px;">
+      <div style="height:170px;border-radius:12px;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 12px,#eae5f2 12px,#eae5f2 24px);display:flex;align-items:center;justify-content:center;margin-bottom:20px;"><span style="font-family:monospace;font-size:12px;color:#6d6a75;background:#fff;padding:6px 12px;border-radius:8px;border:1px solid #dcd7e6;">visuel fiche commerciale</span></div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-family:'Jost',sans-serif;font-size:34px;font-weight:300">10 000 FCFA</span><span style="font-size:14px;color:#6d6a75;">TTC</span></div>
+      <div style="font-size:13.5px;color:#4b4855;margin-bottom:18px;">Paiement unique · Accès à vie</div>
+      <a href="#" style="display:block;text-align:center;background:#80368D;color:#fff;padding:16px;border-radius:999px;font-size:16px;font-weight:800;margin-bottom:12px;">Acheter ce module</a>
+      <div style="font-size:12.5px;color:#6d6a75;text-align:center;margin-bottom:18px;">Mobile Money · Djamo · Wave · Visa — via FeexPay</div>
+      <div style="display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:#4b4855;border-top:1px solid #eeebf3;padding-top:16px;">
+        <span>✓ Module vidéo de 60 minutes — vidéo d'intro + 3 chapitres</span>
+        <span>✓ Ressources pédagogiques du module</span>
+        <span>✓ Accès à vie depuis votre espace apprenant</span>
+        <span>✓ Coaching collectif lié à la thématique, selon le calendrier</span>
+        <span>✓ Certificat de participation</span>
+        <span>✓ Accès à la communauté WhatsApp</span>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:18px;">
+        <span style="flex:1;text-align:center;border:1.5px solid #dcd7e6;border-radius:999px;padding:10px;font-size:13px;font-weight:700;color:#4b4855;">Copier le lien</span>
+        <span style="flex:1;text-align:center;border:1.5px solid #1fa855;border-radius:999px;padding:10px;font-size:13px;font-weight:700;color:#1fa855;">Partager sur WhatsApp</span>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 3b. FICHE MODULE ENT ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">03b · FICHE MODULE ENT — /modules/fixer-le-juste-prix-de-ses-produits-et-services (desktop 1440, identité bleue)</div>
+<div style="width:1440px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;overflow:hidden;">
+  <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 64px;">
+    <img src="assets/logo.png" alt="E-Masterclass | Big Five" style="height:36px;display:block;">
+    <nav style="display:flex;align-items:center;gap:32px;font-size:15px;font-weight:600;"><a href="#" style="color:#17151c;">Accueil</a><a href="#" style="color:#80368D;">Social Média</a><a href="#" style="color:#29358B;">Entrepreneurs</a><a href="#" style="color:#17151c;">Formateurs</a><a href="#" style="color:#17151c;">Blog</a><a href="#" style="color:#17151c;">Contact &amp; FAQ</a><a href="#" style="background:#17151c;color:#fff;padding:11px 22px;border-radius:999px;font-size:14px;">Mon espace</a></nav>
+  </header>
+  <div style="display:grid;grid-template-columns:1fr 400px;gap:56px;padding:48px 64px 56px;align-items:start;">
+    <div>
+      <div style="font-size:13px;color:#6d6a75;margin-bottom:18px;"><a href="#" style="color:#29358B;">Entrepreneurs</a> / <a href="#" style="color:#29358B;">Fondations du business</a> / <span style="color:#17151c;">Module 02</span></div>
+      <h1 style="font-family:'Jost',sans-serif;font-size:40px;font-weight:300;line-height:1.15;margin:0 0 16px;text-wrap:pretty;">Fixer le juste prix de ses produits et services</h1>
+      <p style="font-size:18px;line-height:1.6;color:#17151c;font-weight:600;margin:0 0 28px;">Apprenez à fixer un prix qui couvre vos coûts, valorise votre travail et reste cohérent avec votre marché.</p>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 16px;">Pourquoi ce module ?</h2>
+      <p style="font-size:15.5px;line-height:1.75;color:#4b4855;margin:0 0 30px;">Un prix trop faible fragilise votre marge, tandis qu'un prix mal aligné avec le marché peut freiner la vente. Ce module vous aide à sortir des décisions prises uniquement au feeling pour construire et défendre un prix fondé sur des éléments concrets.</p>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 16px;">Pour qui ?</h2>
+      <div style="background:#17151c;color:#fff;border-radius:16px;padding:26px 30px;display:grid;grid-template-columns:1.4fr 1fr;gap:32px;margin-bottom:32px;">
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.12em;color:#a9b2e2;text-transform:uppercase;margin-bottom:12px;">Pour qui</div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.55;color:#e6e2ee;">
+            <span>— Vous lancez ou gérez votre activité.</span>
+            <span>— Vous ne connaissez pas précisément votre coût de revient.</span>
+            <span>— Vous diminuez vos prix dès qu'un client négocie.</span>
+            <span>— Vous souhaitez mieux défendre la valeur de votre offre.</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.12em;color:#a9b2e2;text-transform:uppercase;margin-bottom:12px;">Prérequis</div>
+          <div style="font-size:14px;line-height:1.55;color:#e6e2ee;">Aucun prérequis particulier. Prévoyez simplement les informations disponibles sur vos coûts, vos charges et vos prix actuels.</div>
+        </div>
+      </div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 16px;">Programme</h2>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;gap:16px;align-items:center;border:1px solid #e6e1ef;border-radius:12px;padding:15px 20px;"><span style="font-size:12px;font-weight:700;color:#29358B;">INTRO</span><span style="font-size:15px;font-weight:600;">Présentation du module et du formateur</span></div>
+        <div style="display:flex;gap:16px;align-items:center;border:1px solid #e6e1ef;border-radius:12px;padding:15px 20px;"><span style="font-size:12px;font-weight:700;color:#29358B;">CH. 1</span><span style="font-size:15px;font-weight:600;">Calculer son coût de revient réel, charges comprises</span></div>
+        <div style="display:flex;gap:16px;align-items:center;border:1px solid #e6e1ef;border-radius:12px;padding:15px 20px;"><span style="font-size:12px;font-weight:700;color:#29358B;">CH. 2</span><span style="font-size:15px;font-weight:600;">Comprendre les trois stratégies de prix et savoir quand les utiliser</span></div>
+        <div style="display:flex;gap:16px;align-items:center;border:1px solid #e6e1ef;border-radius:12px;padding:15px 20px;"><span style="font-size:12px;font-weight:700;color:#29358B;">CH. 3</span><span style="font-size:15px;font-weight:600;">Annoncer et défendre son prix face au client</span></div>
+      </div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 16px;margin-top:32px;">Acquis</h2>
+      <div style="background:#f0f1f8;border:1px solid #dfe2f2;border-radius:16px;padding:24px 28px;display:flex;flex-direction:column;gap:10px;font-size:14.5px;line-height:1.55;color:#4b4855;margin-bottom:32px;">
+        <span><b style="color:#29358B;">✓</b> calculer son coût de revient ;</span>
+        <span><b style="color:#29358B;">✓</b> choisir une stratégie de prix ;</span>
+        <span><b style="color:#29358B;">✓</b> présenter et défendre son prix avec davantage d'assurance.</span>
+      </div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 16px;">Livrable</h2>
+      <p style="font-size:15.5px;line-height:1.75;color:#4b4855;margin:0 0 30px;">Une grille tarifaire construite à partir des coûts réels et directement utilisable pour présenter ses prix aux clients.</p>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 16px;">Points forts</h2>
+      <div style="border:1px solid #e6e1ef;border-radius:14px;padding:20px 24px;font-size:14.5px;line-height:1.7;color:#4b4855;margin-bottom:32px;">Une méthode chiffrée, appuyée sur des cas d'activités d'Afrique francophone et applicable dès la fin du module.</div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6d6a75;margin-bottom:8px;">Votre formateur</div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 16px;">Jérémie De Clercq</h2>
+      <div style="display:flex;align-items:flex-start;gap:18px;border:1px solid #e6e1ef;border-radius:14px;padding:22px;margin-bottom:32px;">
+        <div style="width:64px;height:64px;flex-shrink:0;border-radius:50%;background:repeating-linear-gradient(45deg,#f0f1f8,#f0f1f8 8px,#e4e6f2 8px,#e4e6f2 16px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:9px;color:#6d6a75;">photo</div>
+        <div>
+          <div style="font-size:13.5px;color:#29358B;font-weight:700;margin-bottom:8px;">Stratégie business · Formateur de la thématique Fondations du business</div>
+          <p style="font-size:14.5px;line-height:1.7;color:#4b4855;margin:0 0 10px;">Jérémie De Clercq intervient sur les modules consacrés à la structuration des fondamentaux d'une activité. Dans ce module, il vous accompagne dans la construction d'un prix fondé sur vos coûts, votre offre et votre marché.</p>
+          <div style="font-size:13.5px;color:#6d6a75;margin-bottom:12px;">3 modules disponibles dans la thématique Fondations du business</div>
+          <a href="#" style="font-size:13.5px;font-weight:700;color:#29358B;">Découvrir le profil du formateur →</a>
+        </div>
+      </div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 14px;">FAQ du module</h2>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;">
+          <div style="display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Dois-je déjà avoir lancé mon activité ?</span><span>−</span></div>
+          <p style="margin:9px 0 0;font-size:14px;line-height:1.65;color:#4b4855;">Non. Le module convient également aux porteurs de projet qui souhaitent construire leurs premiers prix sur des bases plus solides.</p>
+        </div>
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Que faire si je ne connais pas encore tous mes coûts ?</span><span>+</span></div>
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>La méthode fonctionne-t-elle pour les produits et les services ?</span><span>+</span></div>
+        <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Le coaching collectif est-il compris ?</span><span>+</span></div>
+      </div>
+    </div>
+    <div style="border:1px solid #e0dbe9;border-radius:18px;padding:28px;box-shadow:0 12px 32px rgba(23,21,28,.07);position:sticky;top:24px;">
+      <div style="height:170px;border-radius:12px;background:repeating-linear-gradient(45deg,#f0f1f8,#f0f1f8 12px,#e4e6f2 12px,#e4e6f2 24px);display:flex;align-items:center;justify-content:center;margin-bottom:20px;"><span style="font-family:monospace;font-size:12px;color:#6d6a75;background:#fff;padding:6px 12px;border-radius:8px;border:1px solid #dcd7e6;">visuel fiche commerciale</span></div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-family:'Jost',sans-serif;font-size:34px;font-weight:300">10 000 FCFA</span><span style="font-size:14px;color:#6d6a75;">TTC</span></div>
+      <div style="font-size:13.5px;color:#4b4855;margin-bottom:18px;">Paiement unique · Accès à vie</div>
+      <a href="#" style="display:block;text-align:center;background:#29358B;color:#fff;padding:16px;border-radius:999px;font-size:16px;font-weight:800;margin-bottom:12px;">Acheter ce module</a>
+      <div style="font-size:12.5px;color:#6d6a75;text-align:center;margin-bottom:18px;">Mobile Money · Djamo · Wave · Visa — via FeexPay</div>
+      <div style="display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:#4b4855;border-top:1px solid #eeebf3;padding-top:16px;">
+        <span>✓ Module vidéo de 60 minutes — vidéo d'intro + 3 chapitres</span>
+        <span>✓ Ressources pédagogiques du module</span>
+        <span>✓ Accès à vie depuis votre espace apprenant</span>
+        <span>✓ Coaching collectif lié à la thématique, selon le calendrier</span>
+        <span>✓ Certificat de participation</span>
+        <span>✓ Accès à la communauté WhatsApp</span>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:18px;">
+        <span style="flex:1;text-align:center;border:1.5px solid #dcd7e6;border-radius:999px;padding:10px;font-size:13px;font-weight:700;color:#4b4855;">Copier le lien</span>
+        <span style="flex:1;text-align:center;border:1.5px solid #1fa855;border-radius:999px;padding:10px;font-size:13px;font-weight:700;color:#1fa855;">Partager sur WhatsApp</span>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 3c. ÉTATS BOUTON D'ACHAT ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">03c · PLANCHE — LES 5 ÉTATS DU BLOC D'ACHAT (carte sticky fiche module)</div>
+<div style="display:flex;gap:20px;align-items:stretch;width:max-content;">
+  <div style="width:270px;background:#fff;border:1px solid #dcd7e6;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:12px;">
+    <span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#1fa855;">1 · DISPONIBLE — VISITEUR</span>
+    <div style="display:flex;align-items:baseline;gap:6px;"><b style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;">10 000 FCFA</b><span style="font-size:12px;color:#6d6a75;">TTC</span></div>
+    <a href="#" style="display:block;text-align:center;background:#80368D;color:#fff;padding:13px;border-radius:999px;font-size:14px;font-weight:800;">Acheter ce module</a>
+    <span style="font-size:12px;color:#6d6a75;">Redirige vers la création de compte puis le récapitulatif.</span>
+  </div>
+  <div style="width:270px;background:#fff;border:1px solid #dcd7e6;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:12px;">
+    <span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#80368D;">2 · DISPONIBLE — CONNECTÉ</span>
+    <div style="display:flex;align-items:baseline;gap:6px;"><b style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;">10 000 FCFA</b><span style="font-size:12px;color:#6d6a75;">TTC</span></div>
+    <a href="#" style="display:block;text-align:center;background:#80368D;color:#fff;padding:13px;border-radius:999px;font-size:14px;font-weight:800;">Acheter ce module</a>
+    <span style="font-size:12px;color:#6d6a75;">Va directement au récapitulatif, sans re-création de compte.</span>
+  </div>
+  <div style="width:270px;background:#fff;border:1px solid #dcd7e6;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:12px;">
+    <span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#b8860b;">3 · BIENTÔT DISPONIBLE</span>
+    <span style="align-self:flex-start;background:#fff5e0;color:#b8860b;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px;">Bientôt disponible</span>
+    <span style="display:block;text-align:center;background:#eeebf3;color:#8a8695;padding:13px;border-radius:999px;font-size:14px;font-weight:800;">Prochainement</span>
+    <span style="font-size:12px;color:#6d6a75;">Fiche publiée, vente non ouverte. Bouton inactif, prix masquable.</span>
+  </div>
+  <div style="width:270px;background:#fff;border:1px solid #dcd7e6;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:12px;">
+    <span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#6d6a75;">4 · FICHE À VENIR</span>
+    <span style="align-self:flex-start;background:#f4ecf7;color:#80368D;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px;">À venir</span>
+    <a href="#" style="display:block;text-align:center;border:1.5px solid #80368D;color:#80368D;padding:12px;border-radius:999px;font-size:14px;font-weight:800;">Être prévenu du lancement</a>
+    <span style="font-size:12px;color:#6d6a75;">Collecte email/WhatsApp pour notification au lancement.</span>
+  </div>
+  <div style="width:270px;background:#fff;border:1px solid #dcd7e6;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:12px;">
+    <span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#1fa855;">5 · DÉJÀ ACHETÉ</span>
+    <span style="align-self:flex-start;background:#e7f7ee;color:#1fa855;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px;">✓ Dans votre espace</span>
+    <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:13px;border-radius:999px;font-size:14px;font-weight:800;">Reprendre le module</a>
+    <span style="font-size:12px;color:#6d6a75;">Le prix disparaît, le CTA ouvre le dashboard sur ce module.</span>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 4. TUNNEL D'ACHAT ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">04 · TUNNEL D'ACHAT — 1. Compte · 2. Récapitulatif · 3. Paiement (FeexPay) → confirmation</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;">
+  <!-- étape 1 -->
+  <div style="width:440px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:36px;">
+    <img src="assets/logo.png" alt="" style="height:36px;display:block;margin:0 auto 22px;">
+    <div style="display:flex;gap:8px;justify-content:center;font-size:11.5px;font-weight:700;letter-spacing:.06em;"><span style="color:#80368D;">1. COMPTE</span><span style="color:#cfc8dd;">·</span><span style="color:#a9a4b5;">2. RÉCAPITULATIF</span><span style="color:#cfc8dd;">·</span><span style="color:#a9a4b5;">3. PAIEMENT</span></div>
+    <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;text-align:center;margin:10px 0 6px;">Créez votre compte</h2>
+    <p style="font-size:13.5px;color:#6d6a75;text-align:center;line-height:1.5;margin:0 0 24px;">Votre compte vous permettra de finaliser votre achat, d'accéder à vos modules et de suivre vos prochaines sessions.</p>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Nom<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="Votre nom"></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Prénom<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="Votre prénom"></label>
+      </div>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Adresse email<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="Votre identifiant de connexion"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Numéro WhatsApp<div style="display:flex;gap:8px;"><span style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 12px;font-size:14px;color:#4b4855;">+225</span><input style="flex:1;border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="07 00 00 00 00"></div><span style="font-size:12px;font-weight:400;color:#6d6a75;">Pour vos rappels de session et l'accès à la Communauté.</span></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Pays *<select style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;color:#4b4855;"><option>Côte d'Ivoire</option><option>Bénin</option><option>Burkina Faso</option><option>Sénégal</option><option>Autre pays…</option></select><span style="font-size:12px;font-weight:400;color:#6d6a75;">Renseigné une seule fois, il n'est plus demandé ensuite.</span></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Mot de passe<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="8 caractères minimum"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Confirmez le mot de passe<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="Identique au mot de passe"></label>
+      <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:15px;border-radius:999px;font-size:15px;font-weight:800;">Créer mon compte et continuer</a>
+      <div style="font-size:13px;color:#6d6a75;text-align:center;">Déjà inscrit ? <a href="#" style="font-weight:700;">Connectez-vous</a></div>
+    </div>
+  </div>
+  <!-- étape 2 -->
+  <div style="width:480px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:36px;">
+    <div style="display:flex;gap:8px;justify-content:center;font-size:11.5px;font-weight:700;letter-spacing:.06em;"><span style="color:#a9a4b5;">1. COMPTE</span><span style="color:#cfc8dd;">·</span><span style="color:#80368D;">2. RÉCAPITULATIF</span><span style="color:#cfc8dd;">·</span><span style="color:#a9a4b5;">3. PAIEMENT</span></div>
+    <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;text-align:center;margin:10px 0 22px;">Vérifiez votre achat</h2>
+    <div style="border:1px solid #e6e1ef;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px;font-size:14px;margin-bottom:18px;">
+      <div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:#6d6a75;">Module</span><b style="text-align:right;">Accroches qui stoppent le scroll &amp; IA copywriting</b></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:#6d6a75;">Programme</span><b>Social Média</b></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:#6d6a75;">Thématique</span><b>Copywriting &amp; contenu</b></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:#6d6a75;">Formateur</span><b>Coury Othniel</b></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:#6d6a75;">Durée</span><b>60 minutes</b></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:#6d6a75;">Durée d'accès</span><b style="color:#1fa855;">À vie</b></div>
+      <div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:#6d6a75;">Coaching</span><b style="text-align:right;">Collectif, lié à la thématique</b></div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid #eeebf3;padding-top:10px;"><span style="color:#6d6a75;">Total TTC</span><b style="font-size:18px;">10 000 FCFA</b></div>
+    </div>
+    <label style="display:flex;gap:12px;align-items:flex-start;background:#faf7fc;border:1.5px solid #80368D;border-radius:12px;padding:16px;font-size:13px;line-height:1.55;color:#4b4855;margin-bottom:16px;">
+      <input type="checkbox" style="margin-top:2px;width:18px;height:18px;accent-color:#80368D;">
+      <span>Je reconnais acheter un <b>contenu numérique à accès immédiat</b> et accepte que la vente soit <b>ferme et définitive</b> après confirmation, conformément aux <a href="#">CGV</a>.</span>
+    </label>
+    <a href="#" style="display:block;text-align:center;background:#80368D;color:#fff;padding:16px;border-radius:999px;font-size:15px;font-weight:800;margin-bottom:8px;">Confirmer et passer au paiement</a>
+    <div style="text-align:center;font-size:12.5px;color:#6d6a75;margin-bottom:10px;">Vous serez redirigé vers FeexPay pour régler votre achat.</div>
+    <div style="text-align:center;font-size:13px;"><a href="#" style="color:#6d6a75;">← Revenir en arrière ou annuler</a></div>
+  </div>
+  <!-- étape 3 + confirmation -->
+  <div style="display:flex;flex-direction:column;gap:24px;">
+    <div style="width:420px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:36px;">
+      <div style="display:flex;gap:8px;justify-content:center;font-size:11.5px;font-weight:700;letter-spacing:.06em;"><span style="color:#a9a4b5;">1. COMPTE</span><span style="color:#cfc8dd;">·</span><span style="color:#a9a4b5;">2. RÉCAPITULATIF</span><span style="color:#cfc8dd;">·</span><span style="color:#80368D;">3. PAIEMENT</span></div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:22px;font-weight:300;text-align:center;margin:10px 0 20px;">Choisissez votre moyen de paiement</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+        <div style="border:2px solid #80368D;border-radius:12px;padding:16px;text-align:center;font-weight:700;font-size:14px;">Mobile Money</div>
+        <div style="border:1.5px solid #dcd7e6;border-radius:12px;padding:16px;text-align:center;font-weight:700;font-size:14px;color:#4b4855;">Wave</div>
+        <div style="border:1.5px solid #dcd7e6;border-radius:12px;padding:16px;text-align:center;font-weight:700;font-size:14px;color:#4b4855;">Djamo</div>
+        <div style="border:1.5px solid #dcd7e6;border-radius:12px;padding:16px;text-align:center;font-weight:700;font-size:14px;color:#4b4855;">Visa</div>
+      </div>
+      <div style="background:#fff8ec;border:1px solid #f0dcae;border-radius:12px;padding:14px;font-size:13px;line-height:1.55;color:#7a5c17;">⚠ Ne fermez pas cette page avant la confirmation du paiement. Les paiements Mobile Money peuvent nécessiter une validation sur votre téléphone.</div>
+    </div>
+    <div style="width:420px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:36px;text-align:center;">
+      <div style="width:64px;height:64px;border-radius:50%;background:#e7f7ee;color:#1fa855;font-size:28px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">✓</div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:23px;font-weight:300;margin:0 0 8px;">Paiement confirmé</h2>
+      <p style="font-size:14px;color:#4b4855;line-height:1.6;margin:0 0 20px;">Votre module est maintenant accessible à vie depuis votre espace apprenant.</p>
+      <a href="#" style="display:block;background:#17151c;color:#fff;padding:15px;border-radius:999px;font-size:15px;font-weight:800;">Accéder à mon module</a>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 4b. AUTH ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">04b · AUTHENTIFICATION — connexion (+ erreur) · mot de passe oublié · réinitialisation</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;">
+  <div style="width:420px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:36px;">
+    <img src="assets/logo.png" alt="" style="height:34px;display:block;margin:0 auto 22px;">
+    <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;text-align:center;margin:0 0 6px;">Connexion</h2>
+    <p style="font-size:13.5px;color:#6d6a75;text-align:center;line-height:1.5;margin:0 0 22px;">Accédez à vos modules, vos sessions de coaching et vos certificats de participation.</p>
+    <div style="background:#fdedee;border:1px solid #f2c4c9;border-radius:12px;padding:13px 16px;font-size:13px;color:#a3242f;line-height:1.5;margin-bottom:16px;">Email ou mot de passe incorrect. Il vous reste <b>3 tentatives</b> avant verrouillage temporaire du compte (15 min).</div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Adresse email<input style="border:1.5px solid #e0aab2;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" value="aya.kone@gmail.com"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Mot de passe<input type="password" style="border:1.5px solid #e0aab2;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" value="········"></label>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;"><label style="display:flex;gap:8px;align-items:center;color:#4b4855;"><input type="checkbox" style="width:16px;height:16px;accent-color:#80368D;">Rester connecté</label><a href="#" style="font-weight:700;">Mot de passe oublié ?</a></div>
+      <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:15px;border-radius:999px;font-size:15px;font-weight:800;">Me connecter</a>
+      <div style="font-size:13px;color:#6d6a75;text-align:center;">Pas encore de compte ? <a href="#" style="font-weight:700;">Créez-en un</a></div>
+    </div>
+  </div>
+  <div style="width:420px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:36px;">
+    <img src="assets/logo.png" alt="" style="height:34px;display:block;margin:0 auto 22px;">
+    <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;text-align:center;margin:0 0 6px;">Mot de passe oublié</h2>
+    <p style="font-size:13.5px;color:#6d6a75;text-align:center;margin:0 0 22px;">Recevez un lien de réinitialisation valable 30 minutes.</p>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Adresse email<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="Celle de votre compte"></label>
+      <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:15px;border-radius:999px;font-size:15px;font-weight:800;">Envoyer le lien</a>
+      <div style="background:#e7f7ee;border:1px solid #bfe6cf;border-radius:12px;padding:13px 16px;font-size:13px;color:#166e3d;line-height:1.5;">✓ Si un compte existe pour cette adresse, le lien vient d'être envoyé. Pensez à vérifier vos spams.</div>
+      <div style="font-size:13px;color:#6d6a75;text-align:center;"><a href="#" style="font-weight:700;">← Retour à la connexion</a></div>
+    </div>
+  </div>
+  <div style="width:420px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:36px;">
+    <img src="assets/logo.png" alt="" style="height:34px;display:block;margin:0 auto 22px;">
+    <h2 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;text-align:center;margin:0 0 6px;">Nouveau mot de passe</h2>
+    <p style="font-size:13.5px;color:#6d6a75;text-align:center;margin:0 0 22px;">Choisissez un mot de passe de 8 caractères minimum.</p>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Nouveau mot de passe<input type="password" style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="8 caractères minimum"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Confirmez le mot de passe<input type="password" style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="Identique au précédent"></label>
+      <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:15px;border-radius:999px;font-size:15px;font-weight:800;">Enregistrer et me connecter</a>
+      <div style="background:#e7f7ee;border:1px solid #bfe6cf;border-radius:12px;padding:13px 16px;font-size:13px;color:#166e3d;line-height:1.5;">✓ Mot de passe mis à jour. Vous êtes maintenant connecté sur cet appareil.</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 4c. TUNNEL MOBILE PWA ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">04c · TUNNEL D'ACHAT — VERSION MOBILE / PWA (390) + planche des échecs de paiement</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;">
+  <div style="width:390px;background:#fff;border:1px solid #dcd7e6;border-radius:28px;overflow:hidden;">
+    <header style="display:flex;align-items:center;justify-content:center;padding:14px 18px;border-bottom:1px solid #eeebf3;"><img src="assets/logo.png" alt="" style="height:34px;display:block;"></header>
+    <div style="padding:24px 20px 28px;">
+      <div style="display:flex;gap:8px;justify-content:center;font-size:10.5px;font-weight:700;letter-spacing:.06em;"><span style="color:#a9a4b5;">1. COMPTE</span><span style="color:#cfc8dd;">·</span><span style="color:#80368D;">2. RÉCAPITULATIF</span><span style="color:#cfc8dd;">·</span><span style="color:#a9a4b5;">3. PAIEMENT</span></div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300;text-align:center;margin:10px 0 18px;">Vérifiez votre achat</h2>
+      <div style="border:1px solid #e6e1ef;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:9px;font-size:13.5px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;gap:12px;"><span style="color:#6d6a75;">Module</span><b style="text-align:right;">Accroches qui stoppent le scroll &amp; IA copywriting</b></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:#6d6a75;">Durée d'accès</span><b style="color:#1fa855;">À vie</b></div>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid #eeebf3;padding-top:9px;"><span style="color:#6d6a75;">Total TTC</span><b style="font-size:16px;">10 000 FCFA</b></div>
+      </div>
+      <label style="display:flex;gap:10px;align-items:flex-start;background:#faf7fc;border:1.5px solid #80368D;border-radius:12px;padding:13px;font-size:12px;line-height:1.5;color:#4b4855;margin-bottom:14px;"><input type="checkbox" style="margin-top:2px;width:17px;height:17px;accent-color:#80368D;"><span>J'accepte que la vente soit <b>ferme et définitive</b> après confirmation (<a href="#">CGV</a>) — contenu numérique à accès immédiat.</span></label>
+      <a href="#" style="display:block;text-align:center;background:#80368D;color:#fff;padding:16px;border-radius:999px;font-size:15px;font-weight:800;">Confirmer et passer au paiement</a>
+    </div>
+  </div>
+  <div style="width:390px;background:#fff;border:1px solid #dcd7e6;border-radius:28px;overflow:hidden;">
+    <header style="display:flex;align-items:center;justify-content:center;padding:14px 18px;border-bottom:1px solid #eeebf3;"><img src="assets/logo.png" alt="" style="height:34px;display:block;"></header>
+    <div style="padding:24px 20px 28px;">
+      <div style="display:flex;gap:8px;justify-content:center;font-size:10.5px;font-weight:700;letter-spacing:.06em;"><span style="color:#a9a4b5;">1. COMPTE</span><span style="color:#cfc8dd;">·</span><span style="color:#a9a4b5;">2. RÉCAPITULATIF</span><span style="color:#cfc8dd;">·</span><span style="color:#80368D;">3. PAIEMENT</span></div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300;text-align:center;margin:10px 0 18px;">Moyen de paiement</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div style="border:2px solid #80368D;border-radius:12px;padding:16px 10px;text-align:center;font-weight:700;font-size:13.5px;min-height:20px;">Mobile Money</div>
+        <div style="border:1.5px solid #dcd7e6;border-radius:12px;padding:16px 10px;text-align:center;font-weight:700;font-size:13.5px;color:#4b4855;min-height:20px;">Wave</div>
+        <div style="border:1.5px solid #dcd7e6;border-radius:12px;padding:16px 10px;text-align:center;font-weight:700;font-size:13.5px;color:#4b4855;min-height:20px;">Djamo</div>
+        <div style="border:1.5px solid #dcd7e6;border-radius:12px;padding:16px 10px;text-align:center;font-weight:700;font-size:13.5px;color:#4b4855;min-height:20px;">Visa</div>
+      </div>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;margin-bottom:14px;">Numéro Mobile Money<div style="display:flex;gap:8px;"><span style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 12px;font-size:14px;color:#4b4855;">+225</span><input style="flex:1;min-width:0;border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="07 00 00 00 00"></div></label>
+      <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:16px;border-radius:999px;font-size:15px;font-weight:800;margin-bottom:12px;">Payer 10 000 FCFA</a>
+      <div style="background:#fff8ec;border:1px solid #f0dcae;border-radius:12px;padding:12px;font-size:12px;line-height:1.5;color:#7a5c17;">⚠ Validez la demande de paiement sur votre téléphone puis revenez ici. Ne fermez pas la page.</div>
+    </div>
+  </div>
+  <div style="width:390px;background:#fff;border:1px solid #dcd7e6;border-radius:28px;overflow:hidden;">
+    <div style="padding:28px 20px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.12em;color:#a3242f;text-align:center;margin-bottom:14px;">PLANCHE — ÉCHECS DE PAIEMENT (6 CAS)</div>
+      <div style="background:#fdedee;border:1px solid #f2c4c9;border-radius:14px;padding:18px;text-align:center;margin-bottom:14px;">
+        <div style="width:48px;height:48px;border-radius:50%;background:#f6d3d7;color:#a3242f;font-size:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">✕</div>
+        <b style="font-size:15px;">Paiement non abouti</b>
+        <p style="font-size:12.5px;color:#7a3b42;line-height:1.55;margin:8px 0 12px;">Solde insuffisant sur votre compte Mobile Money. Aucune somme n'a été débitée. Référence : FP-2608-14352.</p>
+        <a href="#" style="display:block;background:#a3242f;color:#fff;padding:13px;border-radius:999px;font-size:13.5px;font-weight:800;">Réessayer le paiement</a>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px;font-size:12.5px;color:#4b4855;">
+        <span>• <b>Solde insuffisant</b> — message ci-dessus</span>
+        <span>• <b>Validation expirée</b> — « Vous n'avez pas validé à temps »</span>
+        <span>• <b>Refus opérateur</b> — « Rejeté par votre opérateur »</span>
+        <span>• <b>Carte refusée</b> — « Vérifiez vos informations Visa »</span>
+        <span>• <b>Interruption réseau</b> — « Vérification en cours… » puis email</span>
+        <span>• <b>Double paiement détecté</b> — « Achat déjà confirmé » + accès</span>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 5. FORMATEURS + DEVENIR FORMATEUR ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">05 · PAGE FORMATEURS — /formateurs · 06 · DEVENIR FORMATEUR — /devenir-formateur</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;">
+  <div style="width:880px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;overflow:hidden;">
+    <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 40px;">
+      <img src="assets/logo.png" alt="" style="height:38px;display:block;">
+      <nav style="display:flex;gap:22px;font-size:14px;font-weight:600;"><a href="#" style="color:#17151c;">Accueil</a><a href="#" style="color:#80368D;">Social Média</a><a href="#" style="color:#29358B;">Entrepreneurs</a><a href="#" style="color:#17151c;border-bottom:2px solid #17151c;padding-bottom:3px;">Formateurs</a><a href="#" style="color:#17151c;">Blog</a><a href="#" style="background:#17151c;color:#fff;padding:9px 18px;border-radius:999px;font-size:13px;">Mon espace</a></nav>
+    </header>
+    <div style="padding:40px;">
+      <div style="font-size:12.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#6d6a75;">Les experts E-Masterclass Big Five</div>
+      <h1 style="font-family:'Jost',sans-serif;font-size:36px;font-weight:300;margin:10px 0 10px;">Les formateurs</h1>
+      <p style="font-size:15px;color:#4b4855;line-height:1.6;margin:0 0 20px;max-width:640px;">Découvrez les professionnels qui conçoivent les modules et partagent des méthodes issues de leur pratique. Ils prolongent également l'apprentissage lors des sessions de coaching collectif. Cliquez sur un formateur pour déplier son profil et ses modules sur la page.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;">
+        <div style="background:#faf9fc;border:1px solid #e6e1ef;border-radius:12px;padding:16px 18px;"><b style="font-size:14px;">Coaching collectif</b><div style="font-size:13px;color:#4b4855;line-height:1.55;margin-top:5px;">Compris avec les modules concernés.</div></div>
+        <div style="background:#faf9fc;border:1px solid #e6e1ef;border-radius:12px;padding:16px 18px;"><b style="font-size:14px;">Coaching privé</b><div style="font-size:13px;color:#4b4855;line-height:1.55;margin-top:5px;">Réservé séparément, 50 000 FCFA par heure.</div></div>
+      </div>
+      <div style="border:1px solid #e6e1ef;border-radius:16px;padding:26px;display:grid;grid-template-columns:96px 1fr 220px;gap:22px;align-items:start;">
+        <div style="width:96px;height:96px;border-radius:50%;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 9px,#eae5f2 9px,#eae5f2 18px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:10px;color:#6d6a75;">photo</div>
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:4px;">
+            <h3 style="font-family:'Jost',sans-serif;font-size:23px;font-weight:300;margin:0;">Coury Othniel</h3>
+            <span style="border:1.5px solid #dcd7e6;color:#4b4855;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700;white-space:nowrap;">Replier ▴</span>
+          </div>
+          <div style="font-size:13.5px;color:#80368D;font-weight:700;margin-bottom:10px;">Copywriting &amp; contenu · 3 modules</div>
+          <p style="font-size:14px;line-height:1.65;color:#4b4855;margin:0 0 14px;">Copywriter spécialisé dans les contenus qui retiennent l'attention sur les réseaux sociaux en Afrique francophone. Il anime les modules de rédaction persuasive des deux programmes.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12.5px;">
+            <a href="#" style="border:1px solid #e0d3e8;border-radius:999px;padding:6px 12px;">Formules de rédaction persuasive</a>
+            <a href="#" style="border:1px solid #e0d3e8;border-radius:999px;padding:6px 12px;">Accroches &amp; IA copywriting</a>
+            <a href="#" style="border:1px solid #e0d3e8;border-radius:999px;padding:6px 12px;">Créer un buzz</a>
+            <a href="#" style="border:1px solid #d3d6e8;border-radius:999px;padding:6px 12px;color:#29358B;">Contenus qui attirent des clients</a>
+          </div>
+        </div>
+        <div style="background:#faf9fc;border:1px solid #eeebf3;border-radius:12px;padding:18px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:.1em;color:#6d6a75;text-transform:uppercase;margin-bottom:8px;">Coaching privé</div>
+          <div style="font-family:'Jost',sans-serif;font-size:19px;font-weight:300">50 000 FCFA par heure</div>
+          <div style="font-size:12.5px;color:#6d6a75;margin:6px 0 14px;line-height:1.5;">Un accompagnement individuel, réservé et payé séparément des sessions collectives incluses avec les modules.</div>
+          <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:11px;border-radius:999px;font-size:13px;font-weight:700;">Réserver un coaching privé</a>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;">
+        <div style="border:1px solid #e6e1ef;border-radius:14px;padding:20px;display:flex;gap:14px;align-items:flex-start;">
+          <div style="width:56px;height:56px;border-radius:50%;flex-shrink:0;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 7px,#eae5f2 7px,#eae5f2 14px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:9px;color:#6d6a75;">photo</div>
+          <div style="flex:1;">
+            <b style="font-family:'Jost',sans-serif;font-size:17px;font-weight:300;">Jérémie De Clercq</b>
+            <div style="font-size:12.5px;color:#29358B;font-weight:700;margin:2px 0 6px;">Stratégie business &amp; entrepreneuriat</div>
+            <div style="font-size:12.5px;color:#6d6a75;">4 modules · Coaching privé : 50 000 FCFA par heure</div>
+          </div>
+          <span style="border:1.5px solid #dcd7e6;color:#4b4855;border-radius:999px;padding:8px 14px;font-size:12px;font-weight:700;white-space:nowrap;align-self:center;">Voir le profil ▾</span>
+        </div>
+        <div style="border:1px solid #e6e1ef;border-radius:14px;padding:20px;display:flex;gap:14px;align-items:flex-start;">
+          <div style="width:56px;height:56px;border-radius:50%;flex-shrink:0;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 7px,#eae5f2 7px,#eae5f2 14px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:9px;color:#6d6a75;">photo</div>
+          <div style="flex:1;">
+            <b style="font-family:'Jost',sans-serif;font-size:17px;font-weight:300;">Kevine Waffo</b>
+            <div style="font-size:12.5px;color:#80368D;font-weight:700;margin:2px 0 6px;">Stratégie social media &amp; ciblage</div>
+            <div style="font-size:12.5px;color:#6d6a75;">2 modules · Coaching privé : 50 000 FCFA par heure</div>
+          </div>
+          <span style="border:1.5px solid #dcd7e6;color:#4b4855;border-radius:999px;padding:8px 14px;font-size:12px;font-weight:700;white-space:nowrap;align-self:center;">Voir le profil ▾</span>
+        </div>
+        <div style="border:1px solid #e6e1ef;border-radius:14px;padding:20px;display:flex;gap:14px;align-items:flex-start;">
+          <div style="width:56px;height:56px;border-radius:50%;flex-shrink:0;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 7px,#eae5f2 7px,#eae5f2 14px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:9px;color:#6d6a75;">photo</div>
+          <div style="flex:1;">
+            <b style="font-family:'Jost',sans-serif;font-size:17px;font-weight:300;">Emmanuel Cocou</b>
+            <div style="font-size:12.5px;color:#29358B;font-weight:700;margin:2px 0 6px;">Offres &amp; positionnement</div>
+            <div style="font-size:12.5px;color:#6d6a75;">2 modules · Coaching privé : 50 000 FCFA par heure</div>
+          </div>
+          <span style="border:1.5px solid #dcd7e6;color:#4b4855;border-radius:999px;padding:8px 14px;font-size:12px;font-weight:700;white-space:nowrap;align-self:center;">Voir le profil ▾</span>
+        </div>
+        <div style="border:1px solid #e6e1ef;border-radius:14px;padding:20px;display:flex;gap:14px;align-items:flex-start;">
+          <div style="width:56px;height:56px;border-radius:50%;flex-shrink:0;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 7px,#eae5f2 7px,#eae5f2 14px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:9px;color:#6d6a75;">photo</div>
+          <div style="flex:1;">
+            <b style="font-family:'Jost',sans-serif;font-size:17px;font-weight:300;">Maurice Nontondji</b>
+            <div style="font-size:12.5px;color:#80368D;font-weight:700;margin:2px 0 6px;">LinkedIn : algorithme &amp; prospection</div>
+            <div style="font-size:12.5px;color:#6d6a75;">2 modules · Coaching privé : 50 000 FCFA par heure</div>
+          </div>
+          <span style="border:1.5px solid #dcd7e6;color:#4b4855;border-radius:999px;padding:8px 14px;font-size:12px;font-weight:700;white-space:nowrap;align-self:center;">Voir le profil ▾</span>
+        </div>
+        <div style="border:1px solid #e6e1ef;border-radius:14px;padding:20px;display:flex;gap:14px;align-items:flex-start;">
+          <div style="width:56px;height:56px;border-radius:50%;flex-shrink:0;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 7px,#eae5f2 7px,#eae5f2 14px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:9px;color:#6d6a75;">photo</div>
+          <div style="flex:1;">
+            <b style="font-family:'Jost',sans-serif;font-size:17px;font-weight:300;">Lyle Soboro</b>
+            <div style="font-size:12.5px;color:#29358B;font-weight:700;margin:2px 0 6px;">Vente, TikTok &amp; acquisition client</div>
+            <div style="font-size:12.5px;color:#6d6a75;">4 modules · Coaching privé : 50 000 FCFA par heure</div>
+          </div>
+          <span style="border:1.5px solid #dcd7e6;color:#4b4855;border-radius:999px;padding:8px 14px;font-size:12px;font-weight:700;white-space:nowrap;align-self:center;">Voir le profil ▾</span>
+        </div>
+        <div style="border:1px solid #e6e1ef;border-radius:14px;padding:20px;display:flex;gap:14px;align-items:flex-start;">
+          <div style="width:56px;height:56px;border-radius:50%;flex-shrink:0;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 7px,#eae5f2 7px,#eae5f2 14px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:9px;color:#6d6a75;">photo</div>
+          <div style="flex:1;">
+            <b style="font-family:'Jost',sans-serif;font-size:17px;font-weight:300;">Nouroudine Akinocho</b>
+            <div style="font-size:12.5px;color:#29358B;font-weight:700;margin:2px 0 6px;">Visibilité &amp; croissance en ligne</div>
+            <div style="font-size:12.5px;color:#6d6a75;">2 modules · Coaching privé : 50 000 FCFA par heure</div>
+          </div>
+          <span style="border:1.5px solid #dcd7e6;color:#4b4855;border-radius:999px;padding:8px 14px;font-size:12px;font-weight:700;white-space:nowrap;align-self:center;">Voir le profil ▾</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="width:500px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:40px;">
+    <img src="assets/pattern.png" alt="" style="width:100%;height:72px;object-fit:cover;border-radius:12px;margin-bottom:22px;">
+    <div style="font-size:12.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#6d6a75;">Rejoindre E-Masterclass Big Five</div>
+    <h1 style="font-family:'Jost',sans-serif;font-size:30px;font-weight:300;margin:10px 0 8px;">Devenir formateur E-Masterclass Big Five</h1>
+    <p style="font-size:14.5px;color:#4b4855;line-height:1.6;margin:0 0 12px;">Vous maîtrisez une compétence utile aux professionnels du Social Media ou aux entrepreneurs ? Proposez un module pratique et partagez votre expérience avec nos apprenants.</p>
+    <div style="background:#faf9fc;border:1px solid #e6e1ef;border-radius:12px;padding:14px 16px;font-size:13px;color:#4b4855;line-height:1.55;margin-bottom:22px;">Notre équipe étudiera votre proposition et vous contactera principalement par WhatsApp pour poursuivre les échanges.</div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Numéro WhatsApp *<input style="border:1.5px solid #80368D;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="+225 07 00 00 00 00 — notre canal prioritaire"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Nom et prénom *<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="Votre identité complète"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Programme concerné *<select style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;color:#6d6a75;"><option>Social Média · Entrepreneurs · Les deux</option></select></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Domaine d'expertise *<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="Ex. copywriting, publicité en ligne, gestion financière…"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Sujet du module proposé *<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="Le titre du module que vous souhaitez animer"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Nombre d'années d'expérience *<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="Ex. 7 ans"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Message de motivation *<textarea style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;min-height:84px;" placeholder="Ce que vous voulez enseigner, et à qui."></textarea></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Email *<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="Pour le suivi administratif"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Portfolio *<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="Lien vers vos travaux, site ou dossier de références"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">LinkedIn *<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="Lien vers votre profil LinkedIn"></label>
+      <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:15px;border-radius:999px;font-size:15px;font-weight:800;">Envoyer ma candidature</a>
+      <div style="background:#e7f7ee;border:1px solid #bfe6cf;border-radius:12px;padding:13px 16px;font-size:13px;color:#166e3d;line-height:1.55;">✓ Votre candidature a bien été transmise. Notre équipe l'étudiera et vous contactera par WhatsApp si votre proposition correspond aux besoins du programme.</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 7. MOBILE ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">07 · RESPONSIVE MOBILE — accueil &amp; fiche module (390px)</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;">
+  <div style="width:390px;background:#fff;border:1px solid #dcd7e6;border-radius:28px;overflow:hidden;position:relative;">
+    <header style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #eeebf3;">
+      <img src="assets/logo.png" alt="" style="height:38px;display:block;">
+      <div style="display:flex;flex-direction:column;gap:4px;padding:8px;"><span style="width:22px;height:2.5px;background:#17151c;border-radius:2px;"></span><span style="width:22px;height:2.5px;background:#17151c;border-radius:2px;"></span><span style="width:14px;height:2.5px;background:#17151c;border-radius:2px;"></span></div>
+    </header>
+    <div style="margin:20px 20px 0;border-radius:14px;height:180px;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 12px,#eae5f2 12px,#eae5f2 24px);display:flex;align-items:center;justify-content:center;"><span style="font-family:monospace;font-size:11px;color:#6d6a75;background:#fff;padding:5px 10px;border-radius:6px;border:1px solid #dcd7e6;">slide 1 / 2 — carrousel</span></div>
+    <div style="display:flex;gap:6px;justify-content:center;margin-top:10px;"><span style="width:20px;height:6px;border-radius:999px;background:#80368D;"></span><span style="width:6px;height:6px;border-radius:50%;background:#cfc8dd;"></span></div>
+    <div style="padding:20px 20px 24px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#80368D;margin-bottom:12px;">Programme Social Média</div>
+      <h1 style="font-family:'Jost',sans-serif;font-size:32px;line-height:1.1;font-weight:500;margin:0 0 12px;text-wrap:pretty;">Montez en compétences.<br><span style="color:#80368D;">Restez dans la course.</span></h1>
+      <p style="font-size:14.5px;line-height:1.6;color:#4b4855;margin:0 0 18px;">Choisissez parmi 9 modules de 60 minutes pour renforcer des compétences précises en stratégie, contenu et plateformes Social Media. Accès à vie et sessions de coaching collectif.</p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <a href="#" style="display:block;text-align:center;background:#80368D;color:#fff;padding:15px;border-radius:999px;font-size:15px;font-weight:700;min-height:18px;">Découvrir le programme Social Média</a>
+        <a href="#" style="display:block;text-align:center;background:#29358B;color:#fff;padding:15px;border-radius:999px;font-size:15px;font-weight:700;min-height:18px;">Découvrir le programme Entrepreneurs</a>
+      </div>
+    </div>
+    <div style="padding:0 84px 28px 20px;display:flex;gap:14px;font-size:12px;color:#4b4855;justify-content:flex-start;">
+      <span><b style="color:#17151c;">18 modules</b></span><span><b style="color:#17151c;">10 000 FCFA TTC</b></span><span><b style="color:#17151c;">Accès à vie</b></span>
+    </div>
+    <div style="position:absolute;right:14px;bottom:16px;width:52px;height:52px;border-radius:50%;background:#1fa855;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:11px;box-shadow:0 6px 18px rgba(31,168,85,.4);">WA</div>
+  </div>
+  <div style="width:390px;background:#fff;border:1px solid #dcd7e6;border-radius:28px;overflow:hidden;">
+    <header style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #eeebf3;">
+      <img src="assets/logo.png" alt="" style="height:38px;display:block;">
+      <div style="display:flex;flex-direction:column;gap:4px;padding:8px;"><span style="width:22px;height:2.5px;background:#17151c;border-radius:2px;"></span><span style="width:22px;height:2.5px;background:#17151c;border-radius:2px;"></span><span style="width:14px;height:2.5px;background:#17151c;border-radius:2px;"></span></div>
+    </header>
+    <div style="padding:22px 20px 110px;">
+      <div style="font-size:11.5px;color:#6d6a75;margin-bottom:10px;">Social Média / Copywriting &amp; contenu / Module 05</div>
+      <h1 style="font-family:'Jost',sans-serif;font-size:24px;line-height:1.2;font-weight:300;margin:0 0 10px;">Accroches qui stoppent le scroll &amp; IA copywriting</h1>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"><div style="width:36px;height:36px;border-radius:50%;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 6px,#eae5f2 6px,#eae5f2 12px);"></div><div style="font-size:13px;"><b>Coury Othniel</b> · <span style="color:#6d6a75;">Copywriter</span></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:12px;align-items:center;border:1px solid #e6e1ef;border-radius:10px;padding:13px 14px;font-size:13.5px;"><b style="color:#80368D;font-size:11px;">INTRO</b><span style="font-weight:600;">Présentation du module</span></div>
+        <div style="display:flex;gap:12px;align-items:center;border:1px solid #e6e1ef;border-radius:10px;padding:13px 14px;font-size:13.5px;"><b style="color:#80368D;font-size:11px;">CH. 1</b><span style="font-weight:600;">Anatomie d'une accroche</span></div>
+        <div style="display:flex;gap:12px;align-items:center;border:1px solid #e6e1ef;border-radius:10px;padding:13px 14px;font-size:13.5px;"><b style="color:#80368D;font-size:11px;">CH. 2</b><span style="font-weight:600;">10 accroches en 15 minutes</span></div>
+        <div style="display:flex;gap:12px;align-items:center;border:1px solid #e6e1ef;border-radius:10px;padding:13px 14px;font-size:13.5px;"><b style="color:#80368D;font-size:11px;">CH. 3</b><span style="font-weight:600;">L'IA comme assistant copywriting</span></div>
+      </div>
+    </div>
+    <div style="position:sticky;bottom:0;background:#fff;border-top:1px solid #eeebf3;padding:14px 20px;display:flex;align-items:center;gap:14px;">
+      <div><div style="font-family:'Jost',sans-serif;font-size:19px;font-weight:300">10 000 FCFA</div><div style="font-size:11.5px;color:#6d6a75;">TTC · Accès à vie</div></div>
+      <a href="#" style="flex:1;text-align:center;background:#80368D;color:#fff;padding:15px;border-radius:999px;font-size:15px;font-weight:800;">Acheter ce module</a>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 8. CONTACT & FAQ ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">08 · CONTACT &amp; FAQ — /contact (desktop 1440) + états du formulaire</div>
+<div style="width:1440px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;overflow:hidden;">
+  <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 64px;">
+    <img src="assets/logo.png" alt="E-Masterclass | Big Five" style="height:36px;display:block;">
+    <nav style="display:flex;align-items:center;gap:32px;font-size:15px;font-weight:600;"><a href="#" style="color:#17151c;">Accueil</a><a href="#" style="color:#80368D;">Social Média</a><a href="#" style="color:#29358B;">Entrepreneurs</a><a href="#" style="color:#17151c;">Formateurs</a><a href="#" style="color:#17151c;">Blog</a><a href="#" style="color:#17151c;border-bottom:2px solid #17151c;padding-bottom:3px;">Contact &amp; FAQ</a><a href="#" style="background:#17151c;color:#fff;padding:11px 22px;border-radius:999px;font-size:14px;">Mon espace</a></nav>
+  </header>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:56px;padding:56px 64px;align-items:start;">
+    <div>
+      <div style="font-size:12.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#6d6a75;">Contact et assistance</div>
+      <h1 style="font-family:'Jost',sans-serif;font-size:38px;font-weight:300;margin:10px 0 10px;">Une question ? Parlons-en.</h1>
+      <p style="font-size:15.5px;color:#4b4855;line-height:1.65;margin:0 0 24px;">Consultez les réponses aux questions fréquentes ou contactez notre équipe. Pour une question rapide, privilégiez WhatsApp. Pour une demande détaillée ou administrative, utilisez le formulaire.</p>
+      <a href="#" style="display:inline-flex;align-items:center;gap:10px;background:#1fa855;color:#fff;padding:14px 26px;border-radius:999px;font-size:15px;font-weight:700;margin-bottom:32px;">Discuter sur WhatsApp</a>
+      <h2 style="font-family:'Jost',sans-serif;font-size:23px;font-weight:300;margin:0 0 16px;">FAQ générale</h2>
+      <div style="display:flex;flex-direction:column;gap:22px;">
+        <div>
+          <div style="font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#80368D;margin-bottom:10px;">Achat et paiement</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;">
+              <div style="display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Puis-je acheter un seul module ?</span><span>−</span></div>
+              <p style="margin:9px 0 0;font-size:14px;line-height:1.6;color:#4b4855;">Oui. Chaque module est indépendant et peut être acheté séparément.</p>
+            </div>
+            <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Combien coûte un module ?</span><span>+</span></div>
+            <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Quels moyens de paiement sont acceptés ?</span><span>+</span></div>
+            <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Quand mon module devient-il accessible ?</span><span>+</span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#80368D;margin-bottom:10px;">Accès aux modules</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Combien de temps puis-je accéder à un module acheté ?</span><span>+</span></div>
+            <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Puis-je suivre les modules depuis mon téléphone ?</span><span>+</span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#80368D;margin-bottom:10px;">Coaching collectif</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Comment participer à une session ?</span><span>+</span></div>
+            <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Comment suis-je informé d'une modification ou d'une annulation ?</span><span>+</span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#80368D;margin-bottom:10px;">Certificat et assistance</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Quel document est délivré après le module ?</span><span>+</span></div>
+            <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Que faire si une vidéo ne se charge pas ?</span><span>+</span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#80368D;margin-bottom:10px;">Achat définitif</div>
+          <div style="border:1px solid #e0dbe9;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:14.5px;"><span>Puis-je demander le remboursement d'un module ?</span><span>+</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="border:1px solid #e0dbe9;border-radius:18px;padding:32px;">
+      <h2 style="font-family:'Jost',sans-serif;font-size:23px;font-weight:300;margin:0 0 18px;">Envoyez-nous un message</h2>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Nom et prénom *<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="Votre identité"></label>
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Email *<input style="border:1.5px solid #c9505b;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" value="aya.kone@gmail"><span style="font-size:12px;font-weight:600;color:#a3242f;">Adresse email incomplète — vérifiez le format.</span></label>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Numéro WhatsApp (facultatif)<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="+225 07 00 00 00 00"></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Sujet *<select style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;color:#4b4855;"><option>Paiement</option><option>Accès à un module</option><option>Session de coaching</option><option>Certificat de participation</option><option>Problème technique</option><option>Autre demande</option></select></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Référence de paiement (facultatif)<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;" placeholder="Ex. FP-2608-14352"></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Message *<textarea style="border:1.5px solid #dcd7e6;border-radius:10px;padding:13px 14px;font-size:14px;font-family:inherit;min-height:110px;" placeholder="Décrivez votre demande."></textarea></label>
+        <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:15px;border-radius:999px;font-size:15px;font-weight:800;">Envoyer mon message</a>
+        <div style="background:#e7f7ee;border:1px solid #bfe6cf;border-radius:12px;padding:13px 16px;font-size:13px;color:#166e3d;line-height:1.5;">✓ Message envoyé. Vous recevrez une réponse par email sous 24 h ouvrées — un accusé vient de vous être adressé.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 9. PAGE LÉGALE ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">09 · GABARIT PAGE LÉGALE — ×5 : mentions légales · CGU · CGV · confidentialité · cookies</div>
+<div style="width:1100px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;overflow:hidden;">
+  <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 48px;">
+    <img src="assets/logo.png" alt="" style="height:34px;display:block;">
+    <nav style="display:flex;gap:24px;font-size:14px;font-weight:600;"><a href="#" style="color:#17151c;">Accueil</a><a href="#" style="color:#80368D;">Social Média</a><a href="#" style="color:#29358B;">Entrepreneurs</a><a href="#" style="background:#17151c;color:#fff;padding:9px 18px;border-radius:999px;font-size:13px;">Mon espace</a></nav>
+  </header>
+  <div style="display:grid;grid-template-columns:250px 1fr;gap:48px;padding:44px 48px 56px;align-items:start;">
+    <nav style="border:1px solid #eeebf3;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px;font-size:13.5px;position:sticky;top:24px;">
+      <b style="font-size:12px;letter-spacing:.1em;color:#6d6a75;text-transform:uppercase;">Documents légaux</b>
+      <a href="#" style="color:#17151c;font-weight:700;">Conditions générales de vente</a>
+      <a href="#">Mentions légales</a>
+      <a href="#">Conditions générales d'utilisation</a>
+      <a href="#">Politique de confidentialité</a>
+      <a href="#">Politique de cookies</a>
+    </nav>
+    <div>
+      <div style="font-size:12.5px;color:#6d6a75;margin-bottom:8px;">Dernière mise à jour : 1er août 2026</div>
+      <h1 style="font-family:'Jost',sans-serif;font-size:32px;font-weight:300;margin:0 0 20px;">Conditions générales de vente</h1>
+      <h2 style="font-family:'Jost',sans-serif;font-size:19px;font-weight:300;margin:0 0 10px;">Article 1 — Objet</h2>
+      <p style="font-size:14.5px;line-height:1.75;color:#4b4855;margin:0 0 20px;">Les présentes conditions régissent la vente des modules de formation en ligne E-Masterclass Big Five édités par BigFiveAbidjan SARL (RCCM CI-ABJ-2017-B-27600), au prix unitaire de 10 000 FCFA TTC, payables via FeexPay.</p>
+      <h2 style="font-family:'Jost',sans-serif;font-size:19px;font-weight:300;margin:0 0 10px;">Article 2 — Vente ferme et définitive</h2>
+      <p style="font-size:14.5px;line-height:1.75;color:#4b4855;margin:0 0 20px;">S'agissant de contenus numériques à accès immédiat, toute vente confirmée est ferme et définitive. L'acheteur le reconnaît expressément en cochant la case dédiée au récapitulatif de commande, avant paiement.</p>
+      <div style="border:1px dashed #cfc8dd;border-radius:12px;padding:16px 20px;font-size:13px;color:#6d6a75;line-height:1.6;">Corps du document — textes juridiques à fournir. Même gabarit pour les 5 pages : sommaire à gauche, articles titrés, date de mise à jour, droit ivoirien.</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 10. COOKIES ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">10 · COOKIES — bandeau de consentement + fenêtre de personnalisation</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;">
+  <div style="width:760px;background:#17151c;color:#fff;border-radius:16px;padding:24px 28px;box-shadow:0 16px 40px rgba(23,21,28,.3);">
+    <b style="font-size:15px;">Nous utilisons des cookies</b>
+    <p style="font-size:13.5px;line-height:1.6;color:#c9c4d3;margin:8px 0 16px;">Des cookies essentiels font fonctionner le site (connexion, panier). Avec votre accord, des cookies de mesure d'audience nous aident à améliorer les programmes. Détails dans la <a href="#" style="color:#cfa6de;">politique de cookies</a>.</p>
+    <div style="display:flex;gap:12px;">
+      <a href="#" style="background:#fff;color:#17151c;padding:12px 22px;border-radius:999px;font-size:14px;font-weight:800;">Tout accepter</a>
+      <a href="#" style="border:1.5px solid #4b4855;color:#fff;padding:12px 22px;border-radius:999px;font-size:14px;font-weight:700;">Refuser les non essentiels</a>
+      <a href="#" style="color:#c9c4d3;padding:12px 10px;font-size:14px;font-weight:700;">Personnaliser</a>
+    </div>
+  </div>
+  <div style="width:480px;background:#fff;border:1px solid #dcd7e6;border-radius:16px;padding:28px;box-shadow:0 16px 40px rgba(23,21,28,.12);">
+    <h3 style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300;margin:0 0 16px;">Personnaliser les cookies</h3>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid #eeebf3;border-radius:12px;padding:14px 16px;">
+        <div><b style="font-size:14px;">Essentiels</b><div style="font-size:12.5px;color:#6d6a75;">Connexion, sécurité, paiement — toujours actifs.</div></div>
+        <span style="width:40px;height:22px;border-radius:999px;background:#c9c4d3;position:relative;flex-shrink:0;"><span style="position:absolute;right:2px;top:2px;width:18px;height:18px;border-radius:50%;background:#fff;"></span></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid #eeebf3;border-radius:12px;padding:14px 16px;">
+        <div><b style="font-size:14px;">Mesure d'audience</b><div style="font-size:12.5px;color:#6d6a75;">Pages vues, parcours — statistiques anonymisées.</div></div>
+        <span style="width:40px;height:22px;border-radius:999px;background:#1fa855;position:relative;flex-shrink:0;"><span style="position:absolute;right:2px;top:2px;width:18px;height:18px;border-radius:50%;background:#fff;"></span></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid #eeebf3;border-radius:12px;padding:14px 16px;">
+        <div><b style="font-size:14px;">Marketing</b><div style="font-size:12.5px;color:#6d6a75;">Pixels publicitaires (Meta, TikTok) pour nos campagnes.</div></div>
+        <span style="width:40px;height:22px;border-radius:999px;background:#c9c4d3;position:relative;flex-shrink:0;"><span style="position:absolute;left:2px;top:2px;width:18px;height:18px;border-radius:50%;background:#fff;"></span></span>
+      </div>
+    </div>
+    <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:14px;border-radius:999px;font-size:14px;font-weight:800;">Enregistrer mes choix</a>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 11. TABLETTE ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">11 · TABLETTE (768) — accueil &amp; fiche module, les 2 pages complexes du vitrine</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;">
+  <div style="width:768px;background:#fff;border:1px solid #dcd7e6;border-radius:16px;overflow:hidden;">
+    <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 32px;">
+      <img src="assets/logo.png" alt="" style="height:38px;display:block;">
+      <div style="display:flex;align-items:center;gap:18px;"><a href="#" style="background:#17151c;color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:700;">Mon espace</a><div style="display:flex;flex-direction:column;gap:4px;padding:8px;"><span style="width:22px;height:2.5px;background:#17151c;border-radius:2px;"></span><span style="width:22px;height:2.5px;background:#17151c;border-radius:2px;"></span><span style="width:14px;height:2.5px;background:#17151c;border-radius:2px;"></span></div></div>
+    </header>
+    <div style="padding:40px 32px 32px;">
+      <div style="font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#80368D;margin-bottom:14px;">Programme Social Média</div>
+      <h1 style="font-family:'Jost',sans-serif;font-size:40px;line-height:1.08;font-weight:500;margin:0 0 14px;text-wrap:pretty;">Montez en compétences.<br><span style="color:#80368D;">Restez dans la course.</span></h1>
+      <p style="font-size:15.5px;line-height:1.6;color:#4b4855;margin:0 0 22px;max-width:560px;">Choisissez parmi 9 modules de 60 minutes pour renforcer des compétences précises en stratégie, contenu et plateformes Social Media. Accès à vie et sessions de coaching collectif.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="#" style="background:#80368D;color:#fff;padding:14px 22px;border-radius:999px;font-size:14.5px;font-weight:700;">Découvrir le programme Social Média</a>
+        <a href="#" style="background:#29358B;color:#fff;padding:14px 22px;border-radius:999px;font-size:14.5px;font-weight:700;">Découvrir le programme Entrepreneurs</a>
+      </div>
+    </div>
+    <div style="padding:0 32px 36px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="background:#faf9fc;border:1px solid #e6e1ef;border-top:4px solid #80368D;border-radius:14px;padding:22px;">
+        <h3 style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300;margin:0 0 6px;color:#80368D;">Social Média</h3>
+        <p style="margin:0 0 12px;font-size:13.5px;line-height:1.55;color:#4b4855;">9 modules · 3 thématiques · sessions de coaching collectif.</p>
+        <a href="#" style="font-size:13.5px;font-weight:700;">Découvrir le programme →</a>
+      </div>
+      <div style="background:#faf9fc;border:1px solid #e6e1ef;border-top:4px solid #29358B;border-radius:14px;padding:22px;">
+        <h3 style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300;margin:0 0 6px;color:#29358B;">Entrepreneurs</h3>
+        <p style="margin:0 0 12px;font-size:13.5px;line-height:1.55;color:#4b4855;">9 modules · 3 thématiques · sessions de coaching collectif.</p>
+        <a href="#" style="font-size:13.5px;font-weight:700;color:#29358B;">Découvrir le programme →</a>
+      </div>
+    </div>
+  </div>
+  <div style="width:768px;background:#fff;border:1px solid #dcd7e6;border-radius:16px;overflow:hidden;">
+    <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 32px;">
+      <img src="assets/logo.png" alt="" style="height:38px;display:block;">
+      <div style="display:flex;flex-direction:column;gap:4px;padding:8px;"><span style="width:22px;height:2.5px;background:#17151c;border-radius:2px;"></span><span style="width:22px;height:2.5px;background:#17151c;border-radius:2px;"></span><span style="width:14px;height:2.5px;background:#17151c;border-radius:2px;"></span></div>
+    </header>
+    <div style="padding:32px;">
+      <div style="font-size:12.5px;color:#6d6a75;margin-bottom:12px;"><a href="#">Social Média</a> / <a href="#">Copywriting &amp; contenu</a> / <span style="color:#17151c;">Module 05</span></div>
+      <h1 style="font-family:'Jost',sans-serif;font-size:30px;font-weight:300;line-height:1.18;margin:0 0 12px;text-wrap:pretty;">Accroches qui stoppent le scroll &amp; IA copywriting</h1>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;"><div style="width:40px;height:40px;border-radius:50%;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 6px,#eae5f2 6px,#eae5f2 12px);"></div><div style="font-size:13.5px;"><b>Coury Othniel</b> · <span style="color:#6d6a75;">Copywriter</span></div></div>
+      <div style="display:grid;grid-template-columns:1fr 260px;gap:24px;align-items:start;">
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div style="display:flex;gap:12px;align-items:center;border:1px solid #e6e1ef;border-radius:11px;padding:14px 16px;font-size:14px;"><b style="color:#80368D;font-size:11px;">INTRO</b><span style="font-weight:600;">Présentation du module</span></div>
+          <div style="display:flex;gap:12px;align-items:center;border:1px solid #e6e1ef;border-radius:11px;padding:14px 16px;font-size:14px;"><b style="color:#80368D;font-size:11px;">CH. 1</b><span style="font-weight:600;">Anatomie d'une accroche</span></div>
+          <div style="display:flex;gap:12px;align-items:center;border:1px solid #e6e1ef;border-radius:11px;padding:14px 16px;font-size:14px;"><b style="color:#80368D;font-size:11px;">CH. 2</b><span style="font-weight:600;">10 accroches en 15 minutes</span></div>
+          <div style="display:flex;gap:12px;align-items:center;border:1px solid #e6e1ef;border-radius:11px;padding:14px 16px;font-size:14px;"><b style="color:#80368D;font-size:11px;">CH. 3</b><span style="font-weight:600;">L'IA comme assistant copywriting</span></div>
+        </div>
+        <div style="border:1px solid #e0dbe9;border-radius:14px;padding:20px;">
+          <div style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300">10 000 FCFA</div>
+          <div style="font-size:12.5px;color:#6d6a75;margin:4px 0 14px;">TTC · Accès à vie</div>
+          <a href="#" style="display:block;text-align:center;background:#80368D;color:#fff;padding:13px;border-radius:999px;font-size:14px;font-weight:800;">Acheter ce module</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+<!-- ===================== 12. BLOG — LISTE ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">12 · BLOG — /blog (desktop 1440) · nouveau gabarit</div>
+<div style="width:1440px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;overflow:hidden;">
+  <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 64px;">
+    <img src="assets/logo.png" alt="E-Masterclass Big Five" style="height:36px;display:block;">
+    <nav style="display:flex;align-items:center;gap:32px;font-size:15px;font-weight:600;"><a href="#" style="color:#17151c;">Accueil</a><a href="#" style="color:#80368D;">Social Média</a><a href="#" style="color:#29358B;">Entrepreneurs</a><a href="#" style="color:#17151c;">Formateurs</a><a href="#" style="color:#17151c;border-bottom:2px solid #17151c;padding-bottom:3px;">Blog</a><a href="#" style="color:#17151c;">Contact &amp; FAQ</a><a href="#" style="background:#17151c;color:#fff;padding:11px 22px;border-radius:999px;font-size:14px;">Mon espace</a></nav>
+  </header>
+  <div style="padding:48px 64px 32px;">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#6d6a75;">Ressources et conseils</div>
+    <h1 style="font-family:'Jost',sans-serif;font-size:40px;font-weight:300;margin:10px 0 12px;">Le blog E-Masterclass Big Five</h1>
+    <p style="font-size:16px;line-height:1.6;color:#4b4855;margin:0 0 26px;max-width:760px;">Des conseils, méthodes et analyses pour aider les professionnels du Social Media et les entrepreneurs à actualiser leurs pratiques.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <span style="background:#17151c;color:#fff;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:700;">Tous les articles</span>
+      <span style="border:1.5px solid #dcd7e6;color:#4b4855;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;">Social Média</span>
+      <span style="border:1.5px solid #dcd7e6;color:#4b4855;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;">Entrepreneuriat</span>
+      <span style="border:1.5px solid #dcd7e6;color:#4b4855;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;">Actualités E-Masterclass Big Five</span>
+    </div>
+  </div>
+  <div style="padding:0 64px 40px;">
+    <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:32px;border:1px solid #e6e1ef;border-radius:18px;overflow:hidden;">
+      <div style="background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 14px,#eae5f2 14px,#eae5f2 28px);min-height:320px;display:flex;align-items:center;justify-content:center;"><span style="font-family:monospace;font-size:12px;color:#6d6a75;background:#fff;padding:7px 13px;border-radius:8px;border:1px solid #dcd7e6;">image de l'article à la une</span></div>
+      <div style="padding:36px 36px 36px 4px;display:flex;flex-direction:column;justify-content:center;">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;"><span style="background:#f4ecf7;color:#80368D;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px;">Social Média</span><span style="font-size:12.5px;color:#6d6a75;">À la une</span></div>
+        <h2 style="font-family:'Jost',sans-serif;font-size:30px;font-weight:300;line-height:1.2;margin:0 0 12px;text-wrap:pretty;">Cinq erreurs qui font chuter la portée de vos publications</h2>
+        <p style="font-size:15px;line-height:1.65;color:#4b4855;margin:0 0 18px;">Publier régulièrement ne suffit plus. Les cinq réflexes qui pénalisent le plus la visibilité des marques, et comment les corriger dès votre prochaine publication.</p>
+        <div style="font-size:13px;color:#6d6a75;margin-bottom:20px;">Coury Othniel · 12 août 2026 · 6 min de lecture</div>
+        <a href="#" style="align-self:flex-start;background:#17151c;color:#fff;padding:13px 24px;border-radius:999px;font-size:14.5px;font-weight:700;">Lire l'article</a>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:26px;">
+      <div style="border:1px solid #e6e1ef;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="height:170px;background:repeating-linear-gradient(45deg,#f0f1f8,#f0f1f8 12px,#e4e6f2 12px,#e4e6f2 24px);display:flex;align-items:center;justify-content:center;"><span style="font-family:monospace;font-size:11px;color:#6d6a75;background:#fff;padding:5px 10px;border-radius:6px;border:1px solid #dcd7e6;">image de l'article</span></div>
+        <div style="padding:22px;display:flex;flex-direction:column;gap:10px;flex:1;">
+          <span style="align-self:flex-start;background:#eef0f9;color:#29358B;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px;">Entrepreneuriat</span>
+          <div style="font-family:'Jost',sans-serif;font-size:20px;line-height:1.3;font-weight:300">Fixer ses prix quand on débute : par où commencer</div>
+          <p style="font-size:13.5px;line-height:1.6;color:#4b4855;margin:0;">Trois repères simples pour construire un premier tarif défendable, même sans comptabilité détaillée.</p>
+          <div style="font-size:12.5px;color:#6d6a75;margin-top:auto;">Jérémie De Clercq · 5 août 2026 · 5 min</div>
+          <a href="#" style="font-size:13.5px;font-weight:700;color:#29358B;">Lire l'article →</a>
+        </div>
+      </div>
+      <div style="border:1px solid #e6e1ef;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="height:170px;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 12px,#eae5f2 12px,#eae5f2 24px);display:flex;align-items:center;justify-content:center;"><span style="font-family:monospace;font-size:11px;color:#6d6a75;background:#fff;padding:5px 10px;border-radius:6px;border:1px solid #dcd7e6;">image de l'article</span></div>
+        <div style="padding:22px;display:flex;flex-direction:column;gap:10px;flex:1;">
+          <span style="align-self:flex-start;background:#f4ecf7;color:#80368D;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px;">Social Média</span>
+          <div style="font-family:'Jost',sans-serif;font-size:20px;line-height:1.3;font-weight:300">Écrire une accroche en trois étapes</div>
+          <p style="font-size:13.5px;line-height:1.6;color:#4b4855;margin:0;">La structure que les rédacteurs réutilisent chaque semaine, expliquée sur un exemple complet.</p>
+          <div style="font-size:12.5px;color:#6d6a75;margin-top:auto;">Coury Othniel · 29 juillet 2026 · 4 min</div>
+          <a href="#" style="font-size:13.5px;font-weight:700;">Lire l'article →</a>
+        </div>
+      </div>
+      <div style="border:1px solid #e6e1ef;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="height:170px;background:repeating-linear-gradient(45deg,#f6f3fa,#f6f3fa 12px,#ece7f4 12px,#ece7f4 24px);display:flex;align-items:center;justify-content:center;"><span style="font-family:monospace;font-size:11px;color:#6d6a75;background:#fff;padding:5px 10px;border-radius:6px;border:1px solid #dcd7e6;">image de l'article</span></div>
+        <div style="padding:22px;display:flex;flex-direction:column;gap:10px;flex:1;">
+          <span style="align-self:flex-start;background:#f1eff5;color:#4b4855;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px;">Actualités E-Masterclass Big Five</span>
+          <div style="font-family:'Jost',sans-serif;font-size:20px;line-height:1.3;font-weight:300">Les nouveaux modules disponibles à la rentrée</div>
+          <p style="font-size:13.5px;line-height:1.6;color:#4b4855;margin:0;">Ce qui arrive dans les deux programmes, thématique par thématique, et à quelles dates.</p>
+          <div style="font-size:12.5px;color:#6d6a75;margin-top:auto;">L'équipe Big Five · 22 juillet 2026 · 3 min</div>
+          <a href="#" style="font-size:13.5px;font-weight:700;">Lire l'article →</a>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:30px;font-size:14px;font-weight:700;">
+      <span style="border:1.5px solid #dcd7e6;border-radius:10px;padding:9px 14px;color:#a9a4b5;">←</span>
+      <span style="background:#17151c;color:#fff;border-radius:10px;padding:9px 15px;">1</span>
+      <span style="border:1.5px solid #dcd7e6;border-radius:10px;padding:9px 15px;color:#4b4855;">2</span>
+      <span style="border:1.5px solid #dcd7e6;border-radius:10px;padding:9px 15px;color:#4b4855;">3</span>
+      <span style="border:1.5px solid #dcd7e6;border-radius:10px;padding:9px 14px;color:#4b4855;">→</span>
+    </div>
+  </div>
+  <div style="background:#17151c;color:#fff;padding:44px 64px;display:flex;align-items:center;justify-content:space-between;gap:32px;">
+    <div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:28px;font-weight:300;margin:0 0 8px;color:#fff;">Envie d'approfondir cette compétence ?</h2>
+      <p style="font-size:15px;color:#b9b4c4;margin:0;line-height:1.6;">Chaque module se choisit à l'unité, selon votre besoin du moment.</p>
+    </div>
+    <a href="#" style="background:#fff;color:#17151c;padding:15px 28px;border-radius:999px;font-size:15px;font-weight:700;white-space:nowrap;">Découvrir les programmes E-Masterclass Big Five</a>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 13. BLOG — ARTICLE ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">13 · ARTICLE DE BLOG — /blog/[slug] (desktop 1440) · nouveau gabarit</div>
+<div style="width:1440px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;overflow:hidden;">
+  <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 64px;">
+    <img src="assets/logo.png" alt="E-Masterclass Big Five" style="height:36px;display:block;">
+    <nav style="display:flex;align-items:center;gap:32px;font-size:15px;font-weight:600;"><a href="#" style="color:#17151c;">Accueil</a><a href="#" style="color:#80368D;">Social Média</a><a href="#" style="color:#29358B;">Entrepreneurs</a><a href="#" style="color:#17151c;">Formateurs</a><a href="#" style="color:#17151c;border-bottom:2px solid #17151c;padding-bottom:3px;">Blog</a><a href="#" style="color:#17151c;">Contact &amp; FAQ</a><a href="#" style="background:#17151c;color:#fff;padding:11px 22px;border-radius:999px;font-size:14px;">Mon espace</a></nav>
+  </header>
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:56px;padding:44px 64px 56px;align-items:start;">
+    <div>
+      <div style="font-size:13px;color:#6d6a75;margin-bottom:16px;"><a href="#">Blog</a> / <a href="#">Social Média</a> / <span style="color:#17151c;">Cinq erreurs qui font chuter la portée</span></div>
+      <span style="display:inline-block;background:#f4ecf7;color:#80368D;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px;margin-bottom:14px;">Social Média</span>
+      <h1 style="font-family:'Jost',sans-serif;font-size:40px;font-weight:300;line-height:1.15;margin:0 0 14px;text-wrap:pretty;">Cinq erreurs qui font chuter la portée de vos publications</h1>
+      <p style="font-size:18px;line-height:1.6;color:#17151c;font-weight:600;margin:0 0 18px;">Publier régulièrement ne suffit plus. Voici les cinq réflexes qui pénalisent le plus la visibilité des marques, et comment les corriger dès votre prochaine publication.</p>
+      <div style="display:flex;align-items:center;gap:12px;border-top:1px solid #eeebf3;border-bottom:1px solid #eeebf3;padding:14px 0;margin-bottom:26px;">
+        <div style="width:42px;height:42px;border-radius:50%;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 6px,#eae5f2 6px,#eae5f2 12px);"></div>
+        <div style="font-size:13.5px;"><b>Coury Othniel</b><div style="color:#6d6a75;">12 août 2026 · 6 min de lecture</div></div>
+      </div>
+      <div style="height:340px;border-radius:16px;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 14px,#eae5f2 14px,#eae5f2 28px);display:flex;align-items:center;justify-content:center;margin-bottom:30px;"><span style="font-family:monospace;font-size:12px;color:#6d6a75;background:#fff;padding:7px 13px;border-radius:8px;border:1px solid #dcd7e6;">image principale de l'article</span></div>
+      <h2 style="font-family:'Jost',sans-serif;font-size:26px;font-weight:300;margin:0 0 14px;">1. Publier sans ouverture claire</h2>
+      <p style="font-size:15.5px;line-height:1.8;color:#4b4855;margin:0 0 24px;">Les premiers mots déterminent si la publication est lue ou dépassée. Une ouverture vague oblige le lecteur à fournir un effort de compréhension qu'il ne fournira pas dans un fil d'actualité.</p>
+      <h3 style="font-family:'Jost',sans-serif;font-size:20px;font-weight:300;margin:0 0 10px;">Ce qu'il faut vérifier avant de publier</h3>
+      <p style="font-size:15.5px;line-height:1.8;color:#4b4855;margin:0 0 24px;">Relisez votre première phrase seule, sans le reste du texte. Si elle ne dit ni pour qui ni pourquoi, elle doit être réécrite.</p>
+      <h2 style="font-family:'Jost',sans-serif;font-size:26px;font-weight:300;margin:0 0 14px;">2. Adapter le même contenu à toutes les plateformes</h2>
+      <p style="font-size:15.5px;line-height:1.8;color:#4b4855;margin:0 0 24px;">Un texte pensé pour LinkedIn ne fonctionne pas tel quel sur Instagram. Le format, le rythme et la longueur doivent suivre les usages de chaque plateforme.</p>
+      <div style="border:1px solid #e6e1ef;border-radius:16px;padding:24px;margin-bottom:28px;">
+        <div style="font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6d6a75;margin-bottom:14px;">Modules liés à cet article</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <a href="#" style="border:1px solid #e6e1ef;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px;color:#17151c;">
+            <span style="font-size:11.5px;font-weight:700;color:#80368D;letter-spacing:.1em;">MODULE 05</span>
+            <span style="font-family:'Jost',sans-serif;font-size:17px;font-weight:300;">Accroches qui stoppent le scroll &amp; IA copywriting</span>
+            <span style="font-size:12.5px;color:#6d6a75;">Coury Othniel · 10 000 FCFA TTC</span>
+          </a>
+          <a href="#" style="border:1px solid #e6e1ef;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px;color:#17151c;">
+            <span style="font-size:11.5px;font-weight:700;color:#80368D;letter-spacing:.1em;">MODULE 07</span>
+            <span style="font-family:'Jost',sans-serif;font-size:17px;font-weight:300;">LinkedIn : algorithme &amp; prospection</span>
+            <span style="font-size:12.5px;color:#6d6a75;">Maurice Nontondji · 10 000 FCFA TTC</span>
+          </a>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:13px;font-weight:700;color:#4b4855;">Partager :</span>
+        <span style="border:1.5px solid #1fa855;color:#1fa855;border-radius:999px;padding:9px 18px;font-size:13px;font-weight:700;">WhatsApp</span>
+        <span style="border:1.5px solid #dcd7e6;color:#4b4855;border-radius:999px;padding:9px 18px;font-size:13px;font-weight:700;">Facebook</span>
+        <span style="border:1.5px solid #dcd7e6;color:#4b4855;border-radius:999px;padding:9px 18px;font-size:13px;font-weight:700;">LinkedIn</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:18px;position:sticky;top:24px;">
+      <div style="border:1px solid #e0dbe9;border-radius:16px;padding:22px;">
+        <div style="font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6d6a75;margin-bottom:14px;">Articles associés</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <a href="#" style="display:flex;gap:12px;align-items:flex-start;color:#17151c;">
+            <span style="width:64px;height:64px;flex-shrink:0;border-radius:10px;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 8px,#eae5f2 8px,#eae5f2 16px);"></span>
+            <span><span style="font-size:14px;font-weight:600;line-height:1.35;display:block;">Écrire une accroche en trois étapes</span><span style="font-size:12.5px;color:#6d6a75;">4 min de lecture</span></span>
+          </a>
+          <a href="#" style="display:flex;gap:12px;align-items:flex-start;color:#17151c;">
+            <span style="width:64px;height:64px;flex-shrink:0;border-radius:10px;background:repeating-linear-gradient(45deg,#f0f1f8,#f0f1f8 8px,#e4e6f2 8px,#e4e6f2 16px);"></span>
+            <span><span style="font-size:14px;font-weight:600;line-height:1.35;display:block;">Fixer ses prix quand on débute : par où commencer</span><span style="font-size:12.5px;color:#6d6a75;">5 min de lecture</span></span>
+          </a>
+        </div>
+      </div>
+      <div style="background:#17151c;color:#fff;border-radius:16px;padding:24px;">
+        <div style="font-family:'Jost',sans-serif;font-size:20px;font-weight:300;line-height:1.3;margin-bottom:10px;">Envie d'approfondir cette compétence ?</div>
+        <p style="font-size:13.5px;color:#b9b4c4;line-height:1.6;margin:0 0 16px;">Chaque module se choisit à l'unité, selon votre besoin du moment.</p>
+        <a href="#" style="display:block;text-align:center;background:#fff;color:#17151c;padding:13px;border-radius:999px;font-size:13.5px;font-weight:700;">Découvrir les programmes</a>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 14. ANNEXE TECHNIQUE ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">14 · ANNEXE — NOTES TECHNIQUES POUR LE DÉVELOPPEUR (hors interface publique)</div>
+<div style="width:1440px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:40px 44px;">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:36px;">
+    <div style="display:flex;flex-direction:column;gap:22px;">
+      <div>
+        <div style="font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#80368D;margin-bottom:10px;">Hero en carrousel</div>
+        <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.75;color:#4b4855;">
+          <li>Un seul élément H1 ; première partie fixe « Montez en compétences. », seconde partie mise à jour selon le slide.</li>
+          <li>Sous-titre, description, CTA, couleur et visuel changent ensemble.</li>
+          <li>Défilement automatique, pause au survol, contrôle manuel, navigation clavier et glissement tactile sur mobile.</li>
+          <li>Visuels, accroches et ordre des slides gérés depuis le back-office.</li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#80368D;margin-bottom:10px;">Comportements de page</div>
+        <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.75;color:#4b4855;">
+          <li>Sélecteur de programme : bascule sans rechargement, un seul accordéon ouvert à la fois.</li>
+          <li>Filtres de modules : filtrage instantané, sans rechargement, sans URL indexable par combinaison.</li>
+          <li>Grille programme : 9 cartes, tri numérique, badge selon le statut de la fiche.</li>
+          <li>Page formateurs : carte détaillée au clic ou par ancre, ordre géré depuis l'administration.</li>
+          <li>Pages légales : corps des textes fourni et validé juridiquement.</li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#80368D;margin-bottom:10px;">Images et partage</div>
+        <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.75;color:#4b4855;">
+          <li>WebP ou AVIF, tailles responsives, dimensions explicites, chargement différé sous la ligne de flottaison.</li>
+          <li>Texte alternatif éditable pour chaque image éditoriale.</li>
+          <li>Open Graph pour WhatsApp, Facebook et LinkedIn ; image sociale par défaut surchargeable par page.</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:22px;">
+      <div>
+        <div style="font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#29358B;margin-bottom:10px;">Pages indexables</div>
+        <div style="font-size:14px;line-height:1.75;color:#4b4855;">Accueil · programmes Social Média et Entrepreneurs · fiches modules publiées · page Formateurs · fiches formateurs suffisamment complètes · Devenir formateur lorsque les candidatures sont ouvertes · Contact et FAQ · blog et articles publiés. Les thématiques restent des sections des pages programmes, sans page autonome.</div>
+      </div>
+      <div>
+        <div style="font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#29358B;margin-bottom:10px;">Pages non indexables</div>
+        <div style="font-size:14px;line-height:1.75;color:#4b4855;">Authentification et réinitialisation · tunnel d'achat, paiement et confirmation · dashboards apprenant, formateur et administrateur · profil et fiche apprenant · coaching, certificats et contenus privés · résultats de recherche et combinaisons de filtres · brouillons et prévisualisations.</div>
+      </div>
+      <div>
+        <div style="font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#29358B;margin-bottom:10px;">Structure des URL</div>
+        <div style="font-family:monospace;font-size:13px;line-height:1.9;color:#4b4855;">/ · /programmes/social-media · /programmes/entrepreneurs · /modules/[slug] · /formateurs · /formateurs/[slug] · /devenir-formateur · /contact · /blog · /blog/[slug]</div>
+      </div>
+      <div>
+        <div style="font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#29358B;margin-bottom:10px;">Automatismes</div>
+        <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.75;color:#4b4855;">
+          <li>Sitemap XML généré et mis à jour à chaque publication, dépublication ou changement d'URL.</li>
+          <li>Canonical automatique ; redirection permanente créée à chaque changement de slug.</li>
+          <li>JSON-LD : Organization, BreadcrumbList, Course et ItemList, ProfilePage / Person, Article.</li>
+          <li>Fil d'Ariane visible et structuré sur les modules, les profils et les articles.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+</div>
+</x-dc>
+</body>
+</html>

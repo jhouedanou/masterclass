@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 500" width="720" height="500" role="img" aria-label="Social Média">
+  <defs>
+    <pattern id="p" width="32" height="32" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <rect width="32" height="32" fill="#f3f0f8"/>
+      <rect width="16" height="32" fill="#eae5f2"/>
+    </pattern>
+  </defs>
+  <rect width="720" height="500" fill="url(#p)"/>
+  <text x="360" y="250" text-anchor="middle" font-family="Jost, sans-serif" font-size="40" fill="#6d6a75">Social Média</text>
+</svg>

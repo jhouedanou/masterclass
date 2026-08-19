@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+@font-face{font-family:'Jost';src:url('assets/fonts/Jost-Light.ttf') format('truetype');font-weight:300;font-style:normal;font-display:swap;}
+@font-face{font-family:'Jost';src:url('assets/fonts/Jost-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:'Jost';src:url('assets/fonts/Jost-Medium.ttf') format('truetype');font-weight:500;font-style:normal;font-display:swap;}
+@font-face{font-family:'Jost';src:url('assets/fonts/Jost-SemiBold.ttf') format('truetype');font-weight:600;font-style:normal;font-display:swap;}
+@font-face{font-family:'Mulish';src:url('assets/fonts/Mulish-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:'Mulish';src:url('assets/fonts/Mulish-Italic.ttf') format('truetype');font-weight:400;font-style:italic;font-display:swap;}
+@font-face{font-family:'Mulish';src:url('assets/fonts/Mulish-SemiBold.ttf') format('truetype');font-weight:600;font-style:normal;font-display:swap;}
+@font-face{font-family:'Mulish';src:url('assets/fonts/Mulish-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:swap;}
+@font-face{font-family:'Mulish';src:url('assets/fonts/Mulish-ExtraBold.ttf') format('truetype');font-weight:800;font-style:normal;font-display:swap;}
+
+body{margin:0;background:#edeaf2;font-family:'Mulish',sans-serif;color:#17151c;}
+a{color:#80368D;text-decoration:none;}a:hover{color:#29358B;}
+</style>
+</helmet>
+<div style="padding:48px;display:flex;flex-direction:column;gap:64px;">
+<div style="font-family:'Mulish',sans-serif;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6d6a75;"><a href="A - Site Vitrine.dc.html">A. Site vitrine</a> · Maquettes E-Masterclass — B. Dashboard apprenant (PWA) · <a href="C - Dashboard Admin.dc.html">C. Dashboard admin</a> · <a href="D - Dashboard Formateur.dc.html">D. Dashboard formateur</a> · <a href="E - Diagramme des parcours.dc.html">E. Diagramme des parcours</a></div>
+
+<!-- ===================== 1. ACCUEIL DASHBOARD ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">01 · ACCUEIL DU DASHBOARD — planning des sessions de coaching visible dès l'accueil (desktop 1440)</div>
+<div style="width:1440px;background:#faf9fc;border:1px solid #dcd7e6;border-radius:8px;overflow:hidden;">
+  <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 48px;">
+    <img src="assets/logo.png" alt="E-Masterclass | Big Five" style="height:36px;display:block;">
+    <nav style="display:flex;align-items:center;gap:28px;font-size:14.5px;font-weight:600;">
+      <a href="#" style="color:#17151c;border-bottom:2px solid #17151c;padding-bottom:3px;">Mes modules</a>
+      <a href="#" style="color:#4b4855;">Coaching collectif</a>
+      <a href="#" style="color:#4b4855;">Coaching privé</a>
+      <a href="#" style="color:#4b4855;">Mes certificats</a>
+      <div style="display:flex;align-items:center;gap:10px;"><div style="width:36px;height:36px;border-radius:50%;background:#80368D;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;">AK</div><span style="font-size:14px;">Awa</span><a href="#" style="font-size:13px;color:#6d6a75;">Déconnexion</a></div>
+    </nav>
+  </header>
+  <div style="padding:36px 48px 48px;">
+    <!-- bandeau profil -->
+    <div style="background:#fff;border:1.5px solid #e3c9ec;border-radius:14px;padding:18px 24px;display:flex;align-items:center;gap:22px;margin-bottom:28px;">
+      <div style="flex:1;">
+        <b style="font-size:15px;">Complétez votre profil apprenant — 60 %</b>
+        <div style="font-size:13.5px;color:#6d6a75;margin-top:4px;">Obligatoire à 100 % pour participer aux sessions de coaching. Vos réponses aident votre coach à personnaliser la session.</div>
+        <div style="height:8px;background:#f0ecf5;border-radius:999px;margin-top:10px;overflow:hidden;"><div style="width:60%;height:100%;background:#80368D;border-radius:999px;"></div></div>
+      </div>
+      <a href="#" style="background:#80368D;color:#fff;padding:12px 22px;border-radius:999px;font-size:14px;font-weight:700;white-space:nowrap;">Terminer mon profil</a>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 400px;gap:28px;align-items:start;">
+      <div>
+        <h1 style="font-family:'Jost',sans-serif;font-size:30px;font-weight:300;margin:0 0 20px;">Bonjour Awa, reprenez où vous vous étiez arrêtée</h1>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <!-- module en cours -->
+          <div style="background:#fff;border:1px solid #e6e1ef;border-radius:16px;padding:24px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;">
+            <div>
+              <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;"><span style="font-size:11.5px;font-weight:700;color:#80368D;letter-spacing:.1em;">SOCIAL MÉDIA · COPYWRITING &amp; CONTENU</span><span style="background:#f4ecf7;color:#80368D;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px;">En cours</span></div>
+              <div style="font-family:'Jost',sans-serif;font-size:21px;margin-bottom:6px;font-weight:300">Accroches qui stoppent le scroll &amp; IA copywriting</div>
+              <div style="font-size:13.5px;color:#6d6a75;margin-bottom:12px;">Coury Othniel · Prochaine session de coaching : jeudi 10 sept, 19h00</div>
+              <div style="display:flex;align-items:center;gap:12px;"><div style="flex:1;height:8px;background:#f0ecf5;border-radius:999px;overflow:hidden;"><div style="width:66%;height:100%;background:#80368D;border-radius:999px;"></div></div><span style="font-size:13px;font-weight:700;">2 / 3 chapitres</span></div>
+            </div>
+            <a href="#" style="background:#17151c;color:#fff;padding:13px 24px;border-radius:999px;font-size:14px;font-weight:700;">Continuer</a>
+          </div>
+          <!-- module complété -->
+          <div style="background:#fff;border:1px solid #e6e1ef;border-radius:16px;padding:24px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;">
+            <div>
+              <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;"><span style="font-size:11.5px;font-weight:700;color:#80368D;letter-spacing:.1em;">SOCIAL MÉDIA · FONDATIONS STRATÉGIQUES</span><span style="background:#e7f7ee;color:#1a8747;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px;">Complété ✓</span></div>
+              <div style="font-family:'Jost',sans-serif;font-size:21px;margin-bottom:6px;font-weight:300">Comprendre le business du client</div>
+              <div style="font-size:13.5px;color:#6d6a75;margin-bottom:12px;">Jérémie De Clercq · Terminé le 22/08/2026</div>
+              <div style="display:flex;align-items:center;gap:12px;"><div style="flex:1;height:8px;background:#e7f7ee;border-radius:999px;overflow:hidden;"><div style="width:100%;height:100%;background:#1fa855;border-radius:999px;"></div></div><span style="font-size:13px;font-weight:700;color:#1a8747;">4 / 4 chapitres</span></div>
+            </div>
+            <a href="#" style="background:#1fa855;color:#fff;padding:13px 24px;border-radius:999px;font-size:14px;font-weight:700;">Mon certificat</a>
+          </div>
+        </div>
+        <!-- coaching privé + historique -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+          <div style="background:#fff;border:1px solid #e6e1ef;border-radius:16px;padding:24px;">
+            <h3 style="font-family:'Jost',sans-serif;font-size:18px;font-weight:300;margin:0 0 8px;">Coaching privé</h3>
+            <p style="font-size:13.5px;color:#4b4855;line-height:1.6;margin:0 0 14px;">Une session individuelle avec le formateur de votre choix, sur vos besoins précis.</p>
+            <div style="display:flex;justify-content:space-between;align-items:center;background:#faf9fc;border-radius:10px;padding:12px 14px;font-size:13px;margin-bottom:14px;"><span>Demande du 12/08 — Coury Othniel</span><span style="background:#fff4e2;color:#a06a12;font-weight:700;font-size:11.5px;padding:4px 10px;border-radius:999px;">En attente</span></div>
+            <a href="#" style="display:inline-block;border:1.5px solid #17151c;color:#17151c;padding:11px 20px;border-radius:999px;font-size:13.5px;font-weight:700;">Demander un coaching privé</a>
+          </div>
+          <div style="background:#fff;border:1px solid #e6e1ef;border-radius:16px;padding:24px;">
+            <h3 style="font-family:'Jost',sans-serif;font-size:18px;font-weight:300;margin:0 0 12px;">Historique d'achats</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:13.5px;">
+              <div style="display:flex;justify-content:space-between;"><span>Accroches qui stoppent le scroll…</span><span style="color:#6d6a75;">02/09/2026 · 10 000 FCFA</span></div>
+              <div style="display:flex;justify-content:space-between;"><span>Comprendre le business du client</span><span style="color:#6d6a75;">01/09/2026 · 10 000 FCFA</span></div>
+            </div>
+            <div style="border-top:1px solid #eeebf3;margin-top:14px;padding-top:12px;font-size:13px;"><a href="#">Rejoindre la Communauté WhatsApp →</a></div>
+          </div>
+        </div>
+      </div>
+      <!-- planning sessions -->
+      <div style="background:#17151c;color:#fff;border-radius:18px;padding:26px;">
+        <h3 style="font-family:'Jost',sans-serif;font-size:19px;font-weight:300;margin:0 0 4px;color:#fff;">Vos prochaines sessions de coaching</h3>
+        <div style="font-size:12.5px;color:#b9b4c4;margin-bottom:18px;">Sessions de coaching collectif de 2 h · 25 places · rappel 24 h avant par email et WhatsApp</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="background:#221f2b;border-radius:12px;padding:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><b style="font-size:14.5px;">Jeu 10 sept · 19h00 GMT</b><span style="background:#3a2d45;color:#cfa6de;font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;">J-8</span></div>
+            <div style="font-size:13px;color:#d8d4e0;margin-bottom:10px;">Copywriting &amp; Contenu — Coury Othniel</div>
+            <span style="display:inline-block;background:#4b4653;color:#b9b4c4;padding:9px 16px;border-radius:999px;font-size:12.5px;font-weight:700;">Rejoindre — actif le jour J</span>
+          </div>
+          <div style="background:#221f2b;border-radius:12px;padding:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><b style="font-size:14.5px;">Mar 15 sept · 19h00 GMT</b><span style="background:#3a2d45;color:#cfa6de;font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;">J-13</span></div>
+            <div style="font-size:13px;color:#d8d4e0;margin-bottom:10px;">Fondations Stratégiques — Jérémie De Clercq</div>
+            <span style="display:inline-block;background:#4b4653;color:#b9b4c4;padding:9px 16px;border-radius:999px;font-size:12.5px;font-weight:700;">Rejoindre — actif le jour J</span>
+          </div>
+        </div>
+        <div style="margin-top:16px;background:rgba(128,54,141,.25);border:1px solid #80368D;border-radius:12px;padding:14px;font-size:12.5px;line-height:1.55;color:#e6d7ec;">🔒 Votre profil apprenant est à 60 %. Complétez-le à 100 % pour débloquer le bouton « Rejoindre la session ».</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 2. PAGE MODULE ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">02 · PAGE MODULE — chapitres, progression, session, certificat, ressources (desktop 1440)</div>
+<div style="width:1440px;background:#faf9fc;border:1px solid #dcd7e6;border-radius:8px;overflow:hidden;">
+  <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 48px;">
+    <img src="assets/logo.png" alt="" style="height:36px;display:block;">
+    <nav style="display:flex;align-items:center;gap:28px;font-size:14.5px;font-weight:600;"><a href="#" style="color:#17151c;border-bottom:2px solid #17151c;padding-bottom:3px;">Mes modules</a><a href="#" style="color:#4b4855;">Coaching collectif</a><a href="#" style="color:#4b4855;">Coaching privé</a><a href="#" style="color:#4b4855;">Mes certificats</a><div style="width:36px;height:36px;border-radius:50%;background:#80368D;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;">AK</div></nav>
+  </header>
+  <div style="padding:32px 48px 48px;">
+    <div style="font-size:13px;color:#6d6a75;margin-bottom:14px;"><a href="#">← Mes modules</a></div>
+    <div style="display:grid;grid-template-columns:1fr 400px;gap:28px;align-items:start;">
+      <div>
+        <div style="font-size:11.5px;font-weight:700;color:#80368D;letter-spacing:.1em;margin-bottom:8px;">SOCIAL MÉDIA · COPYWRITING &amp; CONTENU · MODULE 05</div>
+        <h1 style="font-family:'Jost',sans-serif;font-size:32px;font-weight:300;margin:0 0 16px;">Accroches qui stoppent le scroll &amp; IA copywriting</h1>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;"><div style="flex:1;height:10px;background:#f0ecf5;border-radius:999px;overflow:hidden;"><div style="width:66%;height:100%;background:#80368D;border-radius:999px;"></div></div><b style="font-size:14px;">2 / 3 chapitres vus</b></div>
+        <!-- vidéo bienvenue -->
+        <div style="background:#17151c;border-radius:16px;height:300px;position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:20px;overflow:hidden;">
+          <img src="assets/pattern.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.18;">
+          <div style="width:72px;height:72px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;color:#17151c;position:relative;">▶</div>
+          <span style="position:absolute;top:16px;left:20px;color:#fff;font-size:13px;font-weight:700;background:rgba(0,0,0,.4);padding:6px 12px;border-radius:8px;">Vidéo de bienvenue — Coury Othniel</span>
+          <span style="position:absolute;top:16px;right:20px;color:rgba(255,255,255,.22);font-size:12px;">Awa Koné · awa.kone@mail.ci</span>
+          <span style="position:absolute;bottom:14px;left:20px;color:#b9b4c4;font-size:11.5px;">Ne compte pas dans la progression</span>
+        </div>
+        <!-- chapitres -->
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="background:#fff;border:1px solid #e6e1ef;border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;">
+            <span style="width:32px;height:32px;border-radius:50%;background:#e7f7ee;color:#1a8747;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;">✓</span>
+            <div style="flex:1;"><b style="font-size:15px;">Chapitre 1 — Anatomie d'une accroche qui stoppe le scroll</b><div style="font-size:12.5px;color:#6d6a75;margin-top:3px;">Vu à 100 %</div></div>
+            <a href="#" style="font-size:13.5px;font-weight:700;">Revoir</a>
+          </div>
+          <div style="background:#fff;border:1px solid #e6e1ef;border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;">
+            <span style="width:32px;height:32px;border-radius:50%;background:#e7f7ee;color:#1a8747;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;">✓</span>
+            <div style="flex:1;"><b style="font-size:15px;">Chapitre 2 — Écrire 10 accroches en 15 minutes : la méthode</b><div style="font-size:12.5px;color:#6d6a75;margin-top:3px;">Vu à 100 %</div></div>
+            <a href="#" style="font-size:13.5px;font-weight:700;">Revoir</a>
+          </div>
+          <div style="background:#fff;border:1.5px solid #80368D;border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;">
+            <span style="width:32px;height:32px;border-radius:50%;background:#f4ecf7;color:#80368D;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;">54%</span>
+            <div style="flex:1;"><b style="font-size:15px;">Chapitre 3 — L'IA comme assistant copywriting, pas comme remplaçant</b><div style="font-size:12.5px;color:#6d6a75;margin-top:3px;">En cours — reprise à 24:12</div></div>
+            <a href="#" style="background:#80368D;color:#fff;padding:10px 20px;border-radius:999px;font-size:13.5px;font-weight:700;">Reprendre</a>
+          </div>
+        </div>
+      </div>
+      <!-- colonne droite -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="background:#fff;border:1px solid #e6e1ef;border-radius:16px;padding:22px;">
+          <h3 style="font-family:'Jost',sans-serif;font-size:17px;font-weight:300;margin:0 0 10px;">Coaching session du module</h3>
+          <div style="font-size:14px;line-height:1.6;"><b>Jeudi 10 septembre · 19h00 GMT</b><br><span style="color:#6d6a75;">Coury Othniel · 2 h · 25 places · Zoom</span></div>
+          <span style="display:block;text-align:center;background:#eeebf3;color:#8a8695;padding:12px;border-radius:999px;font-size:13.5px;font-weight:700;margin-top:14px;">Rejoindre la session — actif le jour J</span>
+          <div style="font-size:12px;color:#a06a12;background:#fff4e2;border-radius:8px;padding:10px 12px;margin-top:10px;line-height:1.5;">Profil apprenant à 60 % — complétez-le à 100 % pour débloquer l'accès.</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e6e1ef;border-radius:16px;padding:22px;">
+          <h3 style="font-family:'Jost',sans-serif;font-size:17px;font-weight:300;margin:0 0 10px;">Certificat de participation</h3>
+          <p style="font-size:13px;color:#4b4855;line-height:1.6;margin:0 0 12px;">Débloquée automatiquement quand les 3 chapitres sont vus à 100 %. Il vous reste <b>1 chapitre</b>.</p>
+          <span style="display:block;text-align:center;background:#eeebf3;color:#8a8695;padding:12px;border-radius:999px;font-size:13.5px;font-weight:700;">Obtenir mon certificat</span>
+        </div>
+        <div style="background:#fff;border:1px solid #e6e1ef;border-radius:16px;padding:22px;">
+          <h3 style="font-family:'Jost',sans-serif;font-size:17px;font-weight:300;margin:0 0 12px;">Ressources du module</h3>
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:13.5px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;"><span>📄 Grille des 12 formules d'accroche</span><a href="#" style="font-weight:700;font-size:12.5px;">PDF</a></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><span>📄 Bibliothèque de prompts IA</span><a href="#" style="font-weight:700;font-size:12.5px;">PDF</a></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><span>🔗 Exemples d'accroches décortiquées</span><a href="#" style="font-weight:700;font-size:12.5px;">Lien</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 3. LECTEUR VIDÉO ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">03 · LECTEUR VIDÉO — watermark nominatif + script synchronisé cliquable (desktop 1440)</div>
+<div style="width:1440px;background:#0f0e13;border:1px solid #dcd7e6;border-radius:8px;overflow:hidden;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 32px;color:#fff;">
+    <a href="#" style="color:#b9b4c4;font-size:13.5px;">← Retour au module</a>
+    <div style="font-size:14px;font-weight:700;">Chapitre 3 — L'IA comme assistant copywriting</div>
+    <div style="font-size:12.5px;color:#6d6a75;">Chapitre 3 / 3</div>
+  </div>
+  <div style="margin:0 32px;position:relative;background:#17151c;border-radius:14px;height:560px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+    <img src="assets/pattern.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.14;">
+    <span style="font-family:monospace;font-size:12px;color:#8a8695;position:relative;">flux vidéo — streaming adaptatif HLS, URL signée</span>
+    <span style="position:absolute;top:22px;right:28px;color:rgba(255,255,255,.20);font-size:14px;transform:rotate(0deg);">Awa Koné · awa.kone@mail.ci</span>
+    <!-- contrôles -->
+    <div style="position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.75));padding:20px 24px 16px;">
+      <div style="height:5px;background:rgba(255,255,255,.22);border-radius:999px;margin-bottom:12px;position:relative;"><div style="width:54%;height:100%;background:#80368D;border-radius:999px;"></div><div style="position:absolute;left:54%;top:-4px;width:13px;height:13px;background:#fff;border-radius:50%;"></div></div>
+      <div style="display:flex;align-items:center;gap:18px;color:#fff;font-size:13px;">
+        <span style="font-size:17px;">⏸</span><span>24:12 / 45:00</span>
+        <span style="margin-left:auto;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:4px 10px;font-weight:700;">1.25×</span>
+        <span style="border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:4px 10px;">Auto 480p</span>
+        <span style="font-size:16px;">⛶</span>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 32px 0;color:#8a8695;font-size:12px;">
+    <span>Le temps réel de visionnage est enregistré toutes les 10 s — l'avance rapide ne valide pas la progression.</span>
+    <span>Vitesses : 0.75× · 1× · 1.25× · 1.5× · 2×</span>
+  </div>
+  <!-- script synchronisé -->
+  <div style="margin:20px 32px 32px;background:#17151c;border-radius:14px;padding:24px 28px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="font-family:'Jost',sans-serif;font-size:17px;font-weight:300;color:#fff;margin:0;">Script du chapitre — synchronisé avec la lecture</h3>
+      <span style="font-size:12px;color:#8a8695;">Cliquez sur un passage pour y déplacer la vidéo</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;font-size:14.5px;line-height:1.65;">
+      <div style="display:flex;gap:16px;color:#8a8695;"><span style="font-family:monospace;font-size:12px;min-width:44px;color:#6d6a75;">22:40</span><span>…la tentation est de demander à l'IA d'écrire l'accroche entière. C'est exactement ce qu'il ne faut pas faire, et voici pourquoi.</span></div>
+      <div style="display:flex;gap:16px;background:rgba(128,54,141,.22);border-left:3px solid #80368D;border-radius:8px;padding:10px 14px;color:#fff;"><span style="font-family:monospace;font-size:12px;min-width:44px;color:#cfa6de;">24:05</span><span>Votre rôle, c'est le brief. Donnez à l'IA votre persona, la douleur précise du client et le format de la plateforme — et exigez dix variantes, jamais une seule.</span></div>
+      <div style="display:flex;gap:16px;color:#8a8695;"><span style="font-family:monospace;font-size:12px;min-width:44px;color:#6d6a75;">25:31</span><span>Ensuite, vous passez chaque variante au filtre des trois S : Spécifique, Surprenante, Scrollable. On le fait ensemble sur un cas réel…</span></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 4. PROFIL APPRENANT + ATTESTATION ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">04 · PROFIL APPRENANT (personas Entrepreneur &amp; Social Média — champs communs + bloc spécifique au programme) · 05 · VALIDATION D'ATTESTATION</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;">
+  <div style="width:640px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:40px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <h1 style="font-family:'Jost',sans-serif;font-size:26px;font-weight:300;margin:0;">Votre profil apprenant</h1>
+      <b style="color:#80368D;font-size:15px;">45 %</b>
+    </div>
+    <p style="font-size:13.5px;color:#6d6a75;margin:0 0 8px;">Ces informations permettent à vos coachs de préparer des sessions adaptées à votre contexte. Complétion à 100 % requise pour rejoindre une coaching session. Votre pays, renseigné à la création du compte, n'est plus demandé ici.</p>
+    <div style="height:8px;background:#f0ecf5;border-radius:999px;margin-bottom:26px;overflow:hidden;"><div style="width:45%;height:100%;background:#80368D;border-radius:999px;"></div></div>
+    <div style="font-size:12px;font-weight:700;letter-spacing:.12em;color:#6d6a75;text-transform:uppercase;margin-bottom:12px;">Vous, en quelques repères</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;">
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Âge<input value="34" style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Ville<input value="Abidjan" style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Secteur d'activité<input value="Commerce — prêt-à-porter" style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Niveau d'expérience<select style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"><option>3 à 5 ans</option></select></label>
+    </div>
+    <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;margin-bottom:22px;">Objectif principal<textarea style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;min-height:64px;">Doubler mes ventes en ligne et déléguer ma communication d'ici 6 mois.</textarea></label>
+    <div style="font-size:12px;font-weight:700;letter-spacing:.12em;color:#80368D;text-transform:uppercase;margin-bottom:12px;">Spécifique au profil Entrepreneur</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;">
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Nom de l'entreprise<input value="Kadi Mode" style="border:1.5px solid #e3c9ec;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Stade de développement<select style="border:1.5px solid #e3c9ec;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"><option>En croissance (2 ans et +)</option><option>Lancement (&lt; 2 ans)</option><option>En projet / idée</option></select></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Taille de l'équipe<select style="border:1.5px solid #e3c9ec;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"><option>2 à 5 personnes</option><option>Seul(e)</option><option>6 à 20 personnes</option><option>Plus de 20</option></select></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Canaux de vente actuels<input placeholder="Ex : boutique, WhatsApp, Instagram…" style="border:1.5px solid #e3c9ec;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Présence en ligne existante<input placeholder="Ex : page Facebook 4 000 abonnés" style="border:1.5px solid #e3c9ec;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Budget communication mensuel<select style="border:1.5px solid #e3c9ec;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"><option>50 000 – 150 000 FCFA</option><option>Moins de 50 000 FCFA</option><option>150 000 – 500 000 FCFA</option><option>Plus de 500 000 FCFA</option></select></label>
+    </div>
+    <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;margin-bottom:24px;">Votre principal défi business aujourd'hui<textarea placeholder="Ce qui vous bloque le plus dans votre croissance." style="border:1.5px solid #e3c9ec;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;min-height:64px;">Attirer des clients réguliers sans dépendre uniquement du bouche-à-oreille.</textarea></label>
+    <div style="display:flex;gap:14px;align-items:center;">
+      <a href="#" style="border:1.5px solid #17151c;color:#17151c;padding:14px 28px;border-radius:999px;font-size:15px;font-weight:700;">Modifier</a>
+      <a href="#" style="background:#80368D;color:#fff;padding:14px 28px;border-radius:999px;font-size:15px;font-weight:800;">Enregistrer</a>
+      <span style="font-size:13px;color:#6d6a75;">« Modifier » déverrouille les champs, « Enregistrer » sauvegarde et les reverrouille.</span>
+    </div>
+  </div>
+  <div style="width:640px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:40px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <h1 style="font-family:'Jost',sans-serif;font-size:26px;font-weight:300;margin:0;">Votre profil apprenant</h1>
+      <b style="color:#80368D;font-size:15px;">60 %</b>
+    </div>
+    <p style="font-size:13.5px;color:#6d6a75;margin:0 0 8px;">Ces informations permettent à vos coachs de préparer des sessions adaptées à votre contexte. Complétion à 100 % requise pour rejoindre une coaching session. Votre pays, renseigné à la création du compte, n'est plus demandé ici.</p>
+    <div style="height:8px;background:#f0ecf5;border-radius:999px;margin-bottom:26px;overflow:hidden;"><div style="width:60%;height:100%;background:#80368D;border-radius:999px;"></div></div>
+    <div style="font-size:12px;font-weight:700;letter-spacing:.12em;color:#6d6a75;text-transform:uppercase;margin-bottom:12px;">Vous, en quelques repères</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;">
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Âge<input value="27" style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Ville<input value="Abidjan" style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Secteur d'activité<input value="Agence digitale" style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Niveau d'expérience<select style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"><option>1 à 3 ans</option></select></label>
+    </div>
+    <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;margin-bottom:22px;">Objectif principal<textarea style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;min-height:64px;">Signer 3 clients en gestion de comptes d'ici décembre.</textarea></label>
+    <div style="font-size:12px;font-weight:700;letter-spacing:.12em;color:#80368D;text-transform:uppercase;margin-bottom:12px;">Spécifique au programme Social Média</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;">
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Réseaux gérés actuellement<input placeholder="Instagram, TikTok…" style="border:1.5px solid #e3c9ec;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Taille d'audience approximative<input placeholder="Ex : 15 000 abonnés cumulés" style="border:1.5px solid #e3c9ec;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Outils utilisés<input placeholder="Meta Business Suite, Canva…" style="border:1.5px solid #e3c9ec;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Clients / marques accompagnés<input placeholder="Ex : PME, restauration, mode…" style="border:1.5px solid #e3c9ec;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+    </div>
+    <div style="display:flex;gap:14px;align-items:center;">
+      <a href="#" style="border:1.5px solid #17151c;color:#17151c;padding:14px 28px;border-radius:999px;font-size:15px;font-weight:700;">Modifier</a>
+      <a href="#" style="background:#80368D;color:#fff;padding:14px 28px;border-radius:999px;font-size:15px;font-weight:800;">Enregistrer</a>
+      <span style="font-size:13px;color:#6d6a75;">« Modifier » déverrouille les champs, « Enregistrer » sauvegarde et les reverrouille.</span>
+    </div>
+  </div>
+  <div style="width:520px;display:flex;flex-direction:column;gap:24px;">
+    <div style="background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:36px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;"><span style="width:40px;height:40px;border-radius:50%;background:#e7f7ee;color:#1a8747;display:flex;align-items:center;justify-content:center;font-weight:800;">✓</span><h2 style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300;margin:0;">Module complété à 100 % !</h2></div>
+      <p style="font-size:13.5px;color:#4b4855;line-height:1.6;margin:0 0 20px;">Vérifiez vos informations : elles figureront telles quelles sur votre certificat de participation.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Prénom *<input value="Awa" style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Nom *<input value="Koné" style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:#6d6a75;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;"><span>Email</span><b style="color:#17151c;">awa.kone@mail.ci (non modifiable)</b></div>
+        <div style="display:flex;justify-content:space-between;"><span>Module</span><b style="color:#17151c;">Comprendre le business du client</b></div>
+        <div style="display:flex;justify-content:space-between;"><span>Formateur</span><b style="color:#17151c;">Jérémie De Clercq</b></div>
+        <div style="display:flex;justify-content:space-between;"><span>Date de complétion</span><b style="color:#17151c;">22/08/2026</b></div>
+      </div>
+      <a href="#" style="display:block;text-align:center;background:#1fa855;color:#fff;padding:15px;border-radius:999px;font-size:15px;font-weight:800;">Générer et télécharger mon certificat (PDF)</a>
+      <div style="text-align:center;font-size:12px;color:#6d6a75;margin-top:10px;">Re-téléchargeable à tout moment depuis « Mes certificats »</div>
+    </div>
+    <div style="background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:36px;">
+      <h2 style="font-family:'Jost',sans-serif;font-size:20px;font-weight:300;margin:0 0 14px;">Demander un coaching privé</h2>
+      <div style="background:#faf9fc;border:1px solid #eeebf3;border-radius:10px;padding:12px 14px;font-size:12.5px;color:#6d6a75;margin-bottom:16px;">Tarif fixe : <b style="color:#17151c;">50 000 FCFA / heure</b>, identique pour tous les formateurs — vous achetez vos heures de coaching. Aucun paiement avant confirmation du créneau par l'équipe.</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Module concerné *<select style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"><option>Accroches qui stoppent le scroll &amp; IA copywriting</option></select></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Préoccupations / sujets à traiter *<textarea style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;min-height:64px;" placeholder="Les points précis que vous voulez travailler — transmis au formateur avant la session."></textarea></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Nombre d'heures *<select style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"><option>1 h — 50 000 FCFA</option><option selected="">2 h — 100 000 FCFA</option><option>3 h — 150 000 FCFA</option></select></label>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <span style="font-size:13px;font-weight:700;">Vos créneaux disponibles * <span style="font-weight:400;font-size:12px;color:#6d6a75;">(3 minimum — jour de la semaine + tranche horaire)</span></span>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><select style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"><option>Mardi</option></select><select style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"><option>18h – 20h</option></select></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><select style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"><option>Jeudi</option></select><select style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"><option>19h – 21h</option></select></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><select style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"><option>Samedi</option></select><select style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"><option>9h – 12h</option></select></div>
+          <a href="#" style="font-size:12.5px;font-weight:700;align-self:flex-start;">+ Ajouter un créneau</a>
+        </div>
+        <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:14px;border-radius:999px;font-size:14.5px;font-weight:800;">Envoyer ma demande</a>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 5. MOBILE PWA ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">06 · PWA MOBILE — dashboard &amp; lecteur (390px) · installable « Ajouter à l'écran d'accueil »</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;">
+  <div style="width:390px;background:#faf9fc;border:1px solid #dcd7e6;border-radius:28px;overflow:hidden;">
+    <header style="background:#fff;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #eeebf3;">
+      <img src="assets/logo.png" alt="" style="height:36px;display:block;">
+      <div style="width:34px;height:34px;border-radius:50%;background:#80368D;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;">AK</div>
+    </header>
+    <div style="padding:18px;">
+      <div style="background:#fff;border:1.5px solid #e3c9ec;border-radius:12px;padding:14px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;"><b>Profil apprenant — 60 %</b><a href="#" style="font-weight:700;font-size:12.5px;">Compléter</a></div>
+        <div style="height:6px;background:#f0ecf5;border-radius:999px;margin-top:8px;overflow:hidden;"><div style="width:60%;height:100%;background:#80368D;"></div></div>
+      </div>
+      <h1 style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300;margin:0 0 12px;">Bonjour Awa</h1>
+      <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:16px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:10.5px;font-weight:700;color:#80368D;letter-spacing:.08em;">COPYWRITING &amp; CONTENU</span><span style="background:#f4ecf7;color:#80368D;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;">En cours</span></div>
+        <b style="font-size:15px;line-height:1.35;display:block;margin-bottom:8px;">Accroches qui stoppent le scroll &amp; IA copywriting</b>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><div style="flex:1;height:6px;background:#f0ecf5;border-radius:999px;overflow:hidden;"><div style="width:66%;height:100%;background:#80368D;"></div></div><span style="font-size:12px;font-weight:700;">2/3</span></div>
+        <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:13px;border-radius:999px;font-size:14px;font-weight:700;min-height:18px;">Continuer</a>
+      </div>
+      <div style="background:#17151c;color:#fff;border-radius:14px;padding:16px;">
+        <b style="font-size:13.5px;">Prochaine coaching session</b>
+        <div style="font-size:13px;color:#d8d4e0;margin:6px 0 10px;">Jeu 10 sept · 19h00 — Coury Othniel</div>
+        <span style="display:block;text-align:center;background:#4b4653;color:#b9b4c4;padding:11px;border-radius:999px;font-size:12.5px;font-weight:700;">Rejoindre — actif le jour J</span>
+      </div>
+    </div>
+    <nav style="background:#fff;border-top:1px solid #eeebf3;display:grid;grid-template-columns:repeat(4,1fr);padding:10px 6px 16px;text-align:center;font-size:10.5px;font-weight:700;">
+      <span style="color:#80368D;">▣<br>Modules</span><span style="color:#8a8695;">🗓<br>Sessions</span><span style="color:#8a8695;">🎓<br>Certificats</span><span style="color:#8a8695;">👤<br>Profil</span>
+    </nav>
+  </div>
+  <div style="width:390px;background:#0f0e13;border:1px solid #dcd7e6;border-radius:28px;overflow:hidden;color:#fff;">
+    <div style="display:flex;justify-content:space-between;padding:14px 18px;font-size:12.5px;color:#b9b4c4;"><span>← Module</span><span>Ch. 3 / 3</span></div>
+    <div style="position:relative;background:#17151c;height:220px;display:flex;align-items:center;justify-content:center;">
+      <img src="assets/pattern.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.15;">
+      <div style="width:52px;height:52px;border-radius:50%;background:#fff;color:#17151c;display:flex;align-items:center;justify-content:center;position:relative;">▶</div>
+      <span style="position:absolute;top:10px;right:12px;font-size:10px;color:rgba(255,255,255,.22);">Awa Koné · awa.kone@mail.ci</span>
+      <div style="position:absolute;left:12px;right:12px;bottom:10px;height:4px;background:rgba(255,255,255,.22);border-radius:999px;"><div style="width:54%;height:100%;background:#80368D;border-radius:999px;"></div></div>
+    </div>
+    <div style="padding:16px 18px;">
+      <b style="font-size:14.5px;">L'IA comme assistant copywriting</b>
+      <div style="font-size:11.5px;color:#8a8695;margin:4px 0 14px;">24:12 / 45:00 · 1.25× · Auto 360p</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#8a8695;margin-bottom:10px;">SCRIPT SYNCHRONISÉ</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;">
+        <div style="color:#8a8695;">22:40 — …la tentation est de demander à l'IA d'écrire l'accroche entière…</div>
+        <div style="background:rgba(128,54,141,.25);border-left:3px solid #80368D;border-radius:6px;padding:8px 10px;">24:05 — Votre rôle, c'est le brief. Donnez à l'IA votre persona, la douleur précise du client…</div>
+        <div style="color:#8a8695;">25:31 — Ensuite, le filtre des trois S : Spécifique, Surprenante, Scrollable…</div>
+      </div>
+    </div>
+    <div style="margin:0 18px 18px;background:#221f2b;border-radius:10px;padding:11px 13px;font-size:11.5px;color:#b9b4c4;line-height:1.5;">📱 Hors ligne ? « Vous êtes hors ligne. Reconnectez-vous pour accéder à vos modules. »</div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 7. ÉTATS CARTE MODULE ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">07 · PLANCHE — LES 5 ÉTATS DE LA CARTE MODULE (dashboard)</div>
+<div style="display:flex;gap:20px;align-items:stretch;width:max-content;">
+  <div style="width:280px;background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px;">
+    <span style="font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#6d6a75;">1 · NON COMMENCÉ</span>
+    <span style="font-size:11px;font-weight:700;color:#80368D;letter-spacing:.08em;">SOCIAL MÉDIA · PLATEFORMES</span>
+    <b style="font-size:15px;line-height:1.35;">TikTok : de zéro à la première vidéo virale</b>
+    <div style="display:flex;align-items:center;gap:10px;"><div style="flex:1;height:6px;background:#f0ecf5;border-radius:999px;"></div><span style="font-size:12px;font-weight:700;color:#6d6a75;">0/3</span></div>
+    <a href="#" style="display:block;text-align:center;background:#80368D;color:#fff;padding:12px;border-radius:999px;font-size:13.5px;font-weight:700;">Commencer</a>
+  </div>
+  <div style="width:280px;background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px;">
+    <span style="font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#80368D;">2 · EN COURS</span>
+    <span style="font-size:11px;font-weight:700;color:#80368D;letter-spacing:.08em;">SOCIAL MÉDIA · COPYWRITING</span>
+    <b style="font-size:15px;line-height:1.35;">Accroches qui stoppent le scroll &amp; IA copywriting</b>
+    <div style="display:flex;align-items:center;gap:10px;"><div style="flex:1;height:6px;background:#f0ecf5;border-radius:999px;overflow:hidden;"><div style="width:66%;height:100%;background:#80368D;"></div></div><span style="font-size:12px;font-weight:700;">2/3</span></div>
+    <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:12px;border-radius:999px;font-size:13.5px;font-weight:700;">Continuer</a>
+  </div>
+  <div style="width:280px;background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px;">
+    <span style="font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#1a8747;">3 · COMPLÉTÉ</span>
+    <span style="font-size:11px;font-weight:700;color:#29358B;letter-spacing:.08em;">ENTREPRENEURS · FONDATIONS</span>
+    <b style="font-size:15px;line-height:1.35;">Fixer le juste prix de ses produits et services</b>
+    <div style="display:flex;align-items:center;gap:10px;"><div style="flex:1;height:6px;background:#e7f7ee;border-radius:999px;overflow:hidden;"><div style="width:100%;height:100%;background:#1fa855;"></div></div><span style="font-size:12px;font-weight:700;color:#1a8747;">3/3 ✓</span></div>
+    <a href="#" style="display:block;text-align:center;background:#1fa855;color:#fff;padding:12px;border-radius:999px;font-size:13.5px;font-weight:700;">Mon certificat</a>
+  </div>
+  <div style="width:280px;background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px;">
+    <span style="font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#a06a12;">4 · SESSION IMMINENTE</span>
+    <span style="font-size:11px;font-weight:700;color:#80368D;letter-spacing:.08em;">SOCIAL MÉDIA · FONDATIONS</span>
+    <b style="font-size:15px;line-height:1.35;">Plan d'action social media : Stratégie &amp; Ciblage</b>
+    <div style="background:#fff4e2;color:#a06a12;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;">🗓 Session de coaching demain 19h00 — 3 places restantes</div>
+    <a href="#" style="display:block;text-align:center;background:#80368D;color:#fff;padding:12px;border-radius:999px;font-size:13.5px;font-weight:700;">Voir la session</a>
+  </div>
+  <div style="width:280px;background:#fff;border:1px dashed #cfc8dd;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px;opacity:.85;">
+    <span style="font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#8a8695;">5 · SUGGESTION (NON ACHETÉ)</span>
+    <span style="font-size:11px;font-weight:700;color:#80368D;letter-spacing:.08em;">SOCIAL MÉDIA · COPYWRITING</span>
+    <b style="font-size:15px;line-height:1.35;color:#4b4855;">Créer un buzz : mécaniques de contenus viraux</b>
+    <div style="font-size:12.5px;color:#6d6a75;">Suite logique de votre module en cours.</div>
+    <a href="#" style="display:block;text-align:center;border:1.5px solid #17151c;color:#17151c;padding:11px;border-radius:999px;font-size:13.5px;font-weight:700;">Découvrir — 10 000 FCFA</a>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 8. COACHING SESSIONS ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">08 · COACHING SESSIONS — page calendrier apprenant + planche des 6 états d'une session</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;">
+  <div style="width:880px;background:#faf9fc;border:1px solid #dcd7e6;border-radius:8px;overflow:hidden;">
+    <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 32px;">
+      <img src="assets/logo.png" alt="" style="height:34px;display:block;">
+      <nav style="display:flex;align-items:center;gap:22px;font-size:13.5px;font-weight:600;"><a href="#" style="color:#4b4855;">Mes modules</a><a href="#" style="color:#17151c;border-bottom:2px solid #17151c;padding-bottom:3px;">Coaching collectif</a><a href="#" style="color:#4b4855;">Coaching privé</a><a href="#" style="color:#4b4855;">Mes certificats</a><div style="width:32px;height:32px;border-radius:50%;background:#80368D;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;">AK</div></nav>
+    </header>
+    <div style="padding:28px 32px 36px;">
+      <h1 style="font-family:'Jost',sans-serif;font-size:26px;font-weight:300;margin:0 0 6px;">Vos sessions de coaching</h1>
+      <p style="font-size:13.5px;color:#6d6a75;margin:0 0 20px;">Une session de coaching collectif de 2 h par module et par mois, animée par le formateur du module. 25 places par session.</p>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="background:#fff;border:1.5px solid #80368D;border-radius:14px;padding:18px 22px;display:flex;align-items:center;gap:18px;">
+          <div style="text-align:center;background:#f4ecf7;border-radius:10px;padding:10px 14px;"><b style="display:block;font-size:19px;color:#80368D;">10</b><span style="font-size:11px;font-weight:700;color:#80368D;">SEPT</span></div>
+          <div style="flex:1;"><b style="font-size:15px;">Copywriting &amp; Contenu — session mensuelle</b><div style="font-size:12.5px;color:#6d6a75;margin-top:3px;">Coury Othniel · 19h00–21h00 GMT · Zoom · 18/25 inscrits</div></div>
+          <a href="#" style="background:#80368D;color:#fff;padding:11px 20px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;">Réserver ma place</a>
+        </div>
+        <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:18px 22px;display:flex;align-items:center;gap:18px;">
+          <div style="text-align:center;background:#faf9fc;border-radius:10px;padding:10px 14px;"><b style="display:block;font-size:19px;">15</b><span style="font-size:11px;font-weight:700;color:#6d6a75;">SEPT</span></div>
+          <div style="flex:1;"><b style="font-size:15px;">Fondations Stratégiques — session mensuelle</b><div style="font-size:12.5px;color:#6d6a75;margin-top:3px;">Jérémie De Clercq · 19h00–21h00 GMT · Zoom · 25/25 inscrits</div></div>
+          <span style="background:#fdedee;color:#a3242f;padding:11px 20px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;">Complet — liste d'attente</span>
+        </div>
+        <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:18px 22px;display:flex;align-items:center;gap:18px;opacity:.75;">
+          <div style="text-align:center;background:#faf9fc;border-radius:10px;padding:10px 14px;"><b style="display:block;font-size:19px;">12</b><span style="font-size:11px;font-weight:700;color:#6d6a75;">AOÛT</span></div>
+          <div style="flex:1;"><b style="font-size:15px;">Copywriting &amp; Contenu — session d'août</b><div style="font-size:12.5px;color:#6d6a75;margin-top:3px;">Coury Othniel · Vous avez participé ✓ · compte pour votre certificat</div></div>
+          <span style="border:1.5px solid #dcd7e6;color:#6d6a75;padding:11px 20px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;">Session passée</span>
+        </div>
+      </div>
+      <div style="margin-top:16px;background:#fff;border:1px solid #e6e1ef;border-radius:12px;padding:14px 18px;font-size:12.5px;color:#6d6a75;line-height:1.6;">Rappels automatiques : email + WhatsApp à J-1 et H-1. Le lien Zoom s'active 15 minutes avant le début.</div>
+    </div>
+  </div>
+  <div style="width:460px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:28px;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.12em;color:#6d6a75;margin-bottom:16px;">PLANCHE — LES 6 ÉTATS DU BOUTON SESSION</div>
+    <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><span>1 · Profil &lt; 100 %</span><span style="background:#eeebf3;color:#8a8695;padding:10px 16px;border-radius:999px;font-weight:700;font-size:12.5px;">🔒 Complétez votre profil</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><span>2 · Éligible, places dispo</span><span style="background:#80368D;color:#fff;padding:10px 16px;border-radius:999px;font-weight:700;font-size:12.5px;">Réserver ma place</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><span>3 · Inscrit, avant le jour J</span><span style="border:1.5px solid #1fa855;color:#1a8747;padding:10px 16px;border-radius:999px;font-weight:700;font-size:12.5px;">✓ Inscrit · rappel prévu</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><span>4 · Jour J (H-15 min)</span><span style="background:#1fa855;color:#fff;padding:10px 16px;border-radius:999px;font-weight:700;font-size:12.5px;">Rejoindre la session →</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><span>5 · Complet</span><span style="background:#fdedee;color:#a3242f;padding:10px 16px;border-radius:999px;font-weight:700;font-size:12.5px;">Complet — liste d'attente</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><span>6 · Annulée / reportée</span><span style="background:#fff4e2;color:#a06a12;padding:10px 16px;border-radius:999px;font-weight:700;font-size:12.5px;">Reportée — nouvelle date</span></div>
+    </div>
+    <div style="margin-top:18px;border-top:1px solid #eeebf3;padding-top:14px;font-size:12.5px;color:#6d6a75;line-height:1.6;">Le clic « Réserver ma place » (session collective) et « Rejoindre la session » (coaching privé) ouvrent d'abord le formulaire de sujets obligatoires — écran 08b. La participation effective (présence Zoom pointée) est requise pour l'certificat de participation, en plus du visionnage 100 % des chapitres.</div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 8b. QUESTIONS OBLIGATOIRES + NOTATION ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">08b · QUESTIONS OBLIGATOIRES — modales au clic « Réserver ma place » (session collective) et « Rejoindre la session » (coaching privé) · NOTATION DU FORMATEUR après toute session</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;">
+  <div style="width:440px;background:#fff;border:1px solid #dcd7e6;border-radius:16px;padding:28px;box-shadow:0 16px 40px rgba(23,21,28,.12);">
+    <div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#80368D;margin-bottom:10px;">AU CLIC « RÉSERVER MA PLACE » — SESSION COLLECTIVE</div>
+    <b style="font-size:17px;">Avant de réserver : vos sujets à traiter</b>
+    <div style="font-size:12.5px;color:#6d6a75;margin:6px 0 16px;">Copywriting &amp; Contenu — jeu 10 sept · 19h00 · Coury Othniel</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Votre principale préoccupation sur ce thème *<textarea style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:13.5px;font-family:inherit;min-height:60px;">Mes accroches sont vues mais ne génèrent presque aucun clic.</textarea></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Qu'attendez-vous concrètement de cette session ? *<textarea style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:13.5px;font-family:inherit;min-height:60px;" placeholder="Ex : faire relire 3 accroches par le formateur en direct."></textarea></label>
+      <a href="#" style="display:block;text-align:center;background:#80368D;color:#fff;padding:14px;border-radius:999px;font-size:14.5px;font-weight:800;">Envoyer mes réponses et réserver ma place</a>
+      <div style="text-align:center;font-size:13px;"><a href="#" style="color:#6d6a75;">Annuler</a></div>
+      <div style="background:#faf9fc;border:1px solid #eeebf3;border-radius:10px;padding:11px 13px;font-size:11.5px;color:#6d6a75;line-height:1.55;">Réponses obligatoires — le bouton reste grisé tant qu'elles sont vides. Elles sont transmises au formateur avant la session pour préparer les cas pratiques.</div>
+    </div>
+  </div>
+  <div style="width:440px;background:#fff;border:1px solid #dcd7e6;border-radius:16px;padding:28px;box-shadow:0 16px 40px rgba(23,21,28,.12);">
+    <div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#29358B;margin-bottom:10px;">AU CLIC « REJOINDRE LA SESSION » — COACHING PRIVÉ</div>
+    <b style="font-size:17px;">Confirmez vos sujets avant d'entrer</b>
+    <div style="font-size:12.5px;color:#6d6a75;margin:6px 0 16px;">Coaching privé — sam 12/09 · 10h00 · 2 h · Coury Othniel</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Préoccupations / sujets à traiter *<textarea style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:13.5px;font-family:inherit;min-height:74px;">Retravailler les accroches de ma marque de cosmétiques — je n'arrive pas à dépasser 2 % d'engagement.</textarea><span style="font-size:11.5px;font-weight:400;color:#6d6a75;">Pré-rempli avec votre demande — complétez-le si vos priorités ont évolué.</span></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Documents ou exemples à examiner ensemble (optionnel)<input style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:13.5px;font-family:inherit;" placeholder="Lien vers vos publications, page Instagram…"></label>
+      <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:14px;border-radius:999px;font-size:14.5px;font-weight:800;">Envoyer et rejoindre la session →</a>
+      <div style="background:#faf9fc;border:1px solid #eeebf3;border-radius:10px;padding:11px 13px;font-size:11.5px;color:#6d6a75;line-height:1.55;">Étape obligatoire : impossible d'entrer dans la salle sans soumettre les sujets. Le formateur les reçoit instantanément, avant votre arrivée.</div>
+    </div>
+  </div>
+  <div style="width:420px;background:#fff;border:1px solid #dcd7e6;border-radius:16px;padding:28px;box-shadow:0 16px 40px rgba(23,21,28,.12);">
+    <div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#6d6a75;margin-bottom:10px;">APRÈS LA SESSION — COLLECTIVE OU PRIVÉE</div>
+    <b style="font-size:17px;">Notez votre formateur</b>
+    <div style="font-size:12.5px;color:#6d6a75;margin:6px 0 16px;">Coaching collectif du 12/08 — Coury Othniel · Copywriting &amp; Contenu</div>
+    <div style="display:flex;gap:6px;font-size:34px;line-height:1;margin-bottom:6px;"><span style="color:#f2b01e;">★</span><span style="color:#f2b01e;">★</span><span style="color:#f2b01e;">★</span><span style="color:#f2b01e;">★</span><span style="color:#dcd7e6;">★</span></div>
+    <div style="font-size:12.5px;color:#4b4855;font-weight:700;margin-bottom:14px;">4 / 5 — Très satisfait(e)</div>
+    <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;margin-bottom:14px;">Un commentaire pour le formateur ? (optionnel)<textarea style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:13.5px;font-family:inherit;min-height:60px;" placeholder="Ce qui vous a le plus aidé, ce qui pourrait être amélioré."></textarea></label>
+    <a href="#" style="display:block;text-align:center;background:#80368D;color:#fff;padding:14px;border-radius:999px;font-size:14.5px;font-weight:800;margin-bottom:10px;">Envoyer ma note</a>
+    <div style="text-align:center;font-size:12.5px;color:#6d6a75;margin-bottom:12px;">Plus tard</div>
+    <div style="background:#faf9fc;border:1px solid #eeebf3;border-radius:10px;padding:11px 13px;font-size:11.5px;color:#6d6a75;line-height:1.55;">Proposée à la fermeture de la salle, puis rappelée depuis l'historique. La note moyenne est visible par l'admin et par le formateur — jamais publiée sur le site.</div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 11. SESSION DE COACHING ZOOM ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">11 · SESSION DE COACHING — ZOOM MEETING SDK INTÉGRÉ · Component View sur desktop, Client View sur mobile (PWA) — sélection automatique selon l'appareil, l'utilisateur ne quitte jamais la plateforme</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;">
+  <div style="width:1280px;background:#17151c;border-radius:16px;overflow:hidden;color:#fff;">
+    <header style="display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid #2c2937;">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div style="background:#fff;border-radius:8px;padding:5px 10px;"><img src="assets/logo.png" alt="" style="height:26px;display:block;"></div>
+        <div><b style="font-size:15px;">Copywriting &amp; Contenu — questions-réponses et cas pratiques</b><div style="font-size:12px;color:#8a8695;">Coaching session · Coury Othniel · modules 04, 05, 06</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="background:#c03434;font-size:11px;font-weight:800;padding:5px 12px;border-radius:999px;letter-spacing:.06em;">● EN DIRECT · 00:42:17</span>
+        <a href="#" style="border:1.5px solid #3a3745;color:#c9c4d4;padding:9px 16px;border-radius:999px;font-size:12.5px;font-weight:700;">← Retour au module</a>
+      </div>
+    </header>
+    <div style="display:grid;grid-template-columns:1fr 320px;">
+      <div style="padding:20px 24px;">
+        <div style="border-radius:14px;height:420px;background:repeating-linear-gradient(45deg,#221f2b,#221f2b 14px,#2a2735 14px,#2a2735 28px);position:relative;display:flex;align-items:center;justify-content:center;">
+          <span style="font-family:monospace;font-size:11px;color:#8a8695;background:#17151c;padding:5px 10px;border-radius:6px;border:1px solid #3a3745;">flux vidéo Zoom — Component View</span>
+          <span style="position:absolute;left:14px;bottom:12px;background:rgba(23,21,28,.85);font-size:12px;font-weight:700;padding:5px 12px;border-radius:8px;">Coury Othniel — formateur 🎙</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px;">
+          <div style="border-radius:10px;height:72px;background:#221f2b;display:flex;align-items:flex-end;padding:6px 8px;font-size:10.5px;color:#c9c4d4;">Awa K. ✋</div>
+          <div style="border-radius:10px;height:72px;background:#221f2b;display:flex;align-items:flex-end;padding:6px 8px;font-size:10.5px;color:#c9c4d4;">Moussa D.</div>
+          <div style="border-radius:10px;height:72px;background:#221f2b;display:flex;align-items:flex-end;padding:6px 8px;font-size:10.5px;color:#c9c4d4;">Fatou B.</div>
+          <div style="border-radius:10px;height:72px;background:#221f2b;display:flex;align-items:flex-end;padding:6px 8px;font-size:10.5px;color:#c9c4d4;">Adjoua N.</div>
+          <div style="border-radius:10px;height:72px;background:#221f2b;display:flex;align-items:flex-end;padding:6px 8px;font-size:10.5px;color:#c9c4d4;">Éric K.</div>
+          <div style="border-radius:10px;height:72px;background:#221f2b;display:flex;align-items:center;justify-content:center;font-size:11px;color:#8a8695;">+ 13</div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:10px;margin-top:16px;font-size:12px;font-weight:700;">
+          <span style="background:#2a2735;border-radius:999px;padding:11px 18px;">🎙 Micro</span>
+          <span style="background:#2a2735;border-radius:999px;padding:11px 18px;">🎥 Caméra</span>
+          <span style="background:#2a2735;border-radius:999px;padding:11px 18px;color:#8a8695;">🖥 Partager (formateur)</span>
+          <span style="background:#2a2735;border-radius:999px;padding:11px 18px;">✋ Main levée</span>
+          <span style="background:#2a2735;border-radius:999px;padding:11px 18px;">😀 Réactions</span>
+          <span style="background:#2a2735;border-radius:999px;padding:11px 18px;">👥 19</span>
+          <span style="background:#c03434;border-radius:999px;padding:11px 20px;">Quitter</span>
+        </div>
+      </div>
+      <aside style="border-left:1px solid #2c2937;padding:18px 20px;display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;gap:6px;font-size:12px;font-weight:700;"><span style="background:#80368D;border-radius:999px;padding:7px 14px;">Chat</span><span style="background:#2a2735;color:#8a8695;border-radius:999px;padding:7px 14px;">Participants</span></div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;flex:1;">
+          <div><b style="color:#c9a2d4;">Awa K.</b><div style="color:#d8d4e0;background:#221f2b;border-radius:0 10px 10px 10px;padding:8px 11px;margin-top:3px;">Peut-on revoir l'exemple du CTA restauration ?</div></div>
+          <div><b style="color:#c9a2d4;">Coury O. (formateur)</b><div style="color:#d8d4e0;background:#221f2b;border-radius:0 10px 10px 10px;padding:8px 11px;margin-top:3px;">Oui, je partage mon écran dans 2 min 👍</div></div>
+        </div>
+        <input placeholder="Écrire un message…" style="background:#221f2b;border:1.5px solid #3a3745;border-radius:999px;padding:11px 15px;font-size:12.5px;color:#fff;font-family:inherit;">
+        <div style="background:#221f2b;border-radius:12px;padding:14px;font-size:12px;color:#c9c4d4;line-height:1.6;"><b style="color:#fff;">Ressources du module</b><br><a href="#" style="color:#c9a2d4;">Grille des 10 accroches (PDF)</a><br><a href="#" style="color:#c9a2d4;">Prompts IA copywriting</a></div>
+      </aside>
+    </div>
+  </div>
+  <div style="width:390px;background:#17151c;border-radius:28px;overflow:hidden;color:#fff;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
+      <div style="font-size:12.5px;"><b>Copywriting &amp; Contenu</b><div style="color:#8a8695;font-size:11px;">Coury Othniel</div></div>
+      <span style="background:#c03434;font-size:10px;font-weight:800;padding:4px 10px;border-radius:999px;">● 00:42</span>
+    </div>
+    <div style="height:430px;background:repeating-linear-gradient(45deg,#221f2b,#221f2b 14px,#2a2735 14px,#2a2735 28px);position:relative;display:flex;align-items:center;justify-content:center;">
+      <span style="font-family:monospace;font-size:10.5px;color:#8a8695;background:#17151c;padding:5px 10px;border-radius:6px;border:1px solid #3a3745;">Zoom Client View — plein écran</span>
+      <div style="position:absolute;right:10px;top:10px;width:88px;height:118px;border-radius:10px;background:#221f2b;border:1px solid #3a3745;display:flex;align-items:flex-end;padding:6px;font-size:10px;color:#c9c4d4;">Vous</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:12px 14px;text-align:center;font-size:10px;font-weight:700;">
+      <span style="background:#2a2735;border-radius:12px;padding:11px 4px;">🎙<br>Micro</span>
+      <span style="background:#2a2735;border-radius:12px;padding:11px 4px;">🎥<br>Caméra</span>
+      <span style="background:#2a2735;border-radius:12px;padding:11px 4px;">💬<br>Chat</span>
+      <span style="background:#2a2735;border-radius:12px;padding:11px 4px;">✋<br>Main</span>
+      <span style="background:#c03434;border-radius:12px;padding:11px 4px;">⛔<br>Quitter</span>
+    </div>
+    <div style="padding:0 14px 18px;">
+      <div style="background:#221f2b;border-radius:12px;padding:12px 14px;font-size:11.5px;color:#c9c4d4;line-height:1.6;">Un problème de connexion ? <a href="#" style="color:#c9a2d4;font-weight:700;">Ouvrir dans l'application Zoom</a> (solution de secours uniquement).</div>
+    </div>
+  </div>
+</div>
+<div style="margin-top:14px;width:1280px;background:#fff;border:1px solid #dcd7e6;border-radius:12px;padding:16px 22px;font-size:12.5px;color:#4b4855;line-height:1.7;">
+  <b>Règles d'intégration (Zoom Meeting SDK for Web)</b> — sélection automatique de la vue : type d'appareil + navigateur + taille d'écran (Component View sur ordinateur, Client View sur mobile / tablette). Avant l'entrée : vérification connecté · inscrit au programme · autorisé sur la session · session ouverte · rôle identifié (apprenant / formateur / admin). Jeton d'autorisation généré côté serveur, clés Zoom jamais exposées. Contrôle de compatibilité + demande d'autorisation micro / caméra ; message clair si navigateur non compatible. Le formateur voit « Démarrer la session » et peut la terminer.
+</div>
+</section>
+
+<!-- ===================== 9. MES CERTIFICATS + SUIVI COACHING ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">09 · MES CERTIFICATS (3 états) · 10 · SUIVI DES DEMANDES DE COACHING PRIVÉ (6 statuts + historique daté)</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;">
+  <div style="width:620px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:32px;">
+    <h1 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 4px;">Mes certificats</h1>
+    <p style="font-size:13px;color:#6d6a75;margin:0 0 20px;">PDF nominatifs, numérotés et vérifiables. Re-téléchargeables à tout moment.</p>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="border:1px solid #e6e1ef;border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:16px;">
+        <span style="width:44px;height:44px;border-radius:10px;background:#e7f7ee;color:#1a8747;display:flex;align-items:center;justify-content:center;font-size:19px;">🎓</span>
+        <div style="flex:1;"><b style="font-size:14.5px;">Comprendre le business du client</b><div style="font-size:12px;color:#6d6a75;margin-top:3px;">N° EMC-2026-00412 · délivrée le 22/08/2026</div></div>
+        <a href="#" style="background:#17151c;color:#fff;padding:10px 18px;border-radius:999px;font-size:12.5px;font-weight:700;white-space:nowrap;">Télécharger PDF</a>
+      </div>
+      <div style="border:1px solid #e6e1ef;border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:16px;">
+        <span style="width:44px;height:44px;border-radius:10px;background:#fff4e2;color:#a06a12;display:flex;align-items:center;justify-content:center;font-size:19px;">⏳</span>
+        <div style="flex:1;"><b style="font-size:14.5px;">Accroches qui stoppent le scroll &amp; IA copywriting</b><div style="font-size:12px;color:#6d6a75;margin-top:3px;">Chapitres : 2/3 vus · participation session : à venir</div></div>
+        <span style="border:1.5px solid #dcd7e6;color:#8a8695;padding:10px 18px;border-radius:999px;font-size:12.5px;font-weight:700;white-space:nowrap;">En progression</span>
+      </div>
+      <div style="border:1px dashed #cfc8dd;border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:16px;opacity:.8;">
+        <span style="width:44px;height:44px;border-radius:10px;background:#f0ecf5;color:#8a8695;display:flex;align-items:center;justify-content:center;font-size:19px;">🔒</span>
+        <div style="flex:1;"><b style="font-size:14.5px;color:#4b4855;">TikTok : de zéro à la première vidéo virale</b><div style="font-size:12px;color:#6d6a75;margin-top:3px;">Module non commencé</div></div>
+      </div>
+    </div>
+    <div style="margin-top:18px;background:#faf9fc;border-radius:12px;padding:14px 16px;font-size:12.5px;color:#6d6a75;line-height:1.6;">Conditions : 100 % des chapitres vus (temps réel). Le PDF reprend prénom, nom, module, formateur, date et QR de vérification.</div>
+  </div>
+  <div style="width:620px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:32px;">
+    <h1 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 4px;">Mes demandes de coaching privé</h1>
+    <p style="font-size:13px;color:#6d6a75;margin:0 0 18px;">Traitées par l'équipe sous 48 h ouvrées. Tarif fixe : 50 000 FCFA / heure. Le paiement n'intervient qu'après votre accord sur le créneau proposé.</p>
+    <div style="border:1.5px solid #80368D;border-radius:14px;padding:18px 20px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><b style="font-size:14.5px;">Coury Othniel — Accroches &amp; IA copywriting</b><span style="background:#f4ecf7;color:#80368D;font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:999px;">Tarif proposé</span></div>
+      <div style="font-size:13px;color:#4b4855;line-height:1.6;margin-bottom:12px;">Demande du 12/08 · « Retravailler les accroches de ma marque de cosmétiques » · Proposition : <b>2 h (100 000 FCFA) · samedi 20 sept 10h00</b></div>
+      <div style="display:flex;gap:10px;">
+        <a href="#" style="background:#80368D;color:#fff;padding:11px 20px;border-radius:999px;font-size:13px;font-weight:700;">Accepter et payer</a>
+        <a href="#" style="border:1.5px solid #dcd7e6;color:#4b4855;padding:11px 20px;border-radius:999px;font-size:13px;font-weight:700;">Proposer un autre créneau</a>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:.12em;color:#6d6a75;margin-bottom:10px;">LES 6 STATUTS D'UNE DEMANDE</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px;font-weight:700;">
+      <span style="background:#fff4e2;color:#a06a12;padding:7px 13px;border-radius:999px;">1 · En attente</span>
+      <span style="background:#eef0fa;color:#29358B;padding:7px 13px;border-radius:999px;">2 · En étude</span>
+      <span style="background:#f4ecf7;color:#80368D;padding:7px 13px;border-radius:999px;">3 · Créneau proposé</span>
+      <span style="background:#e7f7ee;color:#1a8747;padding:7px 13px;border-radius:999px;">4 · Confirmée (payée)</span>
+      <span style="background:#eeebf3;color:#6d6a75;padding:7px 13px;border-radius:999px;">5 · Réalisée</span>
+      <span style="background:#fdedee;color:#a3242f;padding:7px 13px;border-radius:999px;">6 · Refusée / expirée</span>
+    </div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:.12em;color:#6d6a75;margin:20px 0 10px;">HISTORIQUE DE VOS DEMANDES</div>
+    <div style="border:1px solid #e6e1ef;border-radius:12px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:88px 1fr 40px 150px;gap:10px;padding:10px 14px;background:#faf9fc;border-bottom:1px solid #eeebf3;font-size:10.5px;font-weight:700;letter-spacing:.06em;color:#6d6a75;text-transform:uppercase;"><span>Date</span><span>Formateur — module</span><span>Heures</span><span>Statut</span></div>
+      <div style="display:grid;grid-template-columns:88px 1fr 40px 150px;gap:10px;padding:12px 14px;border-bottom:1px solid #f3f0f8;font-size:12.5px;align-items:center;"><span>12/08/2026</span><span><b>Coury Othniel</b> — Accroches &amp; IA copywriting</span><span>2 h</span><span style="background:#f4ecf7;color:#80368D;font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:999px;text-align:center;">Créneau proposé</span></div>
+      <div style="display:grid;grid-template-columns:88px 1fr 40px 150px;gap:10px;padding:12px 14px;border-bottom:1px solid #f3f0f8;font-size:12.5px;align-items:center;"><span>28/07/2026</span><span><b>Lyle Soboro</b> — WhatsApp Business de A à Z</span><span>1 h</span><span style="display:flex;flex-direction:column;gap:3px;"><span style="background:#eeebf3;color:#6d6a75;font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:999px;text-align:center;">Réalisée ✓</span><a href="#" style="font-size:11px;font-weight:700;text-align:center;">Noter le formateur</a></span></div>
+      <div style="display:grid;grid-template-columns:88px 1fr 40px 150px;gap:10px;padding:12px 14px;font-size:12.5px;align-items:center;"><span>15/07/2026</span><span><b>Jérémie De Clercq</b> — Fixer le juste prix</span><span>2 h</span><span style="background:#fdedee;color:#a3242f;font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:999px;text-align:center;">Expirée</span></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 11. PARAMÈTRES + SUPPRESSION ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">11 · PARAMÈTRES DU COMPTE · 12 · PARCOURS DE SUPPRESSION (4 écrans)</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;">
+  <div style="width:560px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:32px;">
+    <h1 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0 0 20px;">Paramètres du compte</h1>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="border:1px solid #e6e1ef;border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;"><div><b style="font-size:14px;">Email de connexion</b><div style="font-size:12.5px;color:#6d6a75;">awa.kone@mail.ci</div></div><a href="#" style="font-size:13px;font-weight:700;">Modifier</a></div>
+      <div style="border:1px solid #e6e1ef;border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;"><div><b style="font-size:14px;">Numéro WhatsApp</b><div style="font-size:12.5px;color:#6d6a75;">+225 07 09 88 12 34 — rappels de session</div></div><a href="#" style="font-size:13px;font-weight:700;">Modifier</a></div>
+      <div style="border:1px solid #e6e1ef;border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;"><div><b style="font-size:14px;">Mot de passe</b><div style="font-size:12.5px;color:#6d6a75;">Dernière modification : 02/09/2026</div></div><a href="#" style="font-size:13px;font-weight:700;">Changer</a></div>
+      <div style="border:1px solid #e6e1ef;border-radius:12px;padding:16px 18px;">
+        <b style="font-size:14px;">Notifications</b>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;font-size:13px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span>Rappels de session de coaching (email + WhatsApp)</span><span style="width:38px;height:21px;border-radius:999px;background:#1fa855;position:relative;flex-shrink:0;"><span style="position:absolute;right:2px;top:2px;width:17px;height:17px;border-radius:50%;background:#fff;"></span></span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span>Nouveaux modules de mes programmes</span><span style="width:38px;height:21px;border-radius:999px;background:#1fa855;position:relative;flex-shrink:0;"><span style="position:absolute;right:2px;top:2px;width:17px;height:17px;border-radius:50%;background:#fff;"></span></span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span>Offres et actualités E-Masterclass Big Five</span><span style="width:38px;height:21px;border-radius:999px;background:#c9c4d3;position:relative;flex-shrink:0;"><span style="position:absolute;left:2px;top:2px;width:17px;height:17px;border-radius:50%;background:#fff;"></span></span></div>
+        </div>
+      </div>
+      <div style="border:1px solid #f2c4c9;border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;background:#fffafa;"><div><b style="font-size:14px;color:#a3242f;">Supprimer mon compte</b><div style="font-size:12.5px;color:#6d6a75;">Action définitive après délai de rétractation de 14 jours.</div></div><a href="#" style="font-size:13px;font-weight:700;color:#a3242f;">Supprimer</a></div>
+    </div>
+  </div>
+  <div style="width:680px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div style="background:#fff;border:1px solid #dcd7e6;border-radius:14px;padding:24px;">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#6d6a75;margin-bottom:10px;">ÉCRAN 1 — AVERTISSEMENT</div>
+      <b style="font-size:15px;color:#a3242f;">Supprimer votre compte ?</b>
+      <p style="font-size:12.5px;color:#4b4855;line-height:1.6;margin:8px 0 12px;">Vous perdrez définitivement : 2 modules achetés (accès à vie), 1 certificat, votre historique. Aucun remboursement.</p>
+      <div style="display:flex;gap:8px;"><a href="#" style="border:1.5px solid #17151c;color:#17151c;padding:10px 14px;border-radius:999px;font-size:12px;font-weight:700;">Conserver mon compte</a><a href="#" style="color:#a3242f;padding:10px 6px;font-size:12px;font-weight:700;">Continuer →</a></div>
+    </div>
+    <div style="background:#fff;border:1px solid #dcd7e6;border-radius:14px;padding:24px;">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#6d6a75;margin-bottom:10px;">ÉCRAN 2 — CONFIRMATION FORTE</div>
+      <b style="font-size:15px;">Confirmez avec votre mot de passe</b>
+      <input type="password" placeholder="Mot de passe actuel" style="width:100%;box-sizing:border-box;border:1.5px solid #dcd7e6;border-radius:10px;padding:11px 12px;font-size:13px;font-family:inherit;margin:10px 0;">
+      <label style="display:flex;gap:8px;font-size:12px;color:#4b4855;line-height:1.5;margin-bottom:12px;"><input type="checkbox" style="accent-color:#a3242f;">Je comprends que la suppression est irréversible après 14 jours.</label>
+      <a href="#" style="display:block;text-align:center;background:#a3242f;color:#fff;padding:11px;border-radius:999px;font-size:12.5px;font-weight:800;">Demander la suppression</a>
+    </div>
+    <div style="background:#fff;border:1px solid #dcd7e6;border-radius:14px;padding:24px;">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#6d6a75;margin-bottom:10px;">ÉCRAN 3 — DÉLAI DE GRÂCE</div>
+      <b style="font-size:15px;">Suppression programmée</b>
+      <p style="font-size:12.5px;color:#4b4855;line-height:1.6;margin:8px 0 12px;">Compte désactivé. Suppression définitive le <b>19/09/2026</b>. Reconnectez-vous avant cette date pour annuler.</p>
+      <span style="display:inline-block;background:#fff4e2;color:#a06a12;font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:999px;">J-14 · email de rappel à J-3</span>
+    </div>
+    <div style="background:#fff;border:1px solid #dcd7e6;border-radius:14px;padding:24px;">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#6d6a75;margin-bottom:10px;">ÉCRAN 4 — RÉACTIVATION</div>
+      <b style="font-size:15px;color:#1a8747;">Bon retour, Awa !</b>
+      <p style="font-size:12.5px;color:#4b4855;line-height:1.6;margin:8px 0 12px;">Votre connexion a annulé la suppression. Tous vos modules et certificats sont intacts.</p>
+      <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:11px;border-radius:999px;font-size:12.5px;font-weight:800;">Reprendre ma formation</a>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 13. PWA SYSTÈME ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">13 · ÉCRANS PROPRES À LA PWA — installation, splash, hors ligne, mise à jour (390)</div>
+<div style="display:flex;gap:20px;align-items:flex-start;width:max-content;">
+  <div style="width:300px;background:#fff;border:1px solid #dcd7e6;border-radius:24px;overflow:hidden;">
+    <div style="padding:20px 18px 8px;font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#6d6a75;">INVITATION À INSTALLER</div>
+    <div style="padding:0 18px 20px;">
+      <div style="background:#faf9fc;border:1px solid #e6e1ef;border-radius:16px;padding:18px;">
+        <img src="assets/logo.png" alt="" style="height:30px;display:block;margin-bottom:12px;">
+        <b style="font-size:14px;">Installez E-Masterclass Big Five sur votre téléphone</b>
+        <p style="font-size:12px;color:#4b4855;line-height:1.55;margin:8px 0 12px;">Accès en 1 clic depuis votre écran d'accueil, reprise de lecture instantanée, sans passer par le navigateur.</p>
+        <a href="#" style="display:block;text-align:center;background:#80368D;color:#fff;padding:12px;border-radius:999px;font-size:13px;font-weight:800;margin-bottom:8px;">Installer l'application</a>
+        <div style="text-align:center;font-size:12px;color:#6d6a75;">Plus tard</div>
+      </div>
+      <div style="margin-top:14px;font-size:11.5px;color:#6d6a75;line-height:1.6;"><b style="color:#17151c;">Android :</b> bannière native + menu ⋮ → « Ajouter à l'écran d'accueil ».<br><b style="color:#17151c;">iPhone :</b> tutoriel illustré — Partager <span style="border:1px solid #cfc8dd;border-radius:4px;padding:0 4px;">⬆</span> → « Sur l'écran d'accueil ».</div>
+    </div>
+  </div>
+  <div style="width:300px;background:#17151c;border:1px solid #dcd7e6;border-radius:24px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:480px;gap:16px;">
+    <div style="background:#fff;border-radius:20px;padding:16px 20px;"><img src="assets/logo.png" alt="" style="height:34px;display:block;"></div>
+    <div style="width:28px;height:28px;border:3px solid #3a2d45;border-top-color:#80368D;border-radius:50%;"></div>
+    <span style="font-size:11px;color:#6d6a75;position:absolute;"></span>
+    <div style="font-size:11.5px;color:#8a8695;">ÉCRAN DE LANCEMENT (SPLASH)</div>
+  </div>
+  <div style="width:300px;background:#faf9fc;border:1px solid #dcd7e6;border-radius:24px;overflow:hidden;">
+    <div style="padding:20px 18px 8px;font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#6d6a75;">HORS CONNEXION</div>
+    <div style="padding:28px 22px;text-align:center;">
+      <div style="width:56px;height:56px;border-radius:50%;background:#eeebf3;color:#8a8695;font-size:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">📡</div>
+      <b style="font-size:15px;">Vous êtes hors ligne</b>
+      <p style="font-size:12.5px;color:#4b4855;line-height:1.6;margin:8px 0 16px;">Vos vidéos nécessitent une connexion. Votre progression déjà enregistrée est en sécurité.</p>
+      <a href="#" style="display:inline-block;background:#17151c;color:#fff;padding:12px 22px;border-radius:999px;font-size:13px;font-weight:800;">Réessayer</a>
+      <div style="margin-top:18px;background:#e7f7ee;border:1px solid #bfe6cf;border-radius:12px;padding:11px 13px;font-size:11.5px;color:#166e3d;line-height:1.5;text-align:left;">✓ <b>Reconnexion</b> : « Connexion rétablie — reprise de la lecture à 24:12. »</div>
+    </div>
+  </div>
+  <div style="width:300px;background:#faf9fc;border:1px solid #dcd7e6;border-radius:24px;overflow:hidden;">
+    <div style="padding:20px 18px 8px;font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#6d6a75;">MISE À JOUR DISPONIBLE</div>
+    <div style="padding:12px 18px 20px;">
+      <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:16px;box-shadow:0 8px 24px rgba(23,21,28,.08);">
+        <b style="font-size:13.5px;">Nouvelle version disponible</b>
+        <p style="font-size:12px;color:#4b4855;line-height:1.55;margin:6px 0 12px;">Rechargez pour profiter des dernières améliorations. Votre lecture reprendra où vous en êtes.</p>
+        <div style="display:flex;gap:8px;"><a href="#" style="flex:1;text-align:center;background:#80368D;color:#fff;padding:11px;border-radius:999px;font-size:12.5px;font-weight:800;">Recharger</a><a href="#" style="flex:1;text-align:center;border:1.5px solid #dcd7e6;color:#4b4855;padding:11px;border-radius:999px;font-size:12.5px;font-weight:700;">Plus tard</a></div>
+      </div>
+      <div style="margin-top:14px;font-size:11.5px;color:#6d6a75;line-height:1.6;">Toast non bloquant, affiché en bas d'écran. La mise à jour ne s'applique jamais pendant une lecture vidéo en cours.</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 14. TABLETTE ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">14 · TABLETTE (768) — vue d'ensemble, la page complexe du dashboard</div>
+<div style="width:768px;background:#faf9fc;border:1px solid #dcd7e6;border-radius:16px;overflow:hidden;">
+  <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 28px;">
+    <img src="assets/logo.png" alt="" style="height:36px;display:block;">
+    <nav style="display:flex;align-items:center;gap:18px;font-size:13px;font-weight:600;"><a href="#" style="color:#17151c;border-bottom:2px solid #17151c;padding-bottom:3px;">Modules</a><a href="#" style="color:#4b4855;">Sessions</a><a href="#" style="color:#4b4855;">Certificats</a><div style="width:32px;height:32px;border-radius:50%;background:#80368D;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;">AK</div></nav>
+  </header>
+  <div style="padding:24px 28px 32px;">
+    <div style="background:#fff;border:1.5px solid #e3c9ec;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+      <div style="flex:1;"><b style="font-size:13.5px;">Profil apprenant — 60 %</b><div style="height:6px;background:#f0ecf5;border-radius:999px;margin-top:8px;overflow:hidden;"><div style="width:60%;height:100%;background:#80368D;"></div></div></div>
+      <a href="#" style="background:#80368D;color:#fff;padding:10px 18px;border-radius:999px;font-size:12.5px;font-weight:700;white-space:nowrap;">Compléter</a>
+    </div>
+    <h1 style="font-family:'Jost',sans-serif;font-size:23px;font-weight:300;margin:0 0 16px;">Bonjour Awa</h1>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:18px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="font-size:10.5px;font-weight:700;color:#80368D;letter-spacing:.08em;">COPYWRITING</span><span style="background:#f4ecf7;color:#80368D;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;">En cours</span></div>
+        <b style="font-size:14px;line-height:1.35;display:block;margin-bottom:10px;">Accroches qui stoppent le scroll &amp; IA copywriting</b>
+        <a href="#" style="display:block;text-align:center;background:#17151c;color:#fff;padding:11px;border-radius:999px;font-size:13px;font-weight:700;">Continuer</a>
+      </div>
+      <div style="background:#17151c;color:#fff;border-radius:14px;padding:18px;">
+        <b style="font-size:13.5px;">Prochaine session</b>
+        <div style="font-size:12.5px;color:#d8d4e0;margin:6px 0 12px;">Jeu 10 sept · 19h00 GMT<br>Coury Othniel · Zoom</div>
+        <span style="display:block;text-align:center;background:#4b4653;color:#b9b4c4;padding:10px;border-radius:999px;font-size:12px;font-weight:700;">🔒 Profil à compléter</span>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+</div>
+</x-dc>
+</body>
+</html>

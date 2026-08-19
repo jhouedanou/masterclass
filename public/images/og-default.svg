@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="E-Masterclass Big Five">
+  <defs>
+    <pattern id="p" width="48" height="48" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <rect width="48" height="48" fill="#f3f0f8"/>
+      <rect width="24" height="48" fill="#eae5f2"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#p)"/>
+  <text x="600" y="315" text-anchor="middle" font-family="Jost, sans-serif" font-size="50" fill="#6d6a75">E-Masterclass Big Five</text>
+</svg>

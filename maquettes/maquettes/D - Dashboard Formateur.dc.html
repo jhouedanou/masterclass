@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+@font-face{font-family:'Jost';src:url('assets/fonts/Jost-Light.ttf') format('truetype');font-weight:300;font-style:normal;font-display:swap;}
+@font-face{font-family:'Jost';src:url('assets/fonts/Jost-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:'Jost';src:url('assets/fonts/Jost-Medium.ttf') format('truetype');font-weight:500;font-style:normal;font-display:swap;}
+@font-face{font-family:'Jost';src:url('assets/fonts/Jost-SemiBold.ttf') format('truetype');font-weight:600;font-style:normal;font-display:swap;}
+@font-face{font-family:'Mulish';src:url('assets/fonts/Mulish-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:'Mulish';src:url('assets/fonts/Mulish-Italic.ttf') format('truetype');font-weight:400;font-style:italic;font-display:swap;}
+@font-face{font-family:'Mulish';src:url('assets/fonts/Mulish-SemiBold.ttf') format('truetype');font-weight:600;font-style:normal;font-display:swap;}
+@font-face{font-family:'Mulish';src:url('assets/fonts/Mulish-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:swap;}
+@font-face{font-family:'Mulish';src:url('assets/fonts/Mulish-ExtraBold.ttf') format('truetype');font-weight:800;font-style:normal;font-display:swap;}
+
+body{margin:0;background:#edeaf2;font-family:'Mulish',sans-serif;color:#17151c;}
+a{color:#80368D;text-decoration:none;}a:hover{color:#29358B;}
+</style>
+</helmet>
+<div style="padding:48px;display:flex;flex-direction:column;gap:64px;">
+<div style="font-family:'Mulish',sans-serif;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6d6a75;"><a href="A - Site Vitrine.dc.html">A. Site vitrine</a> · <a href="B - Dashboard Apprenant.dc.html">B. Dashboard apprenant</a> · <a href="C - Dashboard Admin.dc.html">C. Dashboard admin</a> · Maquettes E-Masterclass — D. Dashboard formateur (persona : Coury Othniel, formateur avec coaching privé) · <a href="E - Diagramme des parcours.dc.html">E. Diagramme des parcours</a></div>
+
+<!-- ===================== 1. VUE D'ENSEMBLE ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">01 · VUE D'ENSEMBLE — le formateur ne voit que ses propres modules, sessions, apprenants et revenus (desktop 1440)</div>
+<div style="width:1440px;background:#faf9fc;border:1px solid #dcd7e6;border-radius:8px;overflow:hidden;" data-screen-label="01 Vue d'ensemble">
+  <header style="background:#fff;border-bottom:1px solid #eeebf3;display:flex;align-items:center;justify-content:space-between;padding:14px 48px;">
+    <div style="display:flex;align-items:center;gap:14px;"><img src="assets/logo.png" alt="E-Masterclass | Big Five" style="height:36px;display:block;"><span style="font-size:10.5px;letter-spacing:.14em;color:#8a8695;text-transform:uppercase;font-weight:700;border-left:1px solid #eeebf3;padding-left:14px;">Espace formateur</span></div>
+    <nav style="display:flex;align-items:center;gap:26px;font-size:14.5px;font-weight:600;">
+      <a href="#" style="color:#17151c;border-bottom:2px solid #17151c;padding-bottom:3px;">Vue d'ensemble</a>
+      <a href="#" style="color:#4b4855;">Mes modules</a>
+      <a href="#" style="color:#4b4855;">Coaching collectif</a>
+      <a href="#" style="color:#4b4855;">Coaching privé <span style="background:#80368D;color:#fff;font-size:10.5px;border-radius:999px;padding:2px 7px;">2</span></a>
+      <a href="#" style="color:#4b4855;">Revenus</a>
+      <div style="display:flex;align-items:center;gap:10px;"><div style="width:36px;height:36px;border-radius:50%;background:#80368D;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;">CO</div><span style="font-size:14px;">Coury</span><a href="#" style="font-size:13px;color:#6d6a75;">Déconnexion</a></div>
+    </nav>
+  </header>
+  <div style="padding:32px 48px 44px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;">
+      <h1 style="font-family:'Jost',sans-serif;font-size:28px;font-weight:300;margin:0;">Bonjour Coury — vos indicateurs du mois</h1>
+      <div style="display:flex;gap:10px;font-size:13px;"><span style="background:#fff;border:1px solid #dcd7e6;border-radius:999px;padding:9px 16px;font-weight:600;">Septembre 2026 ▾</span><span style="background:#fff;border:1px solid #dcd7e6;border-radius:999px;padding:9px 16px;font-weight:600;">Tous mes modules ▾</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px;">
+      <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:18px;"><div style="font-size:12px;color:#6d6a75;margin-bottom:5px;">Apprenants inscrits</div><div style="font-family:'Jost',sans-serif;font-size:27px;font-weight:300">118</div><div style="font-size:11.5px;color:#1a8747;font-weight:700;margin-top:3px;">+14 ce mois</div></div>
+      <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:18px;"><div style="font-size:12px;color:#6d6a75;margin-bottom:5px;">Complétion moyenne</div><div style="font-family:'Jost',sans-serif;font-size:27px;font-weight:300">71 %</div><div style="font-size:11.5px;color:#6d6a75;margin-top:3px;">sur vos 4 modules</div></div>
+      <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:18px;"><div style="font-size:12px;color:#6d6a75;margin-bottom:5px;">Présence en session</div><div style="font-family:'Jost',sans-serif;font-size:27px;font-weight:300">82 %</div><div style="font-size:11.5px;color:#6d6a75;margin-top:3px;">moyenne des 6 dernières</div></div>
+      <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:18px;"><div style="font-size:12px;color:#6d6a75;margin-bottom:5px;">Note moyenne</div><div style="font-family:'Jost',sans-serif;font-size:27px;font-weight:300">4,8 <span style="font-size:14px;color:#f2b01e;">★</span></div><div style="font-size:11.5px;color:#6d6a75;margin-top:3px;">64 notes reçues</div></div>
+      <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:18px;"><div style="font-size:12px;color:#6d6a75;margin-bottom:5px;">Rémunération du mois</div><div style="font-family:'Jost',sans-serif;font-size:27px;font-weight:300">411 840 <span style="font-size:13px;">F</span></div><div style="font-size:11.5px;color:#6d6a75;margin-top:3px;">détail dans Revenus</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:16px;">
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="background:#17151c;color:#fff;border-radius:16px;padding:24px;display:flex;align-items:center;gap:20px;">
+          <div style="text-align:center;background:#2a2735;border-radius:10px;padding:10px 16px;"><b style="display:block;font-size:20px;color:#cfa6de;">10</b><span style="font-size:11px;font-weight:700;color:#cfa6de;">SEPT</span></div>
+          <div style="flex:1;"><b style="font-size:15.5px;">Votre prochaine coaching session — jeu 10 sept · 19h00 GMT</b><div style="font-size:13px;color:#b9b4c4;margin-top:4px;">Copywriting &amp; Contenu · modules 04, 05, 06 · 19/25 inscrits · les sujets soumis par les inscrits sont prêts à consulter</div></div>
+          <a href="#" style="background:#80368D;color:#fff;padding:12px 22px;border-radius:999px;font-size:13.5px;font-weight:800;white-space:nowrap;">Démarrer la session</a>
+        </div>
+        <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:22px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:14px;"><b style="font-size:15px;">Sujets soumis pour la session du 10/09</b><a href="#" style="font-size:12.5px;font-weight:700;">Les 19 réponses →</a></div>
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:#4b4855;">
+            <div style="background:#faf9fc;border-radius:10px;padding:11px 14px;"><b>Awa K.</b> — « Mes accroches sont vues mais ne génèrent presque aucun clic. »</div>
+            <div style="background:#faf9fc;border-radius:10px;padding:11px 14px;"><b>Moussa D.</b> — « Adapter une même accroche à Instagram et LinkedIn sans la réécrire. »</div>
+            <div style="background:#faf9fc;border-radius:10px;padding:11px 14px;"><b>Fatou B.</b> — « Faire relire 3 accroches pour ma marque de cosmétiques. »</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:22px;">
+          <b style="font-size:15px;">À traiter</b>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;font-size:13.5px;">
+            <div style="display:flex;justify-content:space-between;"><span>Coaching privé — séances à venir</span><b style="color:#80368D;">2</b></div>
+            <div style="display:flex;justify-content:space-between;"><span>Sujets à lire avant le 10/09</span><b style="color:#80368D;">19</b></div>
+            <div style="display:flex;justify-content:space-between;"><span>Nouvelles notes reçues</span><b>5</b></div>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:22px;">
+          <b style="font-size:15px;">Dernières notes reçues</b>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;font-size:13px;color:#4b4855;">
+            <div style="display:flex;justify-content:space-between;gap:12px;"><span><span style="color:#f2b01e;">★★★★★</span> « Cas pratiques très concrets »</span><span style="color:#6d6a75;white-space:nowrap;">session 12/08</span></div>
+            <div style="display:flex;justify-content:space-between;gap:12px;"><span><span style="color:#f2b01e;">★★★★</span><span style="color:#dcd7e6;">★</span> « J'aurais aimé plus de temps »</span><span style="color:#6d6a75;white-space:nowrap;">privé 28/07</span></div>
+            <div style="display:flex;justify-content:space-between;gap:12px;"><span><span style="color:#f2b01e;">★★★★★</span> « Retours précis sur mes accroches »</span><span style="color:#6d6a75;white-space:nowrap;">privé 20/07</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 2. PROFIL ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">02 · PROFIL FORMATEUR — boutons « Modifier » et « Enregistrer » · alimente la page publique /formateurs et le bloc 8 des fiches commerciales</div>
+<div style="width:720px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:40px;" data-screen-label="02 Profil formateur">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+    <h1 style="font-family:'Jost',sans-serif;font-size:26px;font-weight:300;margin:0;">Votre profil formateur</h1>
+    <span style="background:#f4ecf7;color:#80368D;font-size:11px;font-weight:700;padding:5px 12px;border-radius:999px;">Formateur + coaching privé</span>
+  </div>
+  <p style="font-size:13.5px;color:#6d6a75;margin:0 0 24px;">Photo, bio et expertises sont publiées telles quelles sur la page /formateurs et sur vos fiches modules.</p>
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:22px;">
+    <div style="width:72px;height:72px;border-radius:50%;background:repeating-linear-gradient(45deg,#f3f0f8,#f3f0f8 8px,#eae5f2 8px,#eae5f2 16px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:9px;color:#6d6a75;">photo</div>
+    <a href="#" style="border:1.5px solid #dcd7e6;color:#4b4855;border-radius:999px;padding:9px 18px;font-size:12.5px;font-weight:700;">Changer la photo</a>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+    <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Nom public<input value="Coury Othniel" style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+    <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Spécialité affichée<input value="Copywriting &amp; Contenu" style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+    <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Email professionnel<input value="coury@bigfiveabidjan.com" style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+    <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;">Numéro WhatsApp<input value="+225 07 08 11 22 33" style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;"></label>
+  </div>
+  <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;margin-bottom:14px;">Bio publique<textarea style="border:1.5px solid #dcd7e6;border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit;min-height:84px;line-height:1.6;">Copywriter spécialisé dans les contenus qui convertissent sur les réseaux sociaux en Afrique francophone. Il anime les modules de rédaction persuasive des deux programmes.</textarea></label>
+  <div style="background:#faf9fc;border:1px solid #eeebf3;border-radius:12px;padding:14px 16px;font-size:12.5px;color:#6d6a75;margin-bottom:22px;line-height:1.6;">Coaching privé : <b style="color:#17151c;">50 000 FCFA / h — tarif fixe de la plateforme</b>, non modifiable ici. Vos modules et l'ordre d'affichage public sont gérés par l'équipe Big Five.</div>
+  <div style="display:flex;gap:14px;align-items:center;">
+    <a href="#" style="border:1.5px solid #17151c;color:#17151c;padding:14px 28px;border-radius:999px;font-size:15px;font-weight:700;">Modifier</a>
+    <a href="#" style="background:#80368D;color:#fff;padding:14px 28px;border-radius:999px;font-size:15px;font-weight:800;">Enregistrer</a>
+    <span style="font-size:13px;color:#6d6a75;">« Modifier » déverrouille les champs, « Enregistrer » publie la mise à jour.</span>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 3. MODULES ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">03 · MES MODULES — statistiques d'inscription et de complétion · filtres par période et par module</div>
+<div style="width:1200px;background:#f5f3f8;border:1px solid #dcd7e6;border-radius:8px;padding:32px 36px;" data-screen-label="03 Mes modules">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <h1 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0;">Mes modules — statistiques d'inscription</h1>
+    <div style="display:flex;gap:10px;font-size:12.5px;"><span style="background:#fff;border:1px solid #dcd7e6;border-radius:999px;padding:8px 15px;font-weight:600;">🗓 Période : 30 derniers jours ▾</span><span style="background:#fff;border:1px solid #dcd7e6;border-radius:999px;padding:8px 15px;font-weight:600;">Module : tous ▾</span></div>
+  </div>
+  <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;overflow:hidden;">
+    <div style="display:grid;grid-template-columns:1.5fr 110px 130px 130px 120px;gap:12px;padding:13px 20px;background:#faf9fc;border-bottom:1px solid #eeebf3;font-size:11px;font-weight:700;letter-spacing:.06em;color:#6d6a75;text-transform:uppercase;"><span>Module</span><span>Inscrits</span><span>Nouveaux (30 j)</span><span>Complétion</span><span>Certificats</span></div>
+    <div style="display:grid;grid-template-columns:1.5fr 110px 130px 130px 120px;gap:12px;padding:15px 20px;border-bottom:1px solid #f3f0f8;font-size:13.5px;align-items:center;"><span><b>Accroches qui stoppent le scroll &amp; IA copywriting</b><br><span style="font-size:11.5px;color:#80368D;font-weight:700;">SM · Copywriting &amp; Contenu</span></span><b>46</b><b style="color:#1a8747;">+9</b><span style="display:flex;align-items:center;gap:8px;"><span style="flex:1;height:6px;background:#f0ecf5;border-radius:999px;"><span style="display:block;width:74%;height:100%;background:#80368D;border-radius:999px;"></span></span>74 %</span><b>21</b></div>
+    <div style="display:grid;grid-template-columns:1.5fr 110px 130px 130px 120px;gap:12px;padding:15px 20px;border-bottom:1px solid #f3f0f8;font-size:13.5px;align-items:center;"><span><b>Formules de rédaction persuasive</b><br><span style="font-size:11.5px;color:#80368D;font-weight:700;">SM · Copywriting &amp; Contenu</span></span><b>34</b><b style="color:#1a8747;">+4</b><span style="display:flex;align-items:center;gap:8px;"><span style="flex:1;height:6px;background:#f0ecf5;border-radius:999px;"><span style="display:block;width:69%;height:100%;background:#80368D;border-radius:999px;"></span></span>69 %</span><b>15</b></div>
+    <div style="display:grid;grid-template-columns:1.5fr 110px 130px 130px 120px;gap:12px;padding:15px 20px;border-bottom:1px solid #f3f0f8;font-size:13.5px;align-items:center;"><span><b>Contenus qui attirent des clients</b><br><span style="font-size:11.5px;color:#29358B;font-weight:700;">ENT · Visibilité</span></span><b>27</b><b style="color:#1a8747;">+3</b><span style="display:flex;align-items:center;gap:8px;"><span style="flex:1;height:6px;background:#f0ecf5;border-radius:999px;"><span style="display:block;width:66%;height:100%;background:#29358B;border-radius:999px;"></span></span>66 %</span><b>11</b></div>
+    <div style="display:grid;grid-template-columns:1.5fr 110px 130px 130px 120px;gap:12px;padding:15px 20px;font-size:13.5px;align-items:center;"><span><b>Créer un buzz : mécaniques de contenus viraux</b><br><span style="font-size:11.5px;color:#80368D;font-weight:700;">SM · Copywriting &amp; Contenu — teasing publié</span></span><b>—</b><span style="color:#6d6a75;">—</span><span style="color:#6d6a75;font-size:12.5px;">En préparation</span><span style="color:#6d6a75;">—</span></div>
+  </div>
+  <div style="margin-top:12px;font-size:12px;color:#6d6a75;">Lecture seule — les contenus des modules sont produits avec l'équipe Big Five (dashboard admin, écran 09). Cliquer un module ouvre le détail : progression chapitre par chapitre, liste des inscrits.</div>
+</div>
+</section>
+
+<!-- ===================== 4. SESSIONS + APPRENANTS ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">04 · MES COACHING SESSIONS — taux de participation · consultation des profils apprenants concernés (fiche persona en lecture seule)</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;" data-screen-label="04 Coaching collectif">
+  <div style="width:880px;background:#f5f3f8;border:1px solid #dcd7e6;border-radius:8px;padding:30px;">
+    <h1 style="font-family:'Jost',sans-serif;font-size:22px;font-weight:300;margin:0 0 16px;">Mes sessions de coaching</h1>
+    <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:135px 1fr 120px 130px 110px;gap:12px;padding:12px 18px;background:#faf9fc;border-bottom:1px solid #eeebf3;font-size:11px;font-weight:700;letter-spacing:.06em;color:#6d6a75;text-transform:uppercase;"><span>Date · Heure</span><span>Session</span><span>Inscrits</span><span>Participation</span><span>Notes</span></div>
+      <div style="display:grid;grid-template-columns:135px 1fr 120px 130px 110px;gap:12px;padding:14px 18px;border-bottom:1px solid #f3f0f8;font-size:13px;align-items:center;background:#fdfbfe;border-left:3px solid #80368D;"><b>Jeu 10/09 · 19h00</b><span>Copywriting &amp; Contenu — modules 04, 05, 06</span><span><b>19</b> / 25</span><span style="color:#6d6a75;">à venir</span><span style="font-size:12px;font-weight:700;"><a href="#">19 sujets →</a></span></div>
+      <div style="display:grid;grid-template-columns:135px 1fr 120px 130px 110px;gap:12px;padding:14px 18px;border-bottom:1px solid #f3f0f8;font-size:13px;align-items:center;"><b>Mer 12/08 · 19h00</b><span>Copywriting &amp; Contenu — session d'août</span><span><b>23</b> / 25</span><span><b style="color:#1a8747;">87 %</b> présents</span><span style="color:#f2b01e;font-weight:700;">4,9 ★ <span style="color:#6d6a75;font-weight:400;font-size:11.5px;">(17)</span></span></div>
+      <div style="display:grid;grid-template-columns:135px 1fr 120px 130px 110px;gap:12px;padding:14px 18px;font-size:13px;align-items:center;"><b>Jeu 10/07 · 19h00</b><span>Copywriting &amp; Contenu — session de juillet</span><span><b>21</b> / 25</span><span><b style="color:#1a8747;">76 %</b> présents</span><span style="color:#f2b01e;font-weight:700;">4,7 ★ <span style="color:#6d6a75;font-weight:400;font-size:11.5px;">(14)</span></span></div>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:#6d6a75;line-height:1.6;">Le planning est fixé par l'équipe Big Five (calendrier admin, écran 03). La présence Zoom est pointée automatiquement ; les notes proviennent de l'évaluation post-session des apprenants. Cliquer « inscrits » ouvre la liste avec accès aux fiches profils.</div>
+  </div>
+  <div style="width:440px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:28px;">
+    <div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#6d6a75;margin-bottom:12px;">FICHE APPRENANT — LECTURE SEULE (INSCRITS À VOS MODULES / SESSIONS)</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+      <div style="width:48px;height:48px;border-radius:50%;background:#80368D;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;">AK</div>
+      <div><b style="font-size:16px;">Awa Koné</b><div style="font-size:12px;color:#6d6a75;">Abidjan, Côte d'Ivoire · inscrite à 2 de vos modules</div></div>
+    </div>
+    <div style="background:#faf7fc;border:1px solid #ecdff2;border-radius:12px;padding:16px;margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#80368D;text-transform:uppercase;margin-bottom:10px;">Persona — pour préparer vos sessions</div>
+      <div style="display:flex;flex-direction:column;gap:7px;font-size:13px;">
+        <div style="display:flex;justify-content:space-between;"><span style="color:#6d6a75;">Secteur</span><b>Agence digitale</b></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:#6d6a75;">Expérience</span><b>1 à 3 ans</b></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:#6d6a75;">Réseaux gérés</span><b>Instagram, TikTok</b></div>
+        <div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:#6d6a75;">Objectif</span><b style="text-align:right;">Signer 3 clients d'ici décembre</b></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;"><span style="color:#6d6a75;">Progression — Accroches &amp; IA</span><b>2 / 3 chapitres</b></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:#6d6a75;">Sujet soumis pour le 10/09</span><b style="color:#80368D;">Oui — à lire</b></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:#6d6a75;">Coaching privé</span><b>1 demande en cours</b></div>
+    </div>
+    <div style="background:#faf9fc;border:1px solid #eeebf3;border-radius:10px;padding:11px 13px;font-size:11.5px;color:#6d6a75;line-height:1.55;">Vous ne voyez que les apprenants inscrits à vos modules, sessions ou coachings privés. Contact et paiements restent masqués — la relation passe par la plateforme.</div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 5. COACHING PRIVÉ ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">05 · COACHING PRIVÉ — visible uniquement avec l'accès « Formateur avec coaching privé » · à droite : état verrouillé d'un formateur simple</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;" data-screen-label="05 Coaching privé">
+  <div style="width:880px;background:#f5f3f8;border:1px solid #dcd7e6;border-radius:8px;padding:30px;">
+    <h1 style="font-family:'Jost',sans-serif;font-size:22px;font-weight:300;margin:0 0 4px;">Coaching privé</h1>
+    <div style="font-size:12.5px;color:#6d6a75;margin-bottom:16px;">Tarif fixe plateforme : 50 000 FCFA / h. La planification et le paiement sont gérés par l'équipe — vous animez.</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="background:#fff;border:1.5px solid #80368D;border-radius:14px;padding:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><b style="font-size:15px;">Awa Koné — sam 12/09 · 10h00–12h00 · 2 h</b><span style="background:#e7f7ee;color:#1a8747;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;">Confirmée · payée ✓</span></div>
+        <div style="font-size:13px;color:#4b4855;line-height:1.6;margin-bottom:12px;"><b>Sujets soumis :</b> « Retravailler les accroches de ma marque de cosmétiques — je n'arrive pas à dépasser 2 % d'engagement. » · Lien Instagram fourni.</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <a href="#" style="background:#80368D;color:#fff;padding:11px 20px;border-radius:999px;font-size:12.5px;font-weight:800;">Démarrer la session (jour J)</a>
+          <a href="#" style="border:1.5px solid #dcd7e6;color:#4b4855;padding:11px 20px;border-radius:999px;font-size:12.5px;font-weight:700;">Voir la fiche apprenant</a>
+          <span style="font-size:11.5px;color:#6d6a75;">Événement Google Agenda créé — rappels automatiques</span>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;font-size:13.5px;">
+        <span><b>Moussa Diabaté</b> — demande en cours de traitement par l'équipe (créneau à confirmer)</span>
+        <span style="background:#fff4e2;color:#a06a12;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;">En attente</span>
+      </div>
+      <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;font-size:13.5px;opacity:.8;">
+        <span><b>Fatou Bamba</b> — lun 28/07 · 1 h · réalisée · notée <b style="color:#f2b01e;">5 ★</b></span>
+        <span style="background:#eeebf3;color:#6d6a75;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;">Réalisée</span>
+      </div>
+    </div>
+    <div style="margin-top:14px;background:#fff;border:1px solid #e6e1ef;border-radius:12px;padding:14px 18px;font-size:12.5px;color:#6d6a75;line-height:1.6;">L'apprenant soumet obligatoirement ses préoccupations avant d'entrer en session — vous les recevez ici et par email. Votre rémunération coaching apparaît dans l'onglet Revenus.</div>
+  </div>
+  <div style="width:420px;background:#fff;border:1px solid #dcd7e6;border-radius:8px;padding:36px;text-align:center;">
+    <div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#6d6a75;margin-bottom:18px;">ÉTAT — FORMATEUR SIMPLE (SECTION VERROUILLÉE)</div>
+    <div style="width:56px;height:56px;border-radius:50%;background:#f0ecf5;color:#6d6a75;font-size:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">🔒</div>
+    <b style="font-size:16px;">Coaching privé non activé</b>
+    <p style="font-size:13px;color:#6d6a75;line-height:1.6;margin:8px auto 16px;max-width:300px;">Votre accès actuel est « Formateur simple ». L'équipe Big Five peut activer le coaching privé pour votre profil : vous apparaîtrez alors sur /formateurs au tarif fixe de 50 000 FCFA / h.</p>
+    <a href="#" style="display:inline-block;border:1.5px solid #17151c;color:#17151c;padding:12px 22px;border-radius:999px;font-size:13px;font-weight:800;">Demander l'activation à l'équipe</a>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 6. REVENUS ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">06 · MES REVENUS — CA généré · frais de paiement · marge brute Big Five · rémunération formateur (marge × 30 %) · filtres par période et par module</div>
+<div style="width:1200px;background:#f5f3f8;border:1px solid #dcd7e6;border-radius:8px;padding:32px 36px;" data-screen-label="06 Revenus">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <h1 style="font-family:'Jost',sans-serif;font-size:24px;font-weight:300;margin:0;">Mes revenus</h1>
+    <div style="display:flex;gap:10px;font-size:12.5px;"><span style="background:#fff;border:1px solid #dcd7e6;border-radius:999px;padding:8px 15px;font-weight:600;">🗓 Période : 6 juil. – 5 août ▾</span><span style="background:#fff;border:1px solid #dcd7e6;border-radius:999px;padding:8px 15px;font-weight:600;">Module : tous ▾</span></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px;">
+    <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:18px;"><div style="font-size:12px;color:#6d6a75;margin-bottom:5px;">CA généré</div><div style="font-family:'Jost',sans-serif;font-size:22px;font-weight:300">1 430 000 <span style="font-size:12px;">F</span></div><div style="font-size:11px;color:#6d6a75;margin-top:3px;">vos modules + coaching privé</div></div>
+    <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:18px;"><div style="font-size:12px;color:#6d6a75;margin-bottom:5px;">Frais de paiement</div><div style="font-family:'Jost',sans-serif;font-size:22px;font-weight:300">57 200 <span style="font-size:12px;">F</span></div><div style="font-size:11px;color:#6d6a75;margin-top:3px;">FeexPay — 4 %</div></div>
+    <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:18px;"><div style="font-size:12px;color:#6d6a75;margin-bottom:5px;">Marge brute</div><div style="font-family:'Jost',sans-serif;font-size:22px;font-weight:300">1 372 800 <span style="font-size:12px;">F</span></div><div style="font-size:11px;color:#6d6a75;margin-top:3px;">CA − frais de paiement</div></div>
+    <div style="background:#fff;border:1.5px solid #80368D;border-radius:14px;padding:18px;"><div style="font-size:12px;color:#80368D;font-weight:700;margin-bottom:5px;">Votre rémunération</div><div style="font-family:'Jost',sans-serif;font-size:22px;font-weight:300">411 840 <span style="font-size:12px;">F</span></div><div style="font-size:11px;color:#6d6a75;margin-top:3px;">marge brute × 30 %</div></div>
+    <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;padding:18px;"><div style="font-size:12px;color:#6d6a75;margin-bottom:5px;">Marge brute Big Five</div><div style="font-family:'Jost',sans-serif;font-size:22px;font-weight:300">960 960 <span style="font-size:12px;">F</span></div><div style="font-size:11px;color:#6d6a75;margin-top:3px;">marge brute × 70 %</div></div>
+  </div>
+  <div style="background:#fff;border:1px solid #e6e1ef;border-radius:14px;overflow:hidden;">
+    <div style="display:grid;grid-template-columns:1.5fr 100px 120px 120px 130px;gap:12px;padding:12px 20px;background:#faf9fc;border-bottom:1px solid #eeebf3;font-size:11px;font-weight:700;letter-spacing:.06em;color:#6d6a75;text-transform:uppercase;"><span>Source</span><span>Ventes</span><span>CA</span><span>Marge brute</span><span>Votre part (30 %)</span></div>
+    <div style="display:grid;grid-template-columns:1.5fr 100px 120px 120px 130px;gap:12px;padding:14px 20px;border-bottom:1px solid #f3f0f8;font-size:13px;align-items:center;"><span><b>Accroches qui stoppent le scroll &amp; IA copywriting</b></span><span>46</span><span>460 000 F</span><span>441 600 F</span><b>132 480 F</b></div>
+    <div style="display:grid;grid-template-columns:1.5fr 100px 120px 120px 130px;gap:12px;padding:14px 20px;border-bottom:1px solid #f3f0f8;font-size:13px;align-items:center;"><span><b>Formules de rédaction persuasive</b></span><span>34</span><span>340 000 F</span><span>326 400 F</span><b>97 920 F</b></div>
+    <div style="display:grid;grid-template-columns:1.5fr 100px 120px 120px 130px;gap:12px;padding:14px 20px;border-bottom:1px solid #f3f0f8;font-size:13px;align-items:center;"><span><b>Contenus qui attirent des clients</b></span><span>27</span><span>270 000 F</span><span>259 200 F</span><b>77 760 F</b></div>
+    <div style="display:grid;grid-template-columns:1.5fr 100px 120px 120px 130px;gap:12px;padding:14px 20px;border-bottom:1px solid #f3f0f8;font-size:13px;align-items:center;"><span><b>Autres modules</b> (1)</span><span>11</span><span>110 000 F</span><span>105 600 F</span><b>31 680 F</b></div>
+    <div style="display:grid;grid-template-columns:1.5fr 100px 120px 120px 130px;gap:12px;padding:14px 20px;border-bottom:1px solid #f3f0f8;font-size:13px;align-items:center;"><span><b>Coaching privé</b> — 5 h à 50 000 F</span><span>3 séances</span><span>250 000 F</span><span>240 000 F</span><b>72 000 F</b></div>
+    <div style="display:grid;grid-template-columns:1.5fr 100px 120px 120px 130px;gap:12px;padding:14px 20px;background:#faf7fc;font-size:13px;align-items:center;"><b>Total</b><span></span><b>1 430 000 F</b><b>1 372 800 F</b><b style="color:#80368D;">411 840 F</b></div>
+  </div>
+  <div style="margin-top:12px;font-size:12px;color:#6d6a75;line-height:1.6;">Répartition marge brute : 70 % Big Five · 30 % formateur (pourcentages fixés par contrat, paramétrés côté admin). Versement mensuel par l'équipe — le relevé PDF de chaque mois est téléchargeable ici.</div>
+</div>
+</section>
+
+<!-- ===================== 7. MOBILE PWA ===================== -->
+<section>
+<div style="font-family:monospace;font-size:12px;letter-spacing:.1em;color:#6d6a75;margin-bottom:8px;">07 · PWA MOBILE FORMATEUR (390) — vue d'ensemble &amp; revenus · même installation « Ajouter à l'écran d'accueil » que l'espace apprenant</div>
+<div style="display:flex;gap:24px;align-items:flex-start;width:max-content;" data-screen-label="07 Mobile PWA">
+  <div style="width:390px;background:#faf9fc;border:1px solid #dcd7e6;border-radius:28px;overflow:hidden;">
+    <header style="background:#fff;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #eeebf3;">
+      <img src="assets/logo.png" alt="" style="height:36px;display:block;">
+      <div style="width:34px;height:34px;border-radius:50%;background:#80368D;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;">CO</div>
+    </header>
+    <div style="padding:18px;">
+      <h1 style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300;margin:0 0 12px;">Bonjour Coury</h1>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div style="background:#fff;border:1px solid #e6e1ef;border-radius:12px;padding:14px;"><div style="font-size:11px;color:#6d6a75;">Inscrits</div><div style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300">118</div></div>
+        <div style="background:#fff;border:1px solid #e6e1ef;border-radius:12px;padding:14px;"><div style="font-size:11px;color:#6d6a75;">Note moyenne</div><div style="font-family:'Jost',sans-serif;font-size:21px;font-weight:300">4,8 <span style="font-size:12px;color:#f2b01e;">★</span></div></div>
+      </div>
+      <div style="background:#17151c;color:#fff;border-radius:14px;padding:16px;margin-bottom:12px;">
+        <b style="font-size:13.5px;">Prochaine session — jeu 10 sept · 19h00</b>
+        <div style="font-size:12.5px;color:#d8d4e0;margin:6px 0 10px;">Copywriting &amp; Contenu · 19/25 inscrits · 19 sujets soumis</div>
+        <a href="#" style="display:block;text-align:center;background:#80368D;color:#fff;padding:12px;border-radius:999px;font-size:13px;font-weight:800;min-height:18px;">Démarrer la session</a>
+      </div>
+      <div style="background:#fff;border:1.5px solid #80368D;border-radius:14px;padding:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;"><b style="font-size:13px;">Coaching privé — sam 12/09 · 10h00</b><span style="background:#e7f7ee;color:#1a8747;font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;">Payée ✓</span></div>
+        <div style="font-size:12px;color:#6d6a75;margin-top:5px;">Awa Koné · 2 h · sujets soumis à lire</div>
+      </div>
+    </div>
+    <nav style="background:#fff;border-top:1px solid #eeebf3;display:grid;grid-template-columns:repeat(5,1fr);padding:10px 4px 16px;text-align:center;font-size:10px;font-weight:700;">
+      <span style="color:#80368D;">◫<br>Accueil</span><span style="color:#8a8695;">▣<br>Modules</span><span style="color:#8a8695;">🗓<br>Sessions</span><span style="color:#8a8695;">🎯<br>Privé</span><span style="color:#8a8695;">💰<br>Revenus</span>
+    </nav>
+  </div>
+  <div style="width:390px;background:#faf9fc;border:1px solid #dcd7e6;border-radius:28px;overflow:hidden;">
+    <header style="background:#fff;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #eeebf3;">
+      <b style="font-size:15px;font-family:'Jost',sans-serif;font-weight:300;">Mes revenus</b>
+      <span style="font-size:11.5px;background:#fff;border:1px solid #dcd7e6;border-radius:999px;padding:6px 12px;font-weight:600;">Juil.–août ▾</span>
+    </header>
+    <div style="padding:18px;">
+      <div style="background:#fff;border:1.5px solid #80368D;border-radius:14px;padding:16px;margin-bottom:12px;">
+        <div style="font-size:11.5px;color:#80368D;font-weight:700;">VOTRE RÉMUNÉRATION</div>
+        <div style="font-family:'Jost',sans-serif;font-size:30px;margin-top:4px;font-weight:300">411 840 FCFA</div>
+        <div style="font-size:11.5px;color:#6d6a75;margin-top:4px;">marge brute 1 372 800 F × 30 %</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;">
+        <div style="background:#fff;border:1px solid #e6e1ef;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;"><span>CA généré</span><b>1 430 000 F</b></div>
+        <div style="background:#fff;border:1px solid #e6e1ef;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;"><span>Frais de paiement (4 %)</span><b>57 200 F</b></div>
+        <div style="background:#fff;border:1px solid #e6e1ef;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;"><span>Marge brute Big Five (70 %)</span><b>960 960 F</b></div>
+        <div style="background:#fff;border:1px solid #e6e1ef;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;"><span>Coaching privé (5 h)</span><b>72 000 F</b></div>
+      </div>
+      <a href="#" style="display:block;text-align:center;border:1.5px solid #17151c;color:#17151c;padding:13px;border-radius:999px;font-size:13px;font-weight:800;margin-top:14px;">Télécharger le relevé PDF</a>
+    </div>
+  </div>
+</div>
+</section>
+</div>
+</x-dc>
+</body>
+</html>
