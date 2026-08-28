@@ -1,28 +1,38 @@
-import { acces, formateurs, modules, programmes, thematiques } from '../../../data/db'
+import {
+  listerThematiques,
+  trouverFormateur,
+  trouverModuleParSlug,
+  trouverProgramme,
+} from '../../../database/catalogue'
+import { trouverAcces } from '../../../database/comptes'
 import { exigerUtilisateur } from '../../../utils/session'
 
 /** Contenu réservé : seul un module acquis est consultable dans l'espace apprenant. */
-export default defineEventHandler((event) => {
-  const utilisateur = exigerUtilisateur(event)
+export default defineEventHandler(async (event) => {
+  const utilisateur = await exigerUtilisateur(event)
   const slug = getRouterParam(event, 'slug')
 
-  const moduleTrouve = modules.find((m) => m.slug === slug)
+  const moduleTrouve = await trouverModuleParSlug(slug ?? '')
   if (!moduleTrouve) {
     throw createError({ statusCode: 404, statusMessage: 'Module introuvable' })
   }
 
-  const ligne = acces.find(
-    (a) => a.utilisateurId === utilisateur.id && a.moduleId === moduleTrouve.id,
-  )
+  const ligne = await trouverAcces(utilisateur.id, moduleTrouve.id)
   if (!ligne) {
     throw createError({ statusCode: 403, statusMessage: 'Ce module ne fait pas partie de vos accès' })
   }
 
+  const [formateur, thematiques, programme] = await Promise.all([
+    trouverFormateur(moduleTrouve.formateurId),
+    listerThematiques(),
+    trouverProgramme(moduleTrouve.programme),
+  ])
+
   return {
     module: moduleTrouve,
     acces: ligne,
-    formateur: formateurs.find((f) => f.id === moduleTrouve.formateurId) ?? null,
+    formateur,
     thematique: thematiques.find((t) => t.id === moduleTrouve.thematiqueId) ?? null,
-    programme: programmes.find((p) => p.slug === moduleTrouve.programme) ?? null,
+    programme,
   }
 })

@@ -2,7 +2,18 @@
 definePageMeta({ layout: 'auth' })
 
 const auth = useAuthStore()
-const formulaire = reactive({ prenom: '', nom: '', email: '', whatsapp: '', pays: 'Côte d’Ivoire' })
+const formulaire = reactive({
+  prenom: '',
+  nom: '',
+  email: '',
+  motDePasse: '',
+  whatsapp: '',
+  pays: 'Côte d’Ivoire',
+})
+
+/** Même seuil que le serveur (`server/utils/motDePasse.ts`) : l'écran le dit
+ *  avant l'envoi plutôt que d'attendre le refus. */
+const LONGUEUR_MINIMALE = 10
 const erreur = ref('')
 const enCours = ref(false)
 
@@ -49,6 +60,20 @@ async function soumettre() {
       <label class="block">
         <span class="mb-1.5 block text-[13px] font-bold text-texte">Pays</span>
         <input v-model="formulaire.pays" class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+      </label>
+      <label class="block sm:col-span-2">
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Mot de passe</span>
+        <input
+          v-model="formulaire.motDePasse"
+          type="password"
+          autocomplete="new-password"
+          required
+          :minlength="LONGUEUR_MINIMALE"
+          class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none"
+        >
+        <span class="mt-1.5 block text-[12.5px] text-discret">
+          {{ LONGUEUR_MINIMALE }} caractères minimum.
+        </span>
       </label>
 
       <div class="sm:col-span-2">

@@ -1,0 +1,26 @@
+# Configuration du projet Supabase local (supabase start / supabase db reset).
+# Le project_id sert de préfixe aux conteneurs Docker : il reste local.
+project_id = "emasterclass-bigfive"
+
+[db]
+port = 54322
+# Aligner sur la version du projet hébergé avant tout `supabase db push`.
+major_version = 17
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[api]
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[studio]
+port = 54323
+
+[auth]
+# L'authentification applicative reste un cookie signé côté Nitro pour l'instant
+# (voir README « Reste à faire »). Supabase Auth n'est pas encore branché.
+enabled = false

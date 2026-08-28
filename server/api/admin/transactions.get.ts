@@ -1,9 +1,17 @@
-import { modules, transactions, utilisateurs } from '../../data/db'
+import { listerModules } from '../../database/catalogue'
+import { listerTransactions } from '../../database/commerce'
+import { listerUtilisateurs } from '../../database/comptes'
 import { exigerAdmin } from '../../utils/session'
 
 /** Écran verrouillé : seul un administrateur supérieur dispose du droit « Transactions ». */
-export default defineEventHandler((event) => {
-  exigerAdmin(event, true)
+export default defineEventHandler(async (event) => {
+  await exigerAdmin(event, true)
+
+  const [transactions, utilisateurs, modules] = await Promise.all([
+    listerTransactions(),
+    listerUtilisateurs(),
+    listerModules(),
+  ])
 
   return transactions.map((t) => {
     const u = utilisateurs.find((x) => x.id === t.utilisateurId)

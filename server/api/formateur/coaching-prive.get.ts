@@ -1,40 +1,38 @@
+import { listerModules } from '../../database/catalogue'
+import { listerDemandesCoachingPrive } from '../../database/coaching'
 import { exigerFormateur } from '../../utils/session'
 
-/** Séances de coaching privé — planification et paiement gérés par l'équipe. */
-export default defineEventHandler((event) => {
-  exigerFormateur(event)
-  return [
-    {
-      id: 'cp-001',
-      apprenant: 'Awa Koné',
-      date: '2026-09-12',
-      creneau: '10h00 – 12h00',
-      dureeMinutes: 120,
-      statut: 'confirmee',
-      paye: true,
-      sujets:
-        'Retravailler les accroches de ma marque de cosmétiques — je n’arrive pas à dépasser 2 % d’engagement.',
-    },
-    {
-      id: 'cp-002',
-      apprenant: 'Moussa Diabaté',
+/**
+ * Séances de coaching privé du formateur — planification et paiement gérés par
+ * l'équipe. Le statut détaillé de la base est projeté sur les trois états
+ * qu'affiche l'écran, l'encaissement étant porté à part.
+ */
+const PROJECTION = {
+  'en-attente': { statut: 'en-attente', paye: false },
+  'confirmee-attente-paiement': { statut: 'confirmee', paye: false },
+  payee: { statut: 'confirmee', paye: true },
+  realisee: { statut: 'realisee', paye: true },
+} as const
+
+export default defineEventHandler(async (event) => {
+  const utilisateur = await exigerFormateur(event)
+
+  const [demandes, modules] = await Promise.all([listerDemandesCoachingPrive(), listerModules()])
+  const siens = new Set(
+    modules.filter((m) => m.formateurId === utilisateur.formateurId).map((m) => m.id),
+  )
+
+  return demandes
+    .filter((d) => siens.has(d.moduleId))
+    .map((d) => ({
+      id: d.id,
+      apprenant: d.apprenant,
+      // Aucune date ferme n'est stockée : le créneau retenu par l'équipe est un
+      // texte libre, affiché tel quel.
       date: null,
-      creneau: null,
-      dureeMinutes: 60,
-      statut: 'en-attente',
-      paye: false,
-      sujets: '',
-    },
-    {
-      id: 'cp-003',
-      apprenant: 'Fatou Bamba',
-      date: '2026-07-28',
-      creneau: '18h00 – 19h00',
-      dureeMinutes: 60,
-      statut: 'realisee',
-      paye: true,
-      note: 5,
-      sujets: '',
-    },
-  ]
+      creneau: d.creneau ?? null,
+      dureeMinutes: d.heures * 60,
+      ...PROJECTION[d.statut],
+      sujets: d.besoins,
+    }))
 })

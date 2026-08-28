@@ -1,3 +1,3 @@
-import { thematiques } from '../data/db'
+import { listerThematiques } from '../database/catalogue'
 
-export default defineEventHandler(() => thematiques)
+export default defineEventHandler(() => listerThematiques())

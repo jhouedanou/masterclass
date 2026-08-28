@@ -1,7 +1,7 @@
-import { journal } from '../../data/db'
+import { listerJournal } from '../../database/administration'
 import { exigerAdmin } from '../../utils/session'
 
-export default defineEventHandler((event) => {
-  exigerAdmin(event)
-  return journal
+export default defineEventHandler(async (event) => {
+  await exigerAdmin(event)
+  return await listerJournal()
 })

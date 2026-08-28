@@ -1,10 +1,11 @@
-import { enregistrerJournal, reglagesFinanciers } from '../../data/db'
+import { enregistrerJournal, majReglagesFinanciers } from '../../database/administration'
+import type { ReglagesFinanciers } from '../../database/mappers'
 import { exigerAdmin } from '../../utils/session'
 
 /** La répartition Big Five / formateur n'est modifiable que par l'admin principal. */
 export default defineEventHandler(async (event) => {
-  const admin = exigerAdmin(event, true)
-  const body = await readBody<Partial<typeof reglagesFinanciers>>(event)
+  const admin = await exigerAdmin(event, true)
+  const body = await readBody<Partial<ReglagesFinanciers>>(event)
 
   if (
     body.partFormateurPourcent !== undefined &&
@@ -14,11 +15,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 422, statusMessage: 'La répartition doit totaliser 100 %' })
   }
 
-  Object.assign(reglagesFinanciers, body)
-  enregistrerJournal(
+  const reglages = await majReglagesFinanciers(body)
+  await enregistrerJournal(
     `${admin.prenom} ${admin.nom}`,
     'a modifié les paramètres financiers',
-    `répartition ${reglagesFinanciers.partBigFivePourcent}/${reglagesFinanciers.partFormateurPourcent}, frais ${reglagesFinanciers.fraisPaiementPourcent} %`,
+    `répartition ${reglages.partBigFivePourcent}/${reglages.partFormateurPourcent}, frais ${reglages.fraisPaiementPourcent} %`,
   )
-  return reglagesFinanciers
+  return reglages
 })

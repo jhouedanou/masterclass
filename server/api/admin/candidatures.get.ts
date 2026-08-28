@@ -1,7 +1,7 @@
-import { candidaturesFormateurs } from '../../data/db'
+import { listerCandidatures } from '../../database/administration'
 import { exigerAdmin } from '../../utils/session'
 
-export default defineEventHandler((event) => {
-  exigerAdmin(event)
-  return candidaturesFormateurs
+export default defineEventHandler(async (event) => {
+  await exigerAdmin(event)
+  return await listerCandidatures()
 })

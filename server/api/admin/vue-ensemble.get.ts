@@ -1,50 +1,81 @@
 import {
-  acces,
-  candidaturesFormateurs,
-  certificats,
-  demandesCoachingPrive,
-  formateurs,
-  journal,
-  modules,
-  reglagesFinanciers,
-  sessionsCoaching,
-  thematiques,
-  transactions,
-  utilisateurs,
-} from '../../data/db'
-import { statistiquesModules } from '../../utils/formateur'
+  lireReglagesFinanciers,
+  listerCandidatures,
+  listerJournal,
+} from '../../database/administration'
+import { listerFormateurs, listerModules, listerThematiques } from '../../database/catalogue'
+import { listerDemandesCoachingPrive, listerSessions } from '../../database/coaching'
+import { listerCertificats, listerTransactions } from '../../database/commerce'
+import { listerAcces, listerUtilisateurs } from '../../database/comptes'
+import { chiffreAffaires, DEBUT_PERIODE, surPeriode } from '../../utils/indicateurs'
 import { exigerAdmin } from '../../utils/session'
 
-export default defineEventHandler((event) => {
-  const utilisateur = exigerAdmin(event)
+export default defineEventHandler(async (event) => {
+  const utilisateur = await exigerAdmin(event)
 
-  const ventes = formateurs.flatMap((f) => statistiquesModules(f.id))
-  const inscriptions = ventes.reduce((s, m) => s + m.inscrits, 0)
-  const ca = inscriptions * 10_000
-  const frais = Math.round((ca * reglagesFinanciers.fraisPaiementPourcent) / 100)
+  const [
+    reglages,
+    modules,
+    thematiques,
+    formateurs,
+    sessions,
+    transactions,
+    certificats,
+    acces,
+    utilisateurs,
+    demandes,
+    candidatures,
+    journal,
+  ] = await Promise.all([
+    lireReglagesFinanciers(),
+    listerModules(),
+    listerThematiques(),
+    listerFormateurs(),
+    listerSessions(),
+    listerTransactions(),
+    listerCertificats(),
+    listerAcces(),
+    listerUtilisateurs(),
+    listerDemandesCoachingPrive(),
+    listerCandidatures(),
+    listerJournal(3),
+  ])
+
+  // Les objectifs du back-office sont mensuels : les compteurs comparés portent
+  // sur les trente derniers jours.
+  const periode = surPeriode(transactions, DEBUT_PERIODE())
+  const ca = chiffreAffaires(periode)
+  const frais = Math.round((ca * reglages.fraisPaiementPourcent) / 100)
+
+  const ventesParModule = new Map<string, number>()
+  for (const t of transactions.filter((x) => x.statut === 'reussie')) {
+    ventesParModule.set(t.moduleId, (ventesParModule.get(t.moduleId) ?? 0) + 1)
+  }
+
+  const cumulProgression = acces.reduce((somme, a) => somme + a.progression, 0)
 
   return {
     role: utilisateur.role,
-    inscriptions,
-    objectifInscriptions: reglagesFinanciers.objectifInscriptionsMensuel,
+    inscriptions: periode.length,
+    objectifInscriptions: reglages.objectifInscriptionsMensuel,
     ca,
-    objectifCa: reglagesFinanciers.objectifCaMensuel,
+    objectifCa: reglages.objectifCaMensuel,
     margeBrute: ca - frais,
-    completionMoyenne: ventes.length
-      ? Math.round(ventes.reduce((s, m) => s + m.completion, 0) / ventes.length)
-      : 0,
-    certificatsGeneres: certificats.length + 86,
-    topModules: [...ventes]
-      .filter((m) => m.statut === 'disponible')
-      .sort((a, b) => b.inscrits - a.inscrits)
+    completionMoyenne: acces.length ? Math.round(cumulProgression / acces.length) : 0,
+    certificatsGeneres: certificats.length,
+    topModules: [...ventesParModule.entries()]
+      .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
-      .map((m) => ({ titre: m.titre, ventes: m.inscrits })),
+      .map(([moduleId, ventes]) => ({
+        titre: modules.find((m) => m.id === moduleId)?.titre ?? '—',
+        ventes,
+      })),
     aTraiter: {
-      coachingPrive: demandesCoachingPrive.filter((d) => d.statut === 'en-attente').length,
-      candidatures: candidaturesFormateurs.filter((c) => c.statut === 'nouvelle').length,
-      sessionsAReprogrammer: sessionsCoaching.filter((s) => s.statut === 'annulee').length,
+      coachingPrive: demandes.filter((d) => d.statut === 'en-attente').length,
+      candidatures: candidatures.filter((c) => c.statut === 'nouvelle').length,
+      sessionsAReprogrammer: sessions.filter((s) => s.statut === 'annulee').length,
     },
-    prochainesSessions: sessionsCoaching
+    prochainesSessions: sessions
       .filter((s) => s.statut === 'planifiee')
       .map((s) => ({
         date: s.date,
@@ -53,17 +84,17 @@ export default defineEventHandler((event) => {
         inscrits: s.inscrits,
         places: s.places,
       })),
-    dernieresTransactions: transactions.slice(0, 3).map((t) => ({
-      reference: t.reference,
-      apprenant: (() => {
-        const u = utilisateurs.find((x) => x.id === t.utilisateurId)
-        return u ? `${u.prenom} ${u.nom}` : '—'
-      })(),
-      module: modules.find((m) => m.id === t.moduleId)?.titre ?? '—',
-      montant: t.montant,
-      statut: t.statut,
-    })),
-    journal: journal.slice(0, 3),
+    dernieresTransactions: transactions.slice(0, 3).map((t) => {
+      const u = utilisateurs.find((x) => x.id === t.utilisateurId)
+      return {
+        reference: t.reference,
+        apprenant: u ? `${u.prenom} ${u.nom}` : '—',
+        module: modules.find((m) => m.id === t.moduleId)?.titre ?? '—',
+        montant: t.montant,
+        statut: t.statut,
+      }
+    }),
+    journal,
     comptesActifs: utilisateurs.filter((u) => u.role === 'apprenant').length,
     accesTotal: acces.length,
   }

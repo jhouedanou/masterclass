@@ -18,7 +18,13 @@ logs
 .fleet
 .idea
 
-# Local env files
+# Local env files — .env.example compris : il contient l'URL du projet réel.
 .env
 .env.*
-!.env.example
+
+# Supabase : état local du conteneur, et types régénérés par `npm run db:types`
+# (référence de comparaison — server/database/types.ts reste la source tenue).
+supabase/.branches
+supabase/.temp
+server/database/types.generes.ts
+.env.example

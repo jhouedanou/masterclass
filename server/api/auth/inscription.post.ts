@@ -1,23 +1,38 @@
-import { utilisateurs } from '../../data/db'
+import { creerUtilisateur } from '../../database/comptes'
+import { hacherMotDePasse, refusMotDePasse } from '../../utils/motDePasse'
 import { ouvrirSession } from '../../utils/session'
 
+/** Création d'un compte apprenant. Le pays est demandé ici et n'est plus
+ *  redemandé dans la fiche apprenant (spec §8). */
 export default defineEventHandler(async (event) => {
-  const body = await readBody<{ prenom?: string; nom?: string; email?: string }>(event)
+  const body = await readBody<{
+    prenom?: string
+    nom?: string
+    email?: string
+    motDePasse?: string
+    whatsapp?: string
+    pays?: string
+  }>(event)
+
   const email = (body.email ?? '').trim().toLowerCase()
-  if (!email || !body.prenom || !body.nom) {
+  if (!email || !body.prenom?.trim() || !body.nom?.trim()) {
     throw createError({ statusCode: 422, statusMessage: 'Prénom, nom et e-mail sont requis' })
   }
-  if (utilisateurs.some((u) => u.email.toLowerCase() === email)) {
-    throw createError({ statusCode: 409, statusMessage: 'Un compte existe déjà avec cet e-mail' })
+
+  const refus = refusMotDePasse(body.motDePasse ?? '')
+  if (refus) {
+    throw createError({ statusCode: 422, statusMessage: refus })
   }
-  const utilisateur = {
-    id: `usr-${Math.random().toString(36).slice(2, 8)}`,
-    prenom: body.prenom,
-    nom: body.nom,
+
+  const utilisateur = await creerUtilisateur({
+    prenom: body.prenom.trim(),
+    nom: body.nom.trim(),
     email,
-    role: 'apprenant' as const,
-  }
-  utilisateurs.push(utilisateur)
-  ouvrirSession(event, utilisateur)
+    whatsapp: body.whatsapp?.trim() || undefined,
+    pays: body.pays?.trim() || undefined,
+    motDePasseHache: await hacherMotDePasse(body.motDePasse!),
+  })
+
+  await ouvrirSession(event, utilisateur)
   return utilisateur
 })

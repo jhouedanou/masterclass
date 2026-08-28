@@ -36,9 +36,11 @@ const { data: seances } = await useFetch<
           <div>
             <h2 class="font-title text-[19px] font-light">
               {{ seance.apprenant }}
-              <span v-if="seance.date" class="text-texte">
-                — {{ formatDate(seance.date) }} · {{ seance.creneau }} ·
-                {{ formatDuree(seance.dureeMinutes) }}
+              <!-- Le créneau retenu par l'équipe est un texte libre : il fait
+                   foi, avec ou sans date ferme enregistrée. -->
+              <span v-if="seance.date || seance.creneau" class="text-texte">
+                — <template v-if="seance.date">{{ formatDate(seance.date) }} · </template>
+                {{ seance.creneau }} · {{ formatDuree(seance.dureeMinutes) }}
               </span>
               <span v-else class="text-texte"> — demande en cours de traitement par l’équipe</span>
             </h2>

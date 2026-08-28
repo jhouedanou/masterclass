@@ -1,10 +1,13 @@
+import { listerRedirections } from '../../database/administration'
 import { CHEMINS_PRIORITAIRES, detecterDoublons, inventaireReferencement } from '../../utils/seo'
-import { redirections } from '../../data/db'
 import { exigerAdmin } from '../../utils/session'
 
-export default defineEventHandler((event) => {
-  const utilisateur = exigerAdmin(event)
-  const entrees = inventaireReferencement()
+export default defineEventHandler(async (event) => {
+  const utilisateur = await exigerAdmin(event)
+  const [entrees, redirections] = await Promise.all([
+    inventaireReferencement(),
+    listerRedirections(),
+  ])
 
   return {
     entrees,

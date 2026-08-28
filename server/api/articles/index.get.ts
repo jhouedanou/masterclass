@@ -1,7 +1,11 @@
-import { articles, formateurs } from '../../data/db'
+import { listerArticles } from '../../database/blog'
+import { listerFormateurs } from '../../database/catalogue'
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const { categorie } = getQuery(event) as Record<string, string | undefined>
+
+  const [articles, formateurs] = await Promise.all([listerArticles(), listerFormateurs()])
+
   return articles
     .filter((a) => a.statut === 'publie')
     .filter((a) => !categorie || a.categorie === categorie)

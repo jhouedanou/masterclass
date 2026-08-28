@@ -1,11 +1,23 @@
-import { formateurs, modules, programmes, thematiques } from '../../data/db'
+import {
+  listerFormateurs,
+  listerModules,
+  listerThematiques,
+  trouverProgramme,
+} from '../../database/catalogue'
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
-  const programme = programmes.find((p) => p.slug === slug)
+  const programme = await trouverProgramme(slug ?? '')
   if (!programme) {
     throw createError({ statusCode: 404, statusMessage: 'Programme introuvable' })
   }
+
+  const [thematiques, modules, formateurs] = await Promise.all([
+    listerThematiques(),
+    listerModules(),
+    listerFormateurs(),
+  ])
+
   return {
     programme,
     // Les thématiques sont des sections de la page programme (spec SEO §1).

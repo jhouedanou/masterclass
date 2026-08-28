@@ -26,6 +26,34 @@ const annulation = ref<SessionAdmin | null>(null)
 const motif = ref('')
 const message = ref('')
 
+// --- Relevé de présence -----------------------------------------------------
+
+const presence = ref<SessionAdmin | null>(null)
+const nbPresents = ref(0)
+const erreurPresence = ref('')
+
+function ouvrirPresence(session: SessionAdmin) {
+  presence.value = session
+  nbPresents.value = session.presents ?? session.inscrits
+  erreurPresence.value = ''
+}
+
+async function enregistrerPresence(valeur: number | null) {
+  if (!presence.value) return
+  erreurPresence.value = ''
+  try {
+    await $fetch('/api/admin/presence', {
+      method: 'POST',
+      body: { id: presence.value.id, presents: valeur },
+    })
+    presence.value = null
+    await refresh()
+  } catch (e) {
+    erreurPresence.value =
+      (e as { statusMessage?: string }).statusMessage ?? 'L’enregistrement a échoué.'
+  }
+}
+
 async function annuler() {
   if (!annulation.value) return
   const r = await $fetch<{ notifies: number }>('/api/admin/sessions', {
@@ -125,7 +153,7 @@ async function creer() {
 
     <AdminTableauSimple
       class="mt-4"
-      :colonnes="['Date · Heure', 'Thématique — modules couverts', 'Formateur', 'Inscrits', 'Statut', 'Actions']"
+      :colonnes="['Date · Heure', 'Thématique — modules couverts', 'Formateur', 'Inscrits', 'Présence', 'Statut', 'Actions']"
     >
       <tr v-for="session in sessions" :key="session.id">
         <td class="px-4 py-3 font-bold">{{ formatDate(session.date) }} · {{ session.heure }}</td>
@@ -139,20 +167,37 @@ async function creer() {
         <td class="px-4 py-3">{{ session.formateur?.nom }}</td>
         <td class="px-4 py-3">{{ session.inscrits }} / {{ session.places }}</td>
         <td class="px-4 py-3">
+          <button
+            v-if="session.statut !== 'annulee'"
+            class="text-[12.5px] underline"
+            @click="ouvrirPresence(session)"
+          >
+            <template v-if="session.presents === null">Relever</template>
+            <template v-else>
+              {{ session.presents }} présents ·
+              {{ session.inscrits ? Math.round((session.presents / session.inscrits) * 100) : 0 }} %
+            </template>
+          </button>
+          <span v-else class="text-[12px] text-discret">—</span>
+        </td>
+        <td class="px-4 py-3">
           <span
             class="rounded-full px-2.5 py-1 text-[11px] font-bold"
             :class="{
               'bg-succes-voile text-succes': session.statut === 'planifiee' && session.inscrits < session.places,
               'bg-alerte-voile text-alerte': session.statut === 'planifiee' && session.inscrits >= session.places,
               'bg-[#fdeeee] text-erreur': session.statut === 'annulee',
+              'bg-fond-voile text-discret': session.statut === 'terminee',
             }"
           >
             {{
               session.statut === 'annulee'
                 ? 'Annulée'
-                : session.inscrits >= session.places
-                  ? 'Complète'
-                  : 'Confirmée'
+                : session.statut === 'terminee'
+                  ? 'Terminée'
+                  : session.inscrits >= session.places
+                    ? 'Complète'
+                    : 'Confirmée'
             }}
           </span>
         </td>
@@ -168,6 +213,44 @@ async function creer() {
         </td>
       </tr>
     </AdminTableauSimple>
+
+    <div v-if="presence" class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">
+      <div class="w-full max-w-md rounded-carte bg-white p-6">
+        <h2 class="font-title text-[21px] font-light">
+          Présence — séance du {{ formatDate(presence.date) }}
+        </h2>
+        <p class="mt-2 text-[13.5px] text-texte">
+          {{ presence.inscrits }} inscrits. Ce relevé est la seule source du taux de présence
+          affiché aux formateurs : tant qu’il est vide, ils voient « — ».
+        </p>
+
+        <label class="mt-4 block">
+          <span class="mb-1.5 block text-[13px] font-bold">Nombre de présents</span>
+          <input
+            v-model.number="nbPresents"
+            type="number"
+            min="0"
+            :max="presence.inscrits"
+            class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[15px] focus:border-social focus:outline-none"
+          >
+        </label>
+
+        <p v-if="erreurPresence" class="mt-3 text-[13.5px] text-erreur">{{ erreurPresence }}</p>
+
+        <div class="mt-5 flex flex-wrap gap-2">
+          <UiBaseButton taille="sm" @click="enregistrerPresence(nbPresents)">Enregistrer</UiBaseButton>
+          <UiBaseButton
+            v-if="presence.presents !== null"
+            taille="sm"
+            variante="contour"
+            @click="enregistrerPresence(null)"
+          >
+            Effacer le relevé
+          </UiBaseButton>
+          <UiBaseButton taille="sm" variante="contour" @click="presence = null">Annuler</UiBaseButton>
+        </div>
+      </div>
+    </div>
 
     <div v-if="annulation" class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">
       <div class="w-full max-w-lg rounded-carte bg-white p-6">

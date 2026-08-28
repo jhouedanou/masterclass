@@ -1,3 +1,9 @@
+<script setup lang="ts">
+// Rouvrir le bandeau : un consentement doit pouvoir être retiré aussi
+// facilement qu'il a été donné.
+const { reinitialiser } = useConsentement()
+</script>
+
 <template>
   <footer class="border-t border-ligne-douce bg-fond-clair pt-12 pb-7">
     <div class="conteneur grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
@@ -29,6 +35,7 @@
         <NuxtLink to="/devenir-formateur">Devenir formateur</NuxtLink>
         <NuxtLink to="/blog">Blog</NuxtLink>
         <NuxtLink to="/contact">Contact &amp; FAQ</NuxtLink>
+        <NuxtLink to="/verifier">Vérifier une attestation</NuxtLink>
         <NuxtLink to="/mon-espace">Mon espace</NuxtLink>
       </nav>
 
@@ -39,6 +46,9 @@
         <NuxtLink to="/cgv">CGV</NuxtLink>
         <NuxtLink to="/confidentialite">Confidentialité</NuxtLink>
         <NuxtLink to="/cookies">Cookies</NuxtLink>
+        <button class="text-left hover:underline" @click="reinitialiser">
+          Gérer mes cookies
+        </button>
       </nav>
     </div>
 

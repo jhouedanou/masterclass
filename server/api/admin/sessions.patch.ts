@@ -1,9 +1,11 @@
-import { enregistrerJournal, sessionsCoaching, thematiques } from '../../data/db'
+import { enregistrerJournal } from '../../database/administration'
+import { listerThematiques } from '../../database/catalogue'
+import { annulerSession, reporterSession, trouverSession } from '../../database/coaching'
 import { exigerAdmin } from '../../utils/session'
 
 /** Annulation ou report : les inscrits sont notifiés par e-mail et WhatsApp. */
 export default defineEventHandler(async (event) => {
-  const admin = exigerAdmin(event)
+  const admin = await exigerAdmin(event)
   const { id, action, motif, date, heure } = await readBody<{
     id: string
     action: 'annuler' | 'reporter'
@@ -12,23 +14,25 @@ export default defineEventHandler(async (event) => {
     heure?: string
   }>(event)
 
-  const session = sessionsCoaching.find((s) => s.id === id)
-  if (!session) throw createError({ statusCode: 404, statusMessage: 'Session introuvable' })
+  const existante = await trouverSession(id)
+  if (!existante) throw createError({ statusCode: 404, statusMessage: 'Session introuvable' })
 
-  const thematique = thematiques.find((t) => t.id === session.thematiqueId)?.nom ?? ''
+  const thematiques = await listerThematiques()
+  const thematique = thematiques.find((t) => t.id === existante.thematiqueId)?.nom ?? ''
+  const auteur = `${admin.prenom} ${admin.nom}`
 
+  let session
   if (action === 'annuler') {
-    session.statut = 'annulee'
-    enregistrerJournal(
-      `${admin.prenom} ${admin.nom}`,
+    session = await annulerSession(id)
+    await enregistrerJournal(
+      auteur,
       'a annulé la session',
       `${thematique} du ${session.date}${motif ? ` (motif : ${motif})` : ''}`,
     )
   } else {
-    if (date) session.date = date
-    if (heure) session.heure = heure
-    enregistrerJournal(
-      `${admin.prenom} ${admin.nom}`,
+    session = await reporterSession(id, { date, heure })
+    await enregistrerJournal(
+      auteur,
       'a reporté la session',
       `${thematique} au ${session.date} ${session.heure}`,
     )

@@ -12,7 +12,8 @@ const { data } = await useFetch<{
     nbModules: number
     inscrits: number
     completion: number
-    presence: number
+    /** `null` tant qu'aucune présence n'a été relevée sur ses séances. */
+    presence: number | null
     coachingPrive: number
   }[]
 }>('/api/admin/coaching-prive')
@@ -101,7 +102,7 @@ const libelles: Record<string, string> = {
         <td class="px-4 py-3">{{ f.nbModules }}</td>
         <td class="px-4 py-3">{{ f.inscrits }}</td>
         <td class="px-4 py-3">{{ f.completion }} %</td>
-        <td class="px-4 py-3">{{ f.presence }} %</td>
+        <td class="px-4 py-3">{{ f.presence === null ? '—' : `${f.presence} %` }}</td>
         <td class="px-4 py-3">{{ f.coachingPrive }}</td>
       </tr>
     </AdminTableauSimple>

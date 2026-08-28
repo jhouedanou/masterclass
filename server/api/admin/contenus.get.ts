@@ -1,9 +1,21 @@
-import { formateurs, modules, programmes, thematiques } from '../../data/db'
-import { exigerAdmin } from '../../utils/session'
+import {
+  listerFormateurs,
+  listerModules,
+  listerProgrammes,
+  listerThematiques,
+} from '../../database/catalogue'
+import { exigerSection } from '../../utils/session'
 
 /** Arbre Programme → Thématique → Module, avec la séparation fiche / contenu / offre. */
-export default defineEventHandler((event) => {
-  exigerAdmin(event)
+export default defineEventHandler(async (event) => {
+  await exigerSection(event, 'modules-chapitres')
+
+  const [programmes, thematiques, modules, formateurs] = await Promise.all([
+    listerProgrammes(),
+    listerThematiques(),
+    listerModules(),
+    listerFormateurs(),
+  ])
 
   return programmes.map((p) => ({
     id: p.id,

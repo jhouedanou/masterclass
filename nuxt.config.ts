@@ -13,6 +13,7 @@ export default defineNuxtConfig({
     '@nuxtjs/robots',
     '@nuxtjs/sitemap',
     'nuxt-schema-org',
+    '@vite-pwa/nuxt',
   ],
 
   css: ['~/assets/css/main.css'],
@@ -22,6 +23,19 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    // Scelle les cookies de session (chiffrement + signature). 32 caractères
+    // minimum ; obligatoire en production, sinon le serveur refuse d'ouvrir
+    // une session (voir server/utils/session.ts).
+    sessionPassword: process.env.NUXT_SESSION_PASSWORD || '',
+
+    // Accès à la base Supabase. La clé secrète (`sb_secret_…`, nouveau système
+    // de clés — l'ancienne `service_role` reste acceptée en secours) contourne
+    // la sécurité au niveau des lignes : elle reste hors du bloc `public`,
+    // donc jamais servie au navigateur (voir server/database/client.ts).
+    supabaseUrl: process.env.SUPABASE_URL || '',
+    supabaseSecretKey:
+      process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://emasterclass.bigfive.ci',
     },
@@ -54,6 +68,7 @@ export default defineNuxtConfig({
       '/connexion',
       '/inscription',
       '/mot-de-passe-oublie',
+      '/reinitialiser-mot-de-passe',
       '/achat',
       '/mon-espace',
       // Attention : « /formateur » sans barre finale bloquerait aussi /formateurs.
@@ -71,11 +86,14 @@ export default defineNuxtConfig({
       '/connexion',
       '/inscription',
       '/mot-de-passe-oublie',
+      '/reinitialiser-mot-de-passe',
       '/achat/**',
       '/mon-espace/**',
       '/formateur/**',
       '/admin/**',
       '/certificats/**',
+      // « /verifier/** » ne couvre pas la page de saisie elle-même.
+      '/verifier',
       '/verifier/**',
     ],
     sources: ['/api/__sitemap__/urls'],
@@ -91,6 +109,59 @@ export default defineNuxtConfig({
       logo: '/images/logo.svg',
       sameAs: [],
     },
+  },
+
+  // Spec SEO §11 : la plateforme s'installe comme application. Le contenu et
+  // les métadonnées sont identiques au site — la PWA n'est pas une variante.
+  pwa: {
+    registerType: 'autoUpdate',
+    manifest: {
+      name: 'E-Masterclass Big Five',
+      short_name: 'E-Masterclass',
+      description:
+        'Modules de 60 minutes pour les professionnels du Social Media et les entrepreneurs d’Afrique francophone.',
+      lang: 'fr',
+      dir: 'ltr',
+      start_url: '/',
+      scope: '/',
+      display: 'standalone',
+      background_color: '#faf9fc',
+      theme_color: '#80368D',
+      categories: ['education', 'business'],
+      icons: [
+        { src: '/images/pwa/icone-192.png', sizes: '192x192', type: 'image/png' },
+        { src: '/images/pwa/icone-512.png', sizes: '512x512', type: 'image/png' },
+        {
+          src: '/images/pwa/icone-maskable-512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'maskable',
+        },
+      ],
+      shortcuts: [
+        { name: 'Mon espace', url: '/mon-espace' },
+        { name: 'Catalogue des modules', url: '/modules' },
+      ],
+    },
+    workbox: {
+      // Le catalogue et les pages publiques passent par le réseau d'abord :
+      // un contenu périmé serait pire qu'un chargement un peu plus lent.
+      navigateFallback: undefined,
+      globPatterns: ['**/*.{js,css,ico,png,svg,webp,woff2}'],
+      runtimeCaching: [
+        {
+          // Les visuels et polices, eux, gagnent à être servis depuis le cache.
+          urlPattern: ({ request }) => ['image', 'font', 'style'].includes(request.destination),
+          handler: 'StaleWhileRevalidate',
+          options: { cacheName: 'emc-statiques', expiration: { maxEntries: 120 } },
+        },
+      ],
+      // Rien de ce qui touche aux comptes, aux paiements ou au back-office ne
+      // doit être mis en cache.
+      navigateFallbackDenylist: [/^\/api/, /^\/admin/, /^\/mon-espace/, /^\/achat/],
+    },
+    client: { installPrompt: true },
+    devOptions: { enabled: false },
   },
 
   fonts: {

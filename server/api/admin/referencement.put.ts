@@ -1,20 +1,31 @@
 import type { SeoFields } from '#shared/types'
-import { articles, formateurs, modules, programmes, redirections } from '../../data/db'
+import {
+  creerRedirection,
+  localiserEntiteSeo,
+  majSeoEntite,
+  type TableSeo,
+} from '../../database/administration'
+import { colonnesSeo } from '../../database/mappers'
 import { exigerAdmin } from '../../utils/session'
 
 /** Champs que seul un administrateur supérieur peut modifier (spec SEO §3 et §13). */
 const CHAMPS_RESERVES: (keyof SeoFields)[] = ['slug', 'indexable', 'canonical']
 
+/** Préfixe d'URL par entité, pour construire la redirection permanente.
+ *  Déduire le type depuis la forme de l'objet confondait les articles et les
+ *  modules, qui portent tous deux un `titre`. */
+const PREFIXES: Record<TableSeo, string> = {
+  modules: '/modules/',
+  articles: '/blog/',
+  formateurs: '/formateurs/',
+  programmes: '/programmes/',
+}
+
 export default defineEventHandler(async (event) => {
-  const utilisateur = exigerAdmin(event)
+  const utilisateur = await exigerAdmin(event)
   const body = await readBody<{ id: string; seo: SeoFields; confirmationSlug?: boolean }>(event)
 
-  const cible =
-    modules.find((m) => m.id === body.id) ??
-    formateurs.find((f) => f.id === body.id) ??
-    articles.find((a) => a.id === body.id) ??
-    programmes.find((p) => p.id === body.id)
-
+  const cible = await localiserEntiteSeo(body.id)
   if (!cible) {
     throw createError({ statusCode: 404, statusMessage: 'Page introuvable' })
   }
@@ -24,26 +35,21 @@ export default defineEventHandler(async (event) => {
     for (const champ of CHAMPS_RESERVES) delete modifie[champ]
   }
 
+  const champs: Partial<ReturnType<typeof colonnesSeo>> & { slug?: string } = colonnesSeo(modifie)
+
   // Spec §5 : changement de slug => redirection permanente + confirmation.
   const nouveauSlug = modifie.slug?.trim()
-  if (nouveauSlug && 'slug' in cible && nouveauSlug !== cible.slug) {
+  if (nouveauSlug && nouveauSlug !== cible.slug && cible.table !== 'programmes') {
     if (!body.confirmationSlug) {
       throw createError({
         statusCode: 428,
         statusMessage: 'Confirmation requise avant de modifier une URL déjà publiée',
       })
     }
-    const prefixe =
-      'titre' in cible ? '/modules/' : 'chapo' in cible ? '/blog/' : '/formateurs/'
-    redirections.push({
-      de: `${prefixe}${cible.slug}`,
-      vers: `${prefixe}${nouveauSlug}`,
-      creeeLe: new Date().toISOString(),
-    })
-    cible.slug = nouveauSlug
+    const prefixe = PREFIXES[cible.table]
+    await creerRedirection(`${prefixe}${cible.slug}`, `${prefixe}${nouveauSlug}`)
+    champs.slug = nouveauSlug
   }
-  delete modifie.slug
 
-  cible.seo = { ...cible.seo, ...modifie }
-  return cible
+  return await majSeoEntite(cible.table, body.id, champs)
 })

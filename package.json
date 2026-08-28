@@ -7,7 +7,15 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck",
+    "db:demarrer": "supabase start",
+    "db:reset": "supabase db reset",
+    "db:migrer": "supabase db push",
+    "db:seed:generer": "node scripts/generer-seed.ts",
+    "db:sql": "node scripts/generer-sql-en-ligne.mjs",
+    "db:types": "supabase gen types typescript --local > server/database/types.generes.ts",
+    "db:verifier": "node scripts/verifier-migrations.mjs"
   },
   "dependencies": {
     "@nuxt/fonts": "^0.14.0",
@@ -16,6 +24,7 @@
     "@nuxtjs/robots": "^6.1.5",
     "@nuxtjs/sitemap": "^8.3.4",
     "@pinia/nuxt": "^1.0.2",
+    "@supabase/supabase-js": "^2.112.4",
     "@tailwindcss/vite": "^4.3.3",
     "nuxt": "^4.5.2",
     "nuxt-schema-org": "^6.2.9",
@@ -26,6 +35,12 @@
     "vue-router": "^5.2.0"
   },
   "devDependencies": {
-    "@iconify-json/ph": "^1.2.2"
+    "@electric-sql/pglite": "^0.5.8",
+    "@iconify-json/ph": "^1.2.2",
+    "@types/qrcode": "^1.5.6",
+    "@vite-pwa/nuxt": "^1.1.1",
+    "supabase": "^2.116.0",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.3.11"
   }
 }

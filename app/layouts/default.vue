@@ -12,5 +12,6 @@
     </main>
     <LayoutTheFooter />
     <LayoutWhatsAppFlottant />
+    <LayoutBandeauCookies />
   </div>
 </template>

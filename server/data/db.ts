@@ -23,8 +23,17 @@ import type {
 } from '#shared/types'
 
 /**
- * Jeu de données de démonstration en mémoire, calé sur la maquette Claude Design.
- * Il tient lieu de couche de persistance tant que la base réelle n'est pas branchée.
+ * Contenu éditorial de référence, calé sur la maquette Claude Design.
+ *
+ * Ce fichier n'est plus une couche de persistance : l'application lit et écrit
+ * en base via `server/database/`. Il reste la source du contenu — 18 modules et
+ * leurs chapitres, fiches formateurs, articles, comptes de démonstration — tant
+ * qu'aucun back-office ne permet de le saisir.
+ *
+ * Il alimente `supabase/seed.sql` : après toute modification, régénérer avec
+ *   npm run db:seed:generer && npm run db:sql
+ *
+ * Aucun endpoint ne doit l'importer.
  */
 
 /** Prix unique affiché partout dans la maquette. */
@@ -835,6 +844,7 @@ export const sessionsCoaching: SessionCoaching[] = [
     dureeMinutes: COACHING_COLLECTIF.dureeMinutes,
     places: COACHING_COLLECTIF.places,
     inscrits: 18,
+    presents: null,
     statut: 'planifiee',
   },
   {
@@ -847,6 +857,7 @@ export const sessionsCoaching: SessionCoaching[] = [
     dureeMinutes: COACHING_COLLECTIF.dureeMinutes,
     places: COACHING_COLLECTIF.places,
     inscrits: 19,
+    presents: null,
     statut: 'planifiee',
   },
   {
@@ -859,6 +870,7 @@ export const sessionsCoaching: SessionCoaching[] = [
     dureeMinutes: COACHING_COLLECTIF.dureeMinutes,
     places: COACHING_COLLECTIF.places,
     inscrits: 7,
+    presents: null,
     statut: 'planifiee',
   },
 ]
@@ -1058,6 +1070,21 @@ export const utilisateurs: Utilisateur[] = [
     nom: 'Assi',
     email: 'editeur@bigfive.ci',
     role: 'admin-contenu',
+    // Jeu de droits représentatif d'un éditeur : ni transactions, ni
+    // administration des accès, ni réglages avancés de référencement.
+    sectionsAutorisees: [
+      'cms-site-vitrine',
+      'fiches-commerciales',
+      'modules-chapitres',
+      'formateurs',
+      'calendrier-sessions',
+      'coaching-prive',
+      'candidatures-formateurs',
+      'blog',
+      'referencement-contenu',
+      'historique-versions',
+      'statistiques-performance',
+    ],
   },
   {
     id: 'usr-formateur',

@@ -1,7 +1,13 @@
-import { formateurs, modules, thematiques } from '../../data/db'
+import { listerFormateurs, listerModules, listerThematiques } from '../../database/catalogue'
 
-export default defineEventHandler(() =>
-  formateurs.map((f) => {
+export default defineEventHandler(async () => {
+  const [formateurs, modules, thematiques] = await Promise.all([
+    listerFormateurs(),
+    listerModules(),
+    listerThematiques(),
+  ])
+
+  return formateurs.map((f) => {
     const siens = modules.filter((m) => m.formateurId === f.id && m.statut !== 'brouillon')
     return {
       ...f,
@@ -15,5 +21,5 @@ export default defineEventHandler(() =>
         thematique: thematiques.find((t) => t.id === m.thematiqueId)?.nom ?? '',
       })),
     }
-  }),
-)
+  })
+})

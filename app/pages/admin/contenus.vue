@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Formateur } from '#shared/types'
+
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Modules & chapitres — administration')
 
@@ -29,7 +31,52 @@ interface ProgrammeArbre {
   thematiques: ThematiqueArbre[]
 }
 
-const { data: arbre } = await useFetch<ProgrammeArbre[]>('/api/admin/contenus')
+const { data: arbre, refresh } = await useFetch<ProgrammeArbre[]>('/api/admin/contenus')
+const { data: formateurs } = await useFetch<Formateur[]>('/api/formateurs')
+
+const creation = reactive({
+  ouverte: false,
+  titre: '',
+  slug: '',
+  numero: 1,
+  thematiqueId: '',
+  formateurId: '',
+})
+const erreur = ref('')
+const enCours = ref(false)
+
+// L'URL suit le titre tant qu'elle n'a pas été retouchée à la main.
+watch(() => creation.titre, (titre) => {
+  creation.slug = titre
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+})
+
+async function creerModule() {
+  erreur.value = ''
+  enCours.value = true
+  try {
+    const cree = await $fetch<{ id: string }>('/api/admin/modules', {
+      method: 'POST',
+      body: {
+        titre: creation.titre,
+        slug: creation.slug,
+        numero: creation.numero,
+        thematiqueId: creation.thematiqueId,
+        formateurId: creation.formateurId,
+      },
+    })
+    await refresh()
+    await navigateTo(`/admin/module/${cree.id}`)
+  } catch (e) {
+    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'La création a échoué.'
+  } finally {
+    enCours.value = false
+  }
+}
 
 const programmeActif = ref('social-media')
 const programme = computed(() => arbre.value?.find((p) => p.slug === programmeActif.value))
@@ -57,11 +104,54 @@ const libelles: Record<string, string> = {
   <div v-if="arbre">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h1 class="font-title text-[26px] font-light">Modules pédagogiques & chapitres</h1>
-      <div class="flex flex-wrap gap-2 text-[13px]">
-        <button class="rounded-full border border-ligne bg-white px-3.5 py-2">+ Nouvelle thématique</button>
-        <button class="rounded-full border border-ligne bg-white px-3.5 py-2">+ Nouveau module</button>
-      </div>
+      <UiBaseButton taille="sm" @click="creation.ouverte = !creation.ouverte">
+        {{ creation.ouverte ? 'Annuler' : '+ Nouveau module' }}
+      </UiBaseButton>
     </div>
+
+    <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-[#fdeeee] px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>
+
+    <form
+      v-if="creation.ouverte"
+      class="mt-5 rounded-[14px] border border-ligne-douce bg-white p-5"
+      @submit.prevent="creerModule"
+    >
+      <h2 class="font-title text-[18px] font-light">Nouveau module</h2>
+      <p class="mt-1 text-[12.5px] text-discret">
+        Créé en brouillon : ni visible, ni indexé, ni en vente. La fiche, les chapitres et l’offre
+        s’ouvrent ensuite depuis son éditeur.
+      </p>
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        <label class="block sm:col-span-2">
+          <span class="mb-1.5 block text-[13px] font-bold">Titre</span>
+          <input v-model="creation.titre" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px] focus:border-social focus:outline-none">
+        </label>
+        <label class="block">
+          <span class="mb-1.5 block text-[13px] font-bold">URL</span>
+          <input v-model="creation.slug" required placeholder="titre-du-module" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 font-mono text-[13.5px] focus:border-social focus:outline-none">
+          <span class="mt-1 block text-[12px] text-discret">/modules/{{ creation.slug || '…' }}</span>
+        </label>
+        <label class="block">
+          <span class="mb-1.5 block text-[13px] font-bold">Numéro</span>
+          <input v-model.number="creation.numero" type="number" min="1" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px] focus:border-social focus:outline-none">
+        </label>
+        <label class="block">
+          <span class="mb-1.5 block text-[13px] font-bold">Thématique</span>
+          <select v-model="creation.thematiqueId" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px] focus:border-social focus:outline-none">
+            <option v-for="t in programme?.thematiques ?? []" :key="t.id" :value="t.id">{{ t.nom }}</option>
+          </select>
+        </label>
+        <label class="block">
+          <span class="mb-1.5 block text-[13px] font-bold">Formateur</span>
+          <select v-model="creation.formateurId" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px] focus:border-social focus:outline-none">
+            <option v-for="f in formateurs ?? []" :key="f.id" :value="f.id">{{ f.nom }}</option>
+          </select>
+        </label>
+      </div>
+      <UiBaseButton type="submit" taille="sm" class="mt-4" :disabled="enCours">
+        {{ enCours ? 'Création…' : 'Créer le module' }}
+      </UiBaseButton>
+    </form>
 
     <div class="mt-5 flex gap-2 rounded-full bg-white p-1.5 text-[14px] font-bold" role="group">
       <button
@@ -136,6 +226,13 @@ const libelles: Record<string, string> = {
       </div>
 
       <aside v-if="moduleSelectionne" class="h-fit rounded-[14px] border border-ligne-douce bg-white p-6">
+        <UiBaseButton
+          :to="`/admin/module/${moduleSelectionne.id}`"
+          taille="sm"
+          class="mb-4 w-full"
+        >
+          Ouvrir l’éditeur
+        </UiBaseButton>
         <h2 class="font-title text-[19px] font-light">
           Module {{ numeroModule(moduleSelectionne.numero) }} — trois objets indépendants
         </h2>

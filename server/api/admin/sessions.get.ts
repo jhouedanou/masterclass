@@ -1,11 +1,19 @@
-import { formateurs, modules, sessionsCoaching, thematiques } from '../../data/db'
+import { listerFormateurs, listerModules, listerThematiques } from '../../database/catalogue'
+import { listerSessions } from '../../database/coaching'
 import { exigerAdmin } from '../../utils/session'
 
-export default defineEventHandler((event) => {
-  exigerAdmin(event)
+export default defineEventHandler(async (event) => {
+  await exigerAdmin(event)
   const { programme, statut } = getQuery(event) as Record<string, string | undefined>
 
-  return sessionsCoaching
+  const [sessions, thematiques, formateurs, modules] = await Promise.all([
+    listerSessions(),
+    listerThematiques(),
+    listerFormateurs(),
+    listerModules(),
+  ])
+
+  return sessions
     .filter((s) => !programme || s.programme === programme)
     .filter((s) => !statut || s.statut === statut)
     .map((s) => ({

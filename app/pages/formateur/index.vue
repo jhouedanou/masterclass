@@ -8,8 +8,10 @@ const { data } = await useFetch<{
   nouveaux: number
   completionMoyenne: number
   nbModules: number
-  presenceMoyenne: number
-  noteMoyenne: number
+  // `null` tant qu'aucune présence n'a été relevée en séance et tant qu'aucun
+  // apprenant n'a noté : l'absence de mesure n'est pas une mesure nulle.
+  presenceMoyenne: number | null
+  noteMoyenne: number | null
   nbNotes: number
   remunerationDuMois: number
   prochaineSession: {
@@ -43,13 +45,20 @@ const { data } = await useFetch<{
       </div>
       <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
         <p class="text-[13px] text-discret">Présence en session</p>
-        <p class="mt-1 font-title text-[30px] font-light">{{ data.presenceMoyenne }} %</p>
-        <p class="mt-1 text-[12px] text-discret">moyenne des 6 dernières</p>
+        <p class="mt-1 font-title text-[30px] font-light">
+          {{ data.presenceMoyenne === null ? '—' : `${data.presenceMoyenne} %` }}
+        </p>
+        <p class="mt-1 text-[12px] text-discret">
+          {{ data.presenceMoyenne === null ? 'aucune présence relevée' : 'moyenne de vos séances' }}
+        </p>
       </div>
       <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
         <p class="text-[13px] text-discret">Note moyenne</p>
         <p class="mt-1 font-title text-[30px] font-light">
-          {{ data.noteMoyenne.toString().replace('.', ',') }} <span class="text-alerte">★</span>
+          <template v-if="data.noteMoyenne === null">—</template>
+          <template v-else>
+            {{ data.noteMoyenne.toString().replace('.', ',') }} <span class="text-alerte">★</span>
+          </template>
         </p>
         <p class="mt-1 text-[12px] text-discret">{{ data.nbNotes }} notes reçues</p>
       </div>

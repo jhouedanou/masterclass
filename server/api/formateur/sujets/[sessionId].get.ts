@@ -1,8 +1,8 @@
-import { sujetsSessions } from '../../../data/db'
+import { listerSujetsSession } from '../../../database/coaching'
 import { exigerFormateur } from '../../../utils/session'
 
-export default defineEventHandler((event) => {
-  exigerFormateur(event)
+export default defineEventHandler(async (event) => {
+  await exigerFormateur(event)
   const sessionId = getRouterParam(event, 'sessionId')
-  return sujetsSessions.filter((s) => s.sessionId === sessionId)
+  return await listerSujetsSession(sessionId ?? '')
 })

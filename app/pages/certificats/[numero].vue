@@ -15,7 +15,15 @@ if (!data.value) {
 }
 
 const c = computed(() => data.value!.certificat)
-usePagePrivee(`Certificat ${c.value.numero}`)
+usePagePrivee(`Attestation ${c.value.numero}`)
+
+/**
+ * Griffe de la direction : le modèle prévoit une signature manuscrite, mais le
+ * fichier n'a pas encore été fourni. La page l'intègre dès qu'il est déposé en
+ * /images/brand/signature.png ; en attendant, seule la ligne de signature
+ * apparaît.
+ */
+const signatureAbsente = ref(false)
 
 function imprimer() {
   window.print()
@@ -37,57 +45,108 @@ function imprimer() {
     </div>
 
     <!--
-      Certificat de participation — variables issues du squelette « Attestation de
-      suivi de module » fourni par le client. Mise en page A4 paysage.
+      Attestation de suivi de module — reproduction de la page 1 de
+      maquettes/modelAttestation.pdf : motif Big Five encadrant les quatre
+      bords, carte blanche centrée, nom en grandes capitales, module encadré,
+      quatre repères à icônes, signature et QR de vérification.
+      A4 paysage à l'impression (@page dans main.css).
     -->
     <article
-      class="mx-auto flex aspect-[297/210] w-full max-w-5xl flex-col bg-white p-12 shadow-lg print:aspect-auto print:h-screen print:max-w-none print:shadow-none"
+      class="attestation mx-auto flex aspect-[297/210] w-full max-w-5xl flex-col bg-[url('/images/brand/pattern.png')] bg-cover bg-center p-[1.8%] shadow-lg print:aspect-auto print:h-screen print:max-w-none print:shadow-none"
     >
-      <header class="flex items-start justify-between gap-6">
-        <img src="/images/brand/logo.png" alt="E-Masterclass Big Five" class="h-14 w-auto">
-        <div class="text-right text-[12px] text-discret">
-          <p>N° {{ c.numero }}</p>
-          <p>Délivré le {{ formatDate(c.dateDelivrance) }}</p>
+      <div class="flex min-h-0 flex-1 flex-col bg-white px-[4.5%] py-[2.6%]">
+        <header class="flex items-start">
+          <img src="/images/brand/logo.png" alt="E-Masterclass Big Five" class="h-[3.2rem] w-auto print:h-14">
+        </header>
+
+        <div class="flex min-h-0 flex-1 flex-col items-center justify-evenly text-center">
+          <div>
+            <h1 class="font-title text-[clamp(20px,3.2vw,34px)] font-medium tracking-[0.14em] text-encre uppercase print:text-[34px]">
+              Attestation de suivi de module
+            </h1>
+            <div class="mx-auto mt-2 w-24 border-t border-encre/60" />
+          </div>
+
+          <p class="text-[14.5px] font-bold text-encre">E-masterclass BIG FIVE atteste que</p>
+
+          <div>
+            <p class="text-[clamp(30px,5.4vw,58px)] leading-none font-extrabold tracking-[0.08em] text-encre uppercase print:text-[58px]">
+              {{ c.prenomNom }}
+            </p>
+            <div class="mx-auto mt-3 w-16 border-t border-encre/60" />
+          </div>
+
+          <p class="text-[14.5px] font-bold text-encre">a suivi intégralement le module</p>
+
+          <p class="w-full rounded-[6px] border border-entrepreneurs-clair px-6 py-3.5 text-[clamp(15px,2.2vw,24px)] font-extrabold text-encre uppercase print:text-[24px]">
+            {{ c.titreModule }}
+          </p>
+
+          <dl class="grid w-full grid-cols-4 gap-4 text-[13px]">
+            <div
+              v-for="repere in [
+                { icone: 'ph:briefcase', libelle: 'Programme', valeur: c.programme },
+                { icone: 'ph:target', libelle: 'Thématique', valeur: c.thematique },
+                { icone: 'ph:user', libelle: 'Formateur', valeur: c.formateur },
+                { icone: 'ph:clock', libelle: 'Durée', valeur: formatDuree(c.dureeMinutes) },
+              ]"
+              :key="repere.libelle"
+              class="text-center"
+            >
+              <Icon :name="repere.icone" size="26" class="text-encre" />
+              <dt class="mt-1.5 font-bold text-encre">{{ repere.libelle }} :</dt>
+              <dd class="text-encre">{{ repere.valeur }}</dd>
+            </div>
+          </dl>
         </div>
-      </header>
 
-      <div class="mt-10 flex-1">
-        <p class="surtitre text-social">Attestation de suivi de module</p>
+        <footer class="mt-2">
+          <div class="flex items-end justify-between gap-8">
+            <div class="text-[13px] leading-relaxed font-bold text-encre">
+              <p>Module réalisé le {{ formatDate(c.dateRealisation) }}</p>
+              <p>Attestation délivrée le {{ formatDate(c.dateDelivrance) }}</p>
+              <p>N° {{ c.numero }}</p>
+            </div>
 
-        <p class="mt-8 text-[15px] text-texte">E-Masterclass Big Five atteste que</p>
-        <p class="mt-2 font-title text-[42px] font-medium text-encre">{{ c.prenomNom }}</p>
+            <div class="flex items-end gap-10">
+              <div class="text-center">
+                <!-- :src dynamique : le fichier n'existe pas encore, un src
+                     statique serait résolu (et refusé) au build. -->
+                <img
+                  v-if="!signatureAbsente"
+                  :src="'/images/brand/signature.png'"
+                  alt=""
+                  class="mx-auto h-12 w-auto"
+                  @error="signatureAbsente = true"
+                >
+                <div class="mx-auto w-40 border-t border-encre/50" :class="signatureAbsente ? 'mt-12' : 'mt-1'" />
+                <p class="mt-1.5 text-[12px] font-bold text-encre">Direction E-Masterclass Big Five</p>
+              </div>
 
-        <p class="mt-6 text-[15px] text-texte">a suivi intégralement le module</p>
-        <p class="mt-2 font-title text-[26px] font-light text-social">{{ c.titreModule }}</p>
+              <div class="text-center">
+                <img :src="data.qrDataUrl" alt="QR code de vérification de l’attestation" class="mx-auto size-[4.2rem]">
+                <p class="mt-1.5 text-[12px] font-bold text-encre">Vérifier l’attestation</p>
+                <p class="text-[8.5px] text-discret">{{ data.lienVerification }}</p>
+              </div>
+            </div>
+          </div>
 
-        <dl class="mt-8 grid max-w-3xl grid-cols-2 gap-x-10 gap-y-2 text-[13px] sm:grid-cols-4">
-          <div><dt class="text-discret">Programme</dt><dd class="text-encre">{{ c.programme }}</dd></div>
-          <div><dt class="text-discret">Thématique</dt><dd class="text-encre">{{ c.thematique }}</dd></div>
-          <div><dt class="text-discret">Formateur</dt><dd class="text-encre">{{ c.formateur }}</dd></div>
-          <div><dt class="text-discret">Durée</dt><dd class="text-encre">{{ formatDuree(c.dureeMinutes) }}</dd></div>
-          <div><dt class="text-discret">Réalisation</dt><dd class="text-encre">{{ formatDate(c.dateRealisation) }}</dd></div>
-          <div><dt class="text-discret">Complétion</dt><dd class="text-encre">{{ c.tauxCompletion }} %</dd></div>
-        </dl>
+          <p class="mt-3 text-center text-[10px] text-texte">
+            Cette attestation confirme le suivi intégral du module et ne constitue ni un diplôme ni
+            une certification professionnelle.
+          </p>
+        </footer>
       </div>
-
-      <footer class="flex flex-wrap items-end justify-between gap-8 border-t border-ligne-claire pt-6">
-        <p class="max-w-md text-[11.5px] leading-relaxed text-discret">
-          Cette attestation confirme le suivi du module et ne constitue ni un diplôme ni une
-          certification professionnelle.
-          <br>
-          Vérifiable sur {{ data.lienVerification }}
-        </p>
-
-        <div class="text-center">
-          <img :src="data.qrDataUrl" alt="QR code de vérification du certificat" class="size-20">
-          <p class="mt-1 text-[10px] text-discret">Vérifier</p>
-        </div>
-
-        <div class="text-center">
-          <div class="w-44 border-t border-ligne" />
-          <p class="mt-1 text-[12px] text-texte">Direction E-Masterclass Big Five</p>
-        </div>
-      </footer>
     </article>
   </div>
 </template>
+
+<style>
+/* Sans quoi les navigateurs suppriment le motif de fond à l'impression. */
+@media print {
+  .attestation {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
+</style>

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { Utilisateur } from '#shared/types'
+import type { SectionAdmin, Utilisateur } from '#shared/types'
 
 export const useAuthStore = defineStore('auth', () => {
   const utilisateur = ref<Utilisateur | null>(null)
@@ -12,6 +12,13 @@ export const useAuthStore = defineStore('auth', () => {
       utilisateur.value?.role === 'admin-superieur',
   )
   const estAdminSuperieur = computed(() => utilisateur.value?.role === 'admin-superieur')
+
+  /** Droit fin par section du back-office : un administrateur supérieur voit
+   *  tout, un administrateur de contenu seulement ses sections cochées. */
+  function voitSection(section: SectionAdmin) {
+    if (utilisateur.value?.role === 'admin-superieur') return true
+    return utilisateur.value?.sectionsAutorisees?.includes(section) === true
+  }
   const estFormateur = computed(() => utilisateur.value?.role === 'formateur')
 
   async function rafraichir() {
@@ -22,14 +29,21 @@ export const useAuthStore = defineStore('auth', () => {
     charge.value = true
   }
 
-  async function connexion(email: string) {
+  async function connexion(email: string, motDePasse: string) {
     utilisateur.value = await $fetch<Utilisateur>('/api/auth/connexion', {
       method: 'POST',
-      body: { email },
+      body: { email, motDePasse },
     })
   }
 
-  async function inscription(payload: { prenom: string; nom: string; email: string }) {
+  async function inscription(payload: {
+    prenom: string
+    nom: string
+    email: string
+    motDePasse: string
+    whatsapp?: string
+    pays?: string
+  }) {
     utilisateur.value = await $fetch<Utilisateur>('/api/auth/inscription', {
       method: 'POST',
       body: payload,
@@ -48,6 +62,7 @@ export const useAuthStore = defineStore('auth', () => {
     estAdmin,
     estAdminSuperieur,
     estFormateur,
+    voitSection,
     rafraichir,
     connexion,
     inscription,

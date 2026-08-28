@@ -111,6 +111,9 @@ export interface SessionCoaching {
   dureeMinutes: number
   places: number
   inscrits: number
+  /** Présents relevés après la séance. `null` tant que le relevé n'a pas été
+   *  saisi : les taux de présence s'effacent alors côté formateur et admin. */
+  presents: number | null
   statut: 'planifiee' | 'annulee' | 'terminee'
 }
 
@@ -137,6 +140,30 @@ export interface Article {
 
 export type RoleUtilisateur = 'apprenant' | 'formateur' | 'admin-contenu' | 'admin-superieur'
 
+/**
+ * Sections du back-office, cochées une à une à la création d'un compte
+ * d'administration (planche C, écran 07). Une section non autorisée est
+ * masquée, pas seulement désactivée.
+ */
+export type SectionAdmin =
+  | 'administration-acces'
+  | 'cms-site-vitrine'
+  | 'fiches-commerciales'
+  | 'modules-chapitres'
+  | 'offres-commerciales'
+  | 'formateurs'
+  | 'calendrier-sessions'
+  | 'coaching-prive'
+  | 'candidatures-formateurs'
+  | 'ressources-scripts'
+  | 'blog'
+  | 'referencement-contenu'
+  | 'referencement-avance'
+  | 'historique-versions'
+  | 'statistiques-performance'
+  | 'performances-marketing'
+  | 'transactions-paiements'
+
 export interface Utilisateur {
   id: string
   prenom: string
@@ -148,6 +175,11 @@ export interface Utilisateur {
   /** Fiche apprenant à compléter avant de rejoindre un coaching collectif. */
   ficheCompletee?: boolean
   formateurId?: string
+  /** Sections du back-office visibles. Vide hors rôles d'administration ;
+   *  ignoré pour un administrateur supérieur, qui voit tout. */
+  sectionsAutorisees?: SectionAdmin[]
+  /** Renseigné tant que le verrouillage après 5 échecs court. */
+  verrouilleJusquA?: string | null
 }
 
 export interface Acces {

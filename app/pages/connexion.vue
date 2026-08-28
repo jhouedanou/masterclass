@@ -15,11 +15,15 @@ async function soumettre() {
   erreur.value = ''
   enCours.value = true
   try {
-    await auth.connexion(email.value)
+    await auth.connexion(email.value, motDePasse.value)
     // L'achat en cours est conservé : on revient là où l'utilisateur s'était arrêté.
     await navigateTo(String(route.query.suite ?? '/mon-espace'))
-  } catch {
-    erreur.value = 'Identifiants inconnus. Vérifiez votre adresse e-mail.'
+  } catch (e) {
+    // Le serveur distingue mot de passe erroné, compte verrouillé et champ
+    // manquant : son message est déjà rédigé pour l'utilisateur.
+    erreur.value =
+      (e as { statusMessage?: string }).statusMessage ??
+      'Adresse e-mail ou mot de passe incorrect.'
   } finally {
     enCours.value = false
   }
@@ -40,7 +44,7 @@ async function soumettre() {
       </label>
       <label class="block">
         <span class="mb-1.5 block text-[13px] font-bold text-texte">Mot de passe</span>
-        <input v-model="motDePasse" type="password" autocomplete="current-password" class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+        <input v-model="motDePasse" type="password" autocomplete="current-password" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
       </label>
 
       <p v-if="erreur" class="text-[14px] text-erreur">{{ erreur }}</p>
@@ -61,7 +65,10 @@ async function soumettre() {
       <p class="font-bold text-texte">Comptes de démonstration</p>
       <p class="mt-1">Apprenante : aya@example.ci · Administration : admin@bigfive.ci</p>
       <p>Formateur : formateur@bigfive.ci · Éditeur : editeur@bigfive.ci</p>
-      <p class="mt-1">Le mot de passe n’est pas encore vérifié : l’authentification réelle reste à brancher.</p>
+      <p class="mt-1">
+        Mot de passe commun : <span class="font-mono">Masterclass2026!</span> — à changer avant
+        toute mise en ligne.
+      </p>
     </div>
   </div>
 </template>

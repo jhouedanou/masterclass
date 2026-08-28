@@ -1,30 +1,33 @@
-import {
-  acces,
-  formateurs,
-  inscriptionsSessions,
-  modules,
-  sessionsCoaching,
-  thematiques,
-} from '../../../data/db'
+import { listerFormateurs, listerModules, listerThematiques } from '../../../database/catalogue'
+import { listerInscriptionsUtilisateur, listerSessions } from '../../../database/coaching'
+import { listerAccesUtilisateur } from '../../../database/comptes'
 import { exigerUtilisateur } from '../../../utils/session'
 
 /** Sessions visibles : uniquement celles dont l'apprenant possède un module couvert. */
-export default defineEventHandler((event) => {
-  const utilisateur = exigerUtilisateur(event)
-  const siens = acces.filter((a) => a.utilisateurId === utilisateur.id).map((a) => a.moduleId)
+export default defineEventHandler(async (event) => {
+  const utilisateur = await exigerUtilisateur(event)
 
-  return sessionsCoaching
-    .filter((s) => {
-      const couverts = modules.filter((m) => m.thematiqueId === s.thematiqueId).map((m) => m.id)
-      return couverts.some((id) => siens.includes(id))
-    })
+  const [acces, sessions, modules, thematiques, formateurs, inscriptions] = await Promise.all([
+    listerAccesUtilisateur(utilisateur.id),
+    listerSessions(),
+    listerModules(),
+    listerThematiques(),
+    listerFormateurs(),
+    listerInscriptionsUtilisateur(utilisateur.id),
+  ])
+
+  const siens = new Set(acces.map((a) => a.moduleId))
+  const inscrit = new Set(inscriptions.map((i) => i.sessionId))
+
+  return sessions
+    .filter((s) =>
+      modules.some((m) => m.thematiqueId === s.thematiqueId && siens.has(m.id)),
+    )
     .map((s) => ({
       ...s,
       thematique: thematiques.find((t) => t.id === s.thematiqueId) ?? null,
       formateur: formateurs.find((f) => f.id === s.formateurId) ?? null,
-      inscrit: inscriptionsSessions.some(
-        (i) => i.sessionId === s.id && i.utilisateurId === utilisateur.id,
-      ),
+      inscrit: inscrit.has(s.id),
       ficheRequise: utilisateur.ficheCompletee !== true,
     }))
 })

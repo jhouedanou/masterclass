@@ -1,41 +1,69 @@
 <script setup lang="ts">
+import type { SectionAdmin } from '#shared/types'
+
 const auth = useAuthStore()
 
-const groupes = [
+/**
+ * Une section non autorisée est masquée, pas seulement désactivée — c'est la
+ * règle posée par la planche C. `section: null` marque les écrans ouverts à
+ * tout compte d'administration.
+ */
+interface Lien {
+  libelle: string
+  chemin: string
+  icone: string
+  /** `null` = ouvert à tout compte d'administration. */
+  section: SectionAdmin | null
+  restreint?: boolean
+}
+
+const tousLesGroupes: { titre: string; liens: Lien[] }[] = [
   {
     titre: 'Pilotage',
     liens: [
-      { libelle: 'Vue d’ensemble', chemin: '/admin', icone: 'ph:gauge' },
-      { libelle: 'Performances', chemin: '/admin/performances', icone: 'ph:chart-line-up' },
-      { libelle: 'Revenus', chemin: '/admin/revenus', icone: 'ph:currency-circle-dollar' },
+      { libelle: 'Vue d’ensemble', chemin: '/admin', icone: 'ph:gauge', section: null },
+      { libelle: 'Performances', chemin: '/admin/performances', icone: 'ph:chart-line-up', section: 'performances-marketing' },
+      { libelle: 'Revenus', chemin: '/admin/revenus', icone: 'ph:currency-circle-dollar', section: 'statistiques-performance' },
     ],
   },
   {
     titre: 'Contenus',
     liens: [
-      { libelle: 'Modules & chapitres', chemin: '/admin/contenus', icone: 'ph:stack' },
-      { libelle: 'Blog', chemin: '/admin/blog', icone: 'ph:article' },
-      { libelle: 'Référencement (SEO)', chemin: '/admin/referencement', icone: 'ph:magnifying-glass' },
+      { libelle: 'Modules & chapitres', chemin: '/admin/contenus', icone: 'ph:stack', section: 'modules-chapitres' },
+      { libelle: 'CMS Site vitrine', chemin: '/admin/cms', icone: 'ph:layout', section: 'cms-site-vitrine' },
+      { libelle: 'Blog', chemin: '/admin/blog', icone: 'ph:article', section: 'blog' },
+      { libelle: 'Référencement (SEO)', chemin: '/admin/referencement', icone: 'ph:magnifying-glass', section: 'referencement-contenu' },
     ],
   },
   {
     titre: 'Communauté',
     liens: [
-      { libelle: 'Formateurs', chemin: '/admin/formateurs', icone: 'ph:users-three' },
-      { libelle: 'Calendrier des sessions', chemin: '/admin/sessions', icone: 'ph:calendar-dots' },
-      { libelle: 'Coaching privé', chemin: '/admin/coaching-prive', icone: 'ph:target' },
-      { libelle: 'Apprenants', chemin: '/admin/apprenants', icone: 'ph:student' },
+      { libelle: 'Formateurs', chemin: '/admin/formateurs', icone: 'ph:users-three', section: 'formateurs' },
+      { libelle: 'Calendrier des sessions', chemin: '/admin/sessions', icone: 'ph:calendar-dots', section: 'calendrier-sessions' },
+      { libelle: 'Coaching privé', chemin: '/admin/coaching-prive', icone: 'ph:target', section: 'coaching-prive' },
+      { libelle: 'Apprenants', chemin: '/admin/apprenants', icone: 'ph:student', section: null },
     ],
   },
   {
     titre: 'Administration',
     liens: [
-      { libelle: 'Transactions', chemin: '/admin/transactions', icone: 'ph:lock-key', restreint: true },
-      { libelle: 'Historique & versions', chemin: '/admin/historique', icone: 'ph:clock-counter-clockwise' },
-      { libelle: 'Paramètres', chemin: '/admin/parametres', icone: 'ph:sliders' },
+      { libelle: 'Transactions', chemin: '/admin/transactions', icone: 'ph:lock-key', section: 'transactions-paiements', restreint: true },
+      { libelle: 'Tracking & pixels', chemin: '/admin/tracking', icone: 'ph:crosshair', section: null },
+      { libelle: 'Administration des accès', chemin: '/admin/acces', icone: 'ph:shield-check', section: 'administration-acces' },
+      { libelle: 'Historique & versions', chemin: '/admin/historique', icone: 'ph:clock-counter-clockwise', section: 'historique-versions' },
+      { libelle: 'Paramètres', chemin: '/admin/parametres', icone: 'ph:sliders', section: null },
     ],
   },
 ]
+
+const groupes = computed(() =>
+  tousLesGroupes
+    .map((groupe) => ({
+      titre: groupe.titre,
+      liens: groupe.liens.filter((l) => !l.section || auth.voitSection(l.section)),
+    }))
+    .filter((groupe) => groupe.liens.length > 0),
+)
 </script>
 
 <template>

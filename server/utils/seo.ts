@@ -1,14 +1,17 @@
 import type { SeoFields } from '#shared/types'
-import { articles, formateurs, modules, programmes, reglagesSeo } from '../data/db'
+import { lireReglagesSeo } from '../database/administration'
+import { listerArticles } from '../database/blog'
+import { listerFormateurs, listerModules, listerProgrammes } from '../database/catalogue'
 
 /** Valeurs automatiques appliquées quand un champ n'est pas personnalisé (spec SEO §4). */
-export function resoudreSeo(
+export async function resoudreSeo(
   seo: SeoFields | undefined,
   auto: { title: string; description: string; image?: string; chemin: string },
 ) {
+  const reglages = await lireReglagesSeo()
   const title = seo?.title?.trim() || auto.title
   const description = seo?.metaDescription?.trim() || auto.description
-  const image = seo?.ogImage || auto.image || reglagesSeo.imageSocialeParDefaut
+  const image = seo?.ogImage || auto.image || reglages.imageSocialeParDefaut
   return {
     title,
     description,
@@ -32,8 +35,16 @@ export interface EntreeReferencement {
 }
 
 /** Inventaire de toutes les pages pilotables depuis l'onglet « Référencement et partage ». */
-export function inventaireReferencement(): EntreeReferencement[] {
-  const entrees: EntreeReferencement[] = [
+export async function inventaireReferencement(): Promise<EntreeReferencement[]> {
+  const [reglages, programmes, modules, formateurs, articles] = await Promise.all([
+    lireReglagesSeo(),
+    listerProgrammes(),
+    listerModules(),
+    listerFormateurs(),
+    listerArticles(),
+  ])
+
+  return [
     {
       id: 'page-accueil',
       type: 'accueil',
@@ -41,8 +52,8 @@ export function inventaireReferencement(): EntreeReferencement[] {
       chemin: '/',
       statut: 'publie',
       seo: {
-        title: reglagesSeo.titreParDefaut,
-        metaDescription: reglagesSeo.descriptionParDefaut,
+        title: reglages.titreParDefaut,
+        metaDescription: reglages.descriptionParDefaut,
         indexable: true,
       },
       slugVerrouille: true,
@@ -95,7 +106,6 @@ export function inventaireReferencement(): EntreeReferencement[] {
       slugVerrouille: false,
     })),
   ]
-  return entrees
 }
 
 /** Détection des Title / Meta description dupliqués (spec SEO §3, validation). */

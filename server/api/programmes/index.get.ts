@@ -1,3 +1,3 @@
-import { programmes } from '../../data/db'
+import { listerProgrammes } from '../../database/catalogue'
 
-export default defineEventHandler(() => programmes)
+export default defineEventHandler(() => listerProgrammes())

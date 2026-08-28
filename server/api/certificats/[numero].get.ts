@@ -1,5 +1,5 @@
 import QRCode from 'qrcode'
-import { certificats } from '../../data/db'
+import { trouverCertificat } from '../../database/commerce'
 
 /**
  * Lecture publique d'un certificat par son numéro : c'est la cible du QR code
@@ -7,7 +7,7 @@ import { certificats } from '../../data/db'
  */
 export default defineEventHandler(async (event) => {
   const numero = getRouterParam(event, 'numero')
-  const certificat = certificats.find((c) => c.numero === numero)
+  const certificat = await trouverCertificat(numero ?? '')
   if (!certificat) {
     throw createError({ statusCode: 404, statusMessage: 'Certificat introuvable' })
   }
