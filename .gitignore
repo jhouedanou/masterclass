@@ -33,3 +33,5 @@ server/database/types.generes.ts
 # vivent sur le stockage d'objets, pas dans l'historique Git.
 medias/sources
 medias/hls
+docs/Comptes-de-test-E-Masterclass.xlsx
+docs/email-testeurs.md

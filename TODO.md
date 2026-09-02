@@ -6,16 +6,19 @@ s'exécute. Le détail à transmettre à la direction de projet est dans la note
 
 ---
 
-## 1. À exécuter dans SQL Editor — 2 minutes
+## 1. À exécuter dans SQL Editor — rien à faire
 
-- [ ] **`supabase/en-ligne/06-video.sql`** — colonnes vidéo et relevé de visionnage
-- [ ] **`supabase/en-ligne/rattrapage-videos.sql`** — rattache les deux vidéos de démonstration
-- [x] **`supabase/en-ligne/07-parcours-planche-e.sql`** — appliqué le 02/09 sur le projet hébergé,
-      avec `rattrapage-planche-e.sql` (données de démonstration des nouveaux parcours)
+Tout est appliqué sur le projet hébergé. Vérifié le 02/09 en interrogeant la base :
 
-Sans le premier, le lecteur affiche « la vidéo n'est pas encore en ligne » sur tous les chapitres ;
-sans le troisième, les écrans de coaching privé, de paramètres du compte et la connexion
-`/admin/login` répondent en erreur. Le reste de la plateforme fonctionne normalement.
+- [x] **`supabase/en-ligne/06-video.sql`** — colonnes `video_cle` et `video_duree_secondes` sur
+      `chapitres`, table `visionnages` et fonction `enregistrer_visionnage()` en place
+- [x] **`supabase/en-ligne/rattrapage-videos.sql`** — les deux chapitres de démonstration du module
+      « Accroches qui stoppent le scroll » portent bien `demo-accroches-ch01` et `ch02` (31 s chacun)
+- [x] **`supabase/en-ligne/07-parcours-planche-e.sql`** — appliqué le 02/09, avec
+      `rattrapage-planche-e.sql` (données de démonstration des nouveaux parcours)
+
+Les 70 autres chapitres n'ont pas de vidéo : le lecteur y affiche son écran d'attente, comme prévu,
+jusqu'à ce que les tournages soient livrés (voir §3).
 
 ---
 
