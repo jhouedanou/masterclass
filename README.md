@@ -421,11 +421,13 @@ l'enregistrement d'écran. Elle rend une rediffusion attribuable.
   à l'écran à l'administrateur).
 - **Code de connexion admin par Supabase Auth** : avec `CODE_ADMIN_FOURNISSEUR=supabase-auth`,
   Supabase Auth émet, envoie et vérifie le code à six chiffres (`signInWithOtp` / `verifyOtp`,
-  `server/utils/codeAdmin.ts`). À régler dans le tableau de bord du projet, Authentication →
-  Email Templates → Magic Link : ajouter `{{ .Token }}` au gabarit, sinon l'e-mail ne contient
-  qu'un lien. Le SMTP intégré de Supabase est limité à quelques envois par heure : brancher un
-  SMTP personnalisé (Authentication → SMTP Settings) lève cette limite. Les comptes créés dans
-  Supabase Auth n'ouvrent aucun droit : la session reste celle de la plateforme.
+  `server/utils/codeAdmin.ts`). Le gabarit « Magic Link » doit porter `{{ .Token }}` :
+  `npm run auth:configurer` le règle par l'API de gestion (jeton `SUPABASE_ACCESS_TOKEN` dans
+  `.env`, jamais lu par l'application). Sur l'offre gratuite, Supabase n'autorise cette
+  modification qu'avec un SMTP personnalisé (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, posés par le
+  même script). Sans SMTP, garder `CODE_ADMIN_FOURNISSEUR=interne` : le code s'écrit dans la
+  sortie du serveur. Les comptes créés dans Supabase Auth n'ouvrent aucun droit : la session
+  reste celle de la plateforme.
 - **Paiement FeexPay** : `POST /api/commandes` enregistre la commande, la transaction et ouvre les
   accès ; l'échange avec le prestataire est simulé. Hors production, un sélecteur du tunnel force
   l'un des six motifs d'échec pour dérouler chaque écran d'erreur.
