@@ -12,6 +12,7 @@ import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
+import { createHash } from 'node:crypto'
 import { hacherMotDePasse } from '../server/utils/motDePasse.ts'
 import {
   acces,
@@ -191,7 +192,7 @@ inserer(
 
 inserer(
   'chapitres',
-  'module_id, position, libelle, titre, duree_minutes, script',
+  'module_id, position, libelle, titre, duree_minutes, script, video_cle, video_duree_secondes',
   modules.flatMap((m) =>
     m.chapitres.map((c, i) =>
       [
@@ -201,6 +202,8 @@ inserer(
         txt(c.titre),
         num(c.dureeMinutes),
         json(c.script ?? []),
+        txt(c.videoCle),
+        num(c.videoDureeSecondes),
       ].join(', '),
     ),
   ),
@@ -210,7 +213,12 @@ inserer(
 // Une empreinte par compte : chacune porte son propre sel.
 const empreintes = new Map<string, string>()
 for (const u of utilisateurs) {
-  empreintes.set(u.id, await hacherMotDePasse(MOT_DE_PASSE_DEMO))
+  // Sel dérivé de l'identifiant : deux régénérations donnent le même
+  // fichier, et le diff ne montre que les vraies modifications.
+  empreintes.set(
+    u.id,
+    await hacherMotDePasse(MOT_DE_PASSE_DEMO, createHash('sha256').update(u.id).digest().subarray(0, 16)),
+  )
 }
 
 inserer(

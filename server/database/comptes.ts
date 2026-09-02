@@ -298,6 +298,43 @@ export async function trouverAcces(
  * C'est ce qui permet à `termine_le` de rester posé une fois le module réalisé,
  * comme l'exige la contrainte `acces_termine_coherent`.
  */
+/**
+ * Relevé du temps réellement visionné d'un chapitre.
+ *
+ * Le lecteur n'envoie qu'un cumul de secondes ; l'identifiant technique du
+ * chapitre est retrouvé ici, à partir du module et du rang, pour que le client
+ * n'ait jamais à manipuler d'identifiant de base. Le contrôle d'accès et le
+ * recalcul de la progression sont portés par la fonction SQL, en une seule
+ * transaction.
+ */
+export async function enregistrerVisionnage(
+  utilisateurId: string,
+  moduleId: string,
+  position: number,
+  secondesVues: number,
+): Promise<number> {
+  const chapitre = verifierOptionnel(
+    await supabase()
+      .from('chapitres')
+      .select('id')
+      .eq('module_id', moduleId)
+      .eq('position', position)
+      .maybeSingle(),
+    'chapitre',
+  )
+  if (!chapitre) {
+    throw createError({ statusCode: 404, statusMessage: 'Chapitre introuvable' })
+  }
+
+  const { data, error } = await supabase().rpc('enregistrer_visionnage', {
+    p_utilisateur_id: utilisateurId,
+    p_chapitre_id: chapitre.id,
+    p_secondes_vues: secondesVues,
+  })
+  if (error) throw traduireErreur(error, 'relevé de visionnage')
+  return data
+}
+
 export async function majProgression(
   utilisateurId: string,
   moduleId: string,

@@ -140,6 +140,8 @@ export type ChapitreRow = {
   titre: string
   duree_minutes: number | null
   script: { temps: string; texte: string }[]
+  video_cle: string | null
+  video_duree_secondes: number | null
 }
 
 export type UtilisateurRow = {
@@ -443,7 +445,7 @@ export type Database = {
         | 'prix_fcfa'
         | 'statut'
       >
-      chapitres: Table<ChapitreRow, 'id' | 'duree_minutes' | 'script'>
+      chapitres: Table<ChapitreRow, 'id' | 'duree_minutes' | 'script' | 'video_cle' | 'video_duree_secondes'>
       utilisateurs: Table<
         UtilisateurRow,
         | 'id'
@@ -501,6 +503,10 @@ export type Database = {
     // et fait retomber toutes les tables sur `never`.
     Views: { [_ in never]: never }
     Functions: {
+      enregistrer_visionnage: {
+        Args: { p_utilisateur_id: string; p_chapitre_id: string; p_secondes_vues: number }
+        Returns: number
+      }
       reserver_place_session: {
         Args: {
           p_session_id: string

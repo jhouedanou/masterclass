@@ -224,6 +224,55 @@ await attendErreur(
   `select attribuer_acces('usr-fatou', 'mod-instagram-formats-et-croissance', 'encore', 'Admin')`,
 )
 
+// --- Relevé du temps visionné ------------------------------------------------
+
+console.log('\nenregistrer_visionnage')
+const CH = (position) =>
+  `(select id from chapitres where module_id = 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting' and position = ${position})`
+
+await attendErreur(
+  'module non acquis',
+  'EM403',
+  `select enregistrer_visionnage('usr-moussa', ${CH(0)}, 10)`,
+)
+await attendErreur(
+  'chapitre inconnu',
+  'EM404',
+  `select enregistrer_visionnage('usr-aya', '00000000-0000-0000-0000-000000000000', 10)`,
+)
+await attendErreur(
+  'temps négatif',
+  'EM422',
+  `select enregistrer_visionnage('usr-aya', ${CH(0)}, -5)`,
+)
+
+// Deux chapitres portent une vidéo de 31 s : la moitié du module vue donne 50 %.
+await attendValeur(
+  'premier chapitre vu en entier → 50 %',
+  50,
+  `select enregistrer_visionnage('usr-aya', ${CH(0)}, 31)`,
+)
+await attendValeur(
+  'second chapitre vu à moitié → 74 %',
+  74,
+  `select enregistrer_visionnage('usr-aya', ${CH(1)}, 15)`,
+)
+await attendValeur(
+  'un relevé plus bas ne fait pas reculer',
+  74,
+  `select enregistrer_visionnage('usr-aya', ${CH(1)}, 2)`,
+)
+await attendValeur(
+  'temps conservé, pas écrasé',
+  15,
+  `select secondes_vues from visionnages where utilisateur_id = 'usr-aya' and chapitre_id = ${CH(1)}`,
+)
+await attendValeur(
+  'temps plafonné à la durée du chapitre',
+  100,
+  `select enregistrer_visionnage('usr-aya', ${CH(1)}, 9999)`,
+)
+
 // --- Contraintes et déclencheurs --------------------------------------------
 
 console.log('\nContraintes')

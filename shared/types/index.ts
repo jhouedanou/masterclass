@@ -53,6 +53,12 @@ export interface Chapitre {
   libelle: string
   titre: string
   dureeMinutes?: number
+  /** Dossier du flux HLS sur le CDN. Absent tant que la vidéo n'est pas
+   *  montée — le lecteur affiche alors son écran d'attente. */
+  videoCle?: string
+  /** Durée mesurée au transcodage, en secondes. Fait autorité sur
+   *  `dureeMinutes`, qui reste une estimation éditoriale. */
+  videoDureeSecondes?: number
   /** Script synchronisé avec la lecture. Vide tant que la transcription
    *  de production n'a pas été importée. */
   script?: LigneScript[]

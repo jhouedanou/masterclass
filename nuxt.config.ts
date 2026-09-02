@@ -36,6 +36,13 @@ export default defineNuxtConfig({
     supabaseSecretKey:
       process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
 
+    // Diffusion des vidéos. Le secret scelle les autorisations de lecture ; il
+    // est partagé avec le Worker Cloudflare, qui les vérifie. La base pointe
+    // sur ce Worker en production, sur la route locale `/medias` en
+    // développement (voir server/utils/video.ts).
+    videoSigningSecret: process.env.VIDEO_SIGNING_SECRET || '',
+    videoBaseUrl: process.env.VIDEO_BASE_URL || '',
+
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://emasterclass.bigfive.ci',
     },

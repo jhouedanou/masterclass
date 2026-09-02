@@ -15,7 +15,10 @@
     "db:seed:generer": "node scripts/generer-seed.ts",
     "db:sql": "node scripts/generer-sql-en-ligne.mjs",
     "db:types": "supabase gen types typescript --local > server/database/types.generes.ts",
-    "db:verifier": "node scripts/verifier-migrations.mjs"
+    "db:verifier": "node scripts/verifier-migrations.mjs",
+    "video:transcoder": "node scripts/transcoder-video.mjs",
+    "video:publier": "node scripts/publier-video.mjs",
+    "video:verifier": "node scripts/verifier-video.mjs"
   },
   "dependencies": {
     "@nuxt/fonts": "^0.14.0",
@@ -26,6 +29,7 @@
     "@pinia/nuxt": "^1.0.2",
     "@supabase/supabase-js": "^2.112.4",
     "@tailwindcss/vite": "^4.3.3",
+    "hls.js": "^1.7.2",
     "nuxt": "^4.5.2",
     "nuxt-schema-org": "^6.2.9",
     "pinia": "^4.0.3",

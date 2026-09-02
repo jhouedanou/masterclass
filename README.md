@@ -148,6 +148,7 @@ formateurs, articles — tant qu'aucun back-office ne permet de le saisir. Aprè
 ```bash
 npm run db:seed:generer   # régénère supabase/seed.sql
 npm run db:sql            # régénère supabase/en-ligne/
+npm run video:verifier    # contrôle la chaîne vidéo (signature, flux transcodés)
 ```
 
 Aucun endpoint n'importe ce fichier : l'application passe par les dépôts de `server/database`.
@@ -350,6 +351,38 @@ formateurs et le partage d'articles.
 5. **Responsive** — les planches desktop, tablette et mobile de la maquette sont traitées comme des
    points de rupture d'une seule implémentation, pas comme trois interfaces distinctes.
 
+## Vidéo
+
+Trois pièces, aucun abonnement :
+
+| Pièce | Rôle | Coût |
+| --- | --- | --- |
+| `ffmpeg`, sur un poste de travail | découpe une vidéo en flux HLS à plusieurs débits | nul |
+| Cloudflare R2 | stocke les fichiers produits | gratuit sous 10 Go, sortie de données gratuite |
+| Un Worker Cloudflare (`infra/worker-video`) | vérifie l'autorisation et sert les fichiers | gratuit sous 100 000 requêtes par jour |
+
+L'application ne diffuse aucune vidéo. Elle vérifie l'accès une fois, puis remet à l'apprenant une
+URL signée valable quatre heures et nominative. Le Worker recalcule la signature et sert le
+fichier ; aucun segment ne traverse le serveur Nuxt, d'où le coût.
+
+En développement, le Worker n'est pas nécessaire : la route `/medias` applique exactement la même
+règle de signature sur les fichiers locaux. `npm run video:verifier` compare les deux
+implémentations et échoue si elles divergent — une divergence rendrait toutes les vidéos illisibles
+en production alors que tout fonctionnerait en local.
+
+```bash
+npm run video:transcoder -- medias/sources/chapitre.mp4 mod-monslug-ch01
+npm run video:publier -- mod-monslug-ch01
+```
+
+Le transcodage imprime la clé et la durée mesurée, à reporter dans `server/data/db.ts` (contenu de
+référence) ou directement en base. Un chapitre sans clé affiche l'écran d'attente du lecteur.
+
+Mise en service du Worker : voir `infra/worker-video/README.md`.
+
+Le filigrane nominatif reste indispensable : la signature empêche le partage d'un lien, pas
+l'enregistrement d'écran. Elle rend une rediffusion attribuable.
+
 ## Reste à faire
 
 - **Double vérification à la connexion** : la maquette prévoit un code à six chiffres envoyé par
@@ -360,8 +393,6 @@ formateurs et le partage d'articles.
   côté interface, le prestataire reste à brancher.
 - **Envoi d'e-mails et WhatsApp transactionnel** : formulaires et réinitialisation de mot de passe
   journalisent seulement.
-- **Lecteur vidéo** : l'écran, le watermark et le script synchronisé sont en place ; le flux HLS et
-  les URL signées restent à brancher, de même que l'enregistrement du temps réel de visionnage.
 - **Onglets détaillés de Performances** (Funnel / Ventes / Visites / Clients) : ils dépendent des
   mesures d'audience, donc du branchement de Google Tag Manager. Tous les autres écrans de la
   planche C sont en place.

@@ -241,10 +241,27 @@ interface Brouillon {
   statut?: Module['statut']
 }
 
+/**
+ * Flux HLS déjà transcodés et déposés sur le CDN, par module puis par
+ * position de chapitre. Un chapitre absent de cette table n'a pas encore de
+ * vidéo : le lecteur affiche alors son écran d'attente.
+ *
+ * Alimenté au fur et à mesure des tournages — `npm run video:transcoder`
+ * imprime la clé et la durée à reporter ici.
+ */
+const VIDEOS: Record<string, Record<number, { cle: string; dureeSecondes: number }>> = {
+  'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting': {
+    0: { cle: 'demo-accroches-ch01', dureeSecondes: 31 },
+    1: { cle: 'demo-accroches-ch02', dureeSecondes: 31 },
+  },
+}
+
 function moduleComplet(b: Brouillon): Module {
   const statut = b.statut ?? 'disponible'
+  const id = `mod-${b.slug}`
+  const videos = VIDEOS[id] ?? {}
   return {
-    id: `mod-${b.slug}`,
+    id,
     slug: b.slug,
     numero: b.numero,
     titre: b.titre,
@@ -255,7 +272,11 @@ function moduleComplet(b: Brouillon): Module {
     pourquoi: b.pourquoi,
     pourQui: b.pourQui,
     prerequis: b.prerequis,
-    chapitres: b.chapitres,
+    chapitres: b.chapitres.map((c, i) => ({
+      ...c,
+      videoCle: videos[i]?.cle,
+      videoDureeSecondes: videos[i]?.dureeSecondes,
+    })),
     acquis: b.acquis,
     livrable: b.livrable,
     faq: [...(b.faq ?? []), ...faqCommune],

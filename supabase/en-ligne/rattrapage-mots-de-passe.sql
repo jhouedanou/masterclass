@@ -9,17 +9,17 @@
 -- Sans effet sur un compte qui en a déjà un.
 -- ---------------------------------------------------------------------------
 
-update utilisateurs set mot_de_passe_hache = 'scrypt$16384$8$1$03f22dc4d30f7f3cc9aa28d1fc9c1a89$7bac4358d1e299b17ad7ff86313f8536b56522dc48c87aa320be2dcc375dc7510e3b9546e7e93acee8445cd6763a3f71f78826ba717c20035b7079f3e3c80b39'
+update utilisateurs set mot_de_passe_hache = 'scrypt$16384$8$1$a22826f2045a3ce56c8ced828516748c$995728a7e90841bbe8088e4c5370161fc400a087f501bc95dd55bf2195f3010c03177023ed87f252ac4430ab80908d703ea2aa6378442c5cdc96ffe6933be92b'
  where id = 'usr-aya' and mot_de_passe_hache is null;
-update utilisateurs set mot_de_passe_hache = 'scrypt$16384$8$1$74ae5112a35a1cd961e48cc43cd2045f$ff8f19727abdcc7a32e257527b8e130da78ed2b1b7317726c11b5ad9df90cb0e4b3d3ac7163407b280699b2b4c3f154d262b6a5d0fb5a1caa6e59ffda1cee4d6'
+update utilisateurs set mot_de_passe_hache = 'scrypt$16384$8$1$b977e801947a3cda9dc6c5a707394ea6$040cac9c2794a5ccb2aa79b4285755262e4fc312da4f06af069d80a058c2a2a8a16796941713c0f1a265f0e2a8ff9fb8a30c562a0011f819bd7a4b7b64b7efc6'
  where id = 'usr-moussa' and mot_de_passe_hache is null;
-update utilisateurs set mot_de_passe_hache = 'scrypt$16384$8$1$d69dbdbef733ef53065b9e80014128e8$4fee43ce2269371c262e1d6a1749efef797a8d8d69dc5b0d9d0b174c1d959d555f171edeb42553f04427b03cf90d030f37fdb1808b4deeea74956e33da2dfe6a'
+update utilisateurs set mot_de_passe_hache = 'scrypt$16384$8$1$8472433c6d1c39bc03ad355160dbfa86$90a4ff26b70745b2c3aa8a7e208f234742da8712fa8d8909f4e55d0ab56538f5f5d0f12450ec80c3160724de1a325e05ba734753093435a0214c069423122894'
  where id = 'usr-fatou' and mot_de_passe_hache is null;
-update utilisateurs set mot_de_passe_hache = 'scrypt$16384$8$1$d08b2a1e2697b05534939d53897ec640$6427ac4c93b7e3be50894ef809219f1d8bf7b9a13ee1b6a3e7542e474b6b089bf53f9b8d1609f85fb3c098befaf39f3a839dfd9b0b8eb62819d832dff751cea9'
+update utilisateurs set mot_de_passe_hache = 'scrypt$16384$8$1$e486c0557a0da8463ebd7f3cbc8e4f83$54b5d095859db59145ebe4f2a80ac335d51adaea0e9b7203cfcbcfb3fe008d20a1ef8f278f555a095b83529a3169657878c3639639a162785b67f0673d360119'
  where id = 'usr-admin' and mot_de_passe_hache is null;
-update utilisateurs set mot_de_passe_hache = 'scrypt$16384$8$1$6401bfce479dc72a640b596bcc1533de$4d0705946478b91929e0c435fab417233eeb5d8211ae0bd4500ade650953c2c9c13b0f82d86cdf52a4383e54157026d25e79ba3a6ba5ff325c2f5ed6d367a0a1'
+update utilisateurs set mot_de_passe_hache = 'scrypt$16384$8$1$e34740232b28a7676399bb2d5946831d$1c0f08fdae6c17466551afcb52f5b83775180b912e175b20028b98d3758472a3b0703abb1eab08e73b676051b8a77ec7e06af2dff81bef753318d625529ff4ff'
  where id = 'usr-editeur' and mot_de_passe_hache is null;
-update utilisateurs set mot_de_passe_hache = 'scrypt$16384$8$1$cf685411a72619e2293f3d28e1ef6fd0$4e6bf2ed9a5a15adf225f4ce8cb0089505fc752e1fc85c96f7e5e23f882866e16af3d47cc7bcfa8f1934413fcba9af02afec6b4b0e88710ab57ad1dfce60d6d5'
+update utilisateurs set mot_de_passe_hache = 'scrypt$16384$8$1$b84ca1e1a26d95d8a61dc9c159b3f279$a50c771bf3bdeacb378ff814395346665cf5db175a0f365a74f04b4a8436d88f2c2ad2bb184e375fbad329a65e5b954f69352226d2fc39f80fafdfc6d3a3878a'
  where id = 'usr-formateur' and mot_de_passe_hache is null;
 
 -- Droits fins des comptes d'administration.

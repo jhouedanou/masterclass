@@ -6,7 +6,17 @@ s'exécute. Le détail à transmettre à la direction de projet est dans la note
 
 ---
 
-## 1. Base de données — à jour
+## 1. À exécuter dans SQL Editor — 2 minutes
+
+- [ ] **`supabase/en-ligne/06-video.sql`** — colonnes vidéo et relevé de visionnage
+- [ ] **`supabase/en-ligne/rattrapage-videos.sql`** — rattache les deux vidéos de démonstration
+
+Sans eux, le lecteur affiche « la vidéo n'est pas encore en ligne » sur tous les chapitres ; le
+reste de la plateforme fonctionne normalement.
+
+---
+
+## 2. Base de données — à jour
 
 Vérifié le 02/09 sur le projet hébergé : les cinq migrations (`01` à `05`), le rattrapage des mots
 de passe et le jeu de données sont en place. Les comptages (18 modules, 72 chapitres, 5 articles,
@@ -15,19 +25,22 @@ de passe et le jeu de données sont en place. Les comptages (18 modules, 72 chap
 
 ---
 
-## 2. Bloqué par un prestataire
+## 3. Bloqué par un prestataire
 
 Rien de tout cela ne peut avancer sans un compte ou des clés. Les trois premiers **interdisent une
 ouverture au public**.
 
-### Hébergeur vidéo — à lancer en premier, c'est le plus long
-- [ ] Choisir l'hébergeur (Mux, Bunny Stream, Cloudflare Stream, Vimeo OTT)
-- [ ] Obtenir **les 18 vidéos** montées et validées — c'est le vrai sujet, pas l'outil
-- [ ] Récupérer les transcriptions (script synchronisé sous le lecteur)
-- [ ] Récupérer clé d'API et identifiant de compte
+### Vidéo — l'hébergeur est réglé, restent les contenus
+La diffusion est en place : transcodage HLS par `ffmpeg`, stockage Cloudflare R2, autorisations
+signées vérifiées par un Worker. Aucun abonnement, voir la section « Vidéo » du README. Deux
+vidéos de démonstration tournent déjà de bout en bout.
 
-Débloque : lecture réelle, URL signées, filigrane nominatif, temps réellement visionné.
-**Sans cela, l'écran de lecture reste vide.**
+- [ ] Créer le bucket R2 et déployer le Worker (`infra/worker-video/README.md`), puis renseigner
+      `VIDEO_BASE_URL` et `VIDEO_SIGNING_SECRET`
+- [ ] Obtenir **les 18 vidéos** montées et validées — c'est le vrai sujet, et il reste entier
+- [ ] Récupérer les transcriptions (script synchronisé sous le lecteur)
+
+**Sans les vidéos, l'écran de lecture affiche son message d'attente.**
 
 ### FeexPay — encaissement
 - [ ] Ouvrir le compte marchand au nom de BigFiveAbidjan SARL (RCCM, pièce d'identité du gérant,
@@ -71,7 +84,7 @@ Débloque les six lignes qui affichent « — » dans l'écran Performances.
 
 ---
 
-## 3. À fournir en interne
+## 4. À fournir en interne
 
 - [ ] **Signature de la direction** en PNG fond transparent → déposer dans
       `public/images/brand/signature.png`. L'attestation l'affichera automatiquement ;
@@ -88,7 +101,7 @@ Débloque les six lignes qui affichent « — » dans l'écran Performances.
 
 ---
 
-## 4. Développement restant
+## 5. Développement restant
 
 - [ ] **Onglets détaillés de Performances** (Funnel, Ventes, Visites, Clients) — ils affichent des
       mesures d'audience, donc ils attendent Google Tag Manager. À faire une fois GA4 branché.
@@ -103,6 +116,7 @@ Débloque les six lignes qui affichent « — » dans l'écran Performances.
 npm run dev              # développement
 npm run db:verifier      # rejoue migrations + seed sur un vrai PostgreSQL, sans Docker
 npm run typecheck        # contrôle des types
+npm run video:verifier   # contrôle la chaîne vidéo
 npm run build            # build de production
 
 # Après avoir modifié le contenu éditorial de server/data/db.ts :

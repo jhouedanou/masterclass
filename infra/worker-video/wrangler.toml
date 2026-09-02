@@ -1,0 +1,20 @@
+# Diffusion des vidéos E-Masterclass.
+#
+# Mise en service :
+#   npx wrangler r2 bucket create emasterclass-videos
+#   npx wrangler secret put VIDEO_SIGNING_SECRET   # même valeur que le .env de l'application
+#   npx wrangler deploy
+#
+# Puis renseigner VIDEO_BASE_URL dans le .env de l'application avec l'URL du
+# Worker (ou le domaine personnalisé qui lui est rattaché).
+
+name = "emasterclass-videos"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+[[r2_buckets]]
+binding = "VIDEOS"
+bucket_name = "emasterclass-videos"
+
+# VIDEO_SIGNING_SECRET est un secret : il se pose avec `wrangler secret put`,
+# jamais dans ce fichier, qui est versionné.

@@ -30,8 +30,17 @@ const LONGUEUR = 64
 /** En deçà, un mot de passe ne protège rien. */
 export const LONGUEUR_MINIMALE = 10
 
-export async function hacherMotDePasse(motDePasse: string): Promise<string> {
-  const sel = randomBytes(16)
+/**
+ * @param selFixe Réservé à la génération du jeu de démonstration
+ * (`scripts/generer-seed.ts`). Un sel dérivé de l'identifiant du compte rend le
+ * fichier de seed reproductible : sans cela, chaque régénération réécrit six
+ * lignes de hachages et noie les vraies modifications dans le bruit. Ces
+ * comptes ont un mot de passe public, à changer avant toute ouverture — voir
+ * TODO.md. Le code applicatif ne passe jamais ce paramètre : un sel prévisible
+ * sur un compte réel permettrait de précalculer les empreintes.
+ */
+export async function hacherMotDePasse(motDePasse: string, selFixe?: Buffer): Promise<string> {
+  const sel = selFixe ?? randomBytes(16)
   const empreinte = await scryptAsync(motDePasse.normalize('NFKC'), sel, LONGUEUR, {
     N,
     r: R,

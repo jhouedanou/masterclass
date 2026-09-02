@@ -28,3 +28,8 @@ supabase/.branches
 supabase/.temp
 server/database/types.generes.ts
 .env.example
+
+# Vidéos : sources et flux transcodés. Volumineux et reproductibles — ils
+# vivent sur le stockage d'objets, pas dans l'historique Git.
+medias/sources
+medias/hls

@@ -146,6 +146,8 @@ export function versChapitre(row: ChapitreRow): Chapitre {
     titre: row.titre,
     dureeMinutes: optionnelNombre(row.duree_minutes),
     script: row.script,
+    videoCle: row.video_cle ?? undefined,
+    videoDureeSecondes: optionnelNombre(row.video_duree_secondes),
   }
 }
 
