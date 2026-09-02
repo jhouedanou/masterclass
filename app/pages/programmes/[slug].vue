@@ -101,7 +101,7 @@ useJsonLd(() => ({
     <!-- hero programme : dégradé de la couleur du programme et motif de marque
          en fond (planche A, écrans 02 et 02b) -->
     <section
-      class="relative overflow-hidden text-white"
+      class="sur-sombre relative overflow-hidden text-white"
       :class="social ? 'degrade-social' : 'degrade-entrepreneurs'"
     >
       <img
@@ -112,7 +112,7 @@ useJsonLd(() => ({
         :class="social ? 'opacity-[.28]' : 'opacity-[.24]'"
       >
       <div class="conteneur relative py-12">
-        <FilAriane :mailles="mailles" class="mb-6 text-white/80" />
+        <FilAriane :mailles="mailles" clair class="mb-6" />
         <p class="surtitre text-white/80">Programme</p>
         <h1 class="mt-3 text-[46px] font-medium lg:text-[54px]">
           {{ programme.nom }}

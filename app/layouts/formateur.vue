@@ -17,7 +17,7 @@ const liens = [
 
 <template>
   <div class="flex min-h-screen bg-fond">
-    <aside class="hidden w-60 shrink-0 flex-col bg-encre p-5 text-[#b9b4c4] lg:flex">
+    <aside class="sur-sombre hidden w-60 shrink-0 flex-col bg-encre p-5 text-[#b9b4c4] lg:flex">
       <NuxtLink to="/" class="mb-8 block">
         <img src="/images/brand/logo.png" alt="E-Masterclass Big Five" class="h-9 w-auto brightness-0 invert">
       </NuxtLink>
@@ -27,7 +27,7 @@ const liens = [
           v-for="lien in liens"
           :key="lien.chemin"
           :to="lien.chemin"
-          class="flex items-center gap-2 rounded-[10px] px-3.5 py-2.5 text-[14px] hover:bg-encre-800"
+          class="flex items-center gap-2 rounded-[10px] px-3.5 py-2.5 text-[14px] text-[#b9b4c4] hover:bg-encre-800 hover:text-white"
           active-class="bg-social text-white"
         >
           <Icon :name="lien.icone" size="18" />

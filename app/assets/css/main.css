@@ -91,6 +91,20 @@
   }
 
   /* Sur-titre commun à toutes les sections de la maquette. */
+  /* Conteneurs sombres (barres latérales, hero programme, lecteur) : la règle
+     de base `a { color: social }` cible chaque lien et bat l'héritage ; ici
+     les liens repassent en gris clair, blanc au survol. Une utilité posée
+     sur le lien lui-même reste prioritaire. */
+  .sur-sombre a {
+    color: #b9b4c4;
+  }
+  .sur-sombre a:hover {
+    color: #fff;
+  }
+  .sur-sombre :focus-visible {
+    outline-color: #fff;
+  }
+
   .surtitre {
     @apply text-[13px] font-bold tracking-[0.16em] uppercase;
   }

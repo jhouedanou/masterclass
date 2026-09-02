@@ -91,7 +91,7 @@ watch(lecteur.erreur, async (message) => {
 </script>
 
 <template>
-  <div v-if="data" class="min-h-screen bg-encre text-white">
+  <div v-if="data" class="sur-sombre min-h-screen bg-encre text-white">
     <header class="flex flex-wrap items-center justify-between gap-3 border-b border-encre-800 px-6 py-4">
       <NuxtLink
         :to="`/mon-espace/module/${moduleCourant.slug}`"

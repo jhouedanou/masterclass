@@ -158,7 +158,7 @@ useJsonLd({
     </section>
 
     <!-- formateurs -->
-    <section class="bg-encre py-14 text-white">
+    <section class="sur-sombre bg-encre py-14 text-white">
       <div class="conteneur">
         <UiEnTeteSection
           surtitre="Nos formateurs"

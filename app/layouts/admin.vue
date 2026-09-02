@@ -73,7 +73,7 @@ const groupes = computed(() =>
 
 <template>
   <div class="flex min-h-screen bg-fond">
-    <aside class="hidden w-64 shrink-0 flex-col overflow-y-auto bg-encre p-5 text-[#b9b4c4] lg:flex">
+    <aside class="sur-sombre hidden w-64 shrink-0 flex-col overflow-y-auto bg-encre p-5 text-[#b9b4c4] lg:flex">
       <NuxtLink to="/" class="mb-7 block">
         <img src="/images/brand/logo.png" alt="E-Masterclass Big Five" class="h-9 w-auto brightness-0 invert">
       </NuxtLink>
@@ -86,7 +86,7 @@ const groupes = computed(() =>
               v-for="lien in groupe.liens"
               :key="lien.chemin"
               :to="lien.chemin"
-              class="flex items-center gap-2 rounded-[10px] px-3 py-2 text-[13.5px] hover:bg-encre-800"
+              class="flex items-center gap-2 rounded-[10px] px-3 py-2 text-[13.5px] text-[#b9b4c4] hover:bg-encre-800 hover:text-white"
               active-class="bg-social text-white"
             >
               <Icon :name="lien.icone" size="17" />
@@ -107,7 +107,7 @@ const groupes = computed(() =>
 
     <!-- Tablette (planche C, écran 17) : la barre latérale se replie en une
          colonne d'icônes de 64 px, vignette de marque en tête. -->
-    <aside class="hidden w-16 shrink-0 flex-col items-center gap-1.5 overflow-y-auto bg-encre py-4 text-[#b9b4c4] md:flex lg:hidden">
+    <aside class="sur-sombre hidden w-16 shrink-0 flex-col items-center gap-1.5 overflow-y-auto bg-encre py-4 text-[#b9b4c4] md:flex lg:hidden">
       <NuxtLink to="/" class="mb-2 rounded-[8px] bg-white p-[5px]" aria-label="Accueil du site">
         <img src="/images/brand/pattern.png" alt="" class="size-[26px] rounded-[4px] object-cover">
       </NuxtLink>
@@ -118,7 +118,7 @@ const groupes = computed(() =>
           :to="lien.chemin"
           :title="lien.libelle"
           :aria-label="lien.libelle"
-          class="grid size-10 place-items-center rounded-[8px] hover:bg-encre-800"
+          class="grid size-10 place-items-center rounded-[8px] text-[#b9b4c4] hover:bg-encre-800 hover:text-white"
           active-class="bg-social text-white"
         >
           <Icon :name="lien.icone" size="18" />
