@@ -114,9 +114,15 @@ Débloque les six lignes qui affichent « — » dans l'écran Performances.
       connexion admin.
 - [x] Double vérification à la connexion admin — `/admin/login`, code à six chiffres, 10 minutes,
       renvoi limité à un par minute. Envoi par **Supabase Auth** (`CODE_ADMIN_FOURNISSEUR=supabase-auth`).
-- [ ] **Supabase, tableau de bord** : Authentication → Email Templates → Magic Link, ajouter
-      `{{ .Token }}` dans le corps (sans quoi l'e-mail ne contient qu'un lien) ; renseigner un SMTP
-      personnalisé (Authentication → SMTP Settings) pour dépasser le quota du SMTP intégré.
+- [ ] **Supabase Auth — SMTP personnalisé obligatoire.** Sur l'offre gratuite, Supabase refuse de
+      modifier le gabarit Magic Link tant qu'aucun SMTP personnalisé n'est configuré (réponse 400
+      « Email template modification is not available for free tier projects using the default
+      email provider »). Tant que ce n'est pas fait, l'e-mail ne porte qu'un lien, pas de code :
+      `CODE_ADMIN_FOURNISSEUR` reste sur `interne` (code dans la sortie du serveur). Dès qu'un
+      compte SMTP existe (Brevo, Resend, Gmail avec mot de passe d'application…) : renseigner
+      `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` et `SUPABASE_ACCESS_TOKEN` dans `.env`, lancer
+      `npm run auth:configurer` (pose le SMTP, le gabarit en français avec `{{ .Token }}` et
+      l'expiration à 10 min), puis passer `CODE_ADMIN_FOURNISSEUR=supabase-auth`.
 - [x] Parcours de la planche E : coaching privé de bout en bout, paramètres et suppression du
       compte apprenant, candidature → compte formateur, éditeur d'article, onglet SEO du module,
       `/programmes`, motifs d'échec de paiement, écrans PWA (hors ligne, mise à jour, installation).

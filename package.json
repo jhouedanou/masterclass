@@ -18,7 +18,8 @@
     "db:verifier": "node scripts/verifier-migrations.mjs",
     "video:transcoder": "node scripts/transcoder-video.mjs",
     "video:publier": "node scripts/publier-video.mjs",
-    "video:verifier": "node scripts/verifier-video.mjs"
+    "video:verifier": "node scripts/verifier-video.mjs",
+    "auth:configurer": "node scripts/configurer-auth-supabase.mjs"
   },
   "dependencies": {
     "@nuxt/fonts": "^0.14.0",
