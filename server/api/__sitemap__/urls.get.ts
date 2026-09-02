@@ -15,6 +15,7 @@ export default defineEventHandler(async () => {
 
   return [
     { loc: '/', changefreq: 'weekly', priority: 1 },
+    { loc: '/programmes', changefreq: 'weekly', priority: 0.8 },
     ...programmes.map((p) => ({
       loc: `/programmes/${p.slug}`,
       changefreq: 'weekly',

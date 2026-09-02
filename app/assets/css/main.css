@@ -101,6 +101,14 @@
   .rayures-entrepreneurs {
     background: repeating-linear-gradient(45deg, #fdfdfe, #fdfdfe 18px, #f3f4fa 18px, #f3f4fa 36px);
   }
+  /* Hero des pages programme (planche A, écrans 02 et 02b). */
+  .degrade-social {
+    background: linear-gradient(120deg, #80368d, #5c2a70);
+  }
+  .degrade-entrepreneurs {
+    background: linear-gradient(120deg, #29358b, #1c2560);
+  }
+
   .rayures-visuel-social {
     background: repeating-linear-gradient(45deg, #f3f0f8, #f3f0f8 16px, #eae5f2 16px, #eae5f2 32px);
   }

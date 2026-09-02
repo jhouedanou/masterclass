@@ -11,5 +11,8 @@ await useAsyncData('session', () => auth.rafraichir())
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
+    <ClientOnly>
+      <LayoutBandeauPwa />
+    </ClientOnly>
   </div>
 </template>

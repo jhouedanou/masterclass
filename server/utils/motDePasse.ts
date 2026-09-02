@@ -1,4 +1,4 @@
-import { randomBytes, scrypt, timingSafeEqual, createHash } from 'node:crypto'
+import { randomBytes, randomInt, scrypt, timingSafeEqual, createHash } from 'node:crypto'
 import type { ScryptOptions } from 'node:crypto'
 import { promisify } from 'node:util'
 
@@ -88,6 +88,13 @@ export function creerJeton() {
  *  faible entropie d'un mot de passe choisi par un humain. */
 export function hacherJeton(jeton: string): string {
   return createHash('sha256').update(jeton).digest('hex')
+}
+
+/** Code de vérification à six chiffres (planche C, écran 08), tiré au sort
+ *  de façon cryptographique. Seule son empreinte est conservée. */
+export function genererCode6(): { clair: string; hache: string } {
+  const clair = String(randomInt(0, 1_000_000)).padStart(6, '0')
+  return { clair, hache: hacherJeton(clair) }
 }
 
 /** Refus des mots de passe trop courts. Message rendu tel quel à l'écran. */

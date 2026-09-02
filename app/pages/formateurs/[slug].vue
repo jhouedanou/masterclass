@@ -65,13 +65,17 @@ useJsonLd(() => ({
             {{ formatFcfa(formateur.coachingPriveFcfaHeure) }} par heure
           </p>
           <UiBaseButton
+            v-if="formateur.coachingPriveActif"
             class="mt-4 w-full"
             variante="sombre"
             taille="sm"
-            :href="lienWhatsApp(`Bonjour, je souhaite réserver un coaching privé avec ${formateur.nom}.`)"
+            :to="`/mon-espace/coaching-prive?formateur=${formateur.id}`"
           >
             Réserver un coaching privé
           </UiBaseButton>
+          <p v-else class="mt-3 text-[13px] text-discret">
+            Pas de coaching privé ouvert pour le moment.
+          </p>
         </div>
       </div>
 

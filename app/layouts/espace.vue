@@ -9,8 +9,10 @@ const liens = [
   { libelle: 'Tableau de bord', chemin: '/mon-espace', icone: 'ph:squares-four' },
   { libelle: 'Mes modules', chemin: '/mon-espace/modules', icone: 'ph:play-circle' },
   { libelle: 'Mes sessions', chemin: '/mon-espace/sessions', icone: 'ph:calendar-dots' },
+  { libelle: 'Coaching privé', chemin: '/mon-espace/coaching-prive', icone: 'ph:target' },
   { libelle: 'Mes certificats', chemin: '/mon-espace/certificats', icone: 'ph:certificate' },
   { libelle: 'Ma fiche apprenant', chemin: '/mon-espace/profil', icone: 'ph:user' },
+  { libelle: 'Paramètres', chemin: '/mon-espace/parametres', icone: 'ph:gear' },
 ]
 </script>
 

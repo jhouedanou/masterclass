@@ -107,13 +107,17 @@ useFilAriane(mailles)
                 incluses avec les modules.
               </p>
               <UiBaseButton
+                v-if="formateur.coachingPriveActif"
                 class="mt-4"
                 variante="sombre"
                 taille="sm"
-                :href="lienWhatsApp(`Bonjour, je souhaite réserver un coaching privé avec ${formateur.nom}.`)"
+                :to="`/mon-espace/coaching-prive?formateur=${formateur.id}`"
               >
                 Réserver un coaching privé
               </UiBaseButton>
+              <p v-else class="mt-3 text-[13px] text-discret">
+                Ce formateur n’ouvre pas de coaching privé pour le moment.
+              </p>
             </div>
           </div>
         </article>
@@ -121,14 +125,24 @@ useFilAriane(mailles)
     </section>
 
     <section class="border-t border-ligne-claire bg-fond-clair py-14">
-      <div class="conteneur text-center">
-        <h2 class="font-title text-[27px] font-light">Vous voulez transmettre votre expertise ?</h2>
-        <p class="mx-auto mt-3 max-w-[600px] text-[15px] leading-relaxed text-texte">
-          Proposez un module pratique et partagez votre expérience avec nos apprenants.
-        </p>
-        <UiBaseButton to="/devenir-formateur" class="mt-6" variante="sombre">
-          Devenir formateur
-        </UiBaseButton>
+      <div class="conteneur">
+        <!-- Carte « Devenir formateur », bandeau au motif de marque (planche A, écran 06). -->
+        <div class="mx-auto max-w-[500px] rounded-[8px] border border-ligne bg-white p-10">
+          <img
+            src="/images/brand/pattern.png"
+            alt=""
+            aria-hidden="true"
+            class="mb-[22px] h-[72px] w-full rounded-[12px] object-cover"
+          >
+          <p class="surtitre text-social">Rejoindre E-Masterclass Big Five</p>
+          <h2 class="mt-2 font-title text-[27px] font-light">Vous voulez transmettre votre expertise ?</h2>
+          <p class="mt-3 text-[15px] leading-relaxed text-texte">
+            Proposez un module pratique et partagez votre expérience avec nos apprenants.
+          </p>
+          <UiBaseButton to="/devenir-formateur" class="mt-6" variante="sombre">
+            Devenir formateur
+          </UiBaseButton>
+        </div>
       </div>
     </section>
   </div>

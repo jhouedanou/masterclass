@@ -9,6 +9,8 @@ const DUREE_SECONDES = 60 * 60 * 24 * 7
 
 interface DonneesSession {
   utilisateurId?: string
+  /** Connexion admin en deux temps : mot de passe accepté, code attendu. */
+  adminEnAttenteId?: string
 }
 
 /**
@@ -68,7 +70,19 @@ export async function lireSession(event: H3Event): Promise<Utilisateur | null> {
 
 export async function ouvrirSession(event: H3Event, utilisateur: Utilisateur) {
   const courante = await session(event)
-  await courante.update({ utilisateurId: utilisateur.id })
+  await courante.update({ utilisateurId: utilisateur.id, adminEnAttenteId: undefined })
+}
+
+/** Étape 1 de la connexion admin (planche C, écran 08) : le mot de passe est
+ *  bon, la session ne s'ouvre qu'après le code. */
+export async function ouvrirSessionPartielle(event: H3Event, utilisateurId: string) {
+  const courante = await session(event)
+  await courante.update({ adminEnAttenteId: utilisateurId })
+}
+
+export async function lireSessionPartielle(event: H3Event): Promise<string | null> {
+  const { data } = await session(event)
+  return data.adminEnAttenteId ?? null
 }
 
 export async function fermerSession(event: H3Event) {

@@ -1,4 +1,7 @@
 import { attribuerAcces } from '../../database/administration'
+import { trouverModule } from '../../database/catalogue'
+import { trouverUtilisateur } from '../../database/comptes'
+import { notifierCompte } from '../../utils/notifications'
 import { exigerAdmin } from '../../utils/session'
 
 /**
@@ -16,5 +19,13 @@ export default defineEventHandler(async (event) => {
 
   await attribuerAcces(utilisateurId, moduleId, motif ?? '', `${admin.prenom} ${admin.nom}`)
 
-  return { ok: true, notifie: true }
+  const [apprenant, module] = await Promise.all([trouverUtilisateur(utilisateurId), trouverModule(moduleId)])
+  if (apprenant) {
+    await notifierCompte(apprenant, 'acces-attribue', {
+      prenom: apprenant.prenom,
+      module: module?.titre ?? moduleId,
+    })
+  }
+
+  return { ok: true, notifie: Boolean(apprenant) }
 })

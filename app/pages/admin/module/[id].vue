@@ -41,7 +41,7 @@ if (!data.value) {
 
 usePagePrivee(`${data.value.module.titre} — édition`)
 
-const onglet = ref<'informations' | 'chapitres' | 'ressources' | 'offre' | 'historique'>('informations')
+const onglet = ref<'informations' | 'chapitres' | 'ressources' | 'offre' | 'referencement' | 'historique'>('informations')
 const erreur = ref('')
 const succes = ref('')
 const enCours = ref(false)
@@ -177,6 +177,7 @@ const ONGLETS = [
   { cle: 'chapitres', libelle: 'Chapitres' },
   { cle: 'ressources', libelle: 'Ressources' },
   { cle: 'offre', libelle: 'Offre' },
+  { cle: 'referencement', libelle: 'Référencement et partage' },
   { cle: 'historique', libelle: 'Historique' },
 ] as const
 
@@ -400,6 +401,19 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
     </section>
 
     <!-- Historique -->
+    <!-- Référencement et partage (planche C, écran 24) : même panneau que la
+         liste SEO, mêmes champs, même API. -->
+    <section v-if="onglet === 'referencement'" class="mt-6 max-w-[620px]">
+      <AdminPanneauReferencement
+        :id="data.module.id"
+        :libelle="data.module.titre"
+        :chemin="`/modules/${data.module.slug}`"
+        :seo="data.module.seo"
+        integre
+        @enregistre="refresh()"
+      />
+    </section>
+
     <section v-if="onglet === 'historique'" class="mt-6 max-w-[760px]">
       <div v-if="data.versions.length" class="flex flex-col gap-2">
         <article

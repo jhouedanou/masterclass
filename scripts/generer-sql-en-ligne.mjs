@@ -94,7 +94,7 @@ produits.push(nomDonnees)
 // n'ont pas de mot de passe et ne peuvent plus se connecter.
 // Rattrapages : correctifs à passer sur une base déjà installée, que le jeu de
 // données ne peut plus atteindre puisqu'il ne se rejoue pas.
-for (const nom of ['rattrapage-mots-de-passe.sql', 'rattrapage-videos.sql']) {
+for (const nom of ['rattrapage-mots-de-passe.sql', 'rattrapage-videos.sql', 'rattrapage-planche-e.sql']) {
   const source = join(RACINE, 'supabase', nom)
   if (!existsSync(source)) continue
   writeFileSync(join(SORTIE, nom), readFileSync(source, 'utf8'), 'utf8')

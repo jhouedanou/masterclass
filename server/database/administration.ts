@@ -202,6 +202,62 @@ export async function listerCandidatures(): Promise<CandidatureFormateur[]> {
   return rows.map(versCandidatureFormateur)
 }
 
+export async function creerCandidature(champs: {
+  nom: string
+  expertise: string
+  message: string
+  whatsapp: string
+  email?: string
+  lien?: string
+}): Promise<CandidatureFormateur> {
+  const row = verifier(
+    await supabase()
+      .from('candidatures_formateurs')
+      .insert({
+        nom: champs.nom,
+        expertise: champs.expertise,
+        message: champs.message,
+        whatsapp: champs.whatsapp,
+        email: champs.email ?? null,
+        lien: champs.lien ?? null,
+      })
+      .select('*')
+      .single(),
+    'dépôt de candidature',
+  )
+  return versCandidatureFormateur(row)
+}
+
+export async function trouverCandidature(id: string): Promise<CandidatureFormateur | null> {
+  const row = verifierOptionnel(
+    await supabase().from('candidatures_formateurs').select('*').eq('id', id).maybeSingle(),
+    'candidature',
+  )
+  return row ? versCandidatureFormateur(row) : null
+}
+
+/** Étude, refus ou acceptation d'une candidature (planche C, écran 11). */
+export async function changerStatutCandidature(
+  id: string,
+  statut: CandidatureFormateur['statut'],
+  formateurId?: string,
+): Promise<CandidatureFormateur> {
+  const row = verifier(
+    await supabase()
+      .from('candidatures_formateurs')
+      .update({
+        statut,
+        traitee_le: statut === 'nouvelle' ? null : new Date().toISOString(),
+        formateur_id: formateurId ?? null,
+      })
+      .eq('id', id)
+      .select('*')
+      .single(),
+    'mise à jour de la candidature',
+  )
+  return versCandidatureFormateur(row)
+}
+
 // --- Attribution d'accès ---------------------------------------------------
 
 /** Accès offert par un administrateur : motif obligatoire, journalisation

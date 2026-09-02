@@ -28,6 +28,17 @@ export default defineNuxtConfig({
     // une session (voir server/utils/session.ts).
     sessionPassword: process.env.NUXT_SESSION_PASSWORD || '',
 
+    // Envoi des e-mails et messages WhatsApp (codes de vérification, liens
+    // d'invitation, suivi du coaching privé). `console` écrit dans la sortie
+    // du serveur tant qu'aucun fournisseur n'est retenu (voir
+    // server/utils/notifications.ts).
+    notificationsDriver: process.env.NOTIFICATIONS_DRIVER || 'console',
+
+    // Code de la double vérification admin : `interne` (table codes_verification
+    // + notifier) ou `supabase-auth` (Supabase Auth émet, envoie et vérifie le
+    // code avec son SMTP — voir server/utils/codeAdmin.ts).
+    codeAdminFournisseur: process.env.CODE_ADMIN_FOURNISSEUR || 'interne',
+
     // Accès à la base Supabase. La clé secrète (`sb_secret_…`, nouveau système
     // de clés — l'ancienne `service_role` reste acceptée en secours) contourne
     // la sécurité au niveau des lignes : elle reste hors du bloc `public`,
@@ -84,6 +95,7 @@ export default defineNuxtConfig({
       '/admin',
       '/certificats',
       '/verifier',
+      '/hors-ligne',
     ],
   },
 
@@ -121,7 +133,9 @@ export default defineNuxtConfig({
   // Spec SEO §11 : la plateforme s'installe comme application. Le contenu et
   // les métadonnées sont identiques au site — la PWA n'est pas une variante.
   pwa: {
-    registerType: 'autoUpdate',
+    // « Mise à jour disponible » proposée à l'écran (planche B, écran 13)
+    // plutôt qu'appliquée en silence — voir app/components/layout/BandeauPwa.vue.
+    registerType: 'prompt',
     manifest: {
       name: 'E-Masterclass Big Five',
       short_name: 'E-Masterclass',
@@ -152,8 +166,10 @@ export default defineNuxtConfig({
     },
     workbox: {
       // Le catalogue et les pages publiques passent par le réseau d'abord :
-      // un contenu périmé serait pire qu'un chargement un peu plus lent.
-      navigateFallback: undefined,
+      // un contenu périmé serait pire qu'un chargement un peu plus lent. Sans
+      // réseau, la navigation retombe sur l'écran hors ligne (planche B, 13).
+      navigateFallback: '/hors-ligne',
+      additionalManifestEntries: [{ url: '/hors-ligne', revision: String(Date.now()) }],
       globPatterns: ['**/*.{js,css,ico,png,svg,webp,woff2}'],
       runtimeCaching: [
         {

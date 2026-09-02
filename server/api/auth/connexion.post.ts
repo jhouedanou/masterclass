@@ -59,6 +59,17 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Adresse e-mail ou mot de passe incorrect.' })
   }
 
+  // Les comptes d'administration passent par leur propre porte, avec la
+  // double vérification (planche C, écran 08).
+  const role = identifiants.utilisateur.role
+  if (role === 'admin-contenu' || role === 'admin-superieur') {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Compte d’administration : connectez-vous depuis /admin/login.',
+      data: { redirection: '/admin/login' },
+    })
+  }
+
   await ouvrirSession(event, identifiants.utilisateur)
   return identifiants.utilisateur
 })

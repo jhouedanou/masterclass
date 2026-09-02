@@ -92,6 +92,66 @@ export async function majFormateur(
   return versFormateur(row)
 }
 
+/**
+ * Nouvelle fiche formateur, créée par l'administration (planche C, écran 07b).
+ * La fiche naît incomplète et hors index : le formateur la complète depuis son
+ * espace, l'équipe la publie ensuite.
+ */
+export async function creerFormateur(champs: {
+  id: string
+  slug: string
+  nom: string
+  expertise: string
+  bio: string
+  programmePrincipal: ProgrammeSlugSql
+  photo: string
+}): Promise<Formateur> {
+  const { data, error } = await supabase()
+    .from('formateurs')
+    .insert({
+      id: champs.id,
+      slug: champs.slug,
+      nom: champs.nom,
+      expertise: champs.expertise,
+      bio: champs.bio,
+      programme_principal: champs.programmePrincipal,
+      photo: champs.photo,
+      fiche_complete: false,
+      coaching_prive_fcfa_heure: 50000,
+      seo_indexable: false,
+    })
+    .select('*')
+    .single()
+  if (error?.code === '23505') {
+    throw createError({ statusCode: 409, statusMessage: 'Une fiche formateur porte déjà ce nom' })
+  }
+  if (error) throw traduireErreur(error, 'création de la fiche formateur')
+  return versFormateur(data)
+}
+
+export async function supprimerFormateur(id: string): Promise<void> {
+  verifier(await supabase().from('formateurs').delete().eq('id', id).select('id'), 'suppression de la fiche formateur')
+}
+
+/**
+ * Accès « Formateur avec coaching privé » (planche D, écran 05). Fonction à
+ * part de `majFormateur`, qui sert l'espace du formateur : lui ne doit pas
+ * pouvoir s'activer seul.
+ */
+export async function majCoachingPriveActif(id: string, actif: boolean): Promise<Formateur> {
+  const row = verifierUn(
+    await supabase()
+      .from('formateurs')
+      .update({ coaching_prive_actif: actif })
+      .eq('id', id)
+      .select('*')
+      .maybeSingle(),
+    'activation du coaching privé',
+    'Formateur introuvable',
+  )
+  return versFormateur(row)
+}
+
 // --- Modules ---------------------------------------------------------------
 
 async function chapitresParModule(moduleIds: string[]): Promise<Map<string, ChapitreRow[]>> {

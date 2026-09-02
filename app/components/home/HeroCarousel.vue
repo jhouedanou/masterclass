@@ -26,7 +26,7 @@ const precedent = () => aller(index.value - 1)
 onMounted(() => {
   minuteur = setInterval(() => {
     if (!enPause.value) suivant()
-  }, 7000)
+  }, 6000)
 })
 onBeforeUnmount(() => clearInterval(minuteur))
 

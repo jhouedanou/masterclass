@@ -66,7 +66,7 @@ useJsonLd({
     <HomeHeroCarousel v-if="programmes?.length" :programmes="programmes" />
 
     <!-- bandeau sous le hero -->
-    <div class="border-b border-ligne-claire">
+    <div class="border-b border-ligne-claire bg-fond-clair">
       <div class="conteneur flex flex-wrap gap-x-7 gap-y-2 py-4.5 text-[14px] text-texte">
         <span><b class="text-encre">18 modules</b> disponibles</span>
         <span><b class="text-encre">10 000 FCFA TTC</b> par module</span>

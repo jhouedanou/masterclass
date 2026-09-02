@@ -98,28 +98,33 @@ useJsonLd(() => ({
 
 <template>
   <div v-if="data">
-    <!-- hero programme -->
+    <!-- hero programme : dégradé de la couleur du programme et motif de marque
+         en fond (planche A, écrans 02 et 02b) -->
     <section
-      class="border-b border-ligne-claire"
-      :class="social ? 'rayures-social' : 'rayures-entrepreneurs'"
+      class="relative overflow-hidden text-white"
+      :class="social ? 'degrade-social' : 'degrade-entrepreneurs'"
     >
-      <div class="conteneur py-12">
-        <FilAriane :mailles="mailles" class="mb-6" />
-        <UiSurtitre :ton="social ? 'social' : 'entrepreneurs'">Programme</UiSurtitre>
-        <h1
-          class="mt-3 text-[46px] font-medium lg:text-[54px]"
-          :class="social ? 'text-social' : 'text-entrepreneurs'"
-        >
+      <img
+        src="/images/brand/pattern.png"
+        alt=""
+        aria-hidden="true"
+        class="pointer-events-none absolute top-0 right-0 hidden h-full w-[340px] object-cover md:block"
+        :class="social ? 'opacity-[.28]' : 'opacity-[.24]'"
+      >
+      <div class="conteneur relative py-12">
+        <FilAriane :mailles="mailles" class="mb-6 text-white/80" />
+        <p class="surtitre text-white/80">Programme</p>
+        <h1 class="mt-3 text-[46px] font-medium lg:text-[54px]">
           {{ programme.nom }}
         </h1>
-        <p class="mt-4 max-w-[720px] text-[17px] leading-relaxed text-texte">
+        <p class="mt-4 max-w-[720px] text-[17px] leading-relaxed text-white/90">
           {{ programme.descriptionProgramme }}
         </p>
-        <ul class="mt-7 flex flex-wrap gap-x-7 gap-y-2 text-[14px] text-texte">
-          <li><b class="text-encre">9 modules</b> disponibles</li>
-          <li><b class="text-encre">10 000 FCFA TTC</b> par module</li>
-          <li><b class="text-encre">Accès à vie</b> après l’achat</li>
-          <li><b class="text-encre">Coaching collectif</b> de 2 heures — 25 places</li>
+        <ul class="mt-7 flex flex-wrap gap-x-7 gap-y-2 text-[14px] text-white/85">
+          <li><b class="text-white">9 modules</b> disponibles</li>
+          <li><b class="text-white">10 000 FCFA TTC</b> par module</li>
+          <li><b class="text-white">Accès à vie</b> après l’achat</li>
+          <li><b class="text-white">Coaching collectif</b> de 2 heures — 25 places</li>
         </ul>
       </div>
     </section>

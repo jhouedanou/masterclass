@@ -53,9 +53,15 @@ async function marquerTermine() {
       <div>
         <NuxtLink
           :to="`/mon-espace/lecture/${moduleCourant.slug}?chapitre=${chapitreActif}`"
-          class="grid aspect-16/9 w-full place-items-center rounded-carte bg-encre text-[#8f8a9c] transition hover:text-white"
+          class="relative grid aspect-16/9 w-full place-items-center overflow-hidden rounded-carte bg-encre text-[#8f8a9c] transition hover:text-white"
         >
-          <span class="text-center">
+          <img
+            src="/images/brand/pattern.png"
+            alt=""
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[.18]"
+          >
+          <span class="relative text-center">
             <Icon name="ph:play-circle" size="56" />
             <span class="mt-3 block px-6 text-[13.5px]">
               Ouvrir le lecteur — {{ moduleCourant.chapitres[chapitreActif]?.libelle }} :

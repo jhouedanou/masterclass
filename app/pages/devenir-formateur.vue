@@ -22,10 +22,20 @@ const formulaire = reactive({
   linkedin: '',
 })
 const envoye = ref(false)
+const erreur = ref('')
+const envoi = ref(false)
 
-function soumettre() {
-  // À brancher sur l'API de candidature une fois le circuit de validation défini.
-  envoye.value = true
+async function soumettre() {
+  erreur.value = ''
+  envoi.value = true
+  try {
+    await $fetch('/api/candidatures', { method: 'POST', body: { ...formulaire } })
+    envoye.value = true
+  } catch (e) {
+    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Envoi impossible, réessayez.'
+  } finally {
+    envoi.value = false
+  }
 }
 </script>
 
@@ -105,7 +115,8 @@ function soumettre() {
             </label>
           </div>
 
-          <UiBaseButton type="submit" class="mt-7 w-full" taille="lg">
+          <p v-if="erreur" class="mt-5 rounded-[10px] border border-erreur bg-[#fdeeee] p-3 text-[14px] text-erreur">{{ erreur }}</p>
+          <UiBaseButton type="submit" class="mt-7 w-full" taille="lg" :disabled="envoi">
             Envoyer ma candidature
           </UiBaseButton>
         </form>

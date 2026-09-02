@@ -75,6 +75,19 @@ async function enregistrer() {
     </section>
 
     <section class="mt-6 rounded-[14px] border border-ligne-douce bg-white p-6">
+      <h2 class="font-title text-[19px] font-light">Mon profil</h2>
+      <dl class="mt-4 grid gap-2 text-[13.5px] sm:grid-cols-2">
+        <div><dt class="text-discret">Nom</dt><dd>{{ auth.utilisateur?.prenom }} {{ auth.utilisateur?.nom }}</dd></div>
+        <div><dt class="text-discret">E-mail de connexion</dt><dd>{{ auth.utilisateur?.email }}</dd></div>
+        <div><dt class="text-discret">WhatsApp (réception des codes)</dt><dd>{{ auth.utilisateur?.whatsapp || '—' }}</dd></div>
+        <div><dt class="text-discret">Rôle</dt><dd>{{ auth.estAdminSuperieur ? 'Administrateur supérieur' : 'Administrateur de contenu' }}</dd></div>
+      </dl>
+      <h3 class="mt-5 text-[14px] font-bold text-texte">Changer mon mot de passe</h3>
+      <p class="mt-1 text-[12.5px] text-discret">Le changement est journalisé. L’identité et le numéro WhatsApp se modifient depuis « Administration des accès ».</p>
+      <CompteFormulaireMotDePasse class="mt-3" />
+    </section>
+
+    <section class="mt-6 rounded-[14px] border border-ligne-douce bg-white p-6">
       <h2 class="font-title text-[19px] font-light">Référencement global</h2>
       <dl class="mt-4 space-y-2 text-[13.5px]">
         <div class="flex justify-between gap-4"><dt class="text-discret">Titre par défaut</dt><dd>{{ data.seo.titreParDefaut }}</dd></div>

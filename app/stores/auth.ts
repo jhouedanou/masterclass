@@ -36,6 +36,23 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
+  /** Connexion admin, étape 1 : mot de passe. Renvoie l'adresse masquée à
+   *  laquelle le code est envoyé. */
+  async function connexionAdmin(email: string, motDePasse: string) {
+    return await $fetch<{ etape: 'code'; masque: string }>('/api/auth/admin/connexion', {
+      method: 'POST',
+      body: { email, motDePasse },
+    })
+  }
+
+  /** Étape 2 : code à six chiffres. Ouvre la session. */
+  async function validerCode(code: string) {
+    utilisateur.value = await $fetch<Utilisateur>('/api/auth/admin/verifier-code', {
+      method: 'POST',
+      body: { code },
+    })
+  }
+
   async function inscription(payload: {
     prenom: string
     nom: string
@@ -65,6 +82,8 @@ export const useAuthStore = defineStore('auth', () => {
     voitSection,
     rafraichir,
     connexion,
+    connexionAdmin,
+    validerCode,
     inscription,
     deconnexion,
   }

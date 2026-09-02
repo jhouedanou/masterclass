@@ -37,7 +37,16 @@ export type StatutCoachingPriveSql =
   | 'confirmee-attente-paiement'
   | 'payee'
   | 'realisee'
-export type StatutCandidatureSql = 'nouvelle' | 'en-etude' | 'refusee'
+  | 'refusee'
+  | 'annulee'
+export type StatutCandidatureSql = 'nouvelle' | 'en-etude' | 'refusee' | 'acceptee'
+export type CodeEchecPaiementSql =
+  | 'solde-insuffisant'
+  | 'annule-utilisateur'
+  | 'delai-depasse'
+  | 'reseau-operateur'
+  | 'carte-refusee'
+  | 'erreur-inconnue'
 export type OrigineNoteSql = 'collective' | 'privee'
 export type CleBlocVitrineSql = 'accueil' | 'banniere' | 'programmes' | 'annonce' | 'legales'
 export type SectionAdminSql =
@@ -105,6 +114,7 @@ export type FormateurRow = ColonnesSeo & {
   photo: string
   fiche_complete: boolean
   coaching_prive_fcfa_heure: number
+  coaching_prive_actif: boolean
   cree_le: string
   maj_le: string
 }
@@ -158,6 +168,23 @@ export type UtilisateurRow = {
   sections_autorisees: SectionAdminSql[]
   verrouille_jusqu_a: string | null
   derniere_connexion_le: string | null
+  preferences_notifications: {
+    email: boolean
+    whatsapp: boolean
+    rappelsSessions: boolean
+    nouveautes: boolean
+  }
+  supprime_le: string | null
+  cree_le: string
+}
+
+export type CodeVerificationRow = {
+  id: string
+  utilisateur_id: string
+  code_hache: string
+  expire_le: string
+  utilise_le: string | null
+  tentatives: number
   cree_le: string
 }
 
@@ -285,6 +312,8 @@ export type TransactionRow = {
   montant: number
   statut: StatutTransactionSql
   date_transaction: string
+  code_echec: CodeEchecPaiementSql | null
+  detail_echec: string | null
   cree_le: string
 }
 
@@ -310,10 +339,24 @@ export type DemandeCoachingPriveRow = {
   module_id: string
   besoins: string
   disponibilites: string
+  formateur_id: string
   heures: number
   statut: StatutCoachingPriveSql
   creneau: string | null
+  creneaux: { date: string; debut: string; fin: string }[]
+  creneau_retenu_le: string | null
+  lien_session: string | null
+  motif_refus: string | null
   recue_le: string
+}
+
+export type HistoriqueCoachingPriveRow = {
+  id: string
+  demande_id: string
+  statut: StatutCoachingPriveSql
+  auteur: string
+  commentaire: string | null
+  cree_le: string
 }
 
 export type CandidatureFormateurRow = {
@@ -325,6 +368,9 @@ export type CandidatureFormateurRow = {
   lien: string | null
   statut: StatutCandidatureSql
   recue_le: string
+  email: string | null
+  traitee_le: string | null
+  formateur_id: string | null
 }
 
 export type EntreeJournalRow = {
@@ -431,7 +477,7 @@ export type Database = {
     Tables: {
       programmes: Table<ProgrammeRow, 'cree_le' | 'maj_le' | keyof ColonnesSeo>
       thematiques: Table<ThematiqueRow, 'cree_le'>
-      formateurs: Table<FormateurRow, 'cree_le' | 'maj_le' | keyof ColonnesSeo>
+      formateurs: Table<FormateurRow, 'cree_le' | 'maj_le' | 'coaching_prive_actif' | keyof ColonnesSeo>
       modules: Table<
         ModuleRow,
         | 'cree_le'
@@ -459,7 +505,10 @@ export type Database = {
         | 'sections_autorisees'
         | 'verrouille_jusqu_a'
         | 'derniere_connexion_le'
+        | 'preferences_notifications'
+        | 'supprime_le'
       >
+      codes_verification: Table<CodeVerificationRow, 'id' | 'cree_le' | 'utilise_le' | 'tentatives'>
       connexions: Table<ConnexionRow, 'id' | 'cree_le' | 'ip' | 'appareil' | 'utilisateur_id'>
       reinitialisations_mot_de_passe: Table<ReinitialisationRow, 'cree_le' | 'utilise_le'>
       personas: Table<PersonaRow, 'age' | 'secteur' | 'experience' | 'reseaux' | 'objectif'>
@@ -484,10 +533,27 @@ export type Database = {
       articles_modules: Table<ArticleModuleRow>
       commandes: Table<CommandeRow, 'creee_le' | 'statut'>
       commandes_modules: Table<CommandeModuleRow>
-      transactions: Table<TransactionRow, 'cree_le' | 'date_transaction' | 'statut'>
+      transactions: Table<
+        TransactionRow,
+        'cree_le' | 'date_transaction' | 'statut' | 'code_echec' | 'detail_echec'
+      >
       certificats: Table<CertificatRow, 'date_delivrance'>
-      demandes_coaching_prive: Table<DemandeCoachingPriveRow, 'id' | 'recue_le' | 'statut' | 'creneau'>
-      candidatures_formateurs: Table<CandidatureFormateurRow, 'id' | 'recue_le' | 'statut' | 'lien'>
+      demandes_coaching_prive: Table<
+        DemandeCoachingPriveRow,
+        | 'id'
+        | 'recue_le'
+        | 'statut'
+        | 'creneau'
+        | 'creneaux'
+        | 'creneau_retenu_le'
+        | 'lien_session'
+        | 'motif_refus'
+      >
+      historique_coaching_prive: Table<HistoriqueCoachingPriveRow, 'id' | 'cree_le' | 'commentaire'>
+      candidatures_formateurs: Table<
+        CandidatureFormateurRow,
+        'id' | 'recue_le' | 'statut' | 'lien' | 'email' | 'traitee_le' | 'formateur_id'
+      >
       journal: Table<EntreeJournalRow, 'id' | 'date_entree'>
       reglages_financiers: Table<ReglagesFinanciersRow, 'id' | 'maj_le'>
       reglages_seo: Table<ReglagesSeoRow, 'id' | 'maj_le'>
@@ -554,6 +620,7 @@ export type Database = {
       statut_transaction: StatutTransactionSql
       statut_coaching_prive: StatutCoachingPriveSql
       statut_candidature: StatutCandidatureSql
+      code_echec_paiement: CodeEchecPaiementSql
       origine_note: OrigineNoteSql
       section_admin: SectionAdminSql
       cle_bloc_vitrine: CleBlocVitrineSql

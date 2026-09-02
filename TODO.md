@@ -10,9 +10,12 @@ s'exécute. Le détail à transmettre à la direction de projet est dans la note
 
 - [ ] **`supabase/en-ligne/06-video.sql`** — colonnes vidéo et relevé de visionnage
 - [ ] **`supabase/en-ligne/rattrapage-videos.sql`** — rattache les deux vidéos de démonstration
+- [x] **`supabase/en-ligne/07-parcours-planche-e.sql`** — appliqué le 02/09 sur le projet hébergé,
+      avec `rattrapage-planche-e.sql` (données de démonstration des nouveaux parcours)
 
-Sans eux, le lecteur affiche « la vidéo n'est pas encore en ligne » sur tous les chapitres ; le
-reste de la plateforme fonctionne normalement.
+Sans le premier, le lecteur affiche « la vidéo n'est pas encore en ligne » sur tous les chapitres ;
+sans le troisième, les écrans de coaching privé, de paramètres du compte et la connexion
+`/admin/login` répondent en erreur. Le reste de la plateforme fonctionne normalement.
 
 ---
 
@@ -106,8 +109,17 @@ Débloque les six lignes qui affichent « — » dans l'écran Performances.
 
 - [ ] **Onglets détaillés de Performances** (Funnel, Ventes, Visites, Clients) — ils affichent des
       mesures d'audience, donc ils attendent Google Tag Manager. À faire une fois GA4 branché.
-- [ ] **Double vérification à la connexion** — code à six chiffres par e-mail et WhatsApp
-      (planche C). La table `codes_verification` est déjà en place ; l'envoi attend un fournisseur.
+- [ ] **Pilote d'envoi réel** dans `server/utils/notifications.ts` (e-mail puis WhatsApp) dès que
+      le fournisseur est choisi — tous les points d'appel sont en place, y compris le code de la
+      connexion admin.
+- [x] Double vérification à la connexion admin — `/admin/login`, code à six chiffres, 10 minutes,
+      renvoi limité à un par minute. Envoi par **Supabase Auth** (`CODE_ADMIN_FOURNISSEUR=supabase-auth`).
+- [ ] **Supabase, tableau de bord** : Authentication → Email Templates → Magic Link, ajouter
+      `{{ .Token }}` dans le corps (sans quoi l'e-mail ne contient qu'un lien) ; renseigner un SMTP
+      personnalisé (Authentication → SMTP Settings) pour dépasser le quota du SMTP intégré.
+- [x] Parcours de la planche E : coaching privé de bout en bout, paramètres et suppression du
+      compte apprenant, candidature → compte formateur, éditeur d'article, onglet SEO du module,
+      `/programmes`, motifs d'échec de paiement, écrans PWA (hors ligne, mise à jour, installation).
 
 ---
 

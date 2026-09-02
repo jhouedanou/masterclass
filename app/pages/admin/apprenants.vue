@@ -31,6 +31,17 @@ const { data: apprenants, refresh } = await useFetch<Apprenant[]>('/api/admin/ap
 const { data: modules } = await useFetch<Module[]>('/api/modules')
 
 const selection = ref<Apprenant | null>(null)
+
+// Arrivée depuis une demande de coaching privé : la fiche s'ouvre directement.
+const route = useRoute()
+watch(
+  apprenants,
+  (liste) => {
+    const cible = typeof route.query.utilisateur === 'string' ? route.query.utilisateur : ''
+    if (cible && !selection.value) selection.value = liste?.find((a) => a.id === cible) ?? null
+  },
+  { immediate: true },
+)
 const attribution = reactive({ moduleId: '', motif: '', notifier: true })
 const message = ref('')
 const erreur = ref('')

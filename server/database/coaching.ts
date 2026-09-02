@@ -1,18 +1,24 @@
 import type {
+  CreneauCoaching,
   DemandeCoachingPrive,
+  HistoriqueCoachingPrive,
   InscriptionSession,
   NoteFormateur,
   SessionCoaching,
+  StatutCoachingPrive,
   SujetSession,
+  Utilisateur,
 } from '#shared/types'
 import { supabase } from './client'
 import { traduireErreur, verifier, verifierOptionnel, verifierUn } from './erreurs'
 import {
   versDemandeCoachingPrive,
+  versHistoriqueCoachingPrive,
   versInscriptionSession,
   versNoteFormateur,
   versSessionCoaching,
   versSujetSession,
+  versUtilisateur,
 } from './mappers'
 import type { ProgrammeSlugSql } from './types'
 
@@ -137,6 +143,22 @@ export async function listerInscriptionsUtilisateur(
   return rows.map(versInscriptionSession)
 }
 
+/** Comptes inscrits à une session, pour les prévenir d'une annulation ou
+ *  d'un report. */
+export async function listerInscritsSession(sessionId: string): Promise<Utilisateur[]> {
+  const inscriptions = verifier(
+    await supabase().from('inscriptions_sessions').select('utilisateur_id').eq('session_id', sessionId),
+    'inscrits de la session',
+  )
+  const ids = inscriptions.map((i) => i.utilisateur_id)
+  if (!ids.length) return []
+  const rows = verifier(
+    await supabase().from('utilisateurs').select('*').in('id', ids).is('supprime_le', null),
+    'comptes inscrits',
+  )
+  return rows.map(versUtilisateur)
+}
+
 export async function listerSujetsSession(sessionId: string): Promise<SujetSession[]> {
   const rows = verifier(
     await supabase().from('sujets_sessions').select('*').eq('session_id', sessionId).order('soumis_le'),
@@ -207,7 +229,22 @@ export async function creerNote(champs: {
   return versNoteFormateur(row)
 }
 
+/** Notes déposées par un apprenant — pour savoir s'il a déjà noté une séance. */
+export async function listerNotesUtilisateur(utilisateurId: string): Promise<NoteFormateur[]> {
+  const rows = verifier(
+    await supabase().from('notes_formateurs').select('*').eq('utilisateur_id', utilisateurId).order('cree_le'),
+    'notes de l’apprenant',
+  )
+  return rows.map(versNoteFormateur)
+}
+
 // --- Coaching privé --------------------------------------------------------
+//
+// Parcours 03 de la planche E : l'apprenant choisit un formateur dont le
+// coaching privé est activé et propose des créneaux (B-06) ; l'équipe traite,
+// encaisse et planifie (C-05) ; le formateur anime (D-05) ; l'apprenant suit
+// chaque étape datée et note la séance (B-10). Chaque changement de statut
+// est écrit dans `historique_coaching_prive` par le dépôt, avec son auteur.
 
 export async function listerDemandesCoachingPrive(): Promise<DemandeCoachingPrive[]> {
   const rows = verifier(
@@ -215,4 +252,153 @@ export async function listerDemandesCoachingPrive(): Promise<DemandeCoachingPriv
     'demandes de coaching privé',
   )
   return rows.map(versDemandeCoachingPrive)
+}
+
+export async function listerDemandesCoachingPriveUtilisateur(
+  utilisateurId: string,
+): Promise<DemandeCoachingPrive[]> {
+  const rows = verifier(
+    await supabase()
+      .from('demandes_coaching_prive')
+      .select('*')
+      .eq('utilisateur_id', utilisateurId)
+      .order('recue_le', { ascending: false }),
+    'demandes de coaching privé de l’apprenant',
+  )
+  return rows.map(versDemandeCoachingPrive)
+}
+
+export async function listerDemandesCoachingPriveFormateur(
+  formateurId: string,
+): Promise<DemandeCoachingPrive[]> {
+  const rows = verifier(
+    await supabase()
+      .from('demandes_coaching_prive')
+      .select('*')
+      .eq('formateur_id', formateurId)
+      .order('recue_le', { ascending: false }),
+    'demandes de coaching privé du formateur',
+  )
+  return rows.map(versDemandeCoachingPrive)
+}
+
+export async function trouverDemandeCoachingPrive(id: string): Promise<DemandeCoachingPrive | null> {
+  const row = verifierOptionnel(
+    await supabase().from('demandes_coaching_prive').select('*').eq('id', id).maybeSingle(),
+    'demande de coaching privé',
+  )
+  return row ? versDemandeCoachingPrive(row) : null
+}
+
+async function tracerHistorique(entree: {
+  demandeId: string
+  statut: StatutCoachingPrive
+  auteur: string
+  commentaire?: string
+}): Promise<HistoriqueCoachingPrive> {
+  const row = verifier(
+    await supabase()
+      .from('historique_coaching_prive')
+      .insert({
+        demande_id: entree.demandeId,
+        statut: entree.statut,
+        auteur: entree.auteur,
+        commentaire: entree.commentaire?.trim() || null,
+      })
+      .select('*')
+      .single(),
+    'suivi de la demande',
+  )
+  return versHistoriqueCoachingPrive(row)
+}
+
+export async function creerDemandeCoachingPrive(champs: {
+  utilisateurId: string
+  apprenant: string
+  moduleId: string
+  formateurId: string
+  besoins: string
+  disponibilites: string
+  creneaux: CreneauCoaching[]
+  heures: number
+}): Promise<DemandeCoachingPrive> {
+  const row = verifier(
+    await supabase()
+      .from('demandes_coaching_prive')
+      .insert({
+        utilisateur_id: champs.utilisateurId,
+        apprenant: champs.apprenant,
+        module_id: champs.moduleId,
+        formateur_id: champs.formateurId,
+        besoins: champs.besoins,
+        disponibilites: champs.disponibilites,
+        creneaux: champs.creneaux,
+        heures: champs.heures,
+      })
+      .select('*')
+      .single(),
+    'création de la demande de coaching privé',
+  )
+  await tracerHistorique({ demandeId: row.id, statut: 'en-attente', auteur: champs.apprenant })
+  return versDemandeCoachingPrive(row)
+}
+
+/** Suivi daté de plusieurs demandes, du plus ancien au plus récent. */
+export async function listerHistoriqueCoachingPrive(
+  demandeIds: string[],
+): Promise<HistoriqueCoachingPrive[]> {
+  if (!demandeIds.length) return []
+  const rows = verifier(
+    await supabase()
+      .from('historique_coaching_prive')
+      .select('*')
+      .in('demande_id', demandeIds)
+      .order('cree_le'),
+    'suivi des demandes',
+  )
+  return rows.map(versHistoriqueCoachingPrive)
+}
+
+/**
+ * Changement de statut d'une demande, avec sa trace datée. Les transitions
+ * autorisées sont vérifiées par l'API appelante ; ici on écrit ce qu'on
+ * reçoit, en une mise à jour puis une ligne d'historique.
+ */
+export async function changerStatutDemandeCoachingPrive(
+  id: string,
+  changement: {
+    statut: StatutCoachingPrive
+    auteur: string
+    commentaire?: string
+    creneau?: string
+    lienSession?: string
+    motifRefus?: string
+  },
+): Promise<DemandeCoachingPrive> {
+  const champs: {
+    statut: StatutCoachingPrive
+    creneau?: string
+    creneau_retenu_le?: string
+    lien_session?: string
+    motif_refus?: string
+  } = { statut: changement.statut }
+  if (changement.creneau) {
+    champs.creneau = changement.creneau
+    champs.creneau_retenu_le = new Date().toISOString()
+  }
+  if (changement.lienSession !== undefined) champs.lien_session = changement.lienSession
+  if (changement.motifRefus) champs.motif_refus = changement.motifRefus
+
+  const row = verifierUn(
+    await supabase().from('demandes_coaching_prive').update(champs).eq('id', id).select('*').maybeSingle(),
+    'mise à jour de la demande',
+    'Demande introuvable',
+  )
+  await tracerHistorique({
+    demandeId: id,
+    statut: changement.statut,
+    auteur: changement.auteur,
+    commentaire: changement.commentaire,
+  })
+  return versDemandeCoachingPrive(row)
 }

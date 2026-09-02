@@ -12,8 +12,57 @@ type FormateurAdmin = Formateur & {
   sessionsAVenir: number
 }
 
-const { data: formateurs } = await useFetch<FormateurAdmin[]>('/api/admin/formateurs')
-const { data: candidatures } = await useFetch<CandidatureFormateur[]>('/api/admin/candidatures')
+const { data: formateurs, refresh } = await useFetch<FormateurAdmin[]>('/api/admin/formateurs')
+const message = ref('')
+const erreur = ref('')
+
+/** Bascule « simple » / « avec coaching privé » (planche C, écran 07b), journalisée. */
+async function basculerCoachingPrive(f: FormateurAdmin) {
+  erreur.value = ''
+  try {
+    await $fetch(`/api/admin/formateurs/${f.id}/coaching-prive`, {
+      method: 'PUT',
+      body: { actif: !f.coachingPriveActif },
+    })
+    message.value = f.coachingPriveActif
+      ? `${f.nom} repasse « Formateur simple » : sa section se referme, les séances déjà payées restent honorées.`
+      : `${f.nom} devient « Formateur avec coaching privé » : sa section est déverrouillée.`
+    await refresh()
+  } catch (e) {
+    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Modification impossible.'
+  }
+}
+const { data: candidatures, refresh: rafraichirCandidatures } = await useFetch<CandidatureFormateur[]>('/api/admin/candidatures')
+
+/** Modale de création : `null` fermée, `undefined` à vide, sinon depuis une candidature. */
+const creation = ref<CandidatureFormateur | null | undefined>(null)
+const creationOuverte = ref(false)
+
+function ouvrirCreation(candidature?: CandidatureFormateur) {
+  creation.value = candidature ?? undefined
+  creationOuverte.value = true
+}
+
+async function apresCreation() {
+  await Promise.all([refresh(), rafraichirCandidatures()])
+}
+
+async function traiterCandidature(c: CandidatureFormateur, action: 'en-etude' | 'refuser' | 'nouvelle') {
+  erreur.value = ''
+  try {
+    await $fetch('/api/admin/candidatures', { method: 'PATCH', body: { id: c.id, action } })
+    await rafraichirCandidatures()
+  } catch (e) {
+    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
+  }
+}
+
+const LIBELLES_CANDIDATURE: Record<CandidatureFormateur['statut'], string> = {
+  nouvelle: 'Nouvelle',
+  'en-etude': 'En étude',
+  refusee: 'Refusée',
+  acceptee: 'Acceptée',
+}
 
 const suppression = ref<FormateurAdmin | null>(null)
 const confirmation = ref('')
@@ -25,18 +74,22 @@ const confirmation = ref('')
       <h1 class="font-title text-[26px] font-light">
         Formateurs — {{ formateurs?.length ?? 0 }} profils
       </h1>
-      <UiBaseButton taille="sm" variante="contour">+ Ajouter un formateur</UiBaseButton>
+      <UiBaseButton taille="sm" variante="contour" @click="ouvrirCreation()">+ Ajouter un formateur</UiBaseButton>
     </div>
 
     <p class="mt-2 max-w-[820px] text-[12.5px] text-discret">
       Le profil public (photo, bio, spécialité) est modifiable ici ; l’ordre pilote la page
       /formateurs. Tarif de coaching privé fixe à 50 000 FCFA / h pour tous. L’accès « Formateur
-      simple » ou « Formateur avec coaching privé » se gère dans les paramètres.
+      simple » ou « Formateur avec coaching privé » se bascule ci-dessous : il ouvre la section
+      dans son espace et le rend sélectionnable dans les demandes des apprenants.
     </p>
+
+    <p v-if="message" class="mt-4 rounded-[12px] border border-succes bg-succes-voile p-3 text-[13.5px] text-succes">{{ message }}</p>
+    <p v-if="erreur" class="mt-4 rounded-[12px] border border-erreur bg-[#fdeeee] p-3 text-[13.5px] text-erreur">{{ erreur }}</p>
 
     <AdminTableauSimple
       class="mt-5"
-      :colonnes="['Formateur', 'Modules', 'Tarif coaching', 'Ordre public', '']"
+      :colonnes="['Formateur', 'Modules', 'Tarif coaching', 'Coaching privé', 'Ordre public', '']"
     >
       <tr v-for="f in formateurs" :key="f.id">
         <td class="px-4 py-3">
@@ -46,6 +99,19 @@ const confirmation = ref('')
         <td class="px-4 py-3">{{ f.nbModules }} modules · {{ f.nbProgrammes }} programme(s)</td>
         <td class="px-4 py-3">
           {{ formatFcfa(f.coachingPriveFcfaHeure) }}/h <span class="text-discret">(fixe)</span>
+        </td>
+        <td class="px-4 py-3">
+          <label class="inline-flex cursor-pointer items-center gap-2 text-[12.5px]">
+            <input
+              type="checkbox"
+              role="switch"
+              class="size-4 accent-social"
+              :checked="f.coachingPriveActif"
+              :aria-label="`Coaching privé de ${f.nom}`"
+              @change="basculerCoachingPrive(f)"
+            >
+            {{ f.coachingPriveActif ? 'Activé' : 'Simple' }}
+          </label>
         </td>
         <td class="px-4 py-3">⋮⋮ {{ f.ordrePublic }}</td>
         <td class="px-4 py-3 text-right">
@@ -73,19 +139,26 @@ const confirmation = ref('')
             <h3 class="font-title text-[18px] font-light">
               {{ candidature.nom }} — {{ candidature.expertise }}
             </h3>
-            <p class="mt-2 text-[13.5px] text-texte">« {{ candidature.message }} »</p>
+            <p class="mt-2 whitespace-pre-line text-[13.5px] text-texte">{{ candidature.message }}</p>
             <p class="mt-1 text-[12.5px] text-discret">
-              {{ candidature.whatsapp }}<span v-if="candidature.lien"> · lien joint</span>
+              {{ candidature.whatsapp }}<span v-if="candidature.email"> · {{ candidature.email }}</span>
+              <a v-if="candidature.lien" :href="candidature.lien" target="_blank" rel="noopener" class="underline"> · lien joint</a>
+              · reçue le {{ formatDate(candidature.recueLe) }}
             </p>
           </div>
           <span
             class="rounded-full px-3 py-1.5 text-[12px] font-bold"
-            :class="candidature.statut === 'nouvelle' ? 'bg-alerte-voile text-alerte' : 'bg-fond-voile text-discret'"
+            :class="{
+              'bg-alerte-voile text-alerte': candidature.statut === 'nouvelle',
+              'bg-social-voile text-social': candidature.statut === 'en-etude',
+              'bg-succes-voile text-succes': candidature.statut === 'acceptee',
+              'bg-fond-voile text-discret': candidature.statut === 'refusee',
+            }"
           >
-            {{ candidature.statut === 'nouvelle' ? 'Nouvelle' : 'En étude' }}
+            {{ LIBELLES_CANDIDATURE[candidature.statut] }}
           </span>
         </div>
-        <div class="mt-4 flex flex-wrap gap-2">
+        <div v-if="candidature.statut !== 'acceptee'" class="mt-4 flex flex-wrap gap-2">
           <UiBaseButton
             taille="sm"
             variante="whatsapp"
@@ -93,11 +166,31 @@ const confirmation = ref('')
           >
             Contacter sur WhatsApp
           </UiBaseButton>
-          <UiBaseButton taille="sm" variante="contour">Marquer en étude</UiBaseButton>
-          <UiBaseButton taille="sm" variante="contour">Refuser</UiBaseButton>
+          <UiBaseButton v-if="candidature.statut === 'nouvelle'" taille="sm" variante="contour" @click="traiterCandidature(candidature, 'en-etude')">
+            Marquer en étude
+          </UiBaseButton>
+          <UiBaseButton v-if="candidature.statut !== 'refusee'" taille="sm" variante="sombre" @click="ouvrirCreation(candidature)">
+            Créer le compte formateur
+          </UiBaseButton>
+          <UiBaseButton v-if="candidature.statut !== 'refusee'" taille="sm" variante="contour" @click="traiterCandidature(candidature, 'refuser')">
+            Refuser
+          </UiBaseButton>
+          <UiBaseButton v-else taille="sm" variante="contour" @click="traiterCandidature(candidature, 'nouvelle')">
+            Rouvrir
+          </UiBaseButton>
         </div>
+        <p v-else class="mt-3 text-[12.5px] text-succes">
+          Compte formateur créé<span v-if="candidature.traiteeLe"> le {{ formatDate(candidature.traiteeLe) }}</span>.
+        </p>
       </article>
     </div>
+
+    <AdminModaleCreationFormateur
+      v-if="creationOuverte"
+      :candidature="creation"
+      @fermer="creationOuverte = false"
+      @cree="apresCreation"
+    />
 
     <div v-if="suppression" class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">
       <div class="w-full max-w-lg rounded-carte bg-white p-6">

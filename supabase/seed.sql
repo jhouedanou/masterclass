@@ -23,14 +23,14 @@ insert into thematiques (id, numero, nom, programme) values
   ('th-ent-visibilite', 3, 'Visibilité', 'entrepreneurs');
 
 -- Formateurs
-insert into formateurs (id, slug, nom, expertise, bio, programme_principal, photo, fiche_complete, coaching_prive_fcfa_heure, seo_mot_cle_principal, seo_title, seo_meta_description, seo_og_title, seo_og_description, seo_og_image, seo_canonical, seo_indexable) values
-  ('for-declercq', 'jeremie-de-clercq', 'Jérémie De Clercq', 'Stratégie business & entrepreneuriat', 'Jérémie De Clercq intervient sur les modules consacrés à la structuration des fondamentaux d’une activité : modèle économique, coûts, prix et lecture du marché. Il accompagne des entrepreneurs et des équipes marketing en Afrique francophone.', 'entrepreneurs', '/images/formateurs/jeremie-de-clercq.svg', true, 50000, null, null, null, null, null, null, null, true),
-  ('for-othniel', 'coury-othniel', 'Coury Othniel', 'Copywriting & contenu', 'Copywriter spécialisé dans les contenus qui retiennent l’attention sur les réseaux sociaux en Afrique francophone. Il anime les modules de rédaction persuasive des deux programmes.', 'social-media', '/images/formateurs/coury-othniel.svg', true, 50000, null, null, null, null, null, null, null, true),
-  ('for-waffo', 'kevine-waffo', 'Kevine Waffo', 'Stratégie social media & ciblage', 'Kevine Waffo construit des plans d’action social media pour des marques et des institutions : diagnostic, ciblage, planning éditorial et pilotage des publications.', 'social-media', '/images/formateurs/kevine-waffo.svg', true, 50000, null, null, null, null, null, null, null, true),
-  ('for-cocou', 'emmanuel-cocou', 'Emmanuel Cocou', 'Offres & positionnement', 'Emmanuel Cocou aide les entrepreneurs à transformer une compétence en offre lisible : périmètre, promesse, livrables et argumentaire de vente.', 'entrepreneurs', '/images/formateurs/emmanuel-cocou.svg', true, 50000, null, null, null, null, null, null, null, true),
-  ('for-nontondji', 'maurice-nontondji', 'Maurice Nontondji', 'LinkedIn : algorithme & prospection', 'Maurice Nontondji travaille la visibilité professionnelle sur LinkedIn : compréhension de l’algorithme, formats de publication et prospection directe.', 'social-media', '/images/formateurs/maurice-nontondji.svg', true, 50000, null, null, null, null, null, null, null, true),
-  ('for-soboro', 'lyle-soboro', 'Lyle Soboro', 'Vente, TikTok & acquisition client', 'Lyle Soboro accompagne des vendeurs et des commerces dans l’acquisition client sans site web : WhatsApp Business, TikTok et tunnels de vente simples.', 'entrepreneurs', '/images/formateurs/lyle-soboro.svg', true, 50000, null, null, null, null, null, null, null, true),
-  ('for-akinocho', 'nouroudine-akinocho', 'Nouroudine Akinocho', 'Visibilité & croissance en ligne', 'Nouroudine Akinocho intervient sur la visibilité en ligne des petites structures : référencement local, présence sur les plateformes et croissance organique.', 'entrepreneurs', '/images/formateurs/nouroudine-akinocho.svg', true, 50000, null, null, null, null, null, null, null, true);
+insert into formateurs (id, slug, nom, expertise, bio, programme_principal, photo, fiche_complete, coaching_prive_fcfa_heure, coaching_prive_actif, seo_mot_cle_principal, seo_title, seo_meta_description, seo_og_title, seo_og_description, seo_og_image, seo_canonical, seo_indexable) values
+  ('for-declercq', 'jeremie-de-clercq', 'Jérémie De Clercq', 'Stratégie business & entrepreneuriat', 'Jérémie De Clercq intervient sur les modules consacrés à la structuration des fondamentaux d’une activité : modèle économique, coûts, prix et lecture du marché. Il accompagne des entrepreneurs et des équipes marketing en Afrique francophone.', 'entrepreneurs', '/images/formateurs/jeremie-de-clercq.svg', true, 50000, false, null, null, null, null, null, null, null, true),
+  ('for-othniel', 'coury-othniel', 'Coury Othniel', 'Copywriting & contenu', 'Copywriter spécialisé dans les contenus qui retiennent l’attention sur les réseaux sociaux en Afrique francophone. Il anime les modules de rédaction persuasive des deux programmes.', 'social-media', '/images/formateurs/coury-othniel.svg', true, 50000, true, null, null, null, null, null, null, null, true),
+  ('for-waffo', 'kevine-waffo', 'Kevine Waffo', 'Stratégie social media & ciblage', 'Kevine Waffo construit des plans d’action social media pour des marques et des institutions : diagnostic, ciblage, planning éditorial et pilotage des publications.', 'social-media', '/images/formateurs/kevine-waffo.svg', true, 50000, true, null, null, null, null, null, null, null, true),
+  ('for-cocou', 'emmanuel-cocou', 'Emmanuel Cocou', 'Offres & positionnement', 'Emmanuel Cocou aide les entrepreneurs à transformer une compétence en offre lisible : périmètre, promesse, livrables et argumentaire de vente.', 'entrepreneurs', '/images/formateurs/emmanuel-cocou.svg', true, 50000, false, null, null, null, null, null, null, null, true),
+  ('for-nontondji', 'maurice-nontondji', 'Maurice Nontondji', 'LinkedIn : algorithme & prospection', 'Maurice Nontondji travaille la visibilité professionnelle sur LinkedIn : compréhension de l’algorithme, formats de publication et prospection directe.', 'social-media', '/images/formateurs/maurice-nontondji.svg', true, 50000, false, null, null, null, null, null, null, null, true),
+  ('for-soboro', 'lyle-soboro', 'Lyle Soboro', 'Vente, TikTok & acquisition client', 'Lyle Soboro accompagne des vendeurs et des commerces dans l’acquisition client sans site web : WhatsApp Business, TikTok et tunnels de vente simples.', 'entrepreneurs', '/images/formateurs/lyle-soboro.svg', true, 50000, true, null, null, null, null, null, null, null, true),
+  ('for-akinocho', 'nouroudine-akinocho', 'Nouroudine Akinocho', 'Visibilité & croissance en ligne', 'Nouroudine Akinocho intervient sur la visibilité en ligne des petites structures : référencement local, présence sur les plateformes et croissance organique.', 'entrepreneurs', '/images/formateurs/nouroudine-akinocho.svg', true, 50000, false, null, null, null, null, null, null, null, true);
 
 -- Modules — 9 par programme
 insert into modules (id, slug, numero, titre, programme, thematique_id, formateur_id, promesse, pourquoi, pour_qui, prerequis, acquis, livrable, faq, duree_minutes, prix_fcfa, statut, publie_le, seo_mot_cle_principal, seo_title, seo_meta_description, seo_og_title, seo_og_description, seo_og_image, seo_canonical, seo_indexable) values
@@ -241,26 +241,35 @@ insert into articles_modules (article_id, module_id) values
   ('art-whatsapp', 'mod-vendre-sans-site-web-whatsapp-business');
 
 -- Transactions du prestataire de paiement
-insert into transactions (reference, utilisateur_id, module_id, moyen, montant, statut, date_transaction) values
-  ('FP-2609-0412', 'usr-aya', 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting', 'Orange Money', 10000, 'reussie', '2026-09-26'),
-  ('FP-2609-0411', 'usr-moussa', 'mod-vendre-sans-site-web-whatsapp-business', 'Wave', 10000, 'reussie', '2026-09-26'),
-  ('FP-2609-0410', 'usr-fatou', 'mod-instagram-formats-et-croissance', 'Visa', 10000, 'echouee', '2026-09-25'),
-  ('FP-2509-0388', 'usr-aya', 'mod-fixer-le-juste-prix-de-ses-produits-et-services', 'Djamo', 10000, 'reussie', '2026-09-15');
+insert into transactions (reference, utilisateur_id, module_id, moyen, montant, statut, date_transaction, code_echec, detail_echec) values
+  ('FP-2609-0412', 'usr-aya', 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting', 'Orange Money', 10000, 'reussie', '2026-09-26', null, null),
+  ('FP-2609-0411', 'usr-moussa', 'mod-vendre-sans-site-web-whatsapp-business', 'Wave', 10000, 'reussie', '2026-09-26', null, null),
+  ('FP-2609-0410', 'usr-fatou', 'mod-instagram-formats-et-croissance', 'Visa', 10000, 'echouee', '2026-09-25', 'carte-refusee', 'Carte refusée par la banque émettrice.'),
+  ('FP-2509-0388', 'usr-aya', 'mod-fixer-le-juste-prix-de-ses-produits-et-services', 'Djamo', 10000, 'reussie', '2026-09-15', null, null);
 
 -- Certificats déjà délivrés
 insert into certificats (numero, utilisateur_id, module_id, prenom_nom, titre_module, programme, thematique, formateur, duree_minutes, date_realisation, date_delivrance, taux_completion) values
   ('EMBF-ENT-2026-000128', 'usr-aya', 'mod-fixer-le-juste-prix-de-ses-produits-et-services', 'Aya Koné', 'Fixer le juste prix de ses produits et services', 'Entrepreneurs', 'Fondations du business', 'Jérémie De Clercq', 60, '2026-09-15', '2026-09-15', 100);
 
 -- Demandes de coaching privé
-insert into demandes_coaching_prive (id, utilisateur_id, apprenant, module_id, besoins, disponibilites, heures, statut, creneau, recue_le) values
-  ('dcp-001', 'usr-aya', 'Awa Koné', 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting', 'Retravailler mes accroches pour un client dans la restauration, je n’arrive pas à dépasser 2 % d’engagement.', 'Soirs de semaine après 18 h, samedi matin.', 2, 'en-attente', null, '2026-09-24'),
-  ('dcp-002', 'usr-moussa', 'Moussa Diabaté', 'mod-vendre-sans-site-web-whatsapp-business', 'Structurer mes relances WhatsApp après un premier échange.', 'Samedi matin.', 2, 'payee', 'Samedi 12/09, 10h – 12h', '2026-09-02'),
-  ('dcp-003', 'usr-fatou', 'Fatou Bamba', 'mod-instagram-formats-et-croissance', 'Construire une présence Instagram pour ma marque de cosmétiques.', 'Mercredi après-midi.', 1, 'confirmee-attente-paiement', null, '2026-09-18');
+insert into demandes_coaching_prive (id, utilisateur_id, apprenant, module_id, formateur_id, besoins, disponibilites, creneaux, heures, statut, creneau, lien_session, recue_le) values
+  ('dcp-001', 'usr-aya', 'Awa Koné', 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting', 'for-othniel', 'Retravailler mes accroches pour un client dans la restauration, je n’arrive pas à dépasser 2 % d’engagement.', 'Soirs de semaine après 18 h, samedi matin.', '[{"date":"2026-10-06","debut":"18:30","fin":"20:30"},{"date":"2026-10-10","debut":"09:00","fin":"11:00"}]'::jsonb, 2, 'en-attente', null, null, '2026-09-24'),
+  ('dcp-002', 'usr-moussa', 'Moussa Diabaté', 'mod-vendre-sans-site-web-whatsapp-business', 'for-soboro', 'Structurer mes relances WhatsApp après un premier échange.', 'Samedi matin.', '[{"date":"2026-09-12","debut":"10:00","fin":"12:00"}]'::jsonb, 2, 'payee', 'Samedi 12/09, 10h – 12h', 'https://zoom.us/j/00000000000', '2026-09-02'),
+  ('dcp-003', 'usr-fatou', 'Fatou Bamba', 'mod-instagram-formats-et-croissance', 'for-waffo', 'Construire une présence Instagram pour ma marque de cosmétiques.', 'Mercredi après-midi.', '[{"date":"2026-09-30","debut":"14:00","fin":"15:00"}]'::jsonb, 1, 'confirmee-attente-paiement', null, null, '2026-09-18');
+
+-- Suivi daté des demandes de coaching privé
+insert into historique_coaching_prive (demande_id, statut, auteur, commentaire, cree_le) values
+  ('dcp-001', 'en-attente', 'Awa Koné', null, '2026-09-24T10:12:00Z'),
+  ('dcp-002', 'en-attente', 'Moussa Diabaté', null, '2026-09-02T08:30:00Z'),
+  ('dcp-002', 'confirmee-attente-paiement', 'Équipe Big Five', 'Créneau retenu : samedi 12/09, 10h – 12h. Lien de paiement envoyé.', '2026-09-03T14:05:00Z'),
+  ('dcp-002', 'payee', 'Équipe Big Five', null, '2026-09-04T09:40:00Z'),
+  ('dcp-003', 'en-attente', 'Fatou Bamba', null, '2026-09-18T16:20:00Z'),
+  ('dcp-003', 'confirmee-attente-paiement', 'Équipe Big Five', 'Créneau retenu : mercredi 30/09, 14h – 15h.', '2026-09-19T11:00:00Z');
 
 -- Candidatures formateurs
-insert into candidatures_formateurs (id, nom, expertise, message, whatsapp, lien, statut, recue_le) values
-  ('cand-001', 'Éric N’Guessan', 'Publicité Meta Ads', '6 ans de gestion de campagnes pour des PME ivoiriennes, je veux enseigner la publicité payante aux SMM.', '+225 05 44 00 00 00', 'https://www.linkedin.com/', 'nouvelle', '2026-09-20'),
-  ('cand-002', 'Salimata Traoré', 'Branding & identité visuelle', 'Directrice artistique, je souhaite proposer un module sur l’identité de marque.', '+225 07 11 00 00 00', null, 'en-etude', '2026-09-12');
+insert into candidatures_formateurs (id, nom, expertise, message, whatsapp, email, lien, statut, recue_le) values
+  ('cand-001', 'Éric N’Guessan', 'Publicité Meta Ads', '6 ans de gestion de campagnes pour des PME ivoiriennes, je veux enseigner la publicité payante aux SMM.', '+225 05 44 00 00 00', 'eric.nguessan@example.ci', 'https://www.linkedin.com/', 'nouvelle', '2026-09-20'),
+  ('cand-002', 'Salimata Traoré', 'Branding & identité visuelle', 'Directrice artistique, je souhaite proposer un module sur l’identité de marque.', '+225 07 11 00 00 00', 'salimata.traore@example.ci', null, 'en-etude', '2026-09-12');
 
 -- Journal d’administration
 insert into journal (id, auteur, action, cible, date_entree) values

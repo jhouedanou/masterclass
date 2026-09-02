@@ -105,6 +105,27 @@ const groupes = computed(() =>
       </div>
     </aside>
 
+    <!-- Tablette (planche C, écran 17) : la barre latérale se replie en une
+         colonne d'icônes de 64 px, vignette de marque en tête. -->
+    <aside class="hidden w-16 shrink-0 flex-col items-center gap-1.5 overflow-y-auto bg-encre py-4 text-[#b9b4c4] md:flex lg:hidden">
+      <NuxtLink to="/" class="mb-2 rounded-[8px] bg-white p-[5px]" aria-label="Accueil du site">
+        <img src="/images/brand/pattern.png" alt="" class="size-[26px] rounded-[4px] object-cover">
+      </NuxtLink>
+      <template v-for="groupe in groupes" :key="groupe.titre">
+        <NuxtLink
+          v-for="lien in groupe.liens"
+          :key="lien.chemin"
+          :to="lien.chemin"
+          :title="lien.libelle"
+          :aria-label="lien.libelle"
+          class="grid size-10 place-items-center rounded-[8px] hover:bg-encre-800"
+          active-class="bg-social text-white"
+        >
+          <Icon :name="lien.icone" size="18" />
+        </NuxtLink>
+      </template>
+    </aside>
+
     <div class="flex min-w-0 flex-1 flex-col">
       <header class="flex h-14 items-center justify-between border-b border-ligne-claire bg-white px-6">
         <p class="font-title text-[17px] font-light">Back-office</p>

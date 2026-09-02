@@ -8,6 +8,7 @@ import type {
   DemandeCoachingPrive,
   EntreeJournal,
   Formateur,
+  HistoriqueCoachingPrive,
   InscriptionSession,
   Module,
   NoteFormateur,
@@ -31,6 +32,7 @@ import type {
   DemandeCoachingPriveRow,
   EntreeJournalRow,
   FormateurRow,
+  HistoriqueCoachingPriveRow,
   InscriptionSessionRow,
   ModuleRow,
   NoteFormateurRow,
@@ -136,6 +138,7 @@ export function versFormateur(row: FormateurRow): Formateur {
     photo: row.photo,
     ficheComplete: row.fiche_complete,
     coachingPriveFcfaHeure: row.coaching_prive_fcfa_heure,
+    coachingPriveActif: row.coaching_prive_actif,
     seo: versSeo(row),
   }
 }
@@ -194,6 +197,8 @@ export function versUtilisateur(row: UtilisateurRow): Utilisateur {
     formateurId: optionnel(row.formateur_id),
     sectionsAutorisees: row.sections_autorisees,
     verrouilleJusquA: row.verrouille_jusqu_a,
+    preferencesNotifications: row.preferences_notifications,
+    supprimeLe: row.supprime_le,
   }
 }
 
@@ -274,12 +279,28 @@ export function versDemandeCoachingPrive(row: DemandeCoachingPriveRow): DemandeC
     utilisateurId: row.utilisateur_id,
     apprenant: row.apprenant,
     moduleId: row.module_id,
+    formateurId: row.formateur_id,
     besoins: row.besoins,
     disponibilites: row.disponibilites,
+    creneaux: row.creneaux ?? [],
     heures: row.heures,
     statut: row.statut,
     creneau: optionnel(row.creneau),
+    creneauRetenuLe: optionnel(row.creneau_retenu_le),
+    lienSession: optionnel(row.lien_session),
+    motifRefus: optionnel(row.motif_refus),
     recueLe: row.recue_le,
+  }
+}
+
+export function versHistoriqueCoachingPrive(row: HistoriqueCoachingPriveRow): HistoriqueCoachingPrive {
+  return {
+    id: row.id,
+    demandeId: row.demande_id,
+    statut: row.statut,
+    auteur: row.auteur,
+    commentaire: optionnel(row.commentaire),
+    creeLe: row.cree_le,
   }
 }
 
@@ -329,6 +350,8 @@ export function versTransaction(row: TransactionRow): Transaction {
     montant: row.montant,
     statut: row.statut,
     date: row.date_transaction,
+    codeEchec: row.code_echec ?? undefined,
+    detailEchec: optionnel(row.detail_echec),
   }
 }
 
@@ -358,9 +381,12 @@ export function versCandidatureFormateur(row: CandidatureFormateurRow): Candidat
     expertise: row.expertise,
     message: row.message,
     whatsapp: row.whatsapp,
+    email: optionnel(row.email),
     lien: optionnel(row.lien),
     statut: row.statut,
     recueLe: row.recue_le,
+    traiteeLe: optionnel(row.traitee_le),
+    formateurId: optionnel(row.formateur_id),
   }
 }
 

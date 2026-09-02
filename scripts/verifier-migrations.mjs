@@ -71,6 +71,8 @@ const ATTENDUS = {
   acces: 2,
   sessions_coaching: 3,
   articles: 5,
+  demandes_coaching_prive: 3,
+  historique_coaching_prive: 6,
   reglages_financiers: 1,
   reglages_seo: 1,
 }

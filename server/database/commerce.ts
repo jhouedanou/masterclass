@@ -1,8 +1,8 @@
-import type { Certificat, Commande, Transaction } from '#shared/types'
+import type { Certificat, CodeEchecPaiement, Commande, Transaction } from '#shared/types'
 import { supabase } from './client'
 import { traduireErreur, verifier, verifierOptionnel } from './erreurs'
 import { versCertificat, versCommande, versTransaction } from './mappers'
-import type { MoyenCommandeSql } from './types'
+import type { MoyenCommandeSql, MoyenTransactionSql } from './types'
 
 /** Commandes, paiements et certificats de participation. */
 
@@ -14,6 +14,37 @@ export async function listerTransactions(): Promise<Transaction[]> {
     'transactions',
   )
   return rows.map(versTransaction)
+}
+
+/** Trace du prestataire, réussie ou échouée avec son motif (planche C, écran 18f). */
+export async function enregistrerTransaction(champs: {
+  reference: string
+  utilisateurId: string
+  moduleId: string
+  moyen: MoyenTransactionSql
+  montant: number
+  statut: 'reussie' | 'echouee' | 'en-attente'
+  codeEchec?: CodeEchecPaiement
+  detailEchec?: string
+}): Promise<Transaction> {
+  const row = verifier(
+    await supabase()
+      .from('transactions')
+      .insert({
+        reference: champs.reference,
+        utilisateur_id: champs.utilisateurId,
+        module_id: champs.moduleId,
+        moyen: champs.moyen,
+        montant: champs.montant,
+        statut: champs.statut,
+        code_echec: champs.statut === 'echouee' ? (champs.codeEchec ?? 'erreur-inconnue') : null,
+        detail_echec: champs.detailEchec ?? null,
+      })
+      .select('*')
+      .single(),
+    'enregistrement de la transaction',
+  )
+  return versTransaction(row)
 }
 
 // --- Certificats -----------------------------------------------------------

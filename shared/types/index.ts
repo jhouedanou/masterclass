@@ -104,6 +104,9 @@ export interface Formateur {
   /** Une fiche incomplète reste non indexable (spec SEO §1). */
   ficheComplete: boolean
   coachingPriveFcfaHeure: number
+  /** Accès « Formateur avec coaching privé » (planche D, écran 05) :
+   *  verrouillé par défaut, ouvert par l'administration. */
+  coachingPriveActif: boolean
   seo: SeoFields
 }
 
@@ -186,6 +189,17 @@ export interface Utilisateur {
   sectionsAutorisees?: SectionAdmin[]
   /** Renseigné tant que le verrouillage après 5 échecs court. */
   verrouilleJusquA?: string | null
+  preferencesNotifications?: PreferencesNotifications
+  /** Suppression douce demandée par l'apprenant (planche B, écran 12). */
+  supprimeLe?: string | null
+}
+
+/** Préférences de notification (planche B, écran 11). */
+export interface PreferencesNotifications {
+  email: boolean
+  whatsapp: boolean
+  rappelsSessions: boolean
+  nouveautes: boolean
 }
 
 export interface Acces {
@@ -231,6 +245,33 @@ export interface Transaction {
   montant: number
   statut: 'reussie' | 'echouee' | 'en-attente'
   date: string
+  /** Renseignés sur une transaction échouée (planche A, écran 04c). */
+  codeEchec?: CodeEchecPaiement
+  detailEchec?: string
+}
+
+/** Les six cas d'erreur du tunnel de paiement (planche A, écran 04c). */
+export type CodeEchecPaiement =
+  | 'solde-insuffisant'
+  | 'annule-utilisateur'
+  | 'delai-depasse'
+  | 'reseau-operateur'
+  | 'carte-refusee'
+  | 'erreur-inconnue'
+
+export type StatutCoachingPrive =
+  | 'en-attente'
+  | 'confirmee-attente-paiement'
+  | 'payee'
+  | 'realisee'
+  | 'refusee'
+  | 'annulee'
+
+/** Créneau proposé par l'apprenant dans sa demande. */
+export interface CreneauCoaching {
+  date: string
+  debut: string
+  fin: string
 }
 
 export interface DemandeCoachingPrive {
@@ -238,12 +279,28 @@ export interface DemandeCoachingPrive {
   utilisateurId: string
   apprenant: string
   moduleId: string
+  /** Choisi par l'apprenant parmi les formateurs dont le coaching privé est activé. */
+  formateurId: string
   besoins: string
   disponibilites: string
+  creneaux: CreneauCoaching[]
   heures: number
-  statut: 'en-attente' | 'confirmee-attente-paiement' | 'payee' | 'realisee'
+  statut: StatutCoachingPrive
   creneau?: string
+  creneauRetenuLe?: string
+  lienSession?: string
+  motifRefus?: string
   recueLe: string
+}
+
+/** Suivi daté d'une demande (planche B, écran 10). */
+export interface HistoriqueCoachingPrive {
+  id: string
+  demandeId: string
+  statut: StatutCoachingPrive
+  auteur: string
+  commentaire?: string
+  creeLe: string
 }
 
 export interface CandidatureFormateur {
@@ -252,9 +309,13 @@ export interface CandidatureFormateur {
   expertise: string
   message: string
   whatsapp: string
+  email?: string
   lien?: string
-  statut: 'nouvelle' | 'en-etude' | 'refusee'
+  statut: 'nouvelle' | 'en-etude' | 'refusee' | 'acceptee'
   recueLe: string
+  traiteeLe?: string
+  /** Fiche formateur créée à partir de la candidature acceptée. */
+  formateurId?: string
 }
 
 export interface EntreeJournal {

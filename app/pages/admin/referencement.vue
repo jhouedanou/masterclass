@@ -22,8 +22,6 @@ const { data, refresh } = await useFetch<{
   role: string
 }>('/api/admin/referencement')
 
-const superieur = computed(() => data.value?.role === 'admin-superieur')
-
 const filtre = ref('')
 const entrees = computed(() =>
   (data.value?.entrees ?? []).filter(
@@ -32,69 +30,18 @@ const entrees = computed(() =>
 )
 
 const selection = ref<Entree | null>(null)
-const brouillon = reactive<SeoFields & { slug?: string }>({})
-const message = ref('')
-const enregistrement = ref(false)
 
 function ouvrir(entree: Entree) {
   selection.value = entree
-  message.value = ''
-  Object.assign(brouillon, {
-    motClePrincipal: entree.seo.motClePrincipal ?? '',
-    title: entree.seo.title ?? '',
-    metaDescription: entree.seo.metaDescription ?? '',
-    ogTitle: entree.seo.ogTitle ?? '',
-    ogDescription: entree.seo.ogDescription ?? '',
-    ogImage: entree.seo.ogImage ?? '',
-    slug: entree.chemin.split('/').pop() ?? '',
-    indexable: entree.seo.indexable !== false,
-    canonical: entree.seo.canonical ?? '',
-  })
 }
 
-/** Alerte de doublon calculée en direct sur la saisie en cours. */
-const doublonTitle = computed(() =>
-  (data.value?.entrees ?? []).some(
-    (e) => e.id !== selection.value?.id && !!brouillon.title && e.seo.title === brouillon.title,
-  ),
+const autres = computed(() =>
+  (data.value?.entrees ?? []).map((e) => ({
+    id: e.id,
+    title: e.seo.title,
+    metaDescription: e.seo.metaDescription,
+  })),
 )
-const doublonDescription = computed(() =>
-  (data.value?.entrees ?? []).some(
-    (e) =>
-      e.id !== selection.value?.id &&
-      !!brouillon.metaDescription &&
-      e.seo.metaDescription === brouillon.metaDescription,
-  ),
-)
-
-const slugModifie = computed(
-  () => !!selection.value && brouillon.slug !== selection.value.chemin.split('/').pop(),
-)
-
-async function enregistrer() {
-  if (!selection.value) return
-  if (slugModifie.value) {
-    // Spec SEO §3 : confirmation obligatoire avant de modifier une URL déjà publiée.
-    const ok = window.confirm(
-      `Modifier l’URL publiée ${selection.value.chemin} ?\nUne redirection permanente sera créée automatiquement.`,
-    )
-    if (!ok) return
-  }
-
-  enregistrement.value = true
-  try {
-    await $fetch('/api/admin/referencement', {
-      method: 'PUT',
-      body: { id: selection.value.id, seo: { ...brouillon }, confirmationSlug: slugModifie.value },
-    })
-    message.value = 'Modifications enregistrées.'
-    await refresh()
-  } catch (e) {
-    message.value = (e as { statusMessage?: string }).statusMessage ?? 'Enregistrement impossible.'
-  } finally {
-    enregistrement.value = false
-  }
-}
 </script>
 
 <template>
@@ -166,105 +113,18 @@ async function enregistrer() {
         </tr>
       </AdminTableauSimple>
 
-      <aside v-if="selection" class="space-y-4">
-        <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <h2 class="font-title text-lg">{{ selection.libelle }}</h2>
-              <p class="font-mono text-xs text-discret">{{ selection.chemin }}</p>
-            </div>
-            <button class="text-xs text-discret underline" @click="selection = null">Fermer</button>
-          </div>
-
-          <form class="mt-5 space-y-4" @submit.prevent="enregistrer">
-            <div>
-              <label class="mb-1 block text-xs text-texte" for="mc">Mot-clé principal</label>
-              <input id="mc" v-model="brouillon.motClePrincipal" class="w-full rounded-lg border border-ligne px-3 py-2 text-sm">
-              <p class="mt-1 text-xs text-discret">Repère interne. Aucune balise meta keywords n’est générée.</p>
-            </div>
-
-            <div>
-              <label class="mb-1 block text-xs text-texte" for="t">Title Google</label>
-              <input id="t" v-model="brouillon.title" class="w-full rounded-lg border border-ligne px-3 py-2 text-sm">
-              <p v-if="doublonTitle" class="mt-1 text-xs text-amber-600">
-                Ce Title est déjà utilisé sur une autre page.
-              </p>
-            </div>
-
-            <div>
-              <label class="mb-1 block text-xs text-texte" for="md">Meta description</label>
-              <textarea id="md" v-model="brouillon.metaDescription" rows="3" class="w-full rounded-lg border border-ligne px-3 py-2 text-sm" />
-              <p v-if="doublonDescription" class="mt-1 text-xs text-amber-600">
-                Cette Meta description est déjà utilisée sur une autre page.
-              </p>
-            </div>
-
-            <fieldset class="rounded-lg border border-ligne-douce p-4">
-              <legend class="px-1 text-xs text-texte">Partage social</legend>
-              <div class="space-y-3">
-                <div>
-                  <label class="mb-1 block text-xs text-texte" for="ogt">Titre Open Graph</label>
-                  <input id="ogt" v-model="brouillon.ogTitle" class="w-full rounded-lg border border-ligne px-3 py-2 text-sm">
-                </div>
-                <div>
-                  <label class="mb-1 block text-xs text-texte" for="ogd">Description Open Graph</label>
-                  <textarea id="ogd" v-model="brouillon.ogDescription" rows="2" class="w-full rounded-lg border border-ligne px-3 py-2 text-sm" />
-                </div>
-                <div>
-                  <label class="mb-1 block text-xs text-texte" for="ogi">Image Open Graph</label>
-                  <input id="ogi" v-model="brouillon.ogImage" placeholder="/images/og-…" class="w-full rounded-lg border border-ligne px-3 py-2 text-sm">
-                </div>
-              </div>
-            </fieldset>
-
-            <!-- Champs réservés à l'administrateur supérieur (spec SEO §3 et §13). -->
-            <fieldset class="rounded-lg border p-4" :class="superieur ? 'border-ligne-douce' : 'border-ligne-douce opacity-60'">
-              <legend class="px-1 text-xs text-texte">
-                Réservé aux administrateurs supérieurs
-              </legend>
-              <div class="space-y-3">
-                <div>
-                  <label class="mb-1 block text-xs text-texte" for="slug">Slug / URL</label>
-                  <input
-                    id="slug"
-                    v-model="brouillon.slug"
-                    :disabled="!superieur || selection.slugVerrouille"
-                    class="w-full rounded-lg border border-ligne px-3 py-2 font-mono text-sm disabled:bg-fond-clair"
-                  >
-                  <p v-if="slugModifie" class="mt-1 text-xs text-amber-600">
-                    Une redirection permanente sera créée depuis l’ancienne URL.
-                  </p>
-                </div>
-                <label class="flex items-center gap-2 text-sm">
-                  <input v-model="brouillon.indexable" type="checkbox" :disabled="!superieur">
-                  Indexation autorisée
-                </label>
-                <div>
-                  <label class="mb-1 block text-xs text-texte" for="canon">Canonical personnalisée</label>
-                  <input
-                    id="canon"
-                    v-model="brouillon.canonical"
-                    :disabled="!superieur"
-                    placeholder="Laisser vide — canonical automatique"
-                    class="w-full rounded-lg border border-ligne px-3 py-2 text-sm disabled:bg-fond-clair"
-                  >
-                </div>
-              </div>
-            </fieldset>
-
-            <UiBaseButton type="submit" class="w-full" taille="sm" :disabled="enregistrement">
-              {{ enregistrement ? 'Enregistrement…' : 'Enregistrer' }}
-            </UiBaseButton>
-            <p v-if="message" class="text-xs text-texte">{{ message }}</p>
-          </form>
-        </div>
-
-        <AdminApercuGoogle
-          :title="brouillon.title || selection.libelle"
-          :description="brouillon.metaDescription || ''"
-          :chemin="selection.chemin"
-        />
-      </aside>
+      <AdminPanneauReferencement
+        v-if="selection"
+        :key="selection.id"
+        :id="selection.id"
+        :libelle="selection.libelle"
+        :chemin="selection.chemin"
+        :seo="selection.seo"
+        :slug-verrouille="selection.slugVerrouille"
+        :autres="autres"
+        @fermer="selection = null"
+        @enregistre="refresh()"
+      />
 
       <aside v-else class="rounded-[14px] border border-dashed border-ligne bg-white p-10 text-center text-sm text-discret">
         Sélectionnez une page pour éditer son référencement.

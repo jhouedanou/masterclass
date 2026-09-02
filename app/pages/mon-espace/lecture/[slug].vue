@@ -110,6 +110,12 @@ watch(lecteur.erreur, async (message) => {
     <div class="grid gap-6 p-6 xl:grid-cols-[1.6fr_1fr]">
       <div>
         <div class="relative aspect-16/9 w-full overflow-hidden rounded-carte bg-black">
+          <img
+            src="/images/brand/pattern.png"
+            alt=""
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[.14]"
+          >
           <video
             v-if="source"
             ref="video"
@@ -125,7 +131,7 @@ watch(lecteur.erreur, async (message) => {
             @loadedmetadata="lecteur.gestionnaires.onLoadedmetadata"
           ></video>
 
-          <p v-else class="grid h-full place-items-center px-6 text-center text-[13.5px] text-[#8f8a9c]">
+          <p v-else class="relative grid h-full place-items-center px-6 text-center text-[13.5px] text-[#b9b4c4]">
             La vidéo de ce chapitre n’est pas encore en ligne. Le script ci-contre en donne le
             contenu.
           </p>

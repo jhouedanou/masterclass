@@ -1,5 +1,6 @@
 import { creerReinitialisation, trouverUtilisateurParEmail } from '../../database/comptes'
 import { creerJeton } from '../../utils/motDePasse'
+import { notifier } from '../../utils/notifications'
 
 /** Spec §8 : lien de réinitialisation valable 30 minutes. */
 const VALIDITE_MINUTES = 30
@@ -18,11 +19,14 @@ export default defineEventHandler(async (event) => {
       const config = useRuntimeConfig()
       const lien = `${config.public.siteUrl}/reinitialiser-mot-de-passe?jeton=${clair}`
 
-      // Aucun service d'envoi n'est branché : le lien est journalisé côté
-      // serveur pour que l'équipe puisse le transmettre à la main pendant cette
-      // période. À remplacer par un envoi d'e-mail dès que le fournisseur est
-      // choisi — voir « Reste à faire » du README.
-      console.info(`[réinitialisation] ${utilisateur.email} → ${lien}`)
+      // Tant qu'aucun fournisseur d'envoi n'est branché, le pilote `console`
+      // écrit le lien dans la sortie du serveur (voir utils/notifications.ts).
+      await notifier({
+        canal: 'email',
+        a: utilisateur.email,
+        modele: 'reinitialisation',
+        variables: { prenom: utilisateur.prenom, lien, validiteMinutes: String(VALIDITE_MINUTES) },
+      })
     }
   }
 

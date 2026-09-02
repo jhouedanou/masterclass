@@ -8,6 +8,7 @@ import type {
   DemandeCoachingPrive,
   EntreeJournal,
   Formateur,
+  HistoriqueCoachingPrive,
   InscriptionSession,
   LigneScript,
   Module,
@@ -109,6 +110,7 @@ export const formateurs: Formateur[] = [
     photo: '/images/formateurs/jeremie-de-clercq.svg',
     ficheComplete: true,
     coachingPriveFcfaHeure: COACHING_PRIVE_FCFA_HEURE,
+    coachingPriveActif: false,
     seo: { indexable: true },
   },
   {
@@ -121,6 +123,7 @@ export const formateurs: Formateur[] = [
     photo: '/images/formateurs/coury-othniel.svg',
     ficheComplete: true,
     coachingPriveFcfaHeure: COACHING_PRIVE_FCFA_HEURE,
+    coachingPriveActif: true,
     seo: { indexable: true },
   },
   {
@@ -133,6 +136,7 @@ export const formateurs: Formateur[] = [
     photo: '/images/formateurs/kevine-waffo.svg',
     ficheComplete: true,
     coachingPriveFcfaHeure: COACHING_PRIVE_FCFA_HEURE,
+    coachingPriveActif: true,
     seo: { indexable: true },
   },
   {
@@ -145,6 +149,7 @@ export const formateurs: Formateur[] = [
     photo: '/images/formateurs/emmanuel-cocou.svg',
     ficheComplete: true,
     coachingPriveFcfaHeure: COACHING_PRIVE_FCFA_HEURE,
+    coachingPriveActif: false,
     seo: { indexable: true },
   },
   {
@@ -157,6 +162,7 @@ export const formateurs: Formateur[] = [
     photo: '/images/formateurs/maurice-nontondji.svg',
     ficheComplete: true,
     coachingPriveFcfaHeure: COACHING_PRIVE_FCFA_HEURE,
+    coachingPriveActif: false,
     seo: { indexable: true },
   },
   {
@@ -169,6 +175,7 @@ export const formateurs: Formateur[] = [
     photo: '/images/formateurs/lyle-soboro.svg',
     ficheComplete: true,
     coachingPriveFcfaHeure: COACHING_PRIVE_FCFA_HEURE,
+    coachingPriveActif: true,
     seo: { indexable: true },
   },
   {
@@ -181,6 +188,7 @@ export const formateurs: Formateur[] = [
     photo: '/images/formateurs/nouroudine-akinocho.svg',
     ficheComplete: true,
     coachingPriveFcfaHeure: COACHING_PRIVE_FCFA_HEURE,
+    coachingPriveActif: false,
     seo: { indexable: true },
   },
 ]
@@ -1206,6 +1214,8 @@ export const transactions: Transaction[] = [
     moyen: 'Visa',
     montant: PRIX_MODULE_FCFA,
     statut: 'echouee',
+    codeEchec: 'carte-refusee',
+    detailEchec: 'Carte refusée par la banque émettrice.',
     date: '2026-09-25',
   },
   {
@@ -1225,9 +1235,14 @@ export const demandesCoachingPrive: DemandeCoachingPrive[] = [
     utilisateurId: 'usr-aya',
     apprenant: 'Awa Koné',
     moduleId: 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting',
+    formateurId: 'for-othniel',
     besoins:
       'Retravailler mes accroches pour un client dans la restauration, je n’arrive pas à dépasser 2 % d’engagement.',
     disponibilites: 'Soirs de semaine après 18 h, samedi matin.',
+    creneaux: [
+      { date: '2026-10-06', debut: '18:30', fin: '20:30' },
+      { date: '2026-10-10', debut: '09:00', fin: '11:00' },
+    ],
     heures: 2,
     statut: 'en-attente',
     recueLe: '2026-09-24',
@@ -1237,11 +1252,14 @@ export const demandesCoachingPrive: DemandeCoachingPrive[] = [
     utilisateurId: 'usr-moussa',
     apprenant: 'Moussa Diabaté',
     moduleId: 'mod-vendre-sans-site-web-whatsapp-business',
+    formateurId: 'for-soboro',
     besoins: 'Structurer mes relances WhatsApp après un premier échange.',
     disponibilites: 'Samedi matin.',
+    creneaux: [{ date: '2026-09-12', debut: '10:00', fin: '12:00' }],
     heures: 2,
     statut: 'payee',
     creneau: 'Samedi 12/09, 10h – 12h',
+    lienSession: 'https://zoom.us/j/00000000000',
     recueLe: '2026-09-02',
   },
   {
@@ -1249,11 +1267,35 @@ export const demandesCoachingPrive: DemandeCoachingPrive[] = [
     utilisateurId: 'usr-fatou',
     apprenant: 'Fatou Bamba',
     moduleId: 'mod-instagram-formats-et-croissance',
+    formateurId: 'for-waffo',
     besoins: 'Construire une présence Instagram pour ma marque de cosmétiques.',
     disponibilites: 'Mercredi après-midi.',
+    creneaux: [{ date: '2026-09-30', debut: '14:00', fin: '15:00' }],
     heures: 1,
     statut: 'confirmee-attente-paiement',
     recueLe: '2026-09-18',
+  },
+]
+
+/** Suivi daté des demandes de coaching privé (planche B, écran 10). */
+export const historiqueCoachingPrive: Omit<HistoriqueCoachingPrive, 'id'>[] = [
+  { demandeId: 'dcp-001', statut: 'en-attente', auteur: 'Awa Koné', creeLe: '2026-09-24T10:12:00Z' },
+  { demandeId: 'dcp-002', statut: 'en-attente', auteur: 'Moussa Diabaté', creeLe: '2026-09-02T08:30:00Z' },
+  {
+    demandeId: 'dcp-002',
+    statut: 'confirmee-attente-paiement',
+    auteur: 'Équipe Big Five',
+    commentaire: 'Créneau retenu : samedi 12/09, 10h – 12h. Lien de paiement envoyé.',
+    creeLe: '2026-09-03T14:05:00Z',
+  },
+  { demandeId: 'dcp-002', statut: 'payee', auteur: 'Équipe Big Five', creeLe: '2026-09-04T09:40:00Z' },
+  { demandeId: 'dcp-003', statut: 'en-attente', auteur: 'Fatou Bamba', creeLe: '2026-09-18T16:20:00Z' },
+  {
+    demandeId: 'dcp-003',
+    statut: 'confirmee-attente-paiement',
+    auteur: 'Équipe Big Five',
+    commentaire: 'Créneau retenu : mercredi 30/09, 14h – 15h.',
+    creeLe: '2026-09-19T11:00:00Z',
   },
 ]
 
@@ -1265,6 +1307,7 @@ export const candidaturesFormateurs: CandidatureFormateur[] = [
     message:
       '6 ans de gestion de campagnes pour des PME ivoiriennes, je veux enseigner la publicité payante aux SMM.',
     whatsapp: '+225 05 44 00 00 00',
+    email: 'eric.nguessan@example.ci',
     lien: 'https://www.linkedin.com/',
     statut: 'nouvelle',
     recueLe: '2026-09-20',
@@ -1275,6 +1318,7 @@ export const candidaturesFormateurs: CandidatureFormateur[] = [
     expertise: 'Branding & identité visuelle',
     message: 'Directrice artistique, je souhaite proposer un module sur l’identité de marque.',
     whatsapp: '+225 07 11 00 00 00',
+    email: 'salimata.traore@example.ci',
     statut: 'en-etude',
     recueLe: '2026-09-12',
   },

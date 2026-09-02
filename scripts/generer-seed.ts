@@ -21,6 +21,7 @@ import {
   certificats,
   demandesCoachingPrive,
   formateurs,
+  historiqueCoachingPrive,
   journal,
   modules,
   notesFormateurs,
@@ -141,7 +142,7 @@ inserer(
 inserer(
   'formateurs',
   `id, slug, nom, expertise, bio, programme_principal, photo, fiche_complete, ` +
-    `coaching_prive_fcfa_heure, ${COLONNES_SEO}`,
+    `coaching_prive_fcfa_heure, coaching_prive_actif, ${COLONNES_SEO}`,
   formateurs.map((f) =>
     [
       txt(f.id),
@@ -153,6 +154,7 @@ inserer(
       txt(f.photo),
       bool(f.ficheComplete),
       num(f.coachingPriveFcfaHeure),
+      bool(f.coachingPriveActif),
       seo(f.seo),
     ].join(', '),
   ),
@@ -377,7 +379,7 @@ inserer(
 
 inserer(
   'transactions',
-  'reference, utilisateur_id, module_id, moyen, montant, statut, date_transaction',
+  'reference, utilisateur_id, module_id, moyen, montant, statut, date_transaction, code_echec, detail_echec',
   transactions.map((t) =>
     [
       txt(t.reference),
@@ -387,6 +389,8 @@ inserer(
       num(t.montant),
       txt(t.statut),
       txt(t.date),
+      txt(t.codeEchec),
+      txt(t.detailEchec),
     ].join(', '),
   ),
   'Transactions du prestataire de paiement',
@@ -417,18 +421,22 @@ inserer(
 
 inserer(
   'demandes_coaching_prive',
-  'id, utilisateur_id, apprenant, module_id, besoins, disponibilites, heures, statut, creneau, recue_le',
+  'id, utilisateur_id, apprenant, module_id, formateur_id, besoins, disponibilites, creneaux, ' +
+    'heures, statut, creneau, lien_session, recue_le',
   demandesCoachingPrive.map((d) =>
     [
       txt(d.id),
       txt(d.utilisateurId),
       txt(d.apprenant),
       txt(d.moduleId),
+      txt(d.formateurId),
       txt(d.besoins),
       txt(d.disponibilites),
+      json(d.creneaux ?? []),
       num(d.heures),
       txt(d.statut),
       txt(d.creneau),
+      txt(d.lienSession),
       txt(d.recueLe),
     ].join(', '),
   ),
@@ -436,8 +444,17 @@ inserer(
 )
 
 inserer(
+  'historique_coaching_prive',
+  'demande_id, statut, auteur, commentaire, cree_le',
+  historiqueCoachingPrive.map((h) =>
+    [txt(h.demandeId), txt(h.statut), txt(h.auteur), txt(h.commentaire), txt(h.creeLe)].join(', '),
+  ),
+  'Suivi daté des demandes de coaching privé',
+)
+
+inserer(
   'candidatures_formateurs',
-  'id, nom, expertise, message, whatsapp, lien, statut, recue_le',
+  'id, nom, expertise, message, whatsapp, email, lien, statut, recue_le',
   candidaturesFormateurs.map((c) =>
     [
       txt(c.id),
@@ -445,6 +462,7 @@ inserer(
       txt(c.expertise),
       txt(c.message),
       txt(c.whatsapp),
+      txt(c.email),
       txt(c.lien),
       txt(c.statut),
       txt(c.recueLe),

@@ -1,6 +1,7 @@
 import { enregistrerJournal } from '../../database/administration'
 import { listerThematiques } from '../../database/catalogue'
-import { annulerSession, reporterSession, trouverSession } from '../../database/coaching'
+import { annulerSession, listerInscritsSession, reporterSession, trouverSession } from '../../database/coaching'
+import { notifierCompte } from '../../utils/notifications'
 import { exigerAdmin } from '../../utils/session'
 
 /** Annulation ou report : les inscrits sont notifiés par e-mail et WhatsApp. */
@@ -38,5 +39,20 @@ export default defineEventHandler(async (event) => {
     )
   }
 
-  return { session, notifies: session.inscrits, canaux: ['email', 'whatsapp'] }
+  // Les inscrits sont prévenus sur les deux canaux (planche C, écran 03).
+  const inscrits = await listerInscritsSession(id)
+  const modele = action === 'annuler' ? 'session-annulee' : 'session-reportee'
+  await Promise.all(
+    inscrits.map((inscrit) =>
+      notifierCompte(inscrit, modele, {
+        prenom: inscrit.prenom,
+        thematique,
+        date: session.date,
+        heure: session.heure,
+        motif: motif ?? '',
+      }),
+    ),
+  )
+
+  return { session, notifies: inscrits.length, canaux: ['email', 'whatsapp'] }
 })

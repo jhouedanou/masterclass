@@ -187,7 +187,8 @@ officiel et le motif proviennent de `maquettes/maquettes/assets/`.
 
 ```
 /                                  accueil (hero 2 slides, programmes, thématiques, formateurs, FAQ, blog)
-/programmes/social-media           hero, filtres par thématique, FAQ programme
+/programmes                        les deux programmes, modules filtrables par thématique
+/programmes/social-media           hero (dégradé + motif de marque), filtres par thématique, FAQ programme
 /programmes/entrepreneurs
 /modules                           catalogue complet
 /modules/[slug]                    fiche module + carte d'achat sticky
@@ -207,7 +208,10 @@ officiel et le motif proviennent de `maquettes/maquettes/assets/`.
 /achat/compte  /achat/recapitulatif  /achat/paiement      tunnel 1. Compte · 2. Récapitulatif · 3. Paiement
 /mon-espace                          tableau de bord apprenant
 /mon-espace/modules  /mon-espace/module/[slug]  /mon-espace/sessions
-/mon-espace/certificats  /mon-espace/profil
+/mon-espace/certificats  /mon-espace/profil   fiche apprenant persistée (persona)
+/mon-espace/coaching-prive           demandes de coaching privé : formulaire, suivi daté, notation
+/mon-espace/parametres               e-mail, mot de passe, notifications, suppression du compte
+/hors-ligne                          écran servi par le service worker sans réseau
 /certificats/[numero]                certificat imprimable (A4 paysage)
 /verifier                            saisie manuelle d'un numéro d'attestation
 /verifier/[numero]                   cible du QR code, accessible sans compte
@@ -216,19 +220,41 @@ officiel et le motif proviennent de `maquettes/maquettes/assets/`.
 /formateur                           tableau de bord formateur
 /formateur/modules  /formateur/sessions  /formateur/coaching-prive
 /formateur/revenus  /formateur/profil
+/admin/login                         connexion séparée en deux temps (mot de passe + code à 6 chiffres)
 /admin                               vue d'ensemble
 /admin/contenus                      arbre programme → thématique → module
 /admin/sessions                      calendrier, création, report, annulation notifiée
 /admin/apprenants                    liste, fiche persona, attribution d'accès
-/admin/coaching-prive                demandes + statistiques par formateur
-/admin/formateurs                    profils, ordre public, candidatures
+/admin/coaching-prive                demandes : confirmation, encaissement, planification, refus + statistiques
+/admin/formateurs                    profils, bascule « coaching privé », candidatures → création du compte
 /admin/performances  /admin/revenus  /admin/transactions (droit restreint)
-/admin/module/[id]                   éditeur : informations, chapitres, ressources, offre, historique
+/admin/module/[id]                   éditeur : informations, chapitres, ressources, offre, référencement, historique
+/admin/article/[id]                  éditeur d'article : contenu + référencement et partage (`nouveau` pour créer)
 /admin/cms                           CMS du site vitrine et témoignages
 /admin/tracking                      tracking & pixels (écran verrouillé)
 /admin/acces                         comptes d'administration et droits par section
 /admin/blog  /admin/referencement  /admin/historique  /admin/parametres
 ```
+
+## Parcours de la planche E
+
+La planche E (diagramme des parcours) trace six parcours qui traversent les quatre espaces. Leur
+état, côté code :
+
+| # | Parcours | État |
+|---|---|---|
+| 01 | Achat d'un module | complet, échange FeexPay simulé ; les six motifs d'échec (planche A, 04c) remontent avec leur code, sont tracés dans `transactions` et filtrables dans l'écran Transactions (C-18f) |
+| 02 | Coaching collectif | complet ; création Zoom et envois passent par `notifier()` (pilote console tant qu'aucun fournisseur n'est branché) |
+| 03 | Coaching privé | complet : demande apprenant (formateur actif, créneaux, questions obligatoires), traitement admin (confirmer → payée → planifiée → réalisée, ou refus motivé), séance côté formateur, suivi daté et notation |
+| 04 | Mise en ligne d'un module | complet, onglet « Référencement et partage » dans l'éditeur |
+| 05 | Publication d'un article | complet, éditeur d'article avec le même panneau de référencement |
+| 06 | Candidature → formateur | complet : formulaire public enregistré, étude/refus, création du compte (lien d'invitation 72 h ou mot de passe temporaire), activation réversible du coaching privé |
+
+Le drapeau `formateurs.coaching_prive_actif` verrouille la section « Coaching privé » de l'espace
+formateur (planche D, 05) et filtre les formateurs proposés à l'apprenant ; seule l'administration
+le bascule, et l'action est journalisée. La suppression d'un compte apprenant est douce
+(`utilisateurs.supprime_le`) : le compte ne peut plus se connecter, son e-mail est libéré, les
+écritures comptables restent rattachées.
 
 ## Back-office
 
@@ -386,14 +412,23 @@ l'enregistrement d'écran. Elle rend une rediffusion attribuable.
 
 ## Reste à faire
 
-- **Double vérification à la connexion** : la maquette prévoit un code à six chiffres envoyé par
-  e-mail et WhatsApp (planche C). La table `codes_verification` est posée ; l'envoi attend un
-  fournisseur. En attendant, la connexion s'arrête à l'étape mot de passe.
-- **Paiement FeexPay** : `POST /api/commandes` enregistre la commande et son détail, prix figé à
-  l'achat, mais ne réclame rien : les états attente / vérification / succès / échec sont en place
-  côté interface, le prestataire reste à brancher.
-- **Envoi d'e-mails et WhatsApp transactionnel** : formulaires et réinitialisation de mot de passe
-  journalisent seulement.
+- **Envoi d'e-mails et WhatsApp** : tous les envois (code de connexion admin, lien de
+  réinitialisation, invitation formateur, suivi du coaching privé, sessions annulées ou reportées,
+  accès attribué) passent par `server/utils/notifications.ts`. Le pilote `console` écrit le message
+  dans la sortie du serveur ; brancher un fournisseur consiste à y ajouter un pilote et à poser
+  `NOTIFICATIONS_DRIVER`. Tant qu'il n'y en a pas, la connexion admin et l'invitation d'un formateur
+  se déroulent avec le code ou le lien lu dans les journaux (le lien d'invitation est aussi affiché
+  à l'écran à l'administrateur).
+- **Code de connexion admin par Supabase Auth** : avec `CODE_ADMIN_FOURNISSEUR=supabase-auth`,
+  Supabase Auth émet, envoie et vérifie le code à six chiffres (`signInWithOtp` / `verifyOtp`,
+  `server/utils/codeAdmin.ts`). À régler dans le tableau de bord du projet, Authentication →
+  Email Templates → Magic Link : ajouter `{{ .Token }}` au gabarit, sinon l'e-mail ne contient
+  qu'un lien. Le SMTP intégré de Supabase est limité à quelques envois par heure : brancher un
+  SMTP personnalisé (Authentication → SMTP Settings) lève cette limite. Les comptes créés dans
+  Supabase Auth n'ouvrent aucun droit : la session reste celle de la plateforme.
+- **Paiement FeexPay** : `POST /api/commandes` enregistre la commande, la transaction et ouvre les
+  accès ; l'échange avec le prestataire est simulé. Hors production, un sélecteur du tunnel force
+  l'un des six motifs d'échec pour dérouler chaque écran d'erreur.
 - **Onglets détaillés de Performances** (Funnel / Ventes / Visites / Clients) : ils dépendent des
   mesures d'audience, donc du branchement de Google Tag Manager. Tous les autres écrans de la
   planche C sont en place.
