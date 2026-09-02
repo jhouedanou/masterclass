@@ -36,6 +36,14 @@ npx wrangler secret put VIDEO_SIGNING_SECRET
 R2 doit être activé sur le compte Cloudflare, ce qui se fait une fois dans le tableau de
 bord — la ligne de commande ne peut pas le faire et échoue avec le code 10042.
 
+## Origines autorisées
+
+`ORIGINES_AUTORISEES`, dans `wrangler.toml`, liste les sites d'où le lecteur peut lire les
+vidéos. Une origine absente de cette liste se voit refuser la réponse par le navigateur
+lui-même, avant toute vérification de signature : la vidéo reste sur son écran de
+chargement, sans erreur visible ailleurs que dans la console. Un appel `curl` ne le montre
+pas — il faut un vrai navigateur. Ajouter ici tout nouveau domaine de préproduction.
+
 ## Cycle d'une vidéo
 
 ```bash

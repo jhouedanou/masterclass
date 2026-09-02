@@ -91,29 +91,62 @@ function reecrirePlaylist(texte, requete) {
     .join('\n')
 }
 
+/**
+ * En-têtes de partage entre origines.
+ *
+ * Le lecteur s'exécute sur le site, le Worker répond depuis un autre domaine :
+ * sans ces en-têtes, le navigateur refuse la réponse avant même de la lire, et
+ * la vidéo ne démarre pas. Un appel en ligne de commande, lui, ne s'en aperçoit
+ * pas — seul un vrai navigateur applique cette règle.
+ *
+ * La liste est explicite plutôt qu'ouverte à tous : c'est sans incidence sur la
+ * sécurité, l'autorisation voyageant dans l'URL et non dans un cookie, mais
+ * cela évite qu'un site tiers n'intègre le lecteur avec un lien récupéré.
+ */
+function entetesCors(requete, env) {
+  const origine = requete.headers.get('origin')
+  const autorisees = (env.ORIGINES_AUTORISEES ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean)
+
+  const entetes = { vary: 'Origin' }
+  if (origine && autorisees.includes(origine)) {
+    entetes['access-control-allow-origin'] = origine
+    entetes['access-control-allow-methods'] = 'GET, HEAD, OPTIONS'
+    entetes['access-control-allow-headers'] = 'Range'
+    entetes['access-control-max-age'] = '86400'
+  }
+  return entetes
+}
+
 export default {
   async fetch(requete, env) {
     const url = new URL(requete.url)
     const chemin = decodeURIComponent(url.pathname).replace(/^\/+/, '')
+    const cors = entetesCors(requete, env)
 
+    if (requete.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: cors })
+    }
     if (requete.method !== 'GET' && requete.method !== 'HEAD') {
-      return new Response('Méthode non autorisée', { status: 405 })
+      return new Response('Méthode non autorisée', { status: 405, headers: cors })
     }
     if (!chemin || chemin.includes('..')) {
-      return new Response('Chemin invalide', { status: 400 })
+      return new Response('Chemin invalide', { status: 400, headers: cors })
     }
 
     const refus = await verifierSignature(chemin, url.searchParams, env.VIDEO_SIGNING_SECRET)
     if (refus) {
       // Le motif aide au diagnostic sans rien révéler d'exploitable.
-      return new Response(`Lecture refusée — ${refus}`, { status: 403 })
+      return new Response(`Lecture refusée — ${refus}`, { status: 403, headers: cors })
     }
 
     const objet = await env.VIDEOS.get(chemin)
-    if (!objet) return new Response('Fichier introuvable', { status: 404 })
+    if (!objet) return new Response('Fichier introuvable', { status: 404, headers: cors })
 
     const extension = chemin.slice(chemin.lastIndexOf('.') + 1)
-    const entetes = new Headers()
+    const entetes = new Headers(cors)
     objet.writeHttpMetadata(entetes)
     entetes.set('content-type', TYPES[extension] ?? 'application/octet-stream')
     entetes.set('etag', objet.httpEtag)

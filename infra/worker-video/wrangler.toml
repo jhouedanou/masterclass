@@ -12,6 +12,11 @@ name = "emasterclass-videos"
 main = "src/index.js"
 compatibility_date = "2026-01-01"
 
+# Origines autorisées à lire les vidéos depuis un navigateur. Sans cette liste,
+# le lecteur du site se voit refuser la réponse par le navigateur lui-même.
+[vars]
+ORIGINES_AUTORISEES = "https://emasterclass.bigfive.ci,http://localhost:3000,http://localhost:3001"
+
 [[r2_buckets]]
 binding = "VIDEOS"
 bucket_name = "emasterclass-videos"
