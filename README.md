@@ -378,7 +378,8 @@ npm run video:publier -- mod-monslug-ch01
 Le transcodage imprime la clé et la durée mesurée, à reporter dans `server/data/db.ts` (contenu de
 référence) ou directement en base. Un chapitre sans clé affiche l'écran d'attente du lecteur.
 
-Mise en service du Worker : voir `infra/worker-video/README.md`.
+Le Worker est en service depuis le 2 septembre 2026 sur le compte `analyticsbigfive` :
+`https://emasterclass-videos.analyticsbigfive.workers.dev`. Détails et redéploiement dans `infra/worker-video/README.md`.
 
 Le filigrane nominatif reste indispensable : la signature empêche le partage d'un lien, pas
 l'enregistrement d'écran. Elle rend une rediffusion attribuable.

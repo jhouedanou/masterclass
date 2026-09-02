@@ -35,8 +35,9 @@ La diffusion est en place : transcodage HLS par `ffmpeg`, stockage Cloudflare R2
 signées vérifiées par un Worker. Aucun abonnement, voir la section « Vidéo » du README. Deux
 vidéos de démonstration tournent déjà de bout en bout.
 
-- [ ] Créer le bucket R2 et déployer le Worker (`infra/worker-video/README.md`), puis renseigner
-      `VIDEO_BASE_URL` et `VIDEO_SIGNING_SECRET`
+- [x] Bucket R2 créé, Worker déployé et vérifié le 02/09 — `https://emasterclass-videos.analyticsbigfive.workers.dev`.
+      Les deux vidéos de démonstration se lisent depuis le CDN, une autorisation d'un chapitre
+      ne donne pas accès à un autre.
 - [ ] Obtenir **les 18 vidéos** montées et validées — c'est le vrai sujet, et il reste entier
 - [ ] Récupérer les transcriptions (script synchronisé sous le lecteur)
 

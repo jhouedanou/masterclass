@@ -12,21 +12,29 @@ L'application ne diffuse aucune vidéo. Elle vérifie l'accès une fois, puis
 remet à l'apprenant une URL signée valable quelques heures. Le Worker recalcule
 la signature et sert le fichier. Aucun segment ne traverse le serveur Nuxt.
 
-## Mise en service
+## En service depuis le 2 septembre 2026
+
+Bucket `emasterclass-videos`, Worker déployé sur le compte `analyticsbigfive` :
+
+```
+https://emasterclass-videos.analyticsbigfive.workers.dev
+```
+
+Le `.env` de l'application pointe dessus (`VIDEO_BASE_URL`) et partage son secret de
+signature. Redéployer après une modification du code :
 
 ```bash
-cd infra/worker-video
-npx wrangler r2 bucket create emasterclass-videos
-npx wrangler secret put VIDEO_SIGNING_SECRET   # même valeur que le .env applicatif
-npx wrangler deploy
+cd infra/worker-video && npx wrangler deploy
 ```
 
-Renseigner ensuite dans le `.env` de l'application :
+Remonter le secret s'il change, des deux côtés à l'identique :
 
+```bash
+npx wrangler secret put VIDEO_SIGNING_SECRET
 ```
-VIDEO_BASE_URL=https://emasterclass-videos.<compte>.workers.dev
-VIDEO_SIGNING_SECRET=<le même secret>
-```
+
+R2 doit être activé sur le compte Cloudflare, ce qui se fait une fois dans le tableau de
+bord — la ligne de commande ne peut pas le faire et échoue avec le code 10042.
 
 ## Cycle d'une vidéo
 
