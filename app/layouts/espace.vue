@@ -1,5 +1,10 @@
 <script setup lang="ts">
 const auth = useAuthStore()
+
+async function seDeconnecter() {
+  await auth.deconnexion()
+  await navigateTo('/')
+}
 const liens = [
   { libelle: 'Tableau de bord', chemin: '/mon-espace', icone: 'ph:squares-four' },
   { libelle: 'Mes modules', chemin: '/mon-espace/modules', icone: 'ph:play-circle' },
@@ -29,7 +34,7 @@ const liens = [
         </nav>
         <button
           class="mt-6 text-[13px] text-discret hover:text-encre"
-          @click="auth.deconnexion().then(() => navigateTo('/'))"
+          @click="seDeconnecter"
         >
           Se déconnecter
         </button>

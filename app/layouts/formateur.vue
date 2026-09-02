@@ -1,5 +1,10 @@
 <script setup lang="ts">
 const auth = useAuthStore()
+
+async function seDeconnecter() {
+  await auth.deconnexion()
+  await navigateTo('/')
+}
 const liens = [
   { libelle: 'Vue d’ensemble', chemin: '/formateur', icone: 'ph:gauge' },
   { libelle: 'Mes modules', chemin: '/formateur/modules', icone: 'ph:stack' },
@@ -31,7 +36,7 @@ const liens = [
       </nav>
       <div class="mt-auto pt-6 text-[12px] text-[#8f8a9c]">
         <p>{{ auth.utilisateur?.prenom }} {{ auth.utilisateur?.nom }}</p>
-        <button class="mt-2 underline" @click="auth.deconnexion().then(() => navigateTo('/'))">
+        <button class="mt-2 underline" @click="seDeconnecter">
           Déconnexion
         </button>
       </div>

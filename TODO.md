@@ -1,26 +1,17 @@
 # Reste à faire — E-Masterclass Big Five
 
-Point au **28 août 2026**. Le développement est à jour ; ce qui suit se commande, se fournit ou
+Point au **2 septembre 2026**. Le développement est à jour ; ce qui suit se commande, se fournit ou
 s'exécute. Le détail à transmettre à la direction de projet est dans la note partagée
 « Ouvrir E-Masterclass ».
 
 ---
 
-## 1. À faire en premier demain — 2 minutes
+## 1. Base de données — à jour
 
-- [ ] Exécuter **`supabase/en-ligne/05-back-office.sql`** dans *SQL Editor* du projet Supabase.
-
-Vérifié le 28/08 : les migrations `01` à `04` et le rattrapage des mots de passe sont passés,
-`05` ne l'est pas. Sans lui, les écrans **CMS Site vitrine**, **Tracking & pixels**, l'onglet
-*Ressources* de l'éditeur de module et l'**historique des versions** répondent en erreur — le reste
-de la plateforme fonctionne normalement.
-
-Contrôle rapide une fois passé :
-
-```bash
-npm run dev
-# puis, connecté en admin@bigfive.ci : /admin/cms et /admin/tracking doivent s'ouvrir
-```
+Vérifié le 02/09 sur le projet hébergé : les cinq migrations (`01` à `05`), le rattrapage des mots
+de passe et le jeu de données sont en place. Les comptages (18 modules, 72 chapitres, 5 articles,
+5 blocs vitrine, 6 comptes tous pourvus d'un mot de passe) correspondent aux migrations locales.
+`npm run db:verifier`, `npm run typecheck` et `npm run build` passent au vert.
 
 ---
 
@@ -103,9 +94,6 @@ Débloque les six lignes qui affichent « — » dans l'écran Performances.
       mesures d'audience, donc ils attendent Google Tag Manager. À faire une fois GA4 branché.
 - [ ] **Double vérification à la connexion** — code à six chiffres par e-mail et WhatsApp
       (planche C). La table `codes_verification` est déjà en place ; l'envoi attend un fournisseur.
-- [ ] **Trois erreurs de typecheck antérieures** dans `app/layouts/admin.vue`, `espace.vue` et
-      `formateur.vue` : un `navigateTo()` dans un `.then()`, mal typé par Vue Router. Sans effet à
-      l'exécution, mais elles empêchent `npm run typecheck` de passer au vert.
 
 ---
 

@@ -3,6 +3,11 @@ import type { SectionAdmin } from '#shared/types'
 
 const auth = useAuthStore()
 
+async function seDeconnecter() {
+  await auth.deconnexion()
+  await navigateTo('/')
+}
+
 /**
  * Une section non autorisée est masquée, pas seulement désactivée — c'est la
  * règle posée par la planche C. `section: null` marque les écrans ouverts à
@@ -105,7 +110,7 @@ const groupes = computed(() =>
         <p class="font-title text-[17px] font-light">Back-office</p>
         <button
           class="text-[13px] text-discret hover:text-encre"
-          @click="auth.deconnexion().then(() => navigateTo('/'))"
+          @click="seDeconnecter"
         >
           Se déconnecter
         </button>
