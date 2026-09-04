@@ -64,14 +64,5 @@ async function soumettre() {
       <NuxtLink to="/inscription" class="font-bold">Créer un compte</NuxtLink>
     </div>
 
-    <div class="mt-10 rounded-[10px] border border-dashed border-ligne p-4 text-[12.5px] text-discret">
-      <p class="font-bold text-texte">Comptes de démonstration</p>
-      <p class="mt-1">Apprenante : aya@example.ci · Administration : admin@bigfive.ci (via <NuxtLink to="/admin/login" class="underline">/admin/login</NuxtLink>)</p>
-      <p>Formateur : formateur@bigfive.ci · Éditeur : editeur@bigfive.ci</p>
-      <p class="mt-1">
-        Mot de passe commun : <span class="font-mono">Masterclass2026!</span> — à changer avant
-        toute mise en ligne.
-      </p>
-    </div>
   </div>
 </template>
