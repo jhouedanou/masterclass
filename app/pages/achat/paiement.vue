@@ -4,6 +4,7 @@ import type { CodeEchecPaiement } from '#shared/types'
 definePageMeta({ middleware: 'auth' })
 
 const achat = useAchatStore()
+const config = useRuntimeConfig()
 
 const moyens = [
   { valeur: 'mobile-money', libelle: 'Mobile Money', detail: 'Orange, MTN, Moov' },
@@ -13,8 +14,9 @@ const moyens = [
 ] as const
 
 /** Les états du tunnel (spec §8) : attente, vérification, succès, échec,
- *  nouvelle tentative et changement de moyen s'enchaînent depuis « choix ». */
-const etat = ref<'choix' | 'attente' | 'verification' | 'succes' | 'echec'>('choix')
+ *  nouvelle tentative et changement de moyen s'enchaînent depuis « choix ».
+ *  « feexpay » : la fenêtre du prestataire est ouverte ou prête à l'être. */
+const etat = ref<'choix' | 'attente' | 'feexpay' | 'verification' | 'succes' | 'echec'>('choix')
 const message = ref('')
 const codeEchec = ref<CodeEchecPaiement | null>(null)
 const tentatives = ref(0)
@@ -26,14 +28,148 @@ const echec = computed(() => (codeEchec.value ? ECHECS_PAIEMENT[codeEchec.value]
 
 usePagePrivee('Choisissez votre moyen de paiement')
 
+// --- FeexPay (SDK JavaScript, docs.feexpay.me) ------------------------------
+
+interface ParametresFeexPay {
+  shopId: string
+  token: string
+  mode: 'SANDBOX' | 'LIVE'
+  montant: number
+  customId: string
+  description: string
+  cas: 'MOBILE' | 'CARD' | ''
+  email: string
+  prenom: string
+  nom: string
+}
+
+interface ReponseCommande {
+  reference: string
+  feexpay?: ParametresFeexPay
+}
+
+type FeexPayButtonGlobal = {
+  init: (conteneur: string, options: Record<string, unknown>) => void
+}
+
+const feexpayActif = config.public.feexpayActif
+if (feexpayActif) {
+  useHead({ script: [{ src: config.public.feexpaySdkUrl, defer: true }] })
+}
+
+const CONTENEUR_FEEXPAY = 'feexpay-bouton'
+/** Référence de la commande en cours de règlement. */
+const commandeEnCours = ref<string | null>(null)
+let minuteurVerification: ReturnType<typeof setTimeout> | undefined
+
+onBeforeUnmount(() => minuteurVerification && clearTimeout(minuteurVerification))
+
+async function attendreSdk(): Promise<FeexPayButtonGlobal> {
+  for (let i = 0; i < 50; i += 1) {
+    const sdk = (window as unknown as { FeexPayButton?: FeexPayButtonGlobal }).FeexPayButton
+    if (sdk) return sdk
+    await new Promise((r) => setTimeout(r, 100))
+  }
+  throw new Error('Le module de paiement FeexPay ne s’est pas chargé.')
+}
+
+/** La référence FeexPay dans ce que le SDK rend au rappel, quelle qu'en soit la forme. */
+function referenceDepuisRappel(reponse: unknown): string | null {
+  if (!reponse || typeof reponse !== 'object') return null
+  const r = reponse as Record<string, unknown>
+  const source = (r.data && typeof r.data === 'object' ? r.data : r) as Record<string, unknown>
+  for (const cle of ['reference', 'transaction_id', 'transactionId', 'id']) {
+    const v = source[cle]
+    if (typeof v === 'string' && v) return v
+  }
+  return null
+}
+
+async function ouvrirFeexPay(parametres: ParametresFeexPay) {
+  etat.value = 'feexpay'
+  message.value = 'La fenêtre de paiement FeexPay s’ouvre.'
+  await nextTick()
+  const sdk = await attendreSdk()
+  sdk.init(CONTENEUR_FEEXPAY, {
+    id: parametres.shopId,
+    token: parametres.token,
+    amount: parametres.montant,
+    currency: 'XOF',
+    mode: parametres.mode,
+    custom_id: parametres.customId,
+    description: parametres.description,
+    case: parametres.cas,
+    email: parametres.email,
+    first_name: parametres.prenom,
+    last_name: parametres.nom,
+    callback_info: { commande: parametres.customId },
+    callback: (reponse: unknown) => {
+      void confirmer(referenceDepuisRappel(reponse))
+    },
+  })
+  // Le SDK rend son propre bouton dans le conteneur : on l'actionne pour
+  // l'utilisateur, qui vient déjà de cliquer « Payer ». S'il ne répond pas,
+  // le bouton reste visible.
+  await nextTick()
+  const bouton = document.querySelector<HTMLElement>(`#${CONTENEUR_FEEXPAY} button`)
+  bouton?.click()
+}
+
+/** Vérification serveur, relancée toutes les trois secondes tant que FeexPay
+ *  n'a pas tranché (deux minutes au plus). */
+async function confirmer(referenceFeexPay: string | null, essai = 0) {
+  if (!commandeEnCours.value) return
+  etat.value = 'verification'
+  message.value = 'Nous vérifions votre paiement auprès de FeexPay.'
+  try {
+    const reponse = await $fetch<{ statut: 'confirmee' | 'attente'; reference: string }>(
+      `/api/commandes/${encodeURIComponent(commandeEnCours.value)}/confirmer`,
+      { method: 'POST', body: { referenceFeexPay } },
+    )
+    if (reponse.statut === 'confirmee') {
+      achat.reference = reponse.reference
+      etat.value = 'succes'
+      return
+    }
+    if (essai < 40) {
+      minuteurVerification = setTimeout(() => void confirmer(referenceFeexPay, essai + 1), 3000)
+      return
+    }
+    afficherEchec('delai-depasse', 'FeexPay n’a pas confirmé le paiement dans le délai imparti.')
+  } catch (e) {
+    const r = e as {
+      statusCode?: number
+      statusMessage?: string
+      data?: { statusMessage?: string; data?: { code?: CodeEchecPaiement } }
+    }
+    // FeexPay injoignable un instant : on réessaie plutôt que de conclure.
+    if (r.statusCode === 502 && essai < 40) {
+      minuteurVerification = setTimeout(() => void confirmer(referenceFeexPay, essai + 1), 3000)
+      return
+    }
+    afficherEchec(
+      r.data?.data?.code ?? 'erreur-inconnue',
+      r.data?.statusMessage ?? r.statusMessage ?? 'Le paiement a échoué.',
+    )
+  }
+}
+
+function afficherEchec(code: CodeEchecPaiement, texte: string) {
+  etat.value = 'echec'
+  tentatives.value += 1
+  codeEchec.value = code
+  message.value = texte
+}
+
+// --- Tunnel -------------------------------------------------------------------
+
 async function payer() {
   if (!achat.module) return
   etat.value = 'attente'
-  message.value = 'Validez la demande sur votre téléphone.'
+  message.value = feexpayActif ? 'Ouverture de la commande…' : 'Validez la demande sur votre téléphone.'
   codeEchec.value = null
   try {
-    etat.value = 'verification'
-    const commande = await $fetch<{ reference: string }>('/api/commandes', {
+    const commande = await $fetch<ReponseCommande>('/api/commandes', {
       method: 'POST',
       body: {
         moduleIds: [achat.module.id],
@@ -41,14 +177,21 @@ async function payer() {
         simulerEchec: dev && simulerEchec.value ? simulerEchec.value : undefined,
       },
     })
+    commandeEnCours.value = commande.reference
+    if (commande.feexpay) {
+      await ouvrirFeexPay(commande.feexpay)
+      return
+    }
+    // Simulation (développement) : la commande est déjà confirmée.
+    etat.value = 'verification'
     achat.reference = commande.reference
     etat.value = 'succes'
   } catch (e) {
-    const reponse = e as { statusMessage?: string; data?: { code?: CodeEchecPaiement } }
-    etat.value = 'echec'
-    tentatives.value += 1
-    codeEchec.value = reponse.data?.code ?? 'erreur-inconnue'
-    message.value = reponse.statusMessage ?? 'Le paiement a échoué.'
+    const r = e as { statusMessage?: string; data?: { statusMessage?: string; data?: { code?: CodeEchecPaiement } } }
+    afficherEchec(
+      r.data?.data?.code ?? 'erreur-inconnue',
+      r.data?.statusMessage ?? r.statusMessage ?? (e as Error).message ?? 'Le paiement a échoué.',
+    )
   }
 }
 
@@ -125,6 +268,20 @@ function changerDeMoyen() {
         {{ etat === 'attente' ? 'En attente de validation' : 'Vérification du paiement' }}
       </p>
       <p class="mt-3 text-[15px] text-texte">{{ message || 'Merci de patienter quelques instants.' }}</p>
+    </div>
+
+    <div v-else-if="etat === 'feexpay'" class="mt-10 rounded-carte border border-ligne-douce p-10 text-center">
+      <p class="font-title text-[24px] font-light">Paiement sécurisé FeexPay</p>
+      <p class="mt-3 text-[15px] text-texte">
+        Suivez les instructions dans la fenêtre FeexPay. Si elle ne s’est pas ouverte, cliquez sur le bouton ci-dessous.
+      </p>
+      <div :id="CONTENEUR_FEEXPAY" class="mt-6 flex justify-center" />
+      <p class="mt-4 text-[12.5px] text-discret">
+        Aucun accès n’est ouvert tant que le paiement n’est pas confirmé par FeexPay.
+      </p>
+      <button type="button" class="mt-4 text-[14px] text-discret hover:underline" @click="changerDeMoyen">
+        Annuler et changer de moyen de paiement
+      </button>
     </div>
 
     <div v-else class="mt-10 rounded-carte border border-succes bg-succes-voile p-10 text-center">

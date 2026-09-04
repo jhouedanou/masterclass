@@ -314,6 +314,9 @@ export type TransactionRow = {
   date_transaction: string
   code_echec: CodeEchecPaiementSql | null
   detail_echec: string | null
+  commande_reference: string | null
+  reference_prestataire: string | null
+  reseau: string | null
   cree_le: string
 }
 
@@ -535,7 +538,14 @@ export type Database = {
       commandes_modules: Table<CommandeModuleRow>
       transactions: Table<
         TransactionRow,
-        'cree_le' | 'date_transaction' | 'statut' | 'code_echec' | 'detail_echec'
+        | 'cree_le'
+        | 'date_transaction'
+        | 'statut'
+        | 'code_echec'
+        | 'detail_echec'
+        | 'commande_reference'
+        | 'reference_prestataire'
+        | 'reseau'
       >
       certificats: Table<CertificatRow, 'date_delivrance'>
       demandes_coaching_prive: Table<

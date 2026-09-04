@@ -55,8 +55,21 @@ export default defineNuxtConfig({
     videoSigningSecret: process.env.VIDEO_SIGNING_SECRET || '',
     videoBaseUrl: process.env.VIDEO_BASE_URL || '',
 
+    // Encaissement FeexPay : `simulation` (développement, refusé en
+    // production), `sandbox` ou `live`. La clé d'API sert au navigateur pour
+    // ouvrir la fenêtre de paiement et au serveur pour vérifier le statut ;
+    // la clé du webhook filtre les appels étrangers (voir server/utils/feexpay.ts).
+    feexpayMode: process.env.FEEXPAY_MODE || 'simulation',
+    feexpayShopId: process.env.FEEXPAY_SHOP_ID || '',
+    feexpayApiKey: process.env.FEEXPAY_API_KEY || '',
+    feexpayBaseUrl: process.env.FEEXPAY_BASE_URL || 'https://api.feexpay.me',
+    feexpayWebhookCle: process.env.FEEXPAY_WEBHOOK_CLE || '',
+
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://emasterclass.bigfive.ci',
+      // Le tunnel charge le SDK FeexPay seulement quand le prestataire est branché.
+      feexpayActif: (process.env.FEEXPAY_MODE || 'simulation') !== 'simulation',
+      feexpaySdkUrl: `${(process.env.FEEXPAY_BASE_URL || 'https://api.feexpay.me').replace(/\/$/, '')}/feexpay-javascript-sdk/index.js`,
     },
   },
 

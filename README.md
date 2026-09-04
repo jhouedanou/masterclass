@@ -243,7 +243,7 @@ La planche E (diagramme des parcours) trace six parcours qui traversent les quat
 
 | # | Parcours | État |
 |---|---|---|
-| 01 | Achat d'un module | complet, échange FeexPay simulé ; les six motifs d'échec (planche A, 04c) remontent avec leur code, sont tracés dans `transactions` et filtrables dans l'écran Transactions (C-18f) |
+| 01 | Achat d'un module | complet, FeexPay branché (sandbox/live, simulation en développement) ; les six motifs d'échec (planche A, 04c) remontent avec leur code, sont tracés dans `transactions` et filtrables dans l'écran Transactions (C-18f) |
 | 02 | Coaching collectif | complet ; création Zoom et envois passent par `notifier()` (pilote console tant qu'aucun fournisseur n'est branché) |
 | 03 | Coaching privé | complet : demande apprenant (formateur actif, créneaux, questions obligatoires), traitement admin (confirmer → payée → planifiée → réalisée, ou refus motivé), séance côté formateur, suivi daté et notation |
 | 04 | Mise en ligne d'un module | complet, onglet « Référencement et partage » dans l'éditeur |
@@ -429,9 +429,18 @@ l'enregistrement d'écran. Elle rend une rediffusion attribuable.
   sortie du serveur. `CODE_ADMIN_FOURNISSEUR=aucun` suspend la double vérification : le mot de
   passe ouvre la session admin directement (à n'utiliser que le temps de brancher un envoi). Les
   comptes créés dans Supabase Auth n'ouvrent aucun droit : la session reste celle de la plateforme.
-- **Paiement FeexPay** : `POST /api/commandes` enregistre la commande, la transaction et ouvre les
-  accès ; l'échange avec le prestataire est simulé. Hors production, un sélecteur du tunnel force
-  l'un des six motifs d'échec pour dérouler chaque écran d'erreur.
+- **Paiement FeexPay** (`server/utils/feexpay.ts`) : avec `FEEXPAY_MODE=sandbox` ou `live`,
+  `POST /api/commandes` ouvre la commande en attente et renvoie au navigateur de quoi lancer la
+  fenêtre FeexPay (SDK JavaScript, `custom_id` = référence de commande). Au retour, le tunnel
+  appelle `POST /api/commandes/:reference/confirmer` ; le serveur interroge l'API de statut FeexPay
+  (jamais la seule parole du navigateur) puis confirme la commande, clôt les transactions et ouvre
+  les accès — ou enregistre l'échec avec l'un des six motifs. Le webhook
+  `POST /api/paiements/feexpay/webhook?cle=…` (URL à déclarer sur le tableau de bord FeexPay, menu
+  Webhook) fait la même vérification quand le navigateur a été fermé avant la fin. En
+  `FEEXPAY_MODE=simulation` (développement seulement, refusé en production), l'échange est joué
+  sans appel au prestataire et un sélecteur du tunnel force l'un des six motifs d'échec. Migration
+  `20260904120000_feexpay.sql` à appliquer (`npm run db:migrer`). Reste à faire : les
+  remboursements et la réconciliation périodique des commandes restées `attente`.
 - **Onglets détaillés de Performances** (Funnel / Ventes / Visites / Clients) : ils dépendent des
   mesures d'audience, donc du branchement de Google Tag Manager. Tous les autres écrans de la
   planche C sont en place.

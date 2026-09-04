@@ -352,6 +352,9 @@ export function versTransaction(row: TransactionRow): Transaction {
     date: row.date_transaction,
     codeEchec: row.code_echec ?? undefined,
     detailEchec: optionnel(row.detail_echec),
+    commandeReference: optionnel(row.commande_reference),
+    referencePrestataire: optionnel(row.reference_prestataire),
+    reseau: optionnel(row.reseau),
   }
 }
 

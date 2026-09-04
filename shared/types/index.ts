@@ -248,6 +248,12 @@ export interface Transaction {
   /** Renseignés sur une transaction échouée (planche A, écran 04c). */
   codeEchec?: CodeEchecPaiement
   detailEchec?: string
+  /** Commande réglée par cette transaction. */
+  commandeReference?: string
+  /** Référence attribuée par FeexPay, celle que porte le webhook. */
+  referencePrestataire?: string
+  /** Réseau exact restitué par FeexPay (« ORANGE CI », « WAVE CI »…). */
+  reseau?: string
 }
 
 /** Les six cas d'erreur du tunnel de paiement (planche A, écran 04c). */

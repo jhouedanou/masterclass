@@ -3,6 +3,7 @@ import { listerModules } from '../database/catalogue'
 import { enregistrerCommande, enregistrerTransaction } from '../database/commerce'
 import { ouvrirAcces } from '../database/comptes'
 import type { MoyenTransactionSql } from '../database/types'
+import { configFeexPay } from '../utils/feexpay'
 import { exigerUtilisateur } from '../utils/session'
 
 /** Motifs d'échec tels que le prestataire les remonte (planche A, écran 04c). */
@@ -39,13 +40,23 @@ function referenceFeexPay(): string {
   return `FP-${jour}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`
 }
 
+/** Type de fenêtre FeexPay selon le moyen choisi ; vide = tous les moyens. */
+const CAS_FEEXPAY: Record<string, 'MOBILE' | 'CARD' | ''> = {
+  'mobile-money': 'MOBILE',
+  wave: '',
+  djamo: '',
+  visa: 'CARD',
+}
+
 /**
- * Tunnel d'achat, étape 3. Le paiement réel passe par FeexPay (Mobile Money,
- * Wave, Djamo, Visa) — intégration à faire : l'échange avec le prestataire
- * est simulé, mais tout ce qui l'entoure est en place. Un échec enregistre la
- * transaction avec son motif et répond 402 avec le code, que le tunnel
- * traduit en message et en action ; un succès enregistre la commande, la
- * transaction et ouvre les accès.
+ * Tunnel d'achat, étape 3 : ouverture de la commande.
+ *
+ * - En `simulation` (développement), l'échange avec FeexPay est joué ici :
+ *   la commande est confirmée d'emblée, ou échoue avec le motif demandé.
+ * - En `sandbox` / `live`, la commande naît `attente` avec une transaction en
+ *   attente par module, et la réponse porte ce qu'il faut au navigateur pour
+ *   ouvrir la fenêtre FeexPay. La suite se joue dans
+ *   `POST /api/commandes/:reference/confirmer` et le webhook.
  */
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerUtilisateur(event)
@@ -62,9 +73,49 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 422, statusMessage: 'Panier vide ou modules indisponibles' })
   }
 
-  const moyenTransaction = MOYENS[moyen ?? 'mobile-money'] ?? 'Orange Money'
+  const moyenCommande = moyen ?? 'mobile-money'
+  const moyenTransaction = MOYENS[moyenCommande] ?? 'Orange Money'
+  const feexpay = configFeexPay()
 
-  if (simulerEchec && process.env.NODE_ENV !== 'production' && CODES_ECHEC.includes(simulerEchec)) {
+  // --- Prestataire branché : commande en attente, fenêtre FeexPay ---------
+  if (feexpay.mode !== 'simulation') {
+    const commande = await enregistrerCommande({
+      utilisateurId: utilisateur.id,
+      lignes: achetes.map((m) => ({ moduleId: m.id, prixFcfa: m.prixFcfa })),
+      moyen: moyenCommande,
+      statut: 'attente',
+    })
+    for (const m of achetes) {
+      await enregistrerTransaction({
+        reference: `${commande.reference}-${m.id}`,
+        utilisateurId: utilisateur.id,
+        moduleId: m.id,
+        moyen: moyenTransaction,
+        montant: m.prixFcfa,
+        statut: 'en-attente',
+        commandeReference: commande.reference,
+      })
+    }
+    return {
+      ...commande,
+      modules: achetes.map((m) => ({ id: m.id, titre: m.titre, slug: m.slug })),
+      feexpay: {
+        shopId: feexpay.shopId,
+        token: feexpay.cleApi,
+        mode: feexpay.mode === 'live' ? 'LIVE' : 'SANDBOX',
+        montant: commande.total,
+        customId: commande.reference,
+        description: achetes.map((m) => m.titre).join(' + ').slice(0, 120),
+        cas: CAS_FEEXPAY[moyenCommande] ?? '',
+        email: utilisateur.email,
+        prenom: utilisateur.prenom,
+        nom: utilisateur.nom,
+      },
+    }
+  }
+
+  // --- Simulation (développement) ----------------------------------------
+  if (simulerEchec && CODES_ECHEC.includes(simulerEchec)) {
     for (const m of achetes) {
       await enregistrerTransaction({
         reference: referenceFeexPay(),
@@ -87,7 +138,7 @@ export default defineEventHandler(async (event) => {
   const commande = await enregistrerCommande({
     utilisateurId: utilisateur.id,
     lignes: achetes.map((m) => ({ moduleId: m.id, prixFcfa: m.prixFcfa })),
-    moyen: moyen ?? 'mobile-money',
+    moyen: moyenCommande,
   })
 
   for (const m of achetes) {
@@ -98,6 +149,7 @@ export default defineEventHandler(async (event) => {
       moyen: moyenTransaction,
       montant: m.prixFcfa,
       statut: 'reussie',
+      commandeReference: commande.reference,
     })
   }
 
