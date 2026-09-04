@@ -62,14 +62,14 @@ export default defineNuxtConfig({
     feexpayMode: process.env.FEEXPAY_MODE || 'simulation',
     feexpayShopId: process.env.FEEXPAY_SHOP_ID || '',
     feexpayApiKey: process.env.FEEXPAY_API_KEY || '',
-    feexpayBaseUrl: process.env.FEEXPAY_BASE_URL || 'https://api.feexpay.me',
+    feexpayBaseUrl: process.env.FEEXPAY_BASE_URL || 'https://api-v2.feexpay.me',
     feexpayWebhookCle: process.env.FEEXPAY_WEBHOOK_CLE || '',
 
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://emasterclass.bigfive.ci',
       // Le tunnel charge le SDK FeexPay seulement quand le prestataire est branché.
       feexpayActif: (process.env.FEEXPAY_MODE || 'simulation') !== 'simulation',
-      feexpaySdkUrl: `${(process.env.FEEXPAY_BASE_URL || 'https://api.feexpay.me').replace(/\/$/, '')}/feexpay-javascript-sdk/index.js`,
+      feexpaySdkUrl: `${(process.env.FEEXPAY_BASE_URL || 'https://api-v2.feexpay.me').replace(/\/$/, '')}/feexpay-javascript-sdk/index.js`,
     },
   },
 

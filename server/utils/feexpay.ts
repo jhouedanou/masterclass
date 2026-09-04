@@ -60,7 +60,7 @@ export function configFeexPay(): ConfigFeexPay {
     mode,
     shopId,
     cleApi,
-    baseUrl: (process.env.FEEXPAY_BASE_URL || config.feexpayBaseUrl || 'https://api.feexpay.me').replace(/\/$/, ''),
+    baseUrl: (process.env.FEEXPAY_BASE_URL || config.feexpayBaseUrl || 'https://api-v2.feexpay.me').replace(/\/$/, ''),
     webhookCle: (process.env.FEEXPAY_WEBHOOK_CLE || config.feexpayWebhookCle || '').trim(),
   }
 }
