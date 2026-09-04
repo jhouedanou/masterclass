@@ -36,7 +36,8 @@ export default defineNuxtConfig({
 
     // Code de la double vérification admin : `interne` (table codes_verification
     // + notifier) ou `supabase-auth` (Supabase Auth émet, envoie et vérifie le
-    // code avec son SMTP — voir server/utils/codeAdmin.ts).
+    // code avec son SMTP) ou `aucun` (double vérification suspendue) — voir
+    // server/utils/codeAdmin.ts.
     codeAdminFournisseur: process.env.CODE_ADMIN_FOURNISSEUR || 'interne',
 
     // Accès à la base Supabase. La clé secrète (`sb_secret_…`, nouveau système

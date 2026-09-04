@@ -20,15 +20,18 @@ import { notifierCompte } from './notifications'
  *   l'e-mail ne porte qu'un lien. Le SMTP intégré est limité à quelques envois
  *   par heure : suffisant pour une équipe, pas pour un public. Supabase impose
  *   lui-même une minute entre deux envois à la même adresse.
+ * - `aucun` : double vérification suspendue, le mot de passe ouvre la session
+ *   admin directement. À réserver au temps où aucun envoi n'est configuré.
  */
-export type FournisseurCode = 'interne' | 'supabase-auth'
+export type FournisseurCode = 'interne' | 'supabase-auth' | 'aucun'
 
 export const CODE_VALIDITE_MINUTES = 10
 const DELAI_RENVOI_SECONDES = 60
 
 export function fournisseurCode(): FournisseurCode {
   const nom = (process.env.CODE_ADMIN_FOURNISSEUR || useRuntimeConfig().codeAdminFournisseur || 'interne').trim()
-  return nom === 'supabase-auth' ? 'supabase-auth' : 'interne'
+  if (nom === 'supabase-auth' || nom === 'aucun') return nom
+  return 'interne'
 }
 
 export type ResultatCode = 'ok' | 'incorrect' | 'expire' | 'epuise'

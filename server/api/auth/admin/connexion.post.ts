@@ -1,7 +1,7 @@
 import { enregistrerTentative, trouverIdentifiants } from '../../../database/comptes'
 import { emettreCode, fournisseurCode } from '../../../utils/codeAdmin'
 import { verifierMotDePasse } from '../../../utils/motDePasse'
-import { ouvrirSessionPartielle } from '../../../utils/session'
+import { ouvrirSession, ouvrirSessionPartielle } from '../../../utils/session'
 
 const VERROU =
   'Trop de tentatives : ce compte est bloqué 30 minutes. Réessayez plus tard ou réinitialisez votre mot de passe.'
@@ -48,6 +48,14 @@ export default defineEventHandler(async (event) => {
   }
 
   const compte = identifiants.utilisateur
+
+  // Double vérification suspendue (CODE_ADMIN_FOURNISSEUR=aucun) : la session
+  // s'ouvre dès le mot de passe.
+  if (fournisseurCode() === 'aucun') {
+    await ouvrirSession(event, compte)
+    return { etape: 'session' as const, utilisateur: compte }
+  }
+
   await emettreCode(compte)
   await ouvrirSessionPartielle(event, compte.id)
 

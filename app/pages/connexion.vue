@@ -21,12 +21,19 @@ async function soumettre() {
   } catch (e) {
     // Le serveur distingue mot de passe erroné, compte verrouillé et champ
     // manquant : son message est déjà rédigé pour l'utilisateur.
-    const reponse = e as { statusMessage?: string; data?: { redirection?: string } }
-    if (reponse.data?.redirection) {
-      await navigateTo(`${reponse.data.redirection}?suite=${encodeURIComponent(String(route.query.suite ?? '/admin'))}`)
+    // L'erreur de $fetch porte le corps de la réponse dans `data` : la
+    // redirection posée par le serveur (compte admin) est donc dans data.data.
+    const reponse = e as {
+      statusMessage?: string
+      data?: { statusMessage?: string; data?: { redirection?: string } }
+    }
+    const redirection = reponse.data?.data?.redirection
+    if (redirection) {
+      await navigateTo(`${redirection}?suite=${encodeURIComponent(String(route.query.suite ?? '/admin'))}`)
       return
     }
-    erreur.value = reponse.statusMessage ?? 'Adresse e-mail ou mot de passe incorrect.'
+    erreur.value =
+      reponse.data?.statusMessage ?? reponse.statusMessage ?? 'Adresse e-mail ou mot de passe incorrect.'
   } finally {
     enCours.value = false
   }

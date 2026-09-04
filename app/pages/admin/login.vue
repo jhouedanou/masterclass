@@ -46,9 +46,13 @@ async function soumettreIdentifiants() {
   enCours.value = true
   try {
     const reponse = await auth.connexionAdmin(email.value, motDePasse.value)
+    if (reponse.etape === 'session') {
+      await navigateTo(String(route.query.suite ?? '/admin'))
+      return
+    }
     masque.value = reponse.masque
-    whatsapp.value = (reponse as { whatsapp?: boolean }).whatsapp === true
-    fournisseur.value = (reponse as { fournisseur?: 'interne' | 'supabase-auth' }).fournisseur ?? 'interne'
+    whatsapp.value = reponse.whatsapp === true
+    fournisseur.value = reponse.fournisseur ?? 'interne'
     etape.value = 'code'
     code.value = ''
     demarrerCompteARebours()

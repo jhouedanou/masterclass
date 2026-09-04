@@ -37,12 +37,15 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /** Connexion admin, étape 1 : mot de passe. Renvoie l'adresse masquée à
-   *  laquelle le code est envoyé. */
+   *  laquelle le code est envoyé — ou, double vérification suspendue, ouvre la
+   *  session directement. */
   async function connexionAdmin(email: string, motDePasse: string) {
-    return await $fetch<{ etape: 'code'; masque: string }>('/api/auth/admin/connexion', {
-      method: 'POST',
-      body: { email, motDePasse },
-    })
+    const reponse = await $fetch<
+      | { etape: 'code'; masque: string; whatsapp?: boolean; fournisseur?: 'interne' | 'supabase-auth' }
+      | { etape: 'session'; utilisateur: Utilisateur }
+    >('/api/auth/admin/connexion', { method: 'POST', body: { email, motDePasse } })
+    if (reponse.etape === 'session') utilisateur.value = reponse.utilisateur
+    return reponse
   }
 
   /** Étape 2 : code à six chiffres. Ouvre la session. */

@@ -426,8 +426,9 @@ l'enregistrement d'écran. Elle rend une rediffusion attribuable.
   `.env`, jamais lu par l'application). Sur l'offre gratuite, Supabase n'autorise cette
   modification qu'avec un SMTP personnalisé (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, posés par le
   même script). Sans SMTP, garder `CODE_ADMIN_FOURNISSEUR=interne` : le code s'écrit dans la
-  sortie du serveur. Les comptes créés dans Supabase Auth n'ouvrent aucun droit : la session
-  reste celle de la plateforme.
+  sortie du serveur. `CODE_ADMIN_FOURNISSEUR=aucun` suspend la double vérification : le mot de
+  passe ouvre la session admin directement (à n'utiliser que le temps de brancher un envoi). Les
+  comptes créés dans Supabase Auth n'ouvrent aucun droit : la session reste celle de la plateforme.
 - **Paiement FeexPay** : `POST /api/commandes` enregistre la commande, la transaction et ouvre les
   accès ; l'échange avec le prestataire est simulé. Hors production, un sélecteur du tunnel force
   l'un des six motifs d'échec pour dérouler chaque écran d'erreur.
