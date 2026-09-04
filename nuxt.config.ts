@@ -168,10 +168,21 @@ export default defineNuxtConfig({
       // Le catalogue et les pages publiques passent par le réseau d'abord :
       // un contenu périmé serait pire qu'un chargement un peu plus lent. Sans
       // réseau, la navigation retombe sur l'écran hors ligne (planche B, 13).
-      navigateFallback: '/hors-ligne',
+      // Pas de `navigateFallback` : Workbox l'aurait servi à CHAQUE navigation,
+      // réseau ou non (comportement « application monopage »), et tout le site
+      // affichait l'écran hors ligne dès que le service worker était installé.
+      // L'écran de repli n'est servi que si le réseau échoue (précache ci-dessous).
+      navigateFallback: null,
       additionalManifestEntries: [{ url: '/hors-ligne', revision: String(Date.now()) }],
       globPatterns: ['**/*.{js,css,ico,png,svg,webp,woff2}'],
       runtimeCaching: [
+        {
+          urlPattern: ({ request, url }) =>
+            request.mode === 'navigate' &&
+            !/^\/(api|admin|mon-espace|achat)/.test(url.pathname),
+          handler: 'NetworkOnly',
+          options: { precacheFallback: { fallbackURL: '/hors-ligne' } },
+        },
         {
           // Les visuels et polices, eux, gagnent à être servis depuis le cache.
           urlPattern: ({ request }) => ['image', 'font', 'style'].includes(request.destination),
@@ -179,9 +190,6 @@ export default defineNuxtConfig({
           options: { cacheName: 'emc-statiques', expiration: { maxEntries: 120 } },
         },
       ],
-      // Rien de ce qui touche aux comptes, aux paiements ou au back-office ne
-      // doit être mis en cache.
-      navigateFallbackDenylist: [/^\/api/, /^\/admin/, /^\/mon-espace/, /^\/achat/],
     },
     client: { installPrompt: true },
     devOptions: { enabled: false },
