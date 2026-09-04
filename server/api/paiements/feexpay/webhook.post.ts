@@ -11,8 +11,12 @@ import { configFeexPay, lireStatutFeexPay, rapprocherCommande, verifierEtRapproc
  * réessaie ; un 4xx n'est renvoyé que pour un appel illégitime ou illisible.
  */
 export default defineEventHandler(async (event) => {
+  // La clé partagée arrive soit dans l'en-tête que le tableau de bord FeexPay
+  // permet de configurer (« Type d'en-tête » Bearer, valeur = la clé), soit en
+  // paramètre d'URL `?cle=` à défaut.
   const { webhookCle } = configFeexPay()
-  const cle = String(getQuery(event).cle ?? '')
+  const enTete = (getRequestHeader(event, 'authorization') ?? '').replace(/^Bearer\s+/i, '').trim()
+  const cle = enTete || String(getQuery(event).cle ?? '')
   if (webhookCle && cle !== webhookCle) {
     throw createError({ statusCode: 401, statusMessage: 'Clé de webhook invalide.' })
   }

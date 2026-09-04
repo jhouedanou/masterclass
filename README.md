@@ -435,8 +435,8 @@ l'enregistrement d'écran. Elle rend une rediffusion attribuable.
   appelle `POST /api/commandes/:reference/confirmer` ; le serveur interroge l'API de statut FeexPay
   (jamais la seule parole du navigateur) puis confirme la commande, clôt les transactions et ouvre
   les accès — ou enregistre l'échec avec l'un des six motifs. Le webhook
-  `POST /api/paiements/feexpay/webhook?cle=…` (URL à déclarer sur le tableau de bord FeexPay, menu
-  Webhook) fait la même vérification quand le navigateur a été fermé avant la fin. En
+  `POST /api/paiements/feexpay/webhook` (URL à déclarer sur le tableau de bord FeexPay, menu
+  Webhook, en-tête Bearer = `FEEXPAY_WEBHOOK_CLE`) fait la même vérification quand le navigateur a été fermé avant la fin. En
   `FEEXPAY_MODE=simulation` (développement seulement, refusé en production), l'échange est joué
   sans appel au prestataire et un sélecteur du tunnel force l'un des six motifs d'échec. Migration
   `20260904120000_feexpay.sql` à appliquer (`npm run db:migrer`). Reste à faire : les
