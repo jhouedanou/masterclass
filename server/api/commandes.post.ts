@@ -101,7 +101,10 @@ export default defineEventHandler(async (event) => {
       modules: achetes.map((m) => ({ id: m.id, titre: m.titre, slug: m.slug })),
       feexpay: {
         shopId: feexpay.shopId,
-        token: feexpay.cleApi,
+        // En SANDBOX, le SDK FeexPay ne contacte pas le prestataire : il joue
+        // un succès sur place et refuse une clé de production (`fp_…`). Le
+        // jeton n'y sert donc à rien ; la vraie clé ne part qu'en LIVE.
+        token: feexpay.mode === 'live' ? feexpay.cleApi : 'test_sandbox',
         mode: feexpay.mode === 'live' ? 'LIVE' : 'SANDBOX',
         montant: commande.total,
         customId: commande.reference,

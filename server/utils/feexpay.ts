@@ -294,11 +294,26 @@ export async function verifierEtRapprocher(
   const commande = await trouverCommande(commandeReference)
   if (!commande) return null
   if (commande.statut === 'confirmee') return { statut: 'confirmee', commande }
+  const { mode } = configFeexPay()
   // En simulation, il n'y a personne à interroger : l'état de la commande fait foi.
-  if (configFeexPay().mode === 'simulation') {
+  if (mode === 'simulation') {
     return commande.statut === 'echec'
       ? { statut: 'echec', commande, codeEchec: 'erreur-inconnue', detail: 'Paiement simulé en échec.' }
       : { statut: 'attente', commande }
+  }
+  // En sandbox, le SDK FeexPay n'ouvre aucune transaction chez le prestataire :
+  // il rend une référence fictive `ref_…` après un succès joué dans le
+  // navigateur. On la tient pour un succès du montant attendu, ce qui permet
+  // de dérouler tout le tunnel sans débit. Jamais en live.
+  if (mode === 'sandbox' && referenceFeexPay?.startsWith('ref_')) {
+    return await rapprocherCommande(commande, {
+      reference: `${referenceFeexPay}-${commande.reference}`,
+      statut: 'SUCCESSFUL',
+      montant: commande.total,
+      customId: commande.reference,
+      reseau: 'SANDBOX',
+      motif: null,
+    })
   }
 
   let transaction: TransactionFeexPay | null = null

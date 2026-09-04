@@ -439,8 +439,11 @@ l'enregistrement d'écran. Elle rend une rediffusion attribuable.
   Webhook, en-tête Bearer = `FEEXPAY_WEBHOOK_CLE`) fait la même vérification quand le navigateur a été fermé avant la fin. En
   `FEEXPAY_MODE=simulation` (développement seulement, refusé en production), l'échange est joué
   sans appel au prestataire et un sélecteur du tunnel force l'un des six motifs d'échec. Migration
-  `20260904120000_feexpay.sql` à appliquer (`npm run db:migrer`). Reste à faire : les
-  remboursements et la réconciliation périodique des commandes restées `attente`.
+  `20260904120000_feexpay.sql` à appliquer (`npm run db:migrer`). En `sandbox`, le SDK FeexPay
+  n'ouvre aucune transaction : il joue un succès dans le navigateur et rend une référence fictive
+  `ref_…`, que le serveur accepte comme paiement du montant attendu (jamais en live) — c'est le
+  seul test possible sans débit réel. Reste à faire : les remboursements et la réconciliation
+  périodique des commandes restées `attente`.
 - **Onglets détaillés de Performances** (Funnel / Ventes / Visites / Clients) : ils dépendent des
   mesures d'audience, donc du branchement de Google Tag Manager. Tous les autres écrans de la
   planche C sont en place.
