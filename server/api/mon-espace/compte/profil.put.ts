@@ -34,7 +34,11 @@ export default defineEventHandler(async (event) => {
     whatsapp: body.whatsapp?.trim() || undefined,
     pays: body.pays?.trim() || utilisateur.pays,
   })
-  const persona = await majPersona(utilisateur.id, { ...body.persona, age })
+  const { persona, completion } = await majPersona(utilisateur.id, { ...body.persona, age })
 
-  return { utilisateur: { ...compte, ficheCompletee: Boolean(persona.secteur && persona.objectif) }, persona }
+  return {
+    utilisateur: { ...compte, ficheCompletee: completion === 100, completionProfil: completion },
+    persona,
+    completion,
+  }
 })

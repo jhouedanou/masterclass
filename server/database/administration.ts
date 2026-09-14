@@ -33,13 +33,39 @@ export async function listerJournal(limite = 200): Promise<EntreeJournal[]> {
   return rows.map(versEntreeJournal)
 }
 
+/** Compléments d'une entrée de journal (planche C, écran 16). */
+export interface ExtrasJournal {
+  /** Famille d'action : contenu, acces, session, compte, paiement, reglage… */
+  type?: string
+  /** Objet touché : module, article, apprenant, formateur, bloc… */
+  objet?: string
+  ip?: string | null
+  /** État précédent et nouvel état, quand l'action modifie un contenu. */
+  diff?: Record<string, unknown>
+  /** « Notification envoyée ✓ » — ou le canal — quand l'action a déclenché un envoi. */
+  notification?: string
+}
+
 export async function enregistrerJournal(
   auteur: string,
   action: string,
   cible: string,
+  extras: ExtrasJournal = {},
 ): Promise<void> {
   verifier(
-    await supabase().from('journal').insert({ auteur, action, cible }).select('id'),
+    await supabase()
+      .from('journal')
+      .insert({
+        auteur,
+        action,
+        cible,
+        type: extras.type ?? null,
+        objet: extras.objet ?? null,
+        ip: extras.ip ?? null,
+        diff: extras.diff ?? null,
+        notification: extras.notification ?? null,
+      })
+      .select('id'),
     'journalisation',
   )
 }

@@ -1,5 +1,7 @@
 import type {
   Acces,
+  AlerteLancement,
+  Phase,
   Article,
   CandidatureFormateur,
   Certificat,
@@ -23,6 +25,8 @@ import type {
 } from '#shared/types'
 import type {
   AccesRow,
+  AlerteLancementRow,
+  PhaseRow,
   ArticleRow,
   CandidatureFormateurRow,
   CertificatRow,
@@ -118,12 +122,35 @@ export function versProgramme(row: ProgrammeRow): Programme {
   }
 }
 
+export function versPhase(row: PhaseRow): Phase {
+  return {
+    id: row.id,
+    programme: row.programme,
+    numero: row.numero,
+    nom: row.nom,
+    statut: row.statut,
+    dateOuverture: row.date_ouverture,
+  }
+}
+
 export function versThematique(row: ThematiqueRow): Thematique {
   return {
     id: row.id,
     numero: row.numero,
     nom: row.nom,
     programme: row.programme,
+    phaseId: row.phase_id,
+    statut: row.statut,
+  }
+}
+
+export function versAlerteLancement(row: AlerteLancementRow): AlerteLancement {
+  return {
+    id: row.id,
+    moduleId: row.module_id,
+    email: row.email,
+    whatsapp: optionnel(row.whatsapp),
+    creeLe: row.cree_le,
   }
 }
 
@@ -177,6 +204,10 @@ export function versModule(row: ModuleRow, chapitres: ChapitreRow[] = []): Modul
     prixFcfa: row.prix_fcfa,
     statut: row.statut,
     publieLe: row.publie_le,
+    dateLancement: row.date_lancement,
+    prixMasque: row.prix_masque,
+    pointsForts: row.points_forts ?? [],
+    videoIntroCle: optionnel(row.video_intro_cle),
     majLe: row.maj_le,
     seo: versSeo(row),
   }
@@ -199,16 +230,30 @@ export function versUtilisateur(row: UtilisateurRow): Utilisateur {
     verrouilleJusquA: row.verrouille_jusqu_a,
     preferencesNotifications: row.preferences_notifications,
     supprimeLe: row.supprime_le,
+    suppressionPrevueLe: row.suppression_prevue_le,
+    motDePasseMajLe: row.mot_de_passe_maj_le,
   }
 }
 
 export function versPersona(row: PersonaRow): Persona {
   return {
     age: optionnelNombre(row.age),
+    ville: optionnel(row.ville),
     secteur: optionnel(row.secteur),
+    niveau: optionnel(row.niveau),
     experience: optionnel(row.experience),
-    reseaux: optionnel(row.reseaux),
     objectif: optionnel(row.objectif),
+    entreprise: optionnel(row.entreprise),
+    stade: optionnel(row.stade),
+    tailleEquipe: optionnel(row.taille_equipe),
+    canaux: optionnel(row.canaux),
+    presenceEnLigne: optionnel(row.presence_en_ligne),
+    budget: optionnel(row.budget),
+    defi: optionnel(row.defi),
+    reseaux: optionnel(row.reseaux),
+    audience: optionnel(row.audience),
+    outils: optionnel(row.outils),
+    clients: optionnel(row.clients),
   }
 }
 
@@ -219,6 +264,9 @@ export function versAcces(row: AccesRow): Acces {
     progression: row.progression,
     acheteLe: row.achete_le,
     termineLe: row.termine_le,
+    origine: row.origine,
+    revoqueLe: row.revoque_le,
+    motifRevocation: optionnel(row.motif_revocation),
   }
 }
 
@@ -238,6 +286,10 @@ export function versSessionCoaching(row: SessionCoachingRow): SessionCoaching {
     inscrits: row.inscrits,
     presents: row.presents,
     statut: row.statut,
+    titre: optionnel(row.titre),
+    ouvertureSalleMinutes: row.ouverture_salle_minutes,
+    enregistrement: row.enregistrement,
+    reporteeDe: optionnel(row.reportee_de),
   }
 }
 
@@ -400,6 +452,11 @@ export function versEntreeJournal(row: EntreeJournalRow): EntreeJournal {
     action: row.action,
     cible: row.cible,
     date: row.date_entree,
+    type: optionnel(row.type),
+    objet: optionnel(row.objet),
+    ip: optionnel(row.ip),
+    diff: row.diff ?? undefined,
+    notification: optionnel(row.notification),
   }
 }
 

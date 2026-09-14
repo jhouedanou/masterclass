@@ -14,7 +14,7 @@
  */
 
 export type ProgrammeSlugSql = 'social-media' | 'entrepreneurs'
-export type StatutModuleSql = 'disponible' | 'en-preparation' | 'brouillon'
+export type StatutModuleSql = 'disponible' | 'en-preparation' | 'brouillon' | 'annonce'
 export type StatutPublicationSql = 'brouillon' | 'publie'
 export type RoleUtilisateurSql = 'apprenant' | 'formateur' | 'admin-contenu' | 'admin-superieur'
 export type StatutSessionSql = 'planifiee' | 'annulee' | 'terminee'
@@ -96,11 +96,31 @@ export type ProgrammeRow = ColonnesSeo & {
   maj_le: string
 }
 
+export type PhaseRow = {
+  id: string
+  programme: ProgrammeSlugSql
+  numero: number
+  nom: string
+  statut: StatutPublicationSql
+  date_ouverture: string | null
+  cree_le: string
+}
+
 export type ThematiqueRow = {
   id: string
   numero: number
   nom: string
   programme: ProgrammeSlugSql
+  phase_id: string
+  statut: StatutPublicationSql
+  cree_le: string
+}
+
+export type AlerteLancementRow = {
+  id: string
+  module_id: string
+  email: string
+  whatsapp: string | null
   cree_le: string
 }
 
@@ -138,6 +158,10 @@ export type ModuleRow = ColonnesSeo & {
   prix_fcfa: number
   statut: StatutModuleSql
   publie_le: string | null
+  date_lancement: string | null
+  prix_masque: boolean
+  points_forts: string[]
+  video_intro_cle: string | null
   cree_le: string
   maj_le: string
 }
@@ -175,6 +199,9 @@ export type UtilisateurRow = {
     nouveautes: boolean
   }
   supprime_le: string | null
+  suppression_prevue_le: string | null
+  mot_de_passe_maj_le: string | null
+  derniere_reactivation_le: string | null
   cree_le: string
 }
 
@@ -213,6 +240,18 @@ export type PersonaRow = {
   experience: string | null
   reseaux: string | null
   objectif: string | null
+  ville: string | null
+  niveau: string | null
+  entreprise: string | null
+  stade: string | null
+  taille_equipe: string | null
+  canaux: string | null
+  presence_en_ligne: string | null
+  budget: string | null
+  defi: string | null
+  audience: string | null
+  outils: string | null
+  clients: string | null
 }
 
 export type AccesRow = {
@@ -221,6 +260,9 @@ export type AccesRow = {
   progression: number
   achete_le: string
   termine_le: string | null
+  origine: 'achat' | 'attribution'
+  revoque_le: string | null
+  motif_revocation: string | null
 }
 
 export type SessionCoachingRow = {
@@ -236,10 +278,20 @@ export type SessionCoachingRow = {
   /** Relevé après la séance ; nul tant qu'il n'a pas été saisi. */
   presents: number | null
   statut: StatutSessionSql
+  titre: string | null
+  ouverture_salle_minutes: number
+  enregistrement: boolean
+  reportee_de: string | null
   cree_le: string
 }
 
 export type InscriptionSessionRow = {
+  session_id: string
+  utilisateur_id: string
+  inscrit_le: string
+}
+
+export type ListeAttenteSessionRow = {
   session_id: string
   utilisateur_id: string
   inscrit_le: string
@@ -382,6 +434,11 @@ export type EntreeJournalRow = {
   action: string
   cible: string
   date_entree: string
+  type: string | null
+  objet: string | null
+  ip: string | null
+  diff: Record<string, unknown> | null
+  notification: string | null
 }
 
 export type ReglagesFinanciersRow = {
@@ -479,7 +536,9 @@ export type Database = {
   public: {
     Tables: {
       programmes: Table<ProgrammeRow, 'cree_le' | 'maj_le' | keyof ColonnesSeo>
-      thematiques: Table<ThematiqueRow, 'cree_le'>
+      phases: Table<PhaseRow, 'cree_le' | 'statut' | 'date_ouverture'>
+      thematiques: Table<ThematiqueRow, 'cree_le' | 'statut'>
+      alertes_lancement: Table<AlerteLancementRow, 'id' | 'cree_le' | 'whatsapp'>
       formateurs: Table<FormateurRow, 'cree_le' | 'maj_le' | 'coaching_prive_actif' | keyof ColonnesSeo>
       modules: Table<
         ModuleRow,
@@ -493,6 +552,10 @@ export type Database = {
         | 'duree_minutes'
         | 'prix_fcfa'
         | 'statut'
+        | 'date_lancement'
+        | 'prix_masque'
+        | 'points_forts'
+        | 'video_intro_cle'
       >
       chapitres: Table<ChapitreRow, 'id' | 'duree_minutes' | 'script' | 'video_cle' | 'video_duree_secondes'>
       utilisateurs: Table<
@@ -510,17 +573,31 @@ export type Database = {
         | 'derniere_connexion_le'
         | 'preferences_notifications'
         | 'supprime_le'
+        | 'suppression_prevue_le'
+        | 'mot_de_passe_maj_le'
+        | 'derniere_reactivation_le'
       >
       codes_verification: Table<CodeVerificationRow, 'id' | 'cree_le' | 'utilise_le' | 'tentatives'>
       connexions: Table<ConnexionRow, 'id' | 'cree_le' | 'ip' | 'appareil' | 'utilisateur_id'>
       reinitialisations_mot_de_passe: Table<ReinitialisationRow, 'cree_le' | 'utilise_le'>
-      personas: Table<PersonaRow, 'age' | 'secteur' | 'experience' | 'reseaux' | 'objectif'>
-      acces: Table<AccesRow, 'progression' | 'achete_le' | 'termine_le'>
+      personas: Table<PersonaRow, Exclude<keyof PersonaRow, 'utilisateur_id'>>
+      acces: Table<AccesRow, 'progression' | 'achete_le' | 'termine_le' | 'origine' | 'revoque_le' | 'motif_revocation'>
       sessions_coaching: Table<
         SessionCoachingRow,
-        'id' | 'cree_le' | 'duree_minutes' | 'places' | 'inscrits' | 'presents' | 'statut'
+        | 'id'
+        | 'cree_le'
+        | 'duree_minutes'
+        | 'places'
+        | 'inscrits'
+        | 'presents'
+        | 'statut'
+        | 'titre'
+        | 'ouverture_salle_minutes'
+        | 'enregistrement'
+        | 'reportee_de'
       >
       inscriptions_sessions: Table<InscriptionSessionRow, 'inscrit_le'>
+      liste_attente_sessions: Table<ListeAttenteSessionRow, 'inscrit_le'>
       sujets_sessions: Table<SujetSessionRow, 'id' | 'soumis_le'>
       notes_formateurs: Table<NoteFormateurRow, 'id' | 'cree_le' | 'date_note' | 'commentaire'>
       articles: Table<
@@ -564,7 +641,7 @@ export type Database = {
         CandidatureFormateurRow,
         'id' | 'recue_le' | 'statut' | 'lien' | 'email' | 'traitee_le' | 'formateur_id'
       >
-      journal: Table<EntreeJournalRow, 'id' | 'date_entree'>
+      journal: Table<EntreeJournalRow, 'id' | 'date_entree' | 'type' | 'objet' | 'ip' | 'diff' | 'notification'>
       reglages_financiers: Table<ReglagesFinanciersRow, 'id' | 'maj_le'>
       reglages_seo: Table<ReglagesSeoRow, 'id' | 'maj_le'>
       redirections: Table<RedirectionRow, 'id' | 'creee_le'>

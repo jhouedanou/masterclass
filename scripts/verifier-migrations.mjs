@@ -63,6 +63,7 @@ try {
 
 const ATTENDUS = {
   programmes: 2,
+  phases: 2,
   thematiques: 6,
   formateurs: 7,
   modules: 18,

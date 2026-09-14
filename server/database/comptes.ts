@@ -1,4 +1,5 @@
-import type { Acces, Persona, PreferencesNotifications, SectionAdmin, Utilisateur } from '#shared/types'
+import type { Acces, Persona, PreferencesNotifications, ProgrammeSlug, SectionAdmin, Utilisateur } from '#shared/types'
+import { calculerCompletionProfil } from '#shared/utils/profil'
 import { supabase } from './client'
 import { traduireErreur, verifier, verifierOptionnel, verifierUn } from './erreurs'
 import { versAcces, versPersona, versUtilisateur } from './mappers'
@@ -168,12 +169,81 @@ export async function majPreferencesNotifications(
  * son e-mail est libéré pour une éventuelle réinscription ; commandes,
  * transactions et certificats restent rattachés à l'identifiant.
  */
+/** Nombre de jours entre la demande de suppression et la suppression définitive (planche B, écran 12). */
+export const DELAI_SUPPRESSION_JOURS = 14
+
+/**
+ * Suppression programmée (planche B, écran 12, écran 3) : le compte est
+ * désactivé, la suppression définitive intervient quatorze jours plus tard.
+ * Une reconnexion avant cette date le réactive (écran 4 « Bon retour »).
+ */
+export async function programmerSuppression(id: string): Promise<string> {
+  const date = new Date(Date.now() + DELAI_SUPPRESSION_JOURS * 24 * 3600 * 1000).toISOString()
+  verifierUn(
+    await supabase()
+      .from('utilisateurs')
+      .update({ suppression_prevue_le: date })
+      .eq('id', id)
+      .is('supprime_le', null)
+      .select('id')
+      .maybeSingle(),
+    'programmation de la suppression',
+    'Compte introuvable',
+  )
+  return date
+}
+
+export async function annulerSuppression(id: string): Promise<void> {
+  verifierUn(
+    await supabase()
+      .from('utilisateurs')
+      .update({ suppression_prevue_le: null, derniere_reactivation_le: new Date().toISOString() })
+      .eq('id', id)
+      .is('supprime_le', null)
+      .select('id')
+      .maybeSingle(),
+    'réactivation du compte',
+    'Compte introuvable',
+  )
+}
+
+/** Comptes dont la date de suppression est passée : à purger. */
+export async function listerSuppressionsEchues(): Promise<Utilisateur[]> {
+  const rows = verifier(
+    await supabase()
+      .from('utilisateurs')
+      .select('*')
+      .is('supprime_le', null)
+      .not('suppression_prevue_le', 'is', null)
+      .lte('suppression_prevue_le', new Date().toISOString()),
+    'suppressions échues',
+  )
+  return rows.map(versUtilisateur)
+}
+
+/** Comptes dont la suppression tombe dans trois jours : rappel par e-mail. */
+export async function listerSuppressionsJ3(): Promise<Utilisateur[]> {
+  const debut = new Date(Date.now() + 3 * 24 * 3600 * 1000)
+  const fin = new Date(debut.getTime() + 24 * 3600 * 1000)
+  const rows = verifier(
+    await supabase()
+      .from('utilisateurs')
+      .select('*')
+      .is('supprime_le', null)
+      .gte('suppression_prevue_le', debut.toISOString())
+      .lt('suppression_prevue_le', fin.toISOString()),
+    'rappels de suppression',
+  )
+  return rows.map(versUtilisateur)
+}
+
 export async function marquerSupprime(id: string): Promise<void> {
   verifierUn(
     await supabase()
       .from('utilisateurs')
       .update({
         supprime_le: new Date().toISOString(),
+        suppression_prevue_le: null,
         mot_de_passe_hache: null,
         email: `supprime-${id}@compte-supprime.invalid`,
         whatsapp: null,
@@ -197,7 +267,17 @@ export async function trouverPersona(utilisateurId: string): Promise<Persona | n
 
 /** La fiche apprenant est complète dès que le secteur et l'objectif sont
  *  renseignés : c'est ce que le formateur attend avant une session. */
-export async function majPersona(utilisateurId: string, persona: Persona): Promise<Persona> {
+/**
+ * Enregistre la fiche apprenant et recalcule sa complétion. `fiche_completee`
+ * reste la source de vérité de `reserver_place_session` (EM403) : il vaut
+ * vrai seulement à 100 %, comme le verrou de la planche B.
+ */
+export async function majPersona(
+  utilisateurId: string,
+  persona: Persona,
+  programme: ProgrammeSlug | null = null,
+): Promise<{ persona: Persona; completion: number }> {
+  const texte = (v?: string) => v?.trim() || null
   const row = verifier(
     await supabase()
       .from('personas')
@@ -205,10 +285,22 @@ export async function majPersona(utilisateurId: string, persona: Persona): Promi
         {
           utilisateur_id: utilisateurId,
           age: persona.age ?? null,
-          secteur: persona.secteur?.trim() || null,
-          experience: persona.experience?.trim() || null,
-          reseaux: persona.reseaux?.trim() || null,
-          objectif: persona.objectif?.trim() || null,
+          ville: texte(persona.ville),
+          secteur: texte(persona.secteur),
+          niveau: texte(persona.niveau),
+          experience: texte(persona.experience),
+          objectif: texte(persona.objectif),
+          entreprise: texte(persona.entreprise),
+          stade: texte(persona.stade),
+          taille_equipe: texte(persona.tailleEquipe),
+          canaux: texte(persona.canaux),
+          presence_en_ligne: texte(persona.presenceEnLigne),
+          budget: texte(persona.budget),
+          defi: texte(persona.defi),
+          reseaux: texte(persona.reseaux),
+          audience: texte(persona.audience),
+          outils: texte(persona.outils),
+          clients: texte(persona.clients),
         },
         { onConflict: 'utilisateur_id' },
       )
@@ -216,12 +308,56 @@ export async function majPersona(utilisateurId: string, persona: Persona): Promi
       .single(),
     'fiche apprenant',
   )
-  const complete = Boolean(row.secteur && row.objectif)
+  const utilisateur = await trouverUtilisateur(utilisateurId)
+  const resultat = versPersona(row)
+  const { pourcentage } = calculerCompletionProfil(
+    utilisateur ?? { prenom: '', nom: '' },
+    resultat,
+    programme ?? (await programmeDeReference(utilisateurId)),
+  )
   verifier(
-    await supabase().from('utilisateurs').update({ fiche_completee: complete }).eq('id', utilisateurId).select('id'),
+    await supabase()
+      .from('utilisateurs')
+      .update({ fiche_completee: pourcentage === 100 })
+      .eq('id', utilisateurId)
+      .select('id'),
     'état de la fiche apprenant',
   )
-  return versPersona(row)
+  return { persona: resultat, completion: pourcentage }
+}
+
+/**
+ * Programme qui gouverne le bloc persona du profil : celui du premier module
+ * possédé. Sans module, seuls les champs communs comptent.
+ */
+export async function programmeDeReference(utilisateurId: string): Promise<ProgrammeSlug | null> {
+  const acces = verifier(
+    await supabase()
+      .from('acces')
+      .select('module_id')
+      .eq('utilisateur_id', utilisateurId)
+      .is('revoque_le', null)
+      .order('achete_le')
+      .limit(1),
+    'accès de l’apprenant',
+  )
+  const moduleId = acces[0]?.module_id
+  if (!moduleId) return null
+  const module = verifierOptionnel(
+    await supabase().from('modules').select('programme').eq('id', moduleId).maybeSingle(),
+    'module',
+  )
+  return module?.programme ?? null
+}
+
+/** Complétion du profil d'un apprenant, calculée comme côté navigateur. */
+export async function completionProfil(utilisateur: Utilisateur): Promise<number> {
+  if (utilisateur.role !== 'apprenant') return 100
+  const [persona, programme] = await Promise.all([
+    trouverPersona(utilisateur.id),
+    programmeDeReference(utilisateur.id),
+  ])
+  return calculerCompletionProfil(utilisateur, persona, programme).pourcentage
 }
 
 /**
@@ -249,8 +385,9 @@ export async function definirMotDePasse(utilisateurId: string, hache: string): P
   verifier(
     await supabase()
       .from('utilisateurs')
-      // Un changement de mot de passe lève aussi le verrouillage en cours.
-      .update({ mot_de_passe_hache: hache, verrouille_jusqu_a: null })
+      // Un changement de mot de passe lève aussi le verrouillage en cours et
+      // date la dernière modification (planche B, écran 11).
+      .update({ mot_de_passe_hache: hache, verrouille_jusqu_a: null, mot_de_passe_maj_le: new Date().toISOString() })
       .eq('id', utilisateurId)
       .select('id'),
     'changement de mot de passe',

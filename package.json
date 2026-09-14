@@ -12,7 +12,7 @@
     "db:demarrer": "supabase start",
     "db:reset": "supabase db reset",
     "db:migrer": "supabase db push",
-    "db:seed:generer": "node scripts/generer-seed.ts",
+    "db:seed:generer": "node --experimental-strip-types scripts/generer-seed.ts",
     "db:sql": "node scripts/generer-sql-en-ligne.mjs",
     "db:types": "supabase gen types typescript --local > server/database/types.generes.ts",
     "db:verifier": "node scripts/verifier-migrations.mjs",

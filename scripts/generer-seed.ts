@@ -26,6 +26,7 @@ import {
   modules,
   notesFormateurs,
   personas,
+  phases,
   programmes,
   reglagesFinanciers,
   reglagesSeo,
@@ -132,10 +133,25 @@ inserer(
   'Programmes',
 )
 
+// Les phases de départ sont aussi posées par la migration du socle transverse
+// (pour les bases déjà en service) : le seed ne doit pas les doubler.
+if (phases.length) {
+  blocs.push(
+    `-- Phases — niveau intermédiaire de la hiérarchie des contenus\ninsert into phases (id, programme, numero, nom, statut, date_ouverture) values\n${phases
+      .map(
+        (p) =>
+          `  (${[txt(p.id), txt(p.programme), num(p.numero), txt(p.nom), txt(p.statut), txt(p.dateOuverture)].join(', ')})`,
+      )
+      .join(',\n')}\non conflict (id) do nothing;`,
+  )
+}
+
 inserer(
   'thematiques',
-  'id, numero, nom, programme',
-  thematiques.map((t) => [txt(t.id), num(t.numero), txt(t.nom), txt(t.programme)].join(', ')),
+  'id, numero, nom, programme, phase_id, statut',
+  thematiques.map((t) =>
+    [txt(t.id), num(t.numero), txt(t.nom), txt(t.programme), txt(t.phaseId), txt(t.statut)].join(', '),
+  ),
   'Thématiques — sections des pages programme',
 )
 
@@ -165,7 +181,7 @@ inserer(
   'modules',
   `id, slug, numero, titre, programme, thematique_id, formateur_id, promesse, pourquoi, ` +
     `pour_qui, prerequis, acquis, livrable, faq, duree_minutes, prix_fcfa, statut, ` +
-    `publie_le, ${COLONNES_SEO}`,
+    `publie_le, date_lancement, prix_masque, points_forts, ${COLONNES_SEO}`,
   modules.map((m) =>
     [
       txt(m.id),
@@ -186,6 +202,9 @@ inserer(
       num(m.prixFcfa),
       txt(m.statut),
       txt(m.publieLe),
+      txt(m.dateLancement),
+      bool(m.prixMasque),
+      tableau(m.pointsForts),
       seo(m.seo),
     ].join(', '),
   ),
@@ -247,22 +266,45 @@ inserer(
 
 inserer(
   'personas',
-  'utilisateur_id, age, secteur, experience, reseaux, objectif',
+  'utilisateur_id, age, ville, secteur, niveau, experience, objectif, entreprise, stade, taille_equipe, ' +
+    'canaux, presence_en_ligne, budget, defi, reseaux, audience, outils, clients',
   Object.entries(personas).map(([id, p]) =>
-    [txt(id), num(p.age), txt(p.secteur), txt(p.experience), txt(p.reseaux), txt(p.objectif)].join(
-      ', ',
-    ),
+    [
+      txt(id),
+      num(p.age),
+      txt(p.ville),
+      txt(p.secteur),
+      txt(p.niveau),
+      txt(p.experience),
+      txt(p.objectif),
+      txt(p.entreprise),
+      txt(p.stade),
+      txt(p.tailleEquipe),
+      txt(p.canaux),
+      txt(p.presenceEnLigne),
+      txt(p.budget),
+      txt(p.defi),
+      txt(p.reseaux),
+      txt(p.audience),
+      txt(p.outils),
+      txt(p.clients),
+    ].join(', '),
   ),
   'Personas apprenants transmis aux formateurs',
 )
 
 inserer(
   'acces',
-  'utilisateur_id, module_id, progression, achete_le, termine_le',
+  'utilisateur_id, module_id, progression, achete_le, termine_le, origine',
   acces.map((a) =>
-    [txt(a.utilisateurId), txt(a.moduleId), num(a.progression), txt(a.acheteLe), txt(a.termineLe)].join(
-      ', ',
-    ),
+    [
+      txt(a.utilisateurId),
+      txt(a.moduleId),
+      num(a.progression),
+      txt(a.acheteLe),
+      txt(a.termineLe),
+      txt(a.origine),
+    ].join(', '),
   ),
   'Accès acquis',
 )

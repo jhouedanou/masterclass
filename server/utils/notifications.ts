@@ -24,6 +24,9 @@ export type ModeleNotification =
   | 'session-annulee'
   | 'session-reportee'
   | 'acces-attribue'
+  | 'suppression-programmee'
+  | 'suppression-rappel'
+  | 'compte-reactive'
 
 export interface Notification {
   canal: CanalNotification
@@ -46,6 +49,9 @@ export const SUJETS: Record<ModeleNotification, string> = {
   'session-annulee': 'Session de coaching annulée',
   'session-reportee': 'Session de coaching reportée',
   'acces-attribue': 'Un module a été ajouté à votre espace',
+  'suppression-programmee': 'Suppression de votre compte programmée',
+  'suppression-rappel': 'Votre compte sera supprimé dans 3 jours',
+  'compte-reactive': 'Bon retour sur E-Masterclass Big Five',
 }
 
 const piloteConsole: PiloteNotifications = {

@@ -1,7 +1,7 @@
 export type ProgrammeSlug = 'social-media' | 'entrepreneurs'
 
 /** Statuts issus de la planche C (contenus) et de la spec SEO §5. */
-export type StatutModule = 'disponible' | 'en-preparation' | 'brouillon'
+export type StatutModule = 'disponible' | 'en-preparation' | 'brouillon' | 'annonce'
 export type StatutPublication = 'brouillon' | 'publie'
 
 /** Bloc « Référencement et partage » du back-office (spec SEO §3). */
@@ -19,12 +19,43 @@ export interface SeoFields {
   canonical?: string
 }
 
+/** Niveau intermédiaire de la hiérarchie des contenus (planche C, écran 02). */
+export interface Phase {
+  id: string
+  programme: ProgrammeSlug
+  numero: number
+  nom: string
+  statut: StatutPublication
+  dateOuverture: string | null
+}
+
 export interface Thematique {
   id: string
   numero: number
   nom: string
   /** Les thématiques n'ont pas de page autonome (spec SEO §1). */
   programme: ProgrammeSlug
+  phaseId: string
+  statut: StatutPublication
+}
+
+/** Visiteur à prévenir au lancement d'un module annoncé (planche A, 03c). */
+export interface AlerteLancement {
+  id: string
+  moduleId: string
+  email: string
+  whatsapp?: string
+  creeLe: string
+}
+
+/** Ressource téléchargeable ou lien d'un module (planche B, écran 02). */
+export interface RessourceModule {
+  id: string
+  moduleId: string
+  titre: string
+  url: string
+  format: string
+  position: number
 }
 
 export interface Programme {
@@ -89,6 +120,14 @@ export interface Module {
   prixFcfa: number
   statut: StatutModule
   publieLe: string | null
+  /** Date annoncée quand le module est en statut « annonce ». */
+  dateLancement: string | null
+  /** Prix caché sur la fiche tant que le module n'est qu'annoncé. */
+  prixMasque: boolean
+  /** Section « Points forts » de la fiche commerciale (bloc 7). */
+  pointsForts: string[]
+  /** Vidéo de bienvenue : ne compte pas dans la progression. */
+  videoIntroCle?: string
   majLe: string
   seo: SeoFields
 }
@@ -124,6 +163,13 @@ export interface SessionCoaching {
    *  saisi : les taux de présence s'effacent alors côté formateur et admin. */
   presents: number | null
   statut: 'planifiee' | 'annulee' | 'terminee'
+  /** Titre du coaching, saisi par l'équipe (C-03). */
+  titre?: string
+  /** Minutes avant l'heure où la salle Zoom s'ouvre (15, 10 ou 5). */
+  ouvertureSalleMinutes: number
+  enregistrement: boolean
+  /** Date initiale quand la session a été reportée (B-08, état 6). */
+  reporteeDe?: string
 }
 
 export type CategorieArticle = 'Social Média' | 'Entrepreneuriat' | 'Actualités E-Masterclass Big Five'
@@ -192,6 +238,11 @@ export interface Utilisateur {
   preferencesNotifications?: PreferencesNotifications
   /** Suppression douce demandée par l'apprenant (planche B, écran 12). */
   supprimeLe?: string | null
+  /** Suppression programmée : définitive à cette date, annulée par une reconnexion. */
+  suppressionPrevueLe?: string | null
+  motDePasseMajLe?: string | null
+  /** Pourcentage de complétion du profil apprenant (planche B). */
+  completionProfil?: number
 }
 
 /** Préférences de notification (planche B, écran 11). */
@@ -208,6 +259,10 @@ export interface Acces {
   progression: number
   acheteLe: string
   termineLe: string | null
+  /** Achat ou attribution gratuite par l'équipe (C-04). */
+  origine: 'achat' | 'attribution'
+  revoqueLe?: string | null
+  motifRevocation?: string
 }
 
 /** Certificat de participation (libellé maquette) — le document reprend le
@@ -330,15 +385,40 @@ export interface EntreeJournal {
   action: string
   cible: string
   date: string
+  /** Famille d'action (contenu, acces, session, compte…) — filtre C-16. */
+  type?: string
+  /** Objet touché (module, article, apprenant…) — filtre C-16. */
+  objet?: string
+  ip?: string
+  /** État précédent et nouvel état quand l'action modifie un contenu. */
+  diff?: Record<string, unknown>
+  /** « Notification envoyée ✓ » quand l'action a déclenché un envoi. */
+  notification?: string
 }
 
-/** Persona apprenant — contexte transmis aux formateurs avant une session. */
+/** Persona apprenant — contexte transmis aux formateurs avant une session
+ *  (planche B, écran 04 : champs communs + bloc propre au programme). */
 export interface Persona {
   age?: number
+  ville?: string
   secteur?: string
+  /** Niveau d'expérience (liste fermée : debutant, intermediaire, confirme). */
+  niveau?: string
   experience?: string
-  reseaux?: string
   objectif?: string
+  // Bloc « Spécifique au profil Entrepreneur »
+  entreprise?: string
+  stade?: string
+  tailleEquipe?: string
+  canaux?: string
+  presenceEnLigne?: string
+  budget?: string
+  defi?: string
+  // Bloc « Spécifique au programme Social Média »
+  reseaux?: string
+  audience?: string
+  outils?: string
+  clients?: string
 }
 
 export interface SujetSession {

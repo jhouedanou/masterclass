@@ -18,6 +18,14 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
+  // Les icônes Phosphor sont servies depuis le paquet local, côté serveur
+  // comme côté client : sans cette liste, le rendu serveur allait les chercher
+  // sur l'API Iconify et échouait hors ligne.
+  icon: {
+    serverBundle: { collections: ['ph'] },
+    clientBundle: { scan: true, sizeLimitKb: 512 },
+  },
+
   vite: {
     plugins: [tailwindcss()],
   },
@@ -64,6 +72,12 @@ export default defineNuxtConfig({
     feexpayApiKey: process.env.FEEXPAY_API_KEY || '',
     feexpayBaseUrl: process.env.FEEXPAY_BASE_URL || 'https://api-v2.feexpay.me',
     feexpayWebhookCle: process.env.FEEXPAY_WEBHOOK_CLE || '',
+
+    // Tâches planifiées (purge des comptes dont la suppression est échue,
+    // rappel à J-3). Nitro les exécute lui-même sur un serveur Node ; sur un
+    // hébergement sans processus permanent (Vercel), un cron externe appelle
+    // POST /api/taches/purger avec cette clé en en-tête Bearer.
+    tachesCle: process.env.TACHES_CLE || '',
 
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://emasterclass.bigfive.ci',
@@ -218,6 +232,11 @@ export default defineNuxtConfig({
 
   nitro: {
     prerender: { crawlLinks: false },
+    experimental: { tasks: true },
+    scheduledTasks: {
+      // Chaque nuit à 3 h : suppression définitive des comptes échus et rappel J-3.
+      '0 3 * * *': ['comptes:purger'],
+    },
     // Les runtimes de ces modules doivent être inlinés : laissés externes, le
     // build de production émet des imports relatifs qui sortent du projet.
     externals: {

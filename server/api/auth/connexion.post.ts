@@ -71,5 +71,10 @@ export default defineEventHandler(async (event) => {
   }
 
   await ouvrirSession(event, identifiants.utilisateur)
-  return identifiants.utilisateur
+
+  // Suppression programmée (planche B, écran 12) : la reconnexion ouvre
+  // l'écran « Bon retour », qui annule la suppression sur confirmation.
+  const suppression = identifiants.utilisateur.suppressionPrevueLe
+  const reactivable = Boolean(suppression && new Date(suppression) > new Date())
+  return { ...identifiants.utilisateur, reactivable }
 })

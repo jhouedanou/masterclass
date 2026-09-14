@@ -1,4 +1,5 @@
 import type {
+  Phase,
   Acces,
   Article,
   CandidatureFormateur,
@@ -90,13 +91,18 @@ export const programmes: Programme[] = [
   },
 ]
 
+export const phases: Phase[] = [
+  { id: 'ph-sm-1', programme: 'social-media', numero: 1, nom: 'Phase 1', statut: 'publie', dateOuverture: null },
+  { id: 'ph-ent-1', programme: 'entrepreneurs', numero: 1, nom: 'Phase 1', statut: 'publie', dateOuverture: null },
+]
+
 export const thematiques: Thematique[] = [
-  { id: 'th-sm-fondations', numero: 1, nom: 'Fondations stratégiques', programme: 'social-media' },
-  { id: 'th-sm-copywriting', numero: 2, nom: 'Copywriting & contenu', programme: 'social-media' },
-  { id: 'th-sm-plateformes', numero: 3, nom: 'Plateformes', programme: 'social-media' },
-  { id: 'th-ent-fondations', numero: 1, nom: 'Fondations du business', programme: 'entrepreneurs' },
-  { id: 'th-ent-vente', numero: 2, nom: 'Vente & acquisition', programme: 'entrepreneurs' },
-  { id: 'th-ent-visibilite', numero: 3, nom: 'Visibilité', programme: 'entrepreneurs' },
+  { id: 'th-sm-fondations', numero: 1, nom: 'Fondations stratégiques', programme: 'social-media', phaseId: 'ph-sm-1', statut: 'publie' },
+  { id: 'th-sm-copywriting', numero: 2, nom: 'Copywriting & contenu', programme: 'social-media', phaseId: 'ph-sm-1', statut: 'publie' },
+  { id: 'th-sm-plateformes', numero: 3, nom: 'Plateformes', programme: 'social-media', phaseId: 'ph-sm-1', statut: 'publie' },
+  { id: 'th-ent-fondations', numero: 1, nom: 'Fondations du business', programme: 'entrepreneurs', phaseId: 'ph-ent-1', statut: 'publie' },
+  { id: 'th-ent-vente', numero: 2, nom: 'Vente & acquisition', programme: 'entrepreneurs', phaseId: 'ph-ent-1', statut: 'publie' },
+  { id: 'th-ent-visibilite', numero: 3, nom: 'Visibilité', programme: 'entrepreneurs', phaseId: 'ph-ent-1', statut: 'publie' },
 ]
 
 export const formateurs: Formateur[] = [
@@ -247,6 +253,8 @@ interface Brouillon {
   livrable: string
   faq?: QuestionReponse[]
   statut?: Module['statut']
+  pointsForts?: string[]
+  dateLancement?: string
 }
 
 /**
@@ -292,6 +300,9 @@ function moduleComplet(b: Brouillon): Module {
     prixFcfa: PRIX_MODULE_FCFA,
     statut,
     publieLe: statut === 'disponible' ? '2026-06-01' : null,
+    dateLancement: b.dateLancement ?? null,
+    prixMasque: false,
+    pointsForts: b.pointsForts ?? [],
     majLe: '2026-08-01',
     // Fiche « à venir » : non indexée par défaut (spec SEO §5).
     seo: { indexable: statut === 'disponible' },
@@ -875,6 +886,8 @@ export const sessionsCoaching: SessionCoaching[] = [
     inscrits: 18,
     presents: null,
     statut: 'planifiee',
+    ouvertureSalleMinutes: 15,
+    enregistrement: false,
   },
   {
     id: 'ses-002',
@@ -888,6 +901,8 @@ export const sessionsCoaching: SessionCoaching[] = [
     inscrits: 19,
     presents: null,
     statut: 'planifiee',
+    ouvertureSalleMinutes: 15,
+    enregistrement: false,
   },
   {
     id: 'ses-003',
@@ -901,6 +916,8 @@ export const sessionsCoaching: SessionCoaching[] = [
     inscrits: 7,
     presents: null,
     statut: 'planifiee',
+    ouvertureSalleMinutes: 15,
+    enregistrement: false,
   },
 ]
 
@@ -1132,6 +1149,7 @@ export const acces: Acces[] = [
     progression: 100,
     acheteLe: '2026-09-10',
     termineLe: '2026-09-15',
+    origine: 'achat',
   },
   {
     moduleId: 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting',
@@ -1139,6 +1157,7 @@ export const acces: Acces[] = [
     progression: 45,
     acheteLe: '2026-10-02',
     termineLe: null,
+    origine: 'achat',
   },
 ]
 
@@ -1352,16 +1371,26 @@ export const journal: EntreeJournal[] = [
 export const personas: Record<string, Persona> = {
   'usr-aya': {
     age: 27,
+    ville: 'Abidjan',
     secteur: 'Agence digitale',
+    niveau: 'intermediaire',
     experience: '1 à 3 ans',
     reseaux: 'Instagram, TikTok',
+    audience: '1 000 à 10 000 abonnés',
+    outils: 'Canva, CapCut',
     objectif: 'Signer 3 clients d’ici décembre',
   },
   'usr-moussa': {
     age: 34,
+    ville: 'Bouaké',
     secteur: 'Commerce de détail',
+    niveau: 'confirme',
     experience: '3 à 5 ans',
     reseaux: 'WhatsApp, Facebook',
+    entreprise: 'Boutique Diabaté',
+    stade: 'En activité depuis plus de 2 ans',
+    tailleEquipe: '2 à 5 personnes',
+    canaux: 'WhatsApp, boutique physique',
     objectif: 'Doubler les commandes entrantes',
   },
 }
