@@ -29,7 +29,7 @@ const teinte = computed(() => (social.value ? 'text-social' : 'text-entrepreneur
             : 'bg-alerte-voile text-alerte'
         "
       >
-        {{ module.statut === 'disponible' ? 'Disponible' : 'À venir' }}
+        {{ module.statut === 'disponible' ? 'Disponible' : module.statut === 'annonce' ? 'Bientôt disponible' : 'À venir' }}
       </span>
     </div>
 

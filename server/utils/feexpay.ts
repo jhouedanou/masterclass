@@ -194,7 +194,7 @@ export function codeEchecDepuisMotif(motif: string | null, reseau: string | null
   if (m.includes('INSUFFICIENT') || m.includes('BALANCE') || m.includes('SOLDE') || m.includes('FUNDS')) {
     return 'solde-insuffisant'
   }
-  if (m.includes('CANCEL') || m.includes('REJECT') || m.includes('REFUS') || m.includes('ANNUL') || m.includes('DENIED')) {
+  if (m.includes('CANCEL') || m.includes('ANNUL')) {
     return 'annule-utilisateur'
   }
   if (m.includes('TIMEOUT') || m.includes('EXPIR') || m.includes('DELAI') || m.includes('DÉLAI')) {
@@ -203,8 +203,13 @@ export function codeEchecDepuisMotif(motif: string | null, reseau: string | null
   if (m.includes('DECLINED') || m.includes('CARD') || moyenDepuisReseau(reseau) === 'Visa') {
     return 'carte-refusee'
   }
-  if (m.includes('PAYER_NOT_FOUND') || m.includes('NETWORK') || m.includes('OPERATOR') || m.includes('RESEAU') || m.includes('UNAVAILABLE')) {
+  // « Refus opérateur » (maquette 04c) : l'opérateur a rejeté la demande.
+  if (m.includes('REJECT') || m.includes('REFUS') || m.includes('DENIED') || m.includes('OPERATOR') || m.includes('PAYER_NOT_FOUND')) {
     return 'reseau-operateur'
+  }
+  // « Interruption réseau » : le réseau n'a pas répondu, le statut reste à vérifier.
+  if (m.includes('NETWORK') || m.includes('RESEAU') || m.includes('RÉSEAU') || m.includes('UNAVAILABLE') || m.includes('CONNECTION')) {
+    return 'interruption-reseau'
   }
   return 'erreur-inconnue'
 }

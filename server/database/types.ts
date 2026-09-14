@@ -46,6 +46,8 @@ export type CodeEchecPaiementSql =
   | 'delai-depasse'
   | 'reseau-operateur'
   | 'carte-refusee'
+  | 'interruption-reseau'
+  | 'doublon'
   | 'erreur-inconnue'
 export type OrigineNoteSql = 'collective' | 'privee'
 export type CleBlocVitrineSql = 'accueil' | 'banniere' | 'programmes' | 'annonce' | 'legales'
@@ -421,6 +423,7 @@ export type CandidatureFormateurRow = {
   message: string
   whatsapp: string
   lien: string | null
+  linkedin: string | null
   statut: StatutCandidatureSql
   recue_le: string
   email: string | null
@@ -639,7 +642,7 @@ export type Database = {
       historique_coaching_prive: Table<HistoriqueCoachingPriveRow, 'id' | 'cree_le' | 'commentaire'>
       candidatures_formateurs: Table<
         CandidatureFormateurRow,
-        'id' | 'recue_le' | 'statut' | 'lien' | 'email' | 'traitee_le' | 'formateur_id'
+        'id' | 'recue_le' | 'statut' | 'lien' | 'linkedin' | 'email' | 'traitee_le' | 'formateur_id'
       >
       journal: Table<EntreeJournalRow, 'id' | 'date_entree' | 'type' | 'objet' | 'ip' | 'diff' | 'notification'>
       reglages_financiers: Table<ReglagesFinanciersRow, 'id' | 'maj_le'>
@@ -683,6 +686,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      compter_echecs_connexion: { Args: { p_email: string }; Returns: number }
       /** Renvoie la date de fin de verrouillage, ou `null`. */
       enregistrer_tentative_connexion: {
         Args: {

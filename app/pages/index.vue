@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import type { Article, Formateur, Module, Programme, Thematique } from '#shared/types'
+import type { Formateur, Module, Programme, Thematique } from '#shared/types'
 
 type ThematiqueGarnie = Thematique & { modules: (Module & { formateur: Formateur | null })[] }
 
 const { data: programmes } = await useFetch<Programme[]>('/api/programmes')
 const { data: formateurs } = await useFetch<(Formateur & { nbModules: number })[]>('/api/formateurs')
-const { data: articles } = await useFetch<Article[]>('/api/articles')
 
 const selection = ref<'social-media' | 'entrepreneurs'>('social-media')
 const { data: programmeSelectionne } = await useFetch<{
@@ -99,14 +98,26 @@ useJsonLd({
             <p class="mt-2 mb-4.5 text-[15px] leading-relaxed text-texte">
               {{ programme.descriptionCarte }}
             </p>
-            <p class="mb-5.5 flex flex-wrap gap-5 text-[14px] text-texte">
+            <!-- Tablette (planche A, écran 11) : carte courte, une ligne de repères et un lien. -->
+            <p class="mb-5.5 flex flex-wrap gap-5 text-[14px] text-texte lg:hidden">
+              9 modules · 3 thématiques · sessions de coaching collectif
+            </p>
+            <p class="mb-5.5 hidden flex-wrap gap-5 text-[14px] text-texte lg:flex">
               <span><b class="text-encre">9 modules</b></span>
               <span><b class="text-encre">3 thématiques</b></span>
               <span><b class="text-encre">Sessions</b> de coaching collectif</span>
             </p>
+            <NuxtLink
+              :to="`/programmes/${programme.slug}`"
+              class="text-[14.5px] font-bold lg:hidden"
+              :class="programme.slug === 'social-media' ? 'text-social' : 'text-entrepreneurs'"
+            >
+              Découvrir le programme →
+            </NuxtLink>
             <UiBaseButton
               :to="`/programmes/${programme.slug}`"
               :variante="programme.slug === 'social-media' ? 'social' : 'entrepreneurs'"
+              class="hidden lg:inline-flex"
             >
               Découvrir le programme {{ programme.nom }}
             </UiBaseButton>
@@ -207,24 +218,5 @@ useJsonLd({
       </div>
     </section>
 
-    <!-- blog -->
-    <section class="border-t border-ligne-claire bg-fond-clair py-14">
-      <div class="conteneur">
-        <div class="flex flex-wrap items-end justify-between gap-4">
-          <UiEnTeteSection
-            surtitre="Ressources et conseils"
-            titre="Derniers articles du blog"
-          />
-          <UiBaseButton to="/blog" variante="contour" taille="sm">Tous les articles</UiBaseButton>
-        </div>
-        <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <CatalogueArticleCarte
-            v-for="article in (articles ?? []).slice(0, 3)"
-            :key="article.id"
-            :article="article"
-          />
-        </div>
-      </div>
-    </section>
   </div>
 </template>

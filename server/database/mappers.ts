@@ -438,6 +438,7 @@ export function versCandidatureFormateur(row: CandidatureFormateurRow): Candidat
     whatsapp: row.whatsapp,
     email: optionnel(row.email),
     lien: optionnel(row.lien),
+    linkedin: optionnel(row.linkedin),
     statut: row.statut,
     recueLe: row.recue_le,
     traiteeLe: optionnel(row.traitee_le),

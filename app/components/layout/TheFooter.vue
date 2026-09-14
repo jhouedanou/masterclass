@@ -35,7 +35,6 @@ const { reinitialiser } = useConsentement()
         <NuxtLink to="/devenir-formateur">Devenir formateur</NuxtLink>
         <NuxtLink to="/blog">Blog</NuxtLink>
         <NuxtLink to="/contact">Contact &amp; FAQ</NuxtLink>
-        <NuxtLink to="/verifier">Vérifier une attestation</NuxtLink>
         <NuxtLink to="/mon-espace">Mon espace</NuxtLink>
       </nav>
 

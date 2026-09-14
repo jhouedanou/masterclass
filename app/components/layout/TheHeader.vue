@@ -28,19 +28,20 @@ const liens = [
         >
       </NuxtLink>
 
-      <nav aria-label="Navigation principale" class="hidden items-center gap-8 text-[15px] font-semibold lg:flex">
+      <nav aria-label="Navigation principale" class="flex items-center gap-8 text-[15px] font-semibold">
         <NuxtLink
           v-for="lien in liens"
           :key="lien.chemin"
           :to="lien.chemin"
-          class="hover:opacity-70"
+          class="hidden hover:opacity-70 lg:inline"
           :class="lien.couleur || 'text-encre'"
         >
           {{ lien.libelle }}
         </NuxtLink>
+        <!-- Tablette (planche A, écran 11) : le pavé « Mon espace » reste visible à côté du burger. -->
         <NuxtLink
           :to="auth.estConnecte ? '/mon-espace' : '/connexion'"
-          class="rounded-full bg-encre px-[22px] py-[11px] text-[14px] font-bold text-white hover:bg-encre-800"
+          class="hidden rounded-full bg-encre px-[22px] py-[11px] text-[14px] font-bold text-white hover:bg-encre-800 md:inline-flex"
         >
           Mon espace
         </NuxtLink>

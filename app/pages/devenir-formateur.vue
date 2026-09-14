@@ -21,6 +21,7 @@ const formulaire = reactive({
   portfolio: '',
   linkedin: '',
 })
+const CHAMP = 'w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none'
 const envoye = ref(false)
 const erreur = ref('')
 const envoi = ref(false)
@@ -32,7 +33,8 @@ async function soumettre() {
     await $fetch('/api/candidatures', { method: 'POST', body: { ...formulaire } })
     envoye.value = true
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Envoi impossible, réessayez.'
+    const r = e as { statusMessage?: string; data?: { statusMessage?: string } }
+    erreur.value = r.data?.statusMessage ?? r.statusMessage ?? 'Envoi impossible, réessayez.'
   } finally {
     envoi.value = false
   }
@@ -41,8 +43,10 @@ async function soumettre() {
 
 <template>
   <div>
-    <section class="rayures-social border-b border-ligne-claire">
-      <div class="conteneur py-12">
+    <section class="relative overflow-hidden border-b border-ligne-claire bg-fond-clair">
+      <!-- Motif de marque en fond du hero (planche A, écran 06). -->
+      <img src="/images/brand/pattern.png" alt="" aria-hidden="true" class="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[340px] object-cover opacity-[.22] md:block">
+      <div class="conteneur relative py-12">
         <FilAriane :mailles="mailles" class="mb-6" />
         <UiSurtitre ton="social">Rejoindre E-Masterclass Big Five</UiSurtitre>
         <h1 class="mt-3 max-w-[900px] text-[40px] font-medium lg:text-[46px]">
@@ -69,20 +73,20 @@ async function soumettre() {
         >
           <div class="grid gap-5 sm:grid-cols-2">
             <label class="block">
-              <span class="mb-1.5 block text-[13px] font-bold text-texte">Nom et prénom *</span>
-              <input v-model="formulaire.nom" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+              <span class="mb-1.5 block text-[13px] font-bold text-texte">Numéro WhatsApp *</span>
+              <input v-model="formulaire.whatsapp" required type="tel" :class="CHAMP">
             </label>
             <label class="block">
-              <span class="mb-1.5 block text-[13px] font-bold text-texte">Numéro WhatsApp *</span>
-              <input v-model="formulaire.whatsapp" required type="tel" class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+              <span class="mb-1.5 block text-[13px] font-bold text-texte">Nom et prénom *</span>
+              <input v-model="formulaire.nom" required :class="CHAMP">
             </label>
             <label class="block">
               <span class="mb-1.5 block text-[13px] font-bold text-texte">Email *</span>
-              <input v-model="formulaire.email" required type="email" class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+              <input v-model="formulaire.email" required type="email" :class="CHAMP">
             </label>
             <label class="block">
               <span class="mb-1.5 block text-[13px] font-bold text-texte">Programme concerné *</span>
-              <select v-model="formulaire.programme" required class="w-full rounded-[10px] border border-ligne bg-white px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+              <select v-model="formulaire.programme" required :class="[CHAMP, 'bg-white']">
                 <option value="">Choisir…</option>
                 <option>Social Média</option>
                 <option>Entrepreneurs</option>
@@ -91,27 +95,27 @@ async function soumettre() {
             </label>
             <label class="block">
               <span class="mb-1.5 block text-[13px] font-bold text-texte">Domaine d’expertise *</span>
-              <input v-model="formulaire.expertise" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+              <input v-model="formulaire.expertise" required :class="CHAMP">
             </label>
             <label class="block">
               <span class="mb-1.5 block text-[13px] font-bold text-texte">Nombre d’années d’expérience *</span>
-              <input v-model="formulaire.experience" required type="number" min="0" class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+              <input v-model="formulaire.experience" required type="number" min="0" :class="CHAMP">
             </label>
             <label class="block sm:col-span-2">
               <span class="mb-1.5 block text-[13px] font-bold text-texte">Sujet du module proposé *</span>
-              <input v-model="formulaire.sujet" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+              <input v-model="formulaire.sujet" required :class="CHAMP">
+            </label>
+            <label class="block">
+              <span class="mb-1.5 block text-[13px] font-bold text-texte">Portfolio *</span>
+              <input v-model="formulaire.portfolio" required type="url" placeholder="https://" :class="CHAMP">
+            </label>
+            <label class="block">
+              <span class="mb-1.5 block text-[13px] font-bold text-texte">LinkedIn *</span>
+              <input v-model="formulaire.linkedin" required type="url" placeholder="https://www.linkedin.com/in/…" :class="CHAMP">
             </label>
             <label class="block sm:col-span-2">
               <span class="mb-1.5 block text-[13px] font-bold text-texte">Message de motivation *</span>
-              <textarea v-model="formulaire.motivation" required rows="5" class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none" />
-            </label>
-            <label class="block">
-              <span class="mb-1.5 block text-[13px] font-bold text-texte">Portfolio</span>
-              <input v-model="formulaire.portfolio" type="url" class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
-            </label>
-            <label class="block">
-              <span class="mb-1.5 block text-[13px] font-bold text-texte">LinkedIn</span>
-              <input v-model="formulaire.linkedin" type="url" class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+              <textarea v-model="formulaire.motivation" required rows="5" :class="CHAMP" />
             </label>
           </div>
 

@@ -1,18 +1,26 @@
 <template>
   <LegalPageLegale titre="Conditions générales de vente" chemin="/cgv" maj="1er août 2026">
-    <h2>Éditeur</h2>
+    <h2>Article 1 — Objet</h2>
     <p>
-      La plateforme E-Masterclass Big Five est éditée par BigFiveAbidjan SARL, RCCM
-      CI-ABJ-2017-B-27600, Abidjan, Côte d’Ivoire.
+      Les présentes conditions régissent la vente des modules de formation en ligne E-Masterclass
+      Big Five édités par BigFiveAbidjan SARL (RCCM CI-ABJ-2017-B-27600), au prix unitaire de
+      10 000 FCFA TTC, payables via FeexPay.
     </p>
 
-    <h2>Objet</h2>
+    <h2>Article 2 — Vente ferme et définitive</h2>
     <p>
-      Cette page présente la structure du document. Son contenu définitif sera intégré après
-      validation juridique.
+      S’agissant de contenus numériques à accès immédiat, toute vente confirmée est ferme et
+      définitive. L’acheteur le reconnaît expressément en cochant la case dédiée au récapitulatif de
+      commande, avant paiement.
     </p>
 
-    <h2>Contact</h2>
+    <h2>Article 3 — Accès au module</h2>
+    <p>
+      L’accès au module est ouvert dès la confirmation du paiement par le prestataire, depuis
+      l’espace apprenant, sans limite de durée.
+    </p>
+
+    <h2>Article 4 — Contact</h2>
     <p>
       Pour toute question relative à ce document, contactez l’équipe via la page Contact ou sur
       WhatsApp.

@@ -19,6 +19,10 @@ const moyens = [
 const etat = ref<'choix' | 'attente' | 'feexpay' | 'verification' | 'succes' | 'echec'>('choix')
 const message = ref('')
 const codeEchec = ref<CodeEchecPaiement | null>(null)
+/** Référence FP-… affichée dans le bloc d'échec (planche A, 04c). */
+const referenceEchec = ref<string | null>(null)
+/** Module déjà acheté (« Double paiement détecté ») : cible du bouton d'accès. */
+const slugDoublon = ref<string | null>(null)
 const tentatives = ref(0)
 /** Hors production : permet de dérouler chacun des six cas d'erreur. */
 const simulerEchec = ref<CodeEchecPaiement | ''>('')
@@ -135,12 +139,14 @@ async function confirmer(referenceFeexPay: string | null, essai = 0) {
       minuteurVerification = setTimeout(() => void confirmer(referenceFeexPay, essai + 1), 3000)
       return
     }
-    afficherEchec('delai-depasse', 'FeexPay n’a pas confirmé le paiement dans le délai imparti.')
+    // Deux minutes sans réponse : « Interruption réseau » — la vérification
+    // continue côté serveur (webhook), l'apprenant sera prévenu par e-mail.
+    afficherEchec('interruption-reseau', ECHECS_PAIEMENT['interruption-reseau'].message, referenceFeexPay)
   } catch (e) {
     const r = e as {
       statusCode?: number
       statusMessage?: string
-      data?: { statusMessage?: string; data?: { code?: CodeEchecPaiement } }
+      data?: { statusMessage?: string; data?: { code?: CodeEchecPaiement; reference?: string; slug?: string } }
     }
     // FeexPay injoignable un instant : on réessaie plutôt que de conclure.
     if (r.statusCode === 502 && essai < 40) {
@@ -150,15 +156,19 @@ async function confirmer(referenceFeexPay: string | null, essai = 0) {
     afficherEchec(
       r.data?.data?.code ?? 'erreur-inconnue',
       r.data?.statusMessage ?? r.statusMessage ?? 'Le paiement a échoué.',
+      r.data?.data?.reference ?? referenceFeexPay,
+      r.data?.data?.slug,
     )
   }
 }
 
-function afficherEchec(code: CodeEchecPaiement, texte: string) {
+function afficherEchec(code: CodeEchecPaiement, texte: string, reference?: string | null, slug?: string) {
   etat.value = 'echec'
   tentatives.value += 1
   codeEchec.value = code
-  message.value = texte
+  message.value = ECHECS_PAIEMENT[code]?.message ?? texte
+  referenceEchec.value = reference ?? commandeEnCours.value
+  slugDoublon.value = slug ?? null
 }
 
 // --- Tunnel -------------------------------------------------------------------
@@ -187,10 +197,15 @@ async function payer() {
     achat.reference = commande.reference
     etat.value = 'succes'
   } catch (e) {
-    const r = e as { statusMessage?: string; data?: { statusMessage?: string; data?: { code?: CodeEchecPaiement } } }
+    const r = e as {
+      statusMessage?: string
+      data?: { statusMessage?: string; data?: { code?: CodeEchecPaiement; reference?: string; slug?: string } }
+    }
     afficherEchec(
       r.data?.data?.code ?? 'erreur-inconnue',
       r.data?.statusMessage ?? r.statusMessage ?? (e as Error).message ?? 'Le paiement a échoué.',
+      r.data?.data?.reference,
+      r.data?.data?.slug,
     )
   }
 }
@@ -208,18 +223,35 @@ function changerDeMoyen() {
     <h1 class="mt-8 text-[36px] font-medium">Choisissez votre moyen de paiement</h1>
 
     <template v-if="etat === 'choix' || etat === 'echec'">
-      <div v-if="etat === 'echec' && echec" class="mt-6 rounded-[14px] border border-erreur bg-[#fdeeee] p-5" role="alert">
-        <p class="font-title text-[21px] font-light text-erreur-fonce">{{ echec.titre }}</p>
-        <p class="mt-1 text-[14px] text-texte">{{ message }}</p>
+      <div
+        v-if="etat === 'echec' && echec"
+        class="mt-6 rounded-[14px] border p-5"
+        :class="echec.action === 'acceder' ? 'border-succes bg-succes-voile' : echec.action === 'attendre' ? 'border-alerte bg-alerte-voile' : 'border-erreur bg-[#fdeeee]'"
+        role="alert"
+      >
+        <p class="flex items-center gap-2 font-title text-[21px] font-light" :class="echec.action === 'acceder' ? 'text-succes' : echec.action === 'attendre' ? 'text-alerte' : 'text-erreur-fonce'">
+          <span aria-hidden="true">{{ echec.action === 'acceder' ? '✓' : echec.action === 'attendre' ? '…' : '✕' }}</span>
+          {{ echec.action === 'acceder' || echec.action === 'attendre' ? echec.titre : 'Paiement non abouti' }}
+        </p>
+        <p class="mt-1 text-[14px] text-texte">
+          <b v-if="echec.action !== 'acceder' && echec.action !== 'attendre'">{{ echec.titre }} — </b>{{ message }}
+          <template v-if="referenceEchec"> Référence : <span class="font-mono">{{ referenceEchec }}</span>.</template>
+        </p>
         <p class="mt-2 text-[14px] text-texte">{{ echec.conseil }}</p>
-        <p class="mt-2 text-[12.5px] text-discret">
+        <p v-if="echec.action !== 'acceder'" class="mt-2 text-[12.5px] text-discret">
           Aucun accès n’est ouvert tant que le paiement n’est pas confirmé.
           <template v-if="tentatives >= 2"> Si le problème persiste, notre équipe peut vous aider.</template>
         </p>
         <div class="mt-4 flex flex-wrap gap-2">
-          <UiBaseButton v-if="echec.action !== 'contacter'" taille="sm" @click="payer">Réessayer</UiBaseButton>
+          <UiBaseButton v-if="echec.action === 'acceder'" taille="sm" :to="`/mon-espace/module/${slugDoublon ?? achat.module?.slug}`" @click="achat.vider()">
+            Accéder à mon module
+          </UiBaseButton>
+          <UiBaseButton v-if="echec.action === 'reessayer' || echec.action === 'changer-moyen'" taille="sm" @click="payer">Réessayer le paiement</UiBaseButton>
           <UiBaseButton v-if="echec.action === 'changer-moyen'" taille="sm" variante="contour" @click="changerDeMoyen">
             Changer de moyen de paiement
+          </UiBaseButton>
+          <UiBaseButton v-if="echec.action === 'attendre'" taille="sm" variante="contour" to="/mon-espace">
+            Retourner à mon espace
           </UiBaseButton>
           <UiBaseButton
             v-if="echec.action === 'contacter' || tentatives >= 2"
@@ -250,6 +282,10 @@ function changerDeMoyen() {
       <UiBaseButton class="mt-7 w-full" taille="lg" @click="payer">
         {{ etat === 'echec' ? 'Réessayer le paiement' : `Payer ${achat.module ? formatFcfa(achat.module.prixFcfa, true) : ''}` }}
       </UiBaseButton>
+      <p class="mt-4 rounded-[10px] border border-alerte bg-alerte-voile px-4 py-3 text-[13.5px] text-alerte">
+        ⚠ <b>Ne fermez pas cette page</b> avant la confirmation du paiement. Les paiements Mobile Money
+        peuvent nécessiter une validation sur votre téléphone.
+      </p>
       <p class="mt-3 text-center text-[13px] text-discret">
         Le règlement est traité par FeexPay. L’interface de paiement est fournie par le prestataire.
       </p>
@@ -258,7 +294,7 @@ function changerDeMoyen() {
         <span class="font-bold text-texte">Développement — simuler un échec :</span>
         <select v-model="simulerEchec" class="ml-2 rounded border border-ligne bg-white px-2 py-1 text-[12.5px]">
           <option value="">aucun (paiement réussi)</option>
-          <option v-for="(e, code) in ECHECS_PAIEMENT" :key="code" :value="code">{{ e.titre }}</option>
+          <option v-for="code in CAS_ECHEC_MAQUETTE" :key="code" :value="code">{{ ECHECS_PAIEMENT[code].titre }}</option>
         </select>
       </label>
     </template>
@@ -268,6 +304,9 @@ function changerDeMoyen() {
         {{ etat === 'attente' ? 'En attente de validation' : 'Vérification du paiement' }}
       </p>
       <p class="mt-3 text-[15px] text-texte">{{ message || 'Merci de patienter quelques instants.' }}</p>
+      <p class="mt-4 text-[13px] text-alerte">
+        ⚠ Validez la demande de paiement sur votre téléphone puis revenez ici. Ne fermez pas la page.
+      </p>
     </div>
 
     <div v-else-if="etat === 'feexpay'" class="mt-10 rounded-carte border border-ligne-douce p-10 text-center">

@@ -10,6 +10,8 @@ const motDePasse = ref('')
 const confirmation = ref('')
 const erreur = ref('')
 const enCours = ref(false)
+/** « ✓ Mot de passe mis à jour. Vous êtes maintenant connecté sur cet appareil. » */
+const termine = ref(false)
 
 /** Même seuil que le serveur (`server/utils/motDePasse.ts`). */
 const LONGUEUR_MINIMALE = 10
@@ -33,7 +35,8 @@ async function soumettre() {
     // Le serveur ouvre la session dans la foulée : inutile de repasser par la
     // page de connexion.
     await auth.rafraichir()
-    await navigateTo('/mon-espace')
+    termine.value = true
+    setTimeout(() => navigateTo('/mon-espace'), 1800)
   } catch (e) {
     erreur.value =
       (e as { statusMessage?: string }).statusMessage ?? 'La réinitialisation a échoué.'
@@ -56,10 +59,14 @@ async function soumettre() {
 
     <template v-else>
       <p class="mt-2 text-[15px] text-texte">
-        Choisissez un nouveau mot de passe. Vous serez connecté immédiatement.
+        Choisissez un mot de passe de {{ LONGUEUR_MINIMALE }} caractères minimum.
       </p>
 
-      <form class="mt-8 space-y-4" @submit.prevent="soumettre">
+      <p v-if="termine" class="mt-8 rounded-[12px] border border-succes bg-succes-voile p-4 text-[14.5px] text-succes" role="status">
+        ✓ Mot de passe mis à jour. Vous êtes maintenant connecté sur cet appareil.
+      </p>
+
+      <form v-else class="mt-8 space-y-4" @submit.prevent="soumettre">
         <label class="block">
           <span class="mb-1.5 block text-[13px] font-bold text-texte">Nouveau mot de passe</span>
           <input
@@ -76,7 +83,7 @@ async function soumettre() {
         </label>
 
         <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold text-texte">Confirmation</span>
+          <span class="mb-1.5 block text-[13px] font-bold text-texte">Confirmez le mot de passe</span>
           <input
             v-model="confirmation"
             type="password"
@@ -89,7 +96,7 @@ async function soumettre() {
         <p v-if="erreur" class="text-[14px] text-erreur">{{ erreur }}</p>
 
         <UiBaseButton type="submit" class="w-full" taille="lg" :disabled="enCours">
-          {{ enCours ? 'Enregistrement…' : 'Définir mon mot de passe' }}
+          {{ enCours ? 'Enregistrement…' : 'Enregistrer et me connecter' }}
         </UiBaseButton>
       </form>
     </template>

@@ -114,7 +114,7 @@ useJsonLd(() => ({
       <div class="conteneur relative py-12">
         <FilAriane :mailles="mailles" clair class="mb-6" />
         <p class="surtitre text-white/80">Programme</p>
-        <h1 class="mt-3 text-[46px] font-medium lg:text-[54px]">
+        <h1 class="mt-3 font-title text-[44px] font-light lg:text-[56px]">
           {{ programme.nom }}
         </h1>
         <p class="mt-4 max-w-[720px] text-[17px] leading-relaxed text-white/90">

@@ -318,6 +318,8 @@ export type CodeEchecPaiement =
   | 'delai-depasse'
   | 'reseau-operateur'
   | 'carte-refusee'
+  | 'interruption-reseau'
+  | 'doublon'
   | 'erreur-inconnue'
 
 export type StatutCoachingPrive =
@@ -371,7 +373,9 @@ export interface CandidatureFormateur {
   message: string
   whatsapp: string
   email?: string
+  /** Portfolio ou site. */
   lien?: string
+  linkedin?: string
   statut: 'nouvelle' | 'en-etude' | 'refusee' | 'acceptee'
   recueLe: string
   traiteeLe?: string

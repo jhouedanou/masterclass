@@ -6,11 +6,15 @@ const COOKIE = 'emc_session'
 
 /** Une semaine, comme la session de démonstration qu'elle remplace. */
 const DUREE_SECONDES = 60 * 60 * 24 * 7
+/** « Rester connecté » (planche A, écran 04b) : trente jours. */
+const DUREE_LONGUE_SECONDES = 60 * 60 * 24 * 30
 
 interface DonneesSession {
   utilisateurId?: string
   /** Connexion admin en deux temps : mot de passe accepté, code attendu. */
   adminEnAttenteId?: string
+  /** Session longue demandée à la connexion (« Rester connecté »). */
+  longue?: boolean
 }
 
 /**
@@ -40,14 +44,14 @@ function secret(): string {
   return 'developpement-uniquement-e-masterclass-big-five'
 }
 
-function session(event: H3Event) {
+function session(event: H3Event, longue = false) {
   return useSession<DonneesSession>(event, {
     password: secret(),
     name: COOKIE,
     cookie: {
       sameSite: 'lax',
       path: '/',
-      maxAge: DUREE_SECONDES,
+      maxAge: longue ? DUREE_LONGUE_SECONDES : DUREE_SECONDES,
       httpOnly: true,
       // `Secure` dès que la requête arrive en HTTPS — c'est le cas en
       // production, derrière le proxy comme en direct. En HTTP local, le poser
@@ -68,9 +72,13 @@ export async function lireSession(event: H3Event): Promise<Utilisateur | null> {
   return await trouverUtilisateur(data.utilisateurId)
 }
 
-export async function ouvrirSession(event: H3Event, utilisateur: Utilisateur) {
-  const courante = await session(event)
-  await courante.update({ utilisateurId: utilisateur.id, adminEnAttenteId: undefined })
+export async function ouvrirSession(
+  event: H3Event,
+  utilisateur: Utilisateur,
+  options: { longue?: boolean } = {},
+) {
+  const courante = await session(event, options.longue === true)
+  await courante.update({ utilisateurId: utilisateur.id, adminEnAttenteId: undefined, longue: options.longue === true })
 }
 
 /** Étape 1 de la connexion admin (planche C, écran 08) : le mot de passe est

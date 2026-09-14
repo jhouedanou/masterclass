@@ -6,7 +6,7 @@ defineProps<{ article: Article & { auteur?: Formateur | null } }>()
 
 <template>
   <article class="group flex flex-col overflow-hidden rounded-[14px] border border-ligne-douce bg-white">
-    <NuxtLink :to="`/blog/${article.slug}`" class="block aspect-16/9 overflow-hidden bg-fond-voile">
+    <NuxtLink :to="`/blog/${article.slug}`" class="block aspect-16/9 overflow-hidden bg-fond-voile" tabindex="-1" aria-hidden="true">
       <NuxtImg
         :src="article.image"
         :alt="article.imageAlt"
@@ -29,8 +29,11 @@ defineProps<{ article: Article & { auteur?: Formateur | null } }>()
       <p class="mt-4 pt-1 text-[12.5px] text-discret">
         <span v-if="article.auteur">{{ article.auteur.nom }} · </span>
         <time :datetime="article.publieLe ?? undefined">{{ formatDate(article.publieLe) }}</time>
-        · {{ article.tempsLectureMinutes }} min de lecture
+        · {{ article.tempsLectureMinutes }} min
       </p>
+      <NuxtLink :to="`/blog/${article.slug}`" class="mt-3 text-[14px] font-bold text-social hover:underline">
+        Lire l’article →
+      </NuxtLink>
     </div>
   </article>
 </template>

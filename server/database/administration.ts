@@ -235,6 +235,7 @@ export async function creerCandidature(champs: {
   whatsapp: string
   email?: string
   lien?: string
+  linkedin?: string
 }): Promise<CandidatureFormateur> {
   const row = verifier(
     await supabase()
@@ -246,6 +247,7 @@ export async function creerCandidature(champs: {
         whatsapp: champs.whatsapp,
         email: champs.email ?? null,
         lien: champs.lien ?? null,
+        linkedin: champs.linkedin ?? null,
       })
       .select('*')
       .single(),

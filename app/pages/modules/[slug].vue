@@ -21,6 +21,26 @@ if (!data.value) {
 const moduleCourant = computed(() => data.value!.module)
 const social = computed(() => moduleCourant.value.programme === 'social-media')
 const disponible = computed(() => moduleCourant.value.statut === 'disponible')
+/** 3 · Bientôt disponible : fiche publiée, vente non ouverte, bouton inactif. */
+const bientot = computed(() => moduleCourant.value.statut === 'annonce')
+
+// 4 · Fiche à venir : « Être prévenu du lancement » collecte email/WhatsApp.
+const alerte = reactive({ email: '', whatsapp: '', etat: 'saisie' as 'saisie' | 'envoi' | 'envoye' | 'erreur', message: '' })
+async function etrePrevenu() {
+  alerte.etat = 'envoi'
+  alerte.message = ''
+  try {
+    await $fetch('/api/alertes-lancement', {
+      method: 'POST',
+      body: { slug: moduleCourant.value.slug, email: alerte.email, whatsapp: alerte.whatsapp },
+    })
+    alerte.etat = 'envoye'
+  } catch (e) {
+    const r = e as { statusMessage?: string; data?: { statusMessage?: string } }
+    alerte.etat = 'erreur'
+    alerte.message = r.data?.statusMessage ?? r.statusMessage ?? 'Envoi impossible, réessayez.'
+  }
+}
 
 // États du bloc d'achat : visiteur, connecté, à venir, déjà acheté.
 const { data: possession } = await useFetch<{ possede: boolean }>('/api/mon-espace/possede', {
@@ -160,28 +180,39 @@ function acheter() {
           </ol>
         </section>
 
-        <section class="mt-10 grid gap-6 sm:grid-cols-2">
-          <div>
-            <h2 class="font-title text-[21px] font-light">Acquis</h2>
-            <ul class="mt-3 space-y-2">
-              <li
-                v-for="acquis in moduleCourant.acquis"
-                :key="acquis"
-                class="flex gap-2 text-[14.5px] leading-relaxed text-texte"
-              >
-                <span class="text-succes" aria-hidden="true">✓</span>
-                {{ acquis }}
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h2 class="font-title text-[21px] font-light">Livrable</h2>
-            <p class="mt-3 text-[14.5px] leading-relaxed text-texte">{{ moduleCourant.livrable }}</p>
-          </div>
+        <section class="mt-10">
+          <h2 class="font-title text-[27px] font-light">Acquis</h2>
+          <ul class="mt-3 space-y-2">
+            <li
+              v-for="acquis in moduleCourant.acquis"
+              :key="acquis"
+              class="flex gap-2 text-[15px] leading-relaxed text-texte"
+            >
+              <span class="text-succes" aria-hidden="true">✓</span>
+              {{ acquis }}
+            </li>
+          </ul>
+        </section>
+
+        <section class="mt-10">
+          <h2 class="font-title text-[27px] font-light">Livrable</h2>
+          <p class="mt-3 text-[15.5px] leading-relaxed text-texte">{{ moduleCourant.livrable }}</p>
+        </section>
+
+        <section v-if="moduleCourant.pointsForts.length" class="mt-10">
+          <h2 class="font-title text-[27px] font-light">Points forts</h2>
+          <p
+            v-for="point in moduleCourant.pointsForts"
+            :key="point"
+            class="mt-3 text-[15.5px] leading-relaxed text-texte"
+          >
+            {{ point }}
+          </p>
         </section>
 
         <section v-if="data.formateur" class="mt-10 rounded-[14px] border border-ligne-tendre p-6">
-          <h2 class="font-title text-[27px] font-light">{{ data.formateur.nom }}</h2>
+          <p class="surtitre" :class="social ? 'text-social' : 'text-entrepreneurs'">Votre formateur</p>
+          <h2 class="mt-2 font-title text-[27px] font-light">{{ data.formateur.nom }}</h2>
           <div class="mt-4 flex flex-wrap items-start gap-5">
             <NuxtImg
               :src="data.formateur.photo"
@@ -246,18 +277,51 @@ function acheter() {
               </UiBaseButton>
             </template>
 
-            <!-- 4 · Fiche à venir : vente non ouverte, collecte de contact. -->
+            <!-- 3 · Bientôt disponible : fiche publiée, vente non ouverte, bouton inactif, prix masquable. -->
+            <template v-else-if="bientot">
+              <span class="inline-block rounded-full bg-alerte-voile px-3 py-1 text-[12px] font-bold tracking-[0.08em] text-alerte uppercase">
+                Bientôt disponible
+              </span>
+              <p v-if="!moduleCourant.prixMasque" class="mt-3 font-title text-[32px] font-light">
+                {{ formatFcfa(moduleCourant.prixFcfa) }}
+                <span class="text-[15px] text-discret">TTC</span>
+              </p>
+              <p class="mt-1 text-[13px] text-discret">
+                Prochainement<template v-if="moduleCourant.dateLancement"> — {{ formatDate(moduleCourant.dateLancement) }}</template>
+              </p>
+              <UiBaseButton class="mt-5 w-full" variante="contour" taille="lg" disabled aria-disabled="true">
+                Bientôt disponible
+              </UiBaseButton>
+            </template>
+
+            <!-- 4 · Fiche à venir : vente non ouverte, collecte email/WhatsApp pour notification au lancement. -->
             <template v-else-if="!disponible">
               <p class="font-title text-[24px] font-light text-alerte">À venir</p>
               <p class="mt-1 text-[13px] text-discret">Fiche publiée, vente non ouverte.</p>
-              <UiBaseButton
-                class="mt-5 w-full"
-                variante="contour"
-                taille="lg"
-                :href="lienWhatsApp(`Bonjour, je souhaite être prévenu(e) du lancement du module « ${moduleCourant.titre} ».`)"
-              >
-                Être prévenu du lancement
-              </UiBaseButton>
+              <form v-if="alerte.etat !== 'envoye'" class="mt-5 space-y-2.5" @submit.prevent="etrePrevenu">
+                <input
+                  v-model="alerte.email"
+                  type="email"
+                  required
+                  placeholder="Votre adresse email"
+                  aria-label="Adresse email"
+                  class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[14.5px] focus:border-social focus:outline-none"
+                >
+                <input
+                  v-model="alerte.whatsapp"
+                  type="tel"
+                  placeholder="Numéro WhatsApp (facultatif)"
+                  aria-label="Numéro WhatsApp"
+                  class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[14.5px] focus:border-social focus:outline-none"
+                >
+                <p v-if="alerte.etat === 'erreur'" class="text-[13px] text-erreur">{{ alerte.message }}</p>
+                <UiBaseButton type="submit" class="w-full" variante="contour" taille="lg" :disabled="alerte.etat === 'envoi'">
+                  Être prévenu du lancement
+                </UiBaseButton>
+              </form>
+              <p v-else class="mt-5 rounded-[10px] border border-succes bg-succes-voile p-3 text-[14px] text-succes">
+                ✓ Nous vous préviendrons au lancement.
+              </p>
             </template>
 
             <!-- 1 et 2 · Disponible, visiteur ou connecté. -->
@@ -311,18 +375,16 @@ function acheter() {
       </aside>
     </div>
 
-    <section v-if="data.similaires.length" class="border-t border-ligne-claire bg-fond-clair py-14">
-      <div class="conteneur">
-        <h2 class="font-title text-[27px] font-light">Dans la même thématique</h2>
-        <div class="mt-6 grid gap-5.5 sm:grid-cols-2 lg:grid-cols-3">
-          <CatalogueModuleCarte
-            v-for="m in data.similaires"
-            :key="m.id"
-            :module="m"
-            :thematique-nom="data.thematique?.nom"
-          />
-        </div>
-      </div>
-    </section>
+    <!-- Mobile (planche A, écran 07) : barre d'achat collante en bas de l'écran. -->
+    <div
+      v-if="disponible && !dejaAchete"
+      class="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-4 border-t border-ligne-claire bg-white px-4 py-3 pb-[max(12px,env(safe-area-inset-bottom))] lg:hidden"
+    >
+      <p class="font-title text-[22px] font-light">
+        {{ formatFcfa(moduleCourant.prixFcfa) }} <span class="text-[13px] text-discret">TTC</span>
+      </p>
+      <UiBaseButton :variante="social ? 'social' : 'entrepreneurs'" @click="acheter">Acheter ce module</UiBaseButton>
+    </div>
+    <div v-if="disponible && !dejaAchete" class="h-20 lg:hidden" aria-hidden="true" />
   </div>
 </template>

@@ -96,13 +96,37 @@ const formulaire = reactive({
   message: '',
 })
 const etat = ref<'saisie' | 'envoi' | 'envoye' | 'erreur'>('saisie')
+/** Erreurs par champ, renvoyées par le serveur (« Adresse email incomplète — vérifiez le format. »). */
+const erreurs = ref<Record<string, string>>({})
+
+const CHAMP = 'w-full rounded-[10px] border px-4 py-2.5 text-[15px] focus:outline-none'
+function classeChamp(nom: string) {
+  return [CHAMP, erreurs.value[nom] ? 'border-erreur bg-[#fdeeee] focus:border-erreur' : 'border-ligne focus:border-social']
+}
+
+function verifierEmail() {
+  if (formulaire.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(formulaire.email)) {
+    erreurs.value = { ...erreurs.value, email: 'Adresse email incomplète — vérifiez le format.' }
+  } else {
+    const { email: _email, ...reste } = erreurs.value
+    erreurs.value = reste
+  }
+}
 
 async function soumettre() {
+  verifierEmail()
+  if (Object.keys(erreurs.value).length) return
   etat.value = 'envoi'
   try {
     await $fetch('/api/contact', { method: 'POST', body: formulaire })
     etat.value = 'envoye'
-  } catch {
+  } catch (e) {
+    const r = e as { data?: { data?: { erreurs?: Record<string, string> } } }
+    if (r.data?.data?.erreurs) {
+      erreurs.value = r.data.data.erreurs
+      etat.value = 'saisie'
+      return
+    }
     etat.value = 'erreur'
   }
 }
@@ -155,36 +179,58 @@ useJsonLd({
 
     <section class="py-14">
       <div class="conteneur grid gap-12 lg:grid-cols-[1fr_1fr]">
+        <!-- Planche A, écran 08 : FAQ à gauche, formulaire à droite. -->
+        <div>
+          <h2 class="font-title text-[27px] font-light">FAQ générale</h2>
+          <div class="mt-6 flex flex-col gap-8">
+            <div v-for="groupe in groupesFaq" :key="groupe.titre">
+              <h3 class="surtitre text-discret">{{ groupe.titre }}</h3>
+              <UiAccordeonFaq class="mt-3" :questions="groupe.questions" :ouvert-par-defaut="-1" />
+            </div>
+          </div>
+        </div>
+
         <div>
           <h2 class="font-title text-[27px] font-light">Envoyez-nous un message</h2>
 
-          <form v-if="etat !== 'envoye'" class="mt-6 grid gap-5 sm:grid-cols-2" @submit.prevent="soumettre">
+          <form v-if="etat !== 'envoye'" class="mt-6 grid gap-5 sm:grid-cols-2" novalidate @submit.prevent="soumettre">
             <label class="block">
               <span class="mb-1.5 block text-[13px] font-bold text-texte">Nom et prénom *</span>
-              <input v-model="formulaire.nom" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+              <input v-model="formulaire.nom" required :class="classeChamp('nom')" :aria-invalid="!!erreurs.nom">
+              <span v-if="erreurs.nom" class="mt-1.5 block text-[12.5px] text-erreur">{{ erreurs.nom }}</span>
             </label>
             <label class="block">
               <span class="mb-1.5 block text-[13px] font-bold text-texte">Email *</span>
-              <input v-model="formulaire.email" required type="email" class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+              <input
+                v-model="formulaire.email"
+                required
+                type="email"
+                :class="classeChamp('email')"
+                :aria-invalid="!!erreurs.email"
+                @blur="verifierEmail"
+              >
+              <span v-if="erreurs.email" class="mt-1.5 block text-[12.5px] text-erreur">{{ erreurs.email }}</span>
             </label>
             <label class="block">
-              <span class="mb-1.5 block text-[13px] font-bold text-texte">Numéro WhatsApp</span>
-              <input v-model="formulaire.whatsapp" type="tel" class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+              <span class="mb-1.5 block text-[13px] font-bold text-texte">Numéro WhatsApp (facultatif)</span>
+              <input v-model="formulaire.whatsapp" type="tel" :class="classeChamp('whatsapp')">
             </label>
             <label class="block">
               <span class="mb-1.5 block text-[13px] font-bold text-texte">Sujet *</span>
-              <select v-model="formulaire.sujet" required class="w-full rounded-[10px] border border-ligne bg-white px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+              <select v-model="formulaire.sujet" required :class="[...classeChamp('sujet'), 'bg-white']" :aria-invalid="!!erreurs.sujet">
                 <option value="">Choisir…</option>
                 <option v-for="sujet in sujets" :key="sujet">{{ sujet }}</option>
               </select>
+              <span v-if="erreurs.sujet" class="mt-1.5 block text-[12.5px] text-erreur">{{ erreurs.sujet }}</span>
             </label>
             <label class="block sm:col-span-2">
-              <span class="mb-1.5 block text-[13px] font-bold text-texte">Référence de paiement</span>
-              <input v-model="formulaire.reference" class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+              <span class="mb-1.5 block text-[13px] font-bold text-texte">Référence de paiement (facultatif)</span>
+              <input v-model="formulaire.reference" placeholder="Ex. FP-2608-14352" :class="classeChamp('reference')">
             </label>
             <label class="block sm:col-span-2">
               <span class="mb-1.5 block text-[13px] font-bold text-texte">Message *</span>
-              <textarea v-model="formulaire.message" required rows="6" class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none" />
+              <textarea v-model="formulaire.message" required rows="6" :class="classeChamp('message')" :aria-invalid="!!erreurs.message" />
+              <span v-if="erreurs.message" class="mt-1.5 block text-[12.5px] text-erreur">{{ erreurs.message }}</span>
             </label>
 
             <div class="sm:col-span-2">
@@ -197,19 +243,10 @@ useJsonLd({
             </div>
           </form>
 
-          <p v-else class="mt-6 rounded-[14px] border border-succes bg-succes-voile p-6 text-[15px] text-succes">
-            ✓ Message reçu. Notre équipe vous répond dans les meilleurs délais.
+          <p v-else class="mt-6 rounded-[14px] border border-succes bg-succes-voile p-6 text-[15px] text-succes" role="status">
+            ✓ Message envoyé. Vous recevrez une réponse par email sous 24 h ouvrées — un accusé vient
+            de vous être adressé.
           </p>
-        </div>
-
-        <div>
-          <h2 class="font-title text-[27px] font-light">FAQ générale</h2>
-          <div class="mt-6 flex flex-col gap-8">
-            <div v-for="groupe in groupesFaq" :key="groupe.titre">
-              <h3 class="surtitre text-discret">{{ groupe.titre }}</h3>
-              <UiAccordeonFaq class="mt-3" :questions="groupe.questions" :ouvert-par-defaut="-1" />
-            </div>
-          </div>
         </div>
       </div>
     </section>

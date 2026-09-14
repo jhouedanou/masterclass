@@ -381,6 +381,14 @@ export async function enregistrerTentative(
   return data
 }
 
+/** Échecs de connexion des quinze dernières minutes pour une adresse
+ *  (« Il vous reste N tentatives avant verrouillage temporaire »). */
+export async function compterEchecsRecents(email: string): Promise<number> {
+  const { data, error } = await supabase().rpc('compter_echecs_connexion', { p_email: email })
+  if (error) throw traduireErreur(error, 'échecs de connexion')
+  return Number(data ?? 0)
+}
+
 export async function definirMotDePasse(utilisateurId: string, hache: string): Promise<void> {
   verifier(
     await supabase()

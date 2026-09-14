@@ -2,17 +2,23 @@
 const achat = useAchatStore()
 const auth = useAuthStore()
 
+/** Pays proposés par la maquette (planche A, écran 04) ; « Autre pays… » ouvre une saisie libre. */
+const PAYS = ['Côte d’Ivoire', 'Bénin', 'Burkina Faso', 'Sénégal', 'Autre pays…']
+
 const formulaire = reactive({
-  prenom: '',
   nom: '',
+  prenom: '',
   email: '',
-  motDePasse: '',
   whatsapp: '',
   pays: 'Côte d’Ivoire',
+  autrePays: '',
+  motDePasse: '',
+  confirmation: '',
 })
 
 /** Même seuil que le serveur (`server/utils/motDePasse.ts`). */
 const LONGUEUR_MINIMALE = 10
+const CHAMP = 'w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none'
 const erreur = ref('')
 const enCours = ref(false)
 
@@ -25,12 +31,25 @@ onMounted(() => {
 
 async function soumettre() {
   erreur.value = ''
+  if (formulaire.motDePasse !== formulaire.confirmation) {
+    erreur.value = 'Les deux mots de passe ne correspondent pas.'
+    return
+  }
   enCours.value = true
   try {
-    await auth.inscription(formulaire)
+    await auth.inscription({
+      prenom: formulaire.prenom,
+      nom: formulaire.nom,
+      email: formulaire.email,
+      motDePasse: formulaire.motDePasse,
+      // Le préfixe +225 est affiché devant le champ ; il est ajouté si l'apprenant ne l'a pas saisi.
+      whatsapp: formulaire.whatsapp.startsWith('+') ? formulaire.whatsapp : `+225 ${formulaire.whatsapp}`,
+      pays: formulaire.pays === 'Autre pays…' ? formulaire.autrePays.trim() || 'Autre' : formulaire.pays,
+    })
     await navigateTo('/achat/recapitulatif')
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'La création du compte a échoué.'
+    const r = e as { statusMessage?: string; data?: { statusMessage?: string } }
+    erreur.value = r.data?.statusMessage ?? r.statusMessage ?? 'La création du compte a échoué.'
   } finally {
     enCours.value = false
   }
@@ -54,27 +73,52 @@ async function soumettre() {
 
     <form class="mt-8 grid gap-5 sm:grid-cols-2" @submit.prevent="soumettre">
       <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Prénom *</span>
-        <input v-model="formulaire.prenom" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
-      </label>
-      <label class="block">
         <span class="mb-1.5 block text-[13px] font-bold text-texte">Nom *</span>
-        <input v-model="formulaire.nom" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+        <input v-model="formulaire.nom" required autocomplete="family-name" :class="CHAMP">
       </label>
       <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Email *</span>
-        <input v-model="formulaire.email" required type="email" autocomplete="email" class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Prénom *</span>
+        <input v-model="formulaire.prenom" required autocomplete="given-name" :class="CHAMP">
+      </label>
+      <label class="block sm:col-span-2">
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Adresse email *</span>
+        <input v-model="formulaire.email" required type="email" autocomplete="email" :class="CHAMP">
       </label>
       <label class="block">
         <span class="mb-1.5 block text-[13px] font-bold text-texte">Numéro WhatsApp *</span>
-        <input v-model="formulaire.whatsapp" required type="tel" class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+        <span class="flex overflow-hidden rounded-[10px] border border-ligne focus-within:border-social">
+          <span class="flex items-center border-r border-ligne bg-fond-clair px-3 text-[14px] text-discret">+225</span>
+          <input
+            v-model="formulaire.whatsapp"
+            required
+            type="tel"
+            inputmode="tel"
+            autocomplete="tel-national"
+            class="w-full px-4 py-2.5 text-[15px] focus:outline-none"
+          >
+        </span>
+        <span class="mt-1.5 block text-[12.5px] text-discret">
+          Pour vos rappels de session et l’accès à la Communauté.
+        </span>
       </label>
-      <label class="block sm:col-span-2">
+      <label class="block">
         <!-- Le pays est saisi ici et n'est plus redemandé dans la fiche apprenant. -->
         <span class="mb-1.5 block text-[13px] font-bold text-texte">Pays *</span>
-        <input v-model="formulaire.pays" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+        <select v-model="formulaire.pays" required :class="[CHAMP, 'bg-white']">
+          <option v-for="pays in PAYS" :key="pays" :value="pays">{{ pays }}</option>
+        </select>
+        <input
+          v-if="formulaire.pays === 'Autre pays…'"
+          v-model="formulaire.autrePays"
+          required
+          placeholder="Précisez le pays"
+          :class="[CHAMP, 'mt-2']"
+        >
+        <span class="mt-1.5 block text-[12.5px] text-discret">
+          Renseigné une seule fois, il n’est plus demandé ensuite.
+        </span>
       </label>
-      <label class="block sm:col-span-2">
+      <label class="block">
         <span class="mb-1.5 block text-[13px] font-bold text-texte">Mot de passe *</span>
         <input
           v-model="formulaire.motDePasse"
@@ -82,23 +126,35 @@ async function soumettre() {
           autocomplete="new-password"
           required
           :minlength="LONGUEUR_MINIMALE"
-          class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none"
+          :class="CHAMP"
         >
         <span class="mt-1.5 block text-[12.5px] text-discret">
           {{ LONGUEUR_MINIMALE }} caractères minimum — il vous servira à retrouver vos modules.
         </span>
       </label>
+      <label class="block">
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Confirmez le mot de passe *</span>
+        <input
+          v-model="formulaire.confirmation"
+          type="password"
+          autocomplete="new-password"
+          required
+          :minlength="LONGUEUR_MINIMALE"
+          :class="CHAMP"
+        >
+      </label>
 
       <div class="sm:col-span-2">
-        <p v-if="erreur" class="mb-3 text-[14px] text-erreur">{{ erreur }}</p>
+        <p v-if="erreur" class="mb-3 text-[14px] text-erreur" role="alert">{{ erreur }}</p>
         <UiBaseButton type="submit" class="w-full" taille="lg" :disabled="enCours">
           {{ enCours ? 'Création…' : 'Créer mon compte et continuer' }}
         </UiBaseButton>
         <p class="mt-4 text-center text-[14px] text-texte">
           Déjà inscrit ?
-          <NuxtLink to="/connexion?suite=/achat/recapitulatif" class="font-bold">Se connecter</NuxtLink>
+          <NuxtLink to="/connexion?suite=/achat/recapitulatif" class="font-bold">Connectez-vous</NuxtLink>
         </p>
       </div>
     </form>
   </div>
 </template>
+

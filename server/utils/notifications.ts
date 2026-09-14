@@ -27,6 +27,10 @@ export type ModeleNotification =
   | 'suppression-programmee'
   | 'suppression-rappel'
   | 'compte-reactive'
+  | 'contact-message'
+  | 'contact-accuse'
+  | 'paiement-verification'
+  | 'alerte-lancement'
 
 export interface Notification {
   canal: CanalNotification
@@ -52,6 +56,10 @@ export const SUJETS: Record<ModeleNotification, string> = {
   'suppression-programmee': 'Suppression de votre compte programmée',
   'suppression-rappel': 'Votre compte sera supprimé dans 3 jours',
   'compte-reactive': 'Bon retour sur E-Masterclass Big Five',
+  'contact-message': 'Nouveau message depuis le formulaire de contact',
+  'contact-accuse': 'Nous avons bien reçu votre message',
+  'paiement-verification': 'Votre paiement est en cours de vérification',
+  'alerte-lancement': 'Le module que vous attendiez est disponible',
 }
 
 const piloteConsole: PiloteNotifications = {

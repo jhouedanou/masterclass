@@ -1,10 +1,11 @@
 <script setup lang="ts">
 defineProps<{ etape: 1 | 2 | 3 }>()
+/** Libellés en capitales, comme le fil d'étapes de la maquette (planche A, 04). */
 const etapes = ['Compte', 'Récapitulatif', 'Paiement']
 </script>
 
 <template>
-  <ol class="flex flex-wrap items-center gap-3 text-[14px]">
+  <ol class="flex flex-wrap items-center gap-3 text-[13px] tracking-[0.08em] uppercase">
     <li v-for="(libelle, i) in etapes" :key="libelle" class="flex items-center gap-3">
       <span
         class="flex items-center gap-2 rounded-full px-4 py-2 font-bold"

@@ -6,7 +6,10 @@ const route = useRoute()
 
 const email = ref('')
 const motDePasse = ref('')
+const resterConnecte = ref(false)
 const erreur = ref('')
+/** « Il vous reste N tentatives avant verrouillage temporaire du compte (15 min). » */
+const tentativesRestantes = ref<number | null>(null)
 const enCours = ref(false)
 
 usePagePrivee('Connexion')
@@ -14,8 +17,14 @@ usePagePrivee('Connexion')
 async function soumettre() {
   erreur.value = ''
   enCours.value = true
+  tentativesRestantes.value = null
   try {
-    await auth.connexion(email.value, motDePasse.value)
+    const { reactivable } = await auth.connexion(email.value, motDePasse.value, resterConnecte.value)
+    // Suppression programmée : l'écran « Bon retour » propose de la réactiver.
+    if (reactivable) {
+      await navigateTo('/mon-espace?bon-retour=1')
+      return
+    }
     // L'achat en cours est conservé : on revient là où l'utilisateur s'était arrêté.
     await navigateTo(String(route.query.suite ?? '/mon-espace'))
   } catch (e) {
@@ -25,7 +34,10 @@ async function soumettre() {
     // redirection posée par le serveur (compte admin) est donc dans data.data.
     const reponse = e as {
       statusMessage?: string
-      data?: { statusMessage?: string; data?: { redirection?: string } }
+      data?: { statusMessage?: string; data?: { redirection?: string; tentativesRestantes?: number } }
+    }
+    if (typeof reponse.data?.data?.tentativesRestantes === 'number') {
+      tentativesRestantes.value = reponse.data.data.tentativesRestantes
     }
     const redirection = reponse.data?.data?.redirection
     if (redirection) {
@@ -48,8 +60,16 @@ async function soumettre() {
     </p>
 
     <form class="mt-8 space-y-4" @submit.prevent="soumettre">
+      <div v-if="erreur" class="rounded-[10px] border border-erreur bg-[#fdeeee] px-4 py-3 text-[14px] text-erreur" role="alert">
+        {{ erreur }}
+        <template v-if="tentativesRestantes !== null">
+          Il vous reste <b>{{ tentativesRestantes }} {{ tentativesRestantes > 1 ? 'tentatives' : 'tentative' }}</b>
+          avant verrouillage temporaire du compte (15 min).
+        </template>
+      </div>
+
       <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Adresse e-mail</span>
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Adresse email</span>
         <input v-model="email" type="email" autocomplete="email" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
       </label>
       <label class="block">
@@ -57,19 +77,25 @@ async function soumettre() {
         <input v-model="motDePasse" type="password" autocomplete="current-password" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
       </label>
 
-      <p v-if="erreur" class="text-[14px] text-erreur">{{ erreur }}</p>
+      <div class="flex items-center justify-between text-[14px]">
+        <label class="flex items-center gap-2 text-texte">
+          <input v-model="resterConnecte" type="checkbox">
+          Rester connecté
+        </label>
+        <NuxtLink to="/mot-de-passe-oublie" class="text-discret hover:underline">
+          Mot de passe oublié ?
+        </NuxtLink>
+      </div>
 
       <UiBaseButton type="submit" class="w-full" taille="lg" :disabled="enCours">
         {{ enCours ? 'Connexion…' : 'Me connecter' }}
       </UiBaseButton>
     </form>
 
-    <div class="mt-6 flex items-center justify-between text-[14px]">
-      <NuxtLink to="/mot-de-passe-oublie" class="text-discret hover:underline">
-        Mot de passe oublié ?
-      </NuxtLink>
-      <NuxtLink to="/inscription" class="font-bold">Créer un compte</NuxtLink>
-    </div>
+    <p class="mt-6 text-center text-[14px] text-texte">
+      Pas encore de compte ?
+      <NuxtLink to="/inscription" class="font-bold">Créez-en un</NuxtLink>
+    </p>
 
   </div>
 </template>

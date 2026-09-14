@@ -1,7 +1,8 @@
 import type { CodeEchecPaiement } from '#shared/types'
 import { listerModules } from '../database/catalogue'
 import { enregistrerCommande, enregistrerTransaction } from '../database/commerce'
-import { ouvrirAcces } from '../database/comptes'
+import { listerAccesUtilisateur, ouvrirAcces } from '../database/comptes'
+import { notifierCompte } from '../utils/notifications'
 import type { MoyenTransactionSql } from '../database/types'
 import { configFeexPay } from '../utils/feexpay'
 import { exigerUtilisateur } from '../utils/session'
@@ -9,19 +10,23 @@ import { exigerUtilisateur } from '../utils/session'
 /** Motifs d'échec tels que le prestataire les remonte (planche A, écran 04c). */
 const CODES_ECHEC: CodeEchecPaiement[] = [
   'solde-insuffisant',
-  'annule-utilisateur',
   'delai-depasse',
   'reseau-operateur',
   'carte-refusee',
+  'interruption-reseau',
+  'doublon',
+  'annule-utilisateur',
   'erreur-inconnue',
 ]
 
 const DETAILS: Record<CodeEchecPaiement, string> = {
-  'solde-insuffisant': 'Solde insuffisant sur le compte.',
+  'solde-insuffisant': 'Solde insuffisant sur votre compte Mobile Money. Aucune somme n’a été débitée.',
+  'delai-depasse': 'Vous n’avez pas validé à temps.',
+  'reseau-operateur': 'Rejeté par votre opérateur.',
+  'carte-refusee': 'Vérifiez vos informations Visa.',
+  'interruption-reseau': 'Vérification en cours…',
+  doublon: 'Achat déjà confirmé.',
   'annule-utilisateur': 'Paiement annulé par l’utilisateur.',
-  'delai-depasse': 'Aucune validation dans le délai imparti.',
-  'reseau-operateur': 'L’opérateur n’a pas répondu.',
-  'carte-refusee': 'Carte refusée par la banque émettrice.',
   'erreur-inconnue': 'Erreur non identifiée côté prestataire.',
 }
 
@@ -77,6 +82,18 @@ export default defineEventHandler(async (event) => {
   const moyenTransaction = MOYENS[moyenCommande] ?? 'Orange Money'
   const feexpay = configFeexPay()
 
+  // « Double paiement détecté » (planche A, 04c) : un module déjà dans
+  // l'espace de l'apprenant ne se rachète pas — l'écran renvoie vers l'accès.
+  const possedes = new Set((await listerAccesUtilisateur(utilisateur.id)).filter((a) => !a.revoqueLe).map((a) => a.moduleId))
+  const doublon = achetes.find((m) => possedes.has(m.id)) ?? (simulerEchec === 'doublon' ? achetes[0] : undefined)
+  if (doublon) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: DETAILS.doublon,
+      data: { code: 'doublon' satisfies CodeEchecPaiement, slug: doublon.slug, titre: doublon.titre },
+    })
+  }
+
   // --- Prestataire branché : commande en attente, fenêtre FeexPay ---------
   if (feexpay.mode !== 'simulation') {
     const commande = await enregistrerCommande({
@@ -118,6 +135,34 @@ export default defineEventHandler(async (event) => {
   }
 
   // --- Simulation (développement) ----------------------------------------
+  // « Interruption réseau » : le prestataire n'a pas répondu, la commande
+  // reste en vérification et l'apprenant est prévenu par e-mail du résultat.
+  if (simulerEchec === 'interruption-reseau') {
+    const commande = await enregistrerCommande({
+      utilisateurId: utilisateur.id,
+      lignes: achetes.map((m) => ({ moduleId: m.id, prixFcfa: m.prixFcfa })),
+      moyen: moyenCommande,
+      statut: 'verification',
+    })
+    for (const m of achetes) {
+      await enregistrerTransaction({
+        reference: `${commande.reference}-${m.id}`,
+        utilisateurId: utilisateur.id,
+        moduleId: m.id,
+        moyen: moyenTransaction,
+        montant: m.prixFcfa,
+        statut: 'en-attente',
+        commandeReference: commande.reference,
+      })
+    }
+    await notifierCompte(utilisateur, 'paiement-verification', { reference: commande.reference })
+    throw createError({
+      statusCode: 402,
+      statusMessage: DETAILS['interruption-reseau'],
+      data: { code: 'interruption-reseau' satisfies CodeEchecPaiement, reference: commande.reference },
+    })
+  }
+
   if (simulerEchec && CODES_ECHEC.includes(simulerEchec)) {
     for (const m of achetes) {
       await enregistrerTransaction({
@@ -134,7 +179,7 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode: 402,
       statusMessage: DETAILS[simulerEchec],
-      data: { code: simulerEchec },
+      data: { code: simulerEchec, reference: referenceFeexPay() },
     })
   }
 

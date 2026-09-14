@@ -29,11 +29,15 @@ export const useAuthStore = defineStore('auth', () => {
     charge.value = true
   }
 
-  async function connexion(email: string, motDePasse: string) {
-    utilisateur.value = await $fetch<Utilisateur>('/api/auth/connexion', {
+  /** Renvoie `reactivable` quand une suppression programmée attend l'écran « Bon retour ». */
+  async function connexion(email: string, motDePasse: string, resterConnecte = false) {
+    const reponse = await $fetch<Utilisateur & { reactivable?: boolean }>('/api/auth/connexion', {
       method: 'POST',
-      body: { email, motDePasse },
+      body: { email, motDePasse, resterConnecte },
     })
+    const { reactivable, ...compte } = reponse
+    utilisateur.value = compte
+    return { reactivable: reactivable === true }
   }
 
   /** Connexion admin, étape 1 : mot de passe. Renvoie l'adresse masquée à

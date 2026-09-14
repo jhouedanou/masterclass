@@ -82,10 +82,21 @@ function finToucher(e: TouchEvent) {
           :to="`/programmes/${courant.slug}`"
           :variante="estSocial ? 'social' : 'entrepreneurs'"
           taille="lg"
-          class="self-start"
+          class="hidden self-start lg:inline-flex"
         >
           {{ courant.ctaHero }}
         </UiBaseButton>
+        <!-- Mobile et tablette (planche A, écrans 07 et 11) : les deux programmes côte à côte. -->
+        <div class="flex flex-wrap gap-3 lg:hidden">
+          <UiBaseButton
+            v-for="p in programmes"
+            :key="p.slug"
+            :to="`/programmes/${p.slug}`"
+            :variante="p.slug === 'social-media' ? 'social' : 'entrepreneurs'"
+          >
+            {{ p.nom }}
+          </UiBaseButton>
+        </div>
       </div>
 
       <div

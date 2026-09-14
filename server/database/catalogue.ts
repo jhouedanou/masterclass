@@ -1,7 +1,7 @@
-import type { Formateur, Module, Programme, Thematique } from '#shared/types'
+import type { AlerteLancement, Formateur, Module, Programme, Thematique } from '#shared/types'
 import { supabase } from './client'
 import { traduireErreur, verifier, verifierOptionnel, verifierUn } from './erreurs'
-import { versFormateur, versModule, versProgramme, versThematique } from './mappers'
+import { versAlerteLancement, versFormateur, versModule, versProgramme, versThematique } from './mappers'
 import type { ChapitreRow, ProgrammeSlugSql } from './types'
 
 /**
@@ -382,4 +382,33 @@ export async function trouverModuleParSlug(slug: string): Promise<Module | null>
   )
   if (!row) return null
   return versModule(row, (await chapitresParModule([row.id])).get(row.id) ?? [])
+}
+
+// --- Alertes de lancement (planche A, écran 03c, état 4) -------------------
+
+/**
+ * Visiteur à prévenir au lancement d'un module annoncé. Une adresse déjà
+ * inscrite pour ce module est refusée (409) : l'index unique tranche.
+ */
+export async function enregistrerAlerteLancement(champs: {
+  moduleId: string
+  email: string
+  whatsapp?: string
+}): Promise<AlerteLancement> {
+  const { data, error } = await supabase()
+    .from('alertes_lancement')
+    .insert({ module_id: champs.moduleId, email: champs.email, whatsapp: champs.whatsapp ?? null })
+    .select('*')
+    .single()
+  if (error?.code === '23505') {
+    throw createError({ statusCode: 409, statusMessage: 'Vous êtes déjà inscrit : nous vous préviendrons au lancement.' })
+  }
+  if (error) throw traduireErreur(error, 'alerte de lancement')
+  return versAlerteLancement(data)
+}
+
+export async function listerAlertesLancement(moduleId?: string): Promise<AlerteLancement[]> {
+  let requete = supabase().from('alertes_lancement').select('*').order('cree_le', { ascending: false })
+  if (moduleId) requete = requete.eq('module_id', moduleId)
+  return verifier(await requete, 'alertes de lancement').map(versAlerteLancement)
 }

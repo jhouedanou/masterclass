@@ -1,4 +1,4 @@
-import { enregistrerTentative, trouverIdentifiants } from '../../database/comptes'
+import { compterEchecsRecents, enregistrerTentative, trouverIdentifiants } from '../../database/comptes'
 import { verifierMotDePasse } from '../../utils/motDePasse'
 import { ouvrirSession } from '../../utils/session'
 
@@ -14,7 +14,11 @@ import { ouvrirSession } from '../../utils/session'
  * un service d'envoi (e-mail et WhatsApp) — voir « Reste à faire » du README.
  */
 export default defineEventHandler(async (event) => {
-  const { email, motDePasse } = await readBody<{ email?: string; motDePasse?: string }>(event)
+  const { email, motDePasse, resterConnecte } = await readBody<{
+    email?: string
+    motDePasse?: string
+    resterConnecte?: boolean
+  }>(event)
 
   const adresse = (email ?? '').trim()
   const ip = getRequestIP(event, { xForwardedFor: true }) ?? null
@@ -36,7 +40,7 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode: 429,
       statusMessage:
-        'Trop de tentatives : ce compte est bloqué 30 minutes. Réessayez plus tard ou réinitialisez votre mot de passe.',
+        'Trop de tentatives : ce compte est bloqué 15 minutes. Réessayez plus tard ou réinitialisez votre mot de passe.',
     })
   }
 
@@ -51,12 +55,18 @@ export default defineEventHandler(async (event) => {
       throw createError({
         statusCode: 429,
         statusMessage:
-          'Trop de tentatives : ce compte est bloqué 30 minutes. Réessayez plus tard ou réinitialisez votre mot de passe.',
+          'Trop de tentatives : ce compte est bloqué 15 minutes. Réessayez plus tard ou réinitialisez votre mot de passe.',
       })
     }
     // Message identique que l'adresse existe ou non : rien ne doit permettre de
-    // découvrir quels comptes sont ouverts sur la plateforme.
-    throw createError({ statusCode: 401, statusMessage: 'Adresse e-mail ou mot de passe incorrect.' })
+    // découvrir quels comptes sont ouverts sur la plateforme. Le compte à
+    // rebours (planche A, 04b) est calculé sur l'adresse saisie, existante ou non.
+    const tentativesRestantes = Math.max(0, 5 - (await compterEchecsRecents(adresse)))
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Email ou mot de passe incorrect.',
+      data: { tentativesRestantes },
+    })
   }
 
   // Les comptes d'administration passent par leur propre porte, avec la
@@ -70,7 +80,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  await ouvrirSession(event, identifiants.utilisateur)
+  await ouvrirSession(event, identifiants.utilisateur, { longue: resterConnecte === true })
 
   // Suppression programmée (planche B, écran 12) : la reconnexion ouvre
   // l'écran « Bon retour », qui annule la suppression sur confirmation.
