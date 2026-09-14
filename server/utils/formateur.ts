@@ -1,7 +1,13 @@
 import type { SessionCoaching, Thematique } from '#shared/types'
 import { listerFormateurs, listerModules, listerThematiques, trouverFormateur } from '../database/catalogue'
 import { listerAcces } from '../database/comptes'
-import { listerDemandesCoachingPrive, listerSessions } from '../database/coaching'
+import {
+  listerDemandesCoachingPrive,
+  listerDemandesCoachingPriveFormateur,
+  listerNotesFormateur,
+  listerSessions,
+  listerSujetsSessions,
+} from '../database/coaching'
 import { listerCertificats, listerTransactions } from '../database/commerce'
 import { lireReglagesFinanciers } from '../database/administration'
 
@@ -24,6 +30,59 @@ function ilYaJours(jours: number): string {
   return new Date(Date.now() - jours * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 }
 
+/**
+ * Filtres « 🗓 Période » et « Module » des écrans 03 et 06, et « Septembre 2026 ▾
+ * / Tous mes modules ▾ » de l'écran 01. Bornes au format « AAAA-MM-JJ »,
+ * incluses ; absentes, la fenêtre reste celle par défaut de chaque indicateur.
+ */
+export interface FiltreFormateur {
+  du?: string
+  au?: string
+  moduleId?: string
+}
+
+/** Bornes du mois « AAAA-MM », pour le sélecteur de l'écran 01. */
+export function bornesDuMois(mois: string): { du: string; au: string } {
+  const [annee, m] = mois.split('-').map(Number)
+  const debut = new Date(Date.UTC(annee!, (m ?? 1) - 1, 1))
+  const fin = new Date(Date.UTC(annee!, m ?? 1, 0))
+  return { du: debut.toISOString().slice(0, 10), au: fin.toISOString().slice(0, 10) }
+}
+
+/** Le mois en cours, « AAAA-MM ». */
+export function moisCourant(): string {
+  return new Date().toISOString().slice(0, 7)
+}
+
+function dansPeriode(date: string, filtre: FiltreFormateur): boolean {
+  if (filtre.du && date < filtre.du) return false
+  if (filtre.au && date > filtre.au) return false
+  return true
+}
+
+/**
+ * Lecture des filtres d'une requête, commune aux écrans 01, 03 et 06 : un
+ * nombre de jours glissants (`jours=30`), un mois (`mois=2026-09`) ou deux
+ * bornes (`du` / `au`), plus le module.
+ */
+export function filtreDepuisRequete(requete: Record<string, unknown>): FiltreFormateur {
+  const texte = (cle: string) => (typeof requete[cle] === 'string' ? (requete[cle] as string) : '')
+
+  const moduleId = texte('module') || undefined
+  const mois = texte('mois')
+  if (/^\d{4}-\d{2}$/.test(mois)) return { ...bornesDuMois(mois), moduleId }
+
+  const du = texte('du')
+  const au = texte('au')
+  if (du || au) return { du: du || undefined, au: au || undefined, moduleId }
+
+  const jours = Number(texte('jours'))
+  if (Number.isFinite(jours) && jours > 0) {
+    return { du: ilYaJours(jours), moduleId }
+  }
+  return { moduleId }
+}
+
 export interface StatistiqueModule {
   id: string
   slug: string
@@ -37,7 +96,10 @@ export interface StatistiqueModule {
   certificats: number
 }
 
-export async function statistiquesModules(formateurId: string): Promise<StatistiqueModule[]> {
+export async function statistiquesModules(
+  formateurId: string,
+  filtre: FiltreFormateur = {},
+): Promise<StatistiqueModule[]> {
   const [modules, thematiques, acces, certificats] = await Promise.all([
     listerModules(),
     listerThematiques(),
@@ -45,12 +107,17 @@ export async function statistiquesModules(formateurId: string): Promise<Statisti
     listerCertificats(),
   ])
 
-  const depuis = ilYaJours(FENETRE_NOUVEAUX_JOURS)
+  // « Nouveaux » suit la période choisie ; sans période, les trente derniers
+  // jours, comme l'annonce l'en-tête de colonne.
+  const du = filtre.du ?? ilYaJours(FENETRE_NOUVEAUX_JOURS)
+  const au = filtre.au
 
   return modules
     .filter((m) => m.formateurId === formateurId)
+    .filter((m) => !filtre.moduleId || m.id === filtre.moduleId)
     .map((m) => {
-      const siens = acces.filter((a) => a.moduleId === m.id)
+      // Un accès révoqué ne compte plus parmi les inscrits.
+      const siens = acces.filter((a) => a.moduleId === m.id && !a.revoqueLe)
       const cumul = siens.reduce((somme, a) => somme + a.progression, 0)
       return {
         id: m.id,
@@ -60,7 +127,7 @@ export async function statistiquesModules(formateurId: string): Promise<Statisti
         statut: m.statut,
         thematique: thematiques.find((t) => t.id === m.thematiqueId)?.nom ?? '',
         inscrits: siens.length,
-        nouveaux: siens.filter((a) => a.acheteLe >= depuis).length,
+        nouveaux: siens.filter((a) => a.acheteLe >= du && (!au || a.acheteLe <= au)).length,
         completion: siens.length ? Math.round(cumul / siens.length) : 0,
         certificats: certificats.filter((c) => c.moduleId === m.id).length,
       }
@@ -74,7 +141,7 @@ export async function statistiquesModules(formateurId: string): Promise<Statisti
  * par l'administration n'en génère pas. Le coaching privé est porté par le
  * formateur ; le collectif est compris dans le prix du module.
  */
-export async function revenusFormateur(formateurId: string) {
+export async function revenusFormateur(formateurId: string, filtre: FiltreFormateur = {}) {
   const [modules, transactions, demandes, reglages, formateur] = await Promise.all([
     listerModules(),
     listerTransactions(),
@@ -87,8 +154,12 @@ export async function revenusFormateur(formateurId: string) {
   const partFormateur = reglages.partFormateurPourcent / 100
   const partPlateforme = reglages.partBigFivePourcent / 100
 
-  const siens = modules.filter((m) => m.formateurId === formateurId)
-  const reussies = transactions.filter((t) => t.statut === 'reussie')
+  const siens = modules
+    .filter((m) => m.formateurId === formateurId)
+    .filter((m) => !filtre.moduleId || m.id === filtre.moduleId)
+  const reussies = transactions.filter(
+    (t) => t.statut === 'reussie' && dansPeriode(t.date.slice(0, 10), filtre),
+  )
 
   const lignes = siens
     .map((m) => {
@@ -105,10 +176,14 @@ export async function revenusFormateur(formateurId: string) {
     })
     .filter((ligne) => ligne.ventes > 0)
 
-  // Séances payées ou déjà réalisées sur les modules du formateur.
+  // Séances payées ou déjà réalisées sur les modules du formateur, dans la
+  // période retenue — la date du créneau à défaut de celle de la demande.
   const idsModules = new Set(siens.map((m) => m.id))
   const seances = demandes.filter(
-    (d) => idsModules.has(d.moduleId) && (d.statut === 'payee' || d.statut === 'realisee'),
+    (d) =>
+      idsModules.has(d.moduleId) &&
+      (d.statut === 'payee' || d.statut === 'realisee') &&
+      dansPeriode((d.creneauRetenuLe ?? d.recueLe).slice(0, 10), filtre),
   )
   const heures = seances.reduce((somme, d) => somme + d.heures, 0)
 
@@ -150,11 +225,15 @@ export interface SessionFormateur extends SessionCoaching {
   note: number | null
 }
 
-export async function sessionsFormateur(formateurId: string): Promise<SessionFormateur[]> {
+export async function sessionsFormateur(
+  formateurId: string,
+  filtre: FiltreFormateur = {},
+): Promise<SessionFormateur[]> {
   const [sessions, thematiques] = await Promise.all([listerSessions(), listerThematiques()])
 
   return sessions
     .filter((s) => s.formateurId === formateurId)
+    .filter((s) => dansPeriode(s.date, filtre))
     .map((s) => ({
       ...s,
       thematique: thematiques.find((t) => t.id === s.thematiqueId) ?? null,
@@ -168,13 +247,61 @@ export async function ficheFormateur(formateurId: string) {
   return await trouverFormateur(formateurId)
 }
 
-/** Moyenne des présences relevées, tous formats de séance confondus. */
-export function presenceMoyenne(sessions: SessionFormateur[]): number | null {
-  const releves = sessions
+/**
+ * Moyenne des présences relevées sur les `combien` dernières séances —
+ * « moyenne des 6 dernières » sous la carte « Présence en session » (planche D,
+ * écran 01). Les séances sans relevé ne comptent pas.
+ */
+export function presenceMoyenne(sessions: SessionFormateur[], combien = 6): number | null {
+  const releves = [...sessions]
+    .sort((a, b) => a.date.localeCompare(b.date))
     .map((s) => s.participation)
     .filter((valeur): valeur is number => valeur !== null)
+    .slice(-combien)
   if (!releves.length) return null
   return Math.round(releves.reduce((somme, v) => somme + v, 0) / releves.length)
+}
+
+/** Fenêtre de « Nouvelles notes reçues » dans le bloc « À traiter ». */
+const FENETRE_NOUVELLES_NOTES_JOURS = 30
+
+export interface ATraiter {
+  /** Séances privées payées qu'il reste à animer — la pastille de la nav. */
+  coachingPrive: number
+  sujetsALire: number
+  nouvellesNotes: number
+  /** Session dont les sujets sont à lire, pour « avant le 10/09 ». */
+  prochaineSessionDate: string | null
+}
+
+/**
+ * Bloc « À traiter » (planche D, écran 01) et pastille « Coaching privé 2 » de
+ * la navigation : trois compteurs qui appellent un geste du formateur.
+ */
+export async function aTraiterFormateur(formateurId: string): Promise<ATraiter> {
+  const [sessions, notes, demandes] = await Promise.all([
+    sessionsFormateur(formateurId),
+    listerNotesFormateur(formateurId),
+    listerDemandesCoachingPriveFormateur(formateurId),
+  ])
+
+  const aujourdhui = new Date().toISOString().slice(0, 10)
+  const prochaine =
+    sessions
+      .filter((s) => s.statut === 'planifiee' && s.date >= aujourdhui)
+      .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null
+  const sujets = prochaine ? await listerSujetsSessions([prochaine.id]) : []
+
+  const depuisUnMois = new Date(Date.now() - FENETRE_NOUVELLES_NOTES_JOURS * 86_400_000)
+    .toISOString()
+    .slice(0, 10)
+
+  return {
+    coachingPrive: demandes.filter((d) => d.statut === 'payee').length,
+    sujetsALire: sujets.filter((s) => !s.luLe).length,
+    nouvellesNotes: notes.filter((n) => n.date >= depuisUnMois).length,
+    prochaineSessionDate: prochaine?.date ?? null,
+  }
 }
 
 /** Statistiques par formateur pour les écrans d'administration. */

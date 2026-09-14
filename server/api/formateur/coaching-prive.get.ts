@@ -15,7 +15,16 @@ export default defineEventHandler(async (event) => {
   const utilisateur = await exigerFormateur(event)
   const formateur = utilisateur.formateurId ? await trouverFormateur(utilisateur.formateurId) : null
 
-  if (!formateur?.coachingPriveActif) return { actif: false, seances: [] }
+  // État verrouillé : la page affiche l'explication et le bouton « Demander
+  // l'activation », grisé si la demande est déjà partie.
+  if (!formateur?.coachingPriveActif) {
+    return {
+      actif: false,
+      tarifFcfaHeure: formateur?.coachingPriveFcfaHeure ?? 50_000,
+      activationDemandeeLe: formateur?.activationCoachingDemandeeLe ?? null,
+      seances: [],
+    }
+  }
 
   const [demandes, modules] = await Promise.all([
     listerDemandesCoachingPriveFormateur(formateur.id),
@@ -25,6 +34,8 @@ export default defineEventHandler(async (event) => {
 
   return {
     actif: true,
+    tarifFcfaHeure: formateur.coachingPriveFcfaHeure,
+    activationDemandeeLe: formateur.activationCoachingDemandeeLe ?? null,
     seances: demandes
       // Les demandes refusées ou retirées ne concernent pas le formateur.
       .filter((d) => d.statut !== 'refusee' && d.statut !== 'annulee')
@@ -35,11 +46,15 @@ export default defineEventHandler(async (event) => {
         module: modules.find((m) => m.id === d.moduleId)?.titre ?? '—',
         creneau: d.creneau ?? null,
         creneaux: d.creneaux,
+        heures: d.heures,
         dureeMinutes: d.heures * 60,
         statut: d.statut,
         paye: d.statut === 'payee' || d.statut === 'realisee',
         lienSession: d.lienSession ?? null,
         sujets: d.besoins,
+        // « Événement Google Agenda créé — rappels automatiques » : la mention
+        // n'apparaît que si l'événement existe réellement.
+        agendaCree: Boolean(d.evenementAgendaId),
         historique: historique.filter((h) => h.demandeId === d.id),
       })),
   }

@@ -7,6 +7,7 @@ const { data: sessions } = await useFetch<
     id: string
     date: string
     heure: string
+    titre?: string
     inscrits: number
     places: number
     statut: string
@@ -15,13 +16,19 @@ const { data: sessions } = await useFetch<
     thematique: { nom: string } | null
   }[]
 >('/api/formateur/sessions')
+
+/** Les plus proches d'abord : la séance à préparer est en tête. */
+const ordonnees = computed(() =>
+  [...(sessions.value ?? [])].sort((a, b) => b.date.localeCompare(a.date)),
+)
+const aujourdhui = new Date().toISOString().slice(0, 10)
 </script>
 
 <template>
   <div>
     <h1 class="font-title text-[26px] font-light">Mes sessions de coaching</h1>
-    <p class="mt-2 text-[13.5px] text-discret">
-      Le planning est fixé par l’équipe Big Five. La présence est pointée automatiquement ; les
+    <p class="mt-2 max-w-[760px] text-[13.5px] text-discret">
+      Le planning est fixé par l’équipe Big Five. La présence Zoom est pointée automatiquement ; les
       notes proviennent de l’évaluation post-session des apprenants. Le nom d’une session ouvre sa
       salle : elle accepte l’entrée à partir de 15 minutes avant le début.
     </p>
@@ -30,22 +37,51 @@ const { data: sessions } = await useFetch<
       class="mt-6"
       :colonnes="['Date · Heure', 'Session', 'Inscrits', 'Participation', 'Notes']"
     >
-      <tr v-for="session in sessions" :key="session.id">
-        <td class="px-4 py-3 font-bold">{{ formatDate(session.date) }} · {{ session.heure }}</td>
+      <tr
+        v-for="session in ordonnees"
+        :key="session.id"
+        :class="session.date >= aujourdhui && session.statut === 'planifiee' ? 'bg-social-voile/40' : ''"
+      >
+        <td class="px-4 py-3 font-bold whitespace-nowrap">
+          {{ formatDateCourte(session.date) }} · {{ session.heure }}
+        </td>
         <td class="px-4 py-3">
-          <NuxtLink :to="`/formateur/session/${session.id}`" class="underline hover:text-social">
-            {{ session.thematique?.nom }}
+          <NuxtLink :to="`/formateur/session/${session.id}`" class="hover:underline">
+            {{ session.titre || session.thematique?.nom }}
+          </NuxtLink>
+          <span v-if="session.statut === 'annulee'" class="ml-2 text-[12px] font-bold text-erreur">
+            annulée
+          </span>
+        </td>
+        <td class="px-4 py-3">
+          <NuxtLink :to="`/formateur/sujets/${session.id}`" class="hover:underline">
+            <b>{{ session.inscrits }}</b> / {{ session.places }}
           </NuxtLink>
         </td>
-        <td class="px-4 py-3">{{ session.inscrits }} / {{ session.places }}</td>
         <td class="px-4 py-3">
-          {{ session.participation ? `${session.participation} % présents` : 'à venir' }}
+          <template v-if="session.participation !== null">
+            <b class="text-succes">{{ session.participation }} %</b> présents
+          </template>
+          <span v-else class="text-discret">à venir</span>
         </td>
         <td class="px-4 py-3">
-          <span v-if="session.note">{{ session.note.toString().replace('.', ',') }} ★</span>
-          <span v-else class="text-discret">{{ session.inscrits }} sujets →</span>
+          <span v-if="session.note" class="font-bold text-alerte">
+            {{ session.note.toString().replace('.', ',') }} ★
+          </span>
+          <NuxtLink
+            v-else
+            :to="`/formateur/sujets/${session.id}`"
+            class="text-[12px] font-bold text-social hover:underline"
+          >
+            {{ session.inscrits }} sujets →
+          </NuxtLink>
         </td>
       </tr>
     </AdminTableauSimple>
+
+    <p class="mt-3 text-[12px] leading-relaxed text-discret">
+      Cliquer « inscrits » ouvre la liste des participants avec accès à leurs fiches profils, en
+      lecture seule.
+    </p>
   </div>
 </template>

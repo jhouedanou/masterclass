@@ -7,7 +7,8 @@ import {
   majZoomDemande,
   trouverDemandeCoachingPrive,
 } from '../../database/coaching'
-import { creerReunion } from '../../utils/zoom'
+import { creerReunion, debutSession } from '../../utils/zoom'
+import { creerEvenement } from '../../utils/googleAgenda'
 import { supabase } from '../../database/client'
 
 async function supabaseHeures(id: string, heures: number) {
@@ -112,17 +113,37 @@ export default defineEventHandler(async (event) => {
   }
 
   // Planification : la réunion Zoom est créée ici, le lien n'est jamais
-  // saisi à la main. Un lien fourni reste accepté en secours.
+  // saisi à la main. Un lien fourni reste accepté en secours. L'événement
+  // Google Agenda suit, avec ses rappels la veille et une heure avant
+  // (planche D, écran 05 : « Événement Google Agenda créé »).
   let lienGenere = lienSession
   if (body.action === 'planifier') {
     const formateur = await trouverFormateur(demande.formateurId)
-    const reunion = await creerReunion({
-      sujet: `Coaching privé — ${formateur?.nom ?? ''} · ${demande.apprenant}`,
-      debutIso: new Date().toISOString(),
-      dureeMinutes: demande.heures * 60,
-    })
+    const sujet = `Coaching privé — ${formateur?.nom ?? ''} · ${demande.apprenant}`
+    // Le créneau structuré donne l'heure exacte ; un créneau saisi en toutes
+    // lettres ne la donne pas, la séance part alors de l'instant présent.
+    const debutIso =
+      typeof body.creneau === 'object' && body.creneau?.date
+        ? debutSession(body.creneau.date, body.creneau.debut).toISOString()
+        : new Date().toISOString()
+    const dureeMinutes = demande.heures * 60
+
+    const reunion = await creerReunion({ sujet, debutIso, dureeMinutes })
     lienGenere = lienSession || reunion.lienParticipation
-    await majZoomDemande(demande.id, { reunionId: reunion.id, motDePasse: reunion.motDePasse, lienParticipation: lienGenere })
+
+    const evenement = await creerEvenement({
+      titre: sujet,
+      description: demande.besoins,
+      debutIso,
+      dureeMinutes,
+      lien: lienGenere,
+    })
+
+    await majZoomDemande(
+      demande.id,
+      { reunionId: reunion.id, motDePasse: reunion.motDePasse, lienParticipation: lienGenere },
+      evenement,
+    )
   }
 
   const commentaire =

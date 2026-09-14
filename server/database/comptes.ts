@@ -673,6 +673,56 @@ export async function listerAcces(): Promise<Acces[]> {
   return rows.map(versAcces)
 }
 
+/** Accès à un module donné, pour la liste des inscrits d'un module côté
+ *  formateur (planche D, écran 03 : « Cliquer un module ouvre le détail »). */
+export async function listerAccesModule(moduleId: string): Promise<Acces[]> {
+  const rows = verifier(
+    await supabase().from('acces').select('*').eq('module_id', moduleId).order('achete_le'),
+    'accès du module',
+  )
+  return rows.map(versAcces)
+}
+
+/**
+ * Nombre d'apprenants ayant terminé chaque chapitre d'un module, en une
+ * requête plutôt qu'un relevé par inscrit. Un chapitre sans durée connue ne
+ * peut pas être déclaré vu : il compte zéro plutôt qu'un chiffre inventé.
+ */
+export async function avancementChapitresModule(
+  moduleId: string,
+): Promise<{ position: number; libelle: string; titre: string; vuPar: number }[]> {
+  const chapitres = verifier(
+    await supabase()
+      .from('chapitres')
+      .select('id, position, libelle, titre, video_duree_secondes, duree_minutes')
+      .eq('module_id', moduleId)
+      .order('position'),
+    'chapitres du module',
+  )
+  if (!chapitres.length) return []
+
+  const vus = verifier(
+    await supabase()
+      .from('visionnages')
+      .select('chapitre_id, secondes_vues')
+      .in('chapitre_id', chapitres.map((c) => c.id)),
+    'visionnages du module',
+  )
+
+  return chapitres.map((c) => {
+    const duree = c.video_duree_secondes ?? (c.duree_minutes ?? 0) * 60
+    return {
+      position: c.position,
+      libelle: c.libelle,
+      titre: c.titre,
+      vuPar:
+        duree > 0
+          ? vus.filter((v) => v.chapitre_id === c.id && v.secondes_vues >= duree * 0.95).length
+          : 0,
+    }
+  })
+}
+
 export async function listerAccesUtilisateur(utilisateurId: string): Promise<Acces[]> {
   const rows = verifier(
     await supabase()

@@ -25,13 +25,17 @@ usePagePrivee(`Attestation ${c.value.numero}`)
  */
 const signatureAbsente = ref(false)
 
+/** Une attestation révoquée ne doit plus pouvoir sortir : sans cela, la
+ *  révocation ne vaudrait que pour qui pense à vérifier le numéro. */
+const revoquee = computed(() => Boolean(c.value.revoqueLe))
+
 function imprimer() {
   window.print()
 }
 
 // « Télécharger PDF » (planche B, écran 09) : la boîte d'impression s'ouvre à l'arrivée.
 onMounted(() => {
-  if (route.query.telecharger === '1') setTimeout(() => window.print(), 600)
+  if (route.query.telecharger === '1' && !revoquee.value) setTimeout(() => window.print(), 600)
 })
 </script>
 
@@ -42,10 +46,23 @@ onMounted(() => {
         ← Mes certificats
       </NuxtLink>
       <div class="flex gap-2">
-        <UiBaseButton taille="sm" @click="imprimer">Imprimer / enregistrer en PDF</UiBaseButton>
+        <UiBaseButton v-if="!revoquee" taille="sm" @click="imprimer">
+          Imprimer / enregistrer en PDF
+        </UiBaseButton>
         <UiBaseButton :to="`/verifier/${c.numero}`" variante="contour" taille="sm">
           Page de vérification
         </UiBaseButton>
+      </div>
+    </div>
+
+    <div v-if="revoquee" class="no-print conteneur">
+      <div class="rounded-carte border border-erreur bg-[#fdeeee] p-8">
+        <p class="font-title text-[21px] font-light text-erreur-fonce">Attestation révoquée</p>
+        <p class="mt-2 text-[14px] text-erreur">
+          Cette attestation a été retirée le {{ formatDate(c.revoqueLe!) }} et ne peut plus être
+          présentée comme preuve de suivi de module. Pour toute question, écrivez-nous sur WhatsApp
+          au {{ WHATSAPP.affichage }}.
+        </p>
       </div>
     </div>
 
@@ -57,6 +74,7 @@ onMounted(() => {
       A4 paysage à l'impression (@page dans main.css).
     -->
     <article
+      v-if="!revoquee"
       class="attestation mx-auto flex aspect-[297/210] w-full max-w-5xl flex-col bg-[url('/images/brand/pattern.png')] bg-cover bg-center p-[1.8%] shadow-lg print:aspect-auto print:h-screen print:max-w-none print:shadow-none"
     >
       <div class="flex min-h-0 flex-1 flex-col bg-white px-[4.5%] py-[2.6%]">

@@ -89,6 +89,14 @@ export default defineNuxtConfig({
     zoomSdkClientId: process.env.ZOOM_SDK_CLIENT_ID || '',
     zoomSdkClientSecret: process.env.ZOOM_SDK_CLIENT_SECRET || '',
 
+    // Google Agenda : `simulation` (identifiant fictif, aucun appel) ou
+    // `live`. Un compte de service, sa clé privée en base64, et un agenda
+    // partagé en écriture avec ce compte (voir server/utils/googleAgenda.ts).
+    googleAgendaMode: process.env.GOOGLE_AGENDA_MODE || 'simulation',
+    googleServiceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '',
+    googleServiceAccountClePrivee: process.env.GOOGLE_SERVICE_ACCOUNT_CLE_PRIVEE || '',
+    googleAgendaId: process.env.GOOGLE_AGENDA_ID || '',
+
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://emasterclass.bigfive.ci',
       // Le tunnel charge le SDK FeexPay seulement quand le prestataire est branché.
@@ -134,7 +142,9 @@ export default defineNuxtConfig({
       '/formateur$',
       '/admin',
       '/certificats',
-      '/verifier',
+      // Les pages de résultat seulement : « /verifier » sans barre finale
+      // bloquerait aussi la page de saisie, qui doit être trouvable.
+      '/verifier/',
       '/hors-ligne',
     ],
   },
@@ -151,9 +161,11 @@ export default defineNuxtConfig({
       '/formateur/**',
       '/admin/**',
       '/certificats/**',
-      // « /verifier/** » ne couvre pas la page de saisie elle-même.
-      '/verifier',
-      '/verifier/**',
+      // La page de saisie /verifier est indexable et listée dans le sitemap ;
+      // seules les pages de résultat, nominatives, en sont exclues. « /* » et
+      // non « /** » : le globstar emporte aussi le parent et sortirait
+      // /verifier du sitemap sans rien signaler.
+      '/verifier/*',
     ],
     sources: ['/api/__sitemap__/urls'],
   },

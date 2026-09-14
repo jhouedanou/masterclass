@@ -1,14 +1,22 @@
 import QRCode from 'qrcode'
 import { trouverCertificat } from '../../database/commerce'
+import { exigerUtilisateur } from '../../utils/session'
 
 /**
- * Lecture publique d'un certificat par son numéro : c'est la cible du QR code
- * imprimé sur le document. La page /verifier/[numero] est en noindex.
+ * L'attestation complète et son QR code, pour le document imprimable.
+ *
+ * Réservée à son titulaire : elle porte l'identité, l'identifiant du compte et
+ * celui du module. La vérification publique, elle, passe par
+ * `/api/verifier/[numero]`, qui n'expose que ce qui figure sur le document.
+ *
+ * Un numéro qui ne lui appartient pas est traité comme inexistant : répondre
+ * 403 confirmerait au passage que l'attestation existe.
  */
 export default defineEventHandler(async (event) => {
+  const utilisateur = await exigerUtilisateur(event)
   const numero = getRouterParam(event, 'numero')
   const certificat = await trouverCertificat(numero ?? '')
-  if (!certificat) {
+  if (!certificat || certificat.utilisateurId !== utilisateur.id) {
     throw createError({ statusCode: 404, statusMessage: 'Certificat introuvable' })
   }
   const config = useRuntimeConfig()

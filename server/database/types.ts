@@ -139,6 +139,9 @@ export type FormateurRow = ColonnesSeo & {
   fiche_complete: boolean
   coaching_prive_fcfa_heure: number
   coaching_prive_actif: boolean
+  email_pro: string
+  whatsapp: string
+  activation_coaching_demandee_le: string | null
   cree_le: string
   maj_le: string
 }
@@ -297,6 +300,7 @@ export type SessionCoachingRow = {
   zoom_mot_de_passe: string | null
   zoom_lien_participation: string | null
   zoom_lien_hote: string | null
+  evenement_agenda_id: string | null
   cree_le: string
 }
 
@@ -321,6 +325,7 @@ export type SujetSessionRow = {
   preoccupation: string
   attente: string
   soumis_le: string
+  lu_le: string | null
 }
 
 export type NoteFormateurRow = {
@@ -403,6 +408,16 @@ export type CertificatRow = {
   date_delivrance: string
   taux_completion: number
   prenom_nom_confirme_le: string | null
+  revoque_le: string | null
+  motif_revocation: string | null
+}
+
+export type TentativeVerificationRow = {
+  id: string
+  ip: string
+  numero: string
+  trouve: boolean
+  cree_le: string
 }
 
 export type DemandeCoachingPriveRow = {
@@ -562,7 +577,16 @@ export type Database = {
       phases: Table<PhaseRow, 'cree_le' | 'statut' | 'date_ouverture'>
       thematiques: Table<ThematiqueRow, 'cree_le' | 'statut'>
       alertes_lancement: Table<AlerteLancementRow, 'id' | 'cree_le' | 'whatsapp'>
-      formateurs: Table<FormateurRow, 'cree_le' | 'maj_le' | 'coaching_prive_actif' | keyof ColonnesSeo>
+      formateurs: Table<
+        FormateurRow,
+        | 'cree_le'
+        | 'maj_le'
+        | 'coaching_prive_actif'
+        | 'email_pro'
+        | 'whatsapp'
+        | 'activation_coaching_demandee_le'
+        | keyof ColonnesSeo
+      >
       modules: Table<
         ModuleRow,
         | 'cree_le'
@@ -623,10 +647,11 @@ export type Database = {
         | 'zoom_mot_de_passe'
         | 'zoom_lien_participation'
         | 'zoom_lien_hote'
+        | 'evenement_agenda_id'
       >
       inscriptions_sessions: Table<InscriptionSessionRow, 'inscrit_le' | 'present'>
       liste_attente_sessions: Table<ListeAttenteSessionRow, 'inscrit_le'>
-      sujets_sessions: Table<SujetSessionRow, 'id' | 'soumis_le'>
+      sujets_sessions: Table<SujetSessionRow, 'id' | 'soumis_le' | 'lu_le'>
       notes_formateurs: Table<NoteFormateurRow, 'id' | 'cree_le' | 'date_note' | 'commentaire'>
       articles: Table<
         ArticleRow,
@@ -652,7 +677,11 @@ export type Database = {
         | 'reference_prestataire'
         | 'reseau'
       >
-      certificats: Table<CertificatRow, 'date_delivrance' | 'prenom_nom_confirme_le'>
+      certificats: Table<
+        CertificatRow,
+        'date_delivrance' | 'prenom_nom_confirme_le' | 'revoque_le' | 'motif_revocation'
+      >
+      tentatives_verification: Table<TentativeVerificationRow, 'id' | 'cree_le'>
       demandes_coaching_prive: Table<
         DemandeCoachingPriveRow,
         | 'id'

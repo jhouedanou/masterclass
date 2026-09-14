@@ -146,6 +146,12 @@ export interface Formateur {
   /** Accès « Formateur avec coaching privé » (planche D, écran 05) :
    *  verrouillé par défaut, ouvert par l'administration. */
   coachingPriveActif: boolean
+  /** Coordonnées internes (planche D, écran 02) : jamais publiées sur
+   *  /formateurs ni sur les fiches modules. */
+  emailPro?: string
+  whatsapp?: string
+  /** Horodatage de « Demander l'activation à l'équipe » (planche D, écran 05). */
+  activationCoachingDemandeeLe?: string
   seo: SeoFields
 }
 
@@ -284,6 +290,10 @@ export interface Certificat {
   tauxCompletion: number
   /** Identité confirmée par l'apprenant avant génération (planche B, écran 05). */
   prenomNomConfirmeLe?: string
+  /** Attestation annulée par l'administration : la vérification la déclare non valable. */
+  revoqueLe?: string
+  /** Motif de la révocation. Interne — jamais renvoyé par la route publique. */
+  motifRevocation?: string
 }
 
 export interface Commande {
@@ -450,6 +460,9 @@ export interface SujetSession {
   preoccupation: string
   attente: string
   soumisLe: string
+  /** Date de lecture par le formateur. Absente tant qu'il n'a pas ouvert la
+   *  liste : c'est le compteur « Sujets à lire » (planche D, écran 01). */
+  luLe?: string
 }
 
 export interface NoteFormateur {

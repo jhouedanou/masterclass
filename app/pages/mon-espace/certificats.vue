@@ -96,7 +96,10 @@ async function generer() {
         <div class="min-w-[220px] flex-1">
           <h2 class="font-title text-[19px] font-light">{{ ligne.acces.module?.titre }}</h2>
           <p class="mt-1 text-[13px] text-discret">
-            <template v-if="ligne.certificat">
+            <template v-if="ligne.certificat?.revoqueLe">
+              N° {{ ligne.certificat.numero }} · révoquée le {{ formatDate(ligne.certificat.revoqueLe) }}
+            </template>
+            <template v-else-if="ligne.certificat">
               N° {{ ligne.certificat.numero }} · délivrée le {{ formatDate(ligne.certificat.dateDelivrance) }}
             </template>
             <template v-else-if="ligne.etat === 'a-generer'">Module complété à 100 % — certificat prêt à générer</template>
@@ -108,7 +111,17 @@ async function generer() {
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <UiBaseButton v-if="ligne.certificat" :to="`/certificats/${ligne.certificat.numero}?telecharger=1`" taille="sm">
+          <span
+            v-if="ligne.certificat?.revoqueLe"
+            class="rounded-full bg-[#fdeeee] px-3 py-1.5 text-[12px] font-bold text-erreur"
+          >
+            Révoquée
+          </span>
+          <UiBaseButton
+            v-else-if="ligne.certificat"
+            :to="`/certificats/${ligne.certificat.numero}?telecharger=1`"
+            taille="sm"
+          >
             Télécharger PDF
           </UiBaseButton>
           <UiBaseButton v-else-if="ligne.etat === 'a-generer'" taille="sm" @click="ouvrirValidation(ligne)">

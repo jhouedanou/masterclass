@@ -4,6 +4,14 @@ import type { Module, Persona } from '#shared/types'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Apprenants — administration')
 
+interface CertificatApprenant {
+  numero: string
+  titreModule: string
+  dateDelivrance: string
+  revoqueLe: string | null
+  motifRevocation: string | null
+}
+
 interface Apprenant {
   id: string
   nom: string
@@ -14,7 +22,7 @@ interface Apprenant {
   profilPourcent: number
   modulesAcquis: { id: string; titre: string; programme: string }[]
   progression: number
-  certificats: number
+  certificats: CertificatApprenant[]
   persona: Persona | null
   montantPaye: number
 }
@@ -66,6 +74,30 @@ async function attribuer() {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Attribution impossible.'
   }
 }
+
+/** Numéro dont le motif de révocation est en cours de saisie. */
+const revocation = reactive({ numero: '', motif: '' })
+
+async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir') {
+  erreur.value = ''
+  try {
+    await $fetch('/api/admin/certificats', {
+      method: 'POST',
+      body: { numero, action, motif: action === 'revoquer' ? revocation.motif : undefined },
+    })
+    message.value =
+      action === 'revoquer'
+        ? `Attestation ${numero} révoquée — la page publique de vérification la déclare non valable.`
+        : `Attestation ${numero} rétablie.`
+    revocation.numero = ''
+    revocation.motif = ''
+    const id = selection.value!.id
+    await refresh()
+    selection.value = apprenants.value?.find((a) => a.id === id) ?? null
+  } catch (e) {
+    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
+  }
+}
 </script>
 
 <template>
@@ -111,7 +143,7 @@ async function attribuer() {
               {{ apprenant.profilPourcent }} %
             </span>
           </td>
-          <td class="px-4 py-3">{{ apprenant.certificats || '—' }}</td>
+          <td class="px-4 py-3">{{ apprenant.certificats.length || '—' }}</td>
           <td class="px-4 py-3 text-right">
             <button class="text-[12.5px] underline" @click="selection = apprenant">Fiche</button>
           </td>
@@ -151,8 +183,72 @@ async function attribuer() {
             <dt class="text-discret">Modules achetés</dt>
             <dd>{{ selection.modulesAcquis.length }} · {{ formatFcfa(selection.montantPaye) }}</dd>
           </div>
-          <div><dt class="text-discret">Certificats</dt><dd>{{ selection.certificats }}</dd></div>
+          <div><dt class="text-discret">Certificats</dt><dd>{{ selection.certificats.length }}</dd></div>
         </dl>
+
+        <section v-if="selection.certificats.length" class="mt-5 rounded-[12px] border border-ligne-claire p-4">
+          <p class="text-[14px] font-bold">Attestations délivrées</p>
+          <p class="mt-1 text-[12.5px] text-discret">
+            Révoquer n’efface pas le document — il a pu être imprimé — mais la page publique de
+            vérification le déclare non valable. Motif obligatoire, action journalisée.
+          </p>
+
+          <ul class="mt-3 space-y-2">
+            <li
+              v-for="attestation in selection.certificats"
+              :key="attestation.numero"
+              class="rounded-[10px] border border-ligne-claire p-3 text-[13px]"
+            >
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p class="font-mono text-[12.5px]">{{ attestation.numero }}</p>
+                  <p class="text-discret">
+                    {{ attestation.titreModule }} · délivrée le {{ formatDate(attestation.dateDelivrance) }}
+                  </p>
+                </div>
+                <button
+                  v-if="attestation.revoqueLe"
+                  class="rounded-[8px] border border-ligne px-3 py-1.5 text-[12.5px] hover:bg-brume"
+                  @click="agirSurAttestation(attestation.numero, 'retablir')"
+                >
+                  Rétablir
+                </button>
+                <button
+                  v-else-if="revocation.numero !== attestation.numero"
+                  class="rounded-[8px] border border-erreur px-3 py-1.5 text-[12.5px] text-erreur hover:bg-[#fdeeee]"
+                  @click="revocation.numero = attestation.numero; revocation.motif = ''"
+                >
+                  Révoquer
+                </button>
+              </div>
+
+              <p v-if="attestation.revoqueLe" class="mt-2 text-[12.5px] text-erreur">
+                Révoquée le {{ formatDate(attestation.revoqueLe) }} — {{ attestation.motifRevocation }}
+              </p>
+
+              <form
+                v-if="revocation.numero === attestation.numero"
+                class="mt-2 flex flex-wrap gap-2"
+                @submit.prevent="agirSurAttestation(attestation.numero, 'revoquer')"
+              >
+                <input
+                  v-model="revocation.motif"
+                  required
+                  placeholder="Motif (journalisé, obligatoire)"
+                  class="min-w-[200px] flex-1 rounded-[10px] border border-ligne px-3 py-2 text-[13px]"
+                >
+                <UiBaseButton type="submit" class="!py-2 !text-[13px]">Confirmer</UiBaseButton>
+                <button
+                  type="button"
+                  class="text-[12.5px] text-discret hover:underline"
+                  @click="revocation.numero = ''"
+                >
+                  Annuler
+                </button>
+              </form>
+            </li>
+          </ul>
+        </section>
 
         <section class="mt-5 rounded-[12px] border border-ligne-claire p-4">
           <p class="font-bold text-[14px]">Attribuer un accès gratuit</p>

@@ -1,5 +1,9 @@
-import { listerNotesFormateur, listerSujetsSession } from '../../database/coaching'
+import { listerModules } from '../../database/catalogue'
+import { listerNotesFormateur, listerSujetsSessions } from '../../database/coaching'
 import {
+  aTraiterFormateur,
+  bornesDuMois,
+  moisCourant,
   presenceMoyenne,
   revenusFormateur,
   sessionsFormateur,
@@ -7,22 +11,67 @@ import {
 } from '../../utils/formateur'
 import { exigerFormateur } from '../../utils/session'
 
+/**
+ * Vue d'ensemble du formateur (planche D, écran 01).
+ *
+ * Deux filtres d'en-tête : le mois (« Septembre 2026 ▾ ») et le module
+ * (« Tous mes modules ▾ »). Le mois cadre les compteurs de flux — nouveaux
+ * inscrits, rémunération — pas les états cumulés comme le nombre d'inscrits.
+ *
+ * Le bloc « À traiter » compte trois choses qui appellent un geste : les
+ * séances privées payées qu'il reste à animer, les sujets encore non lus
+ * avant la prochaine session, et les notes reçues depuis un mois.
+ */
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerFormateur(event)
   const formateurId = utilisateur.formateurId!
 
-  const [mesModules, sessions, notes, revenus] = await Promise.all([
-    statistiquesModules(formateurId),
-    sessionsFormateur(formateurId),
-    listerNotesFormateur(formateurId),
-    revenusFormateur(formateurId),
-  ])
+  const requete = getQuery(event)
+  const mois =
+    typeof requete.mois === 'string' && /^\d{4}-\d{2}$/.test(requete.mois)
+      ? requete.mois
+      : moisCourant()
+  const moduleId = typeof requete.module === 'string' && requete.module ? requete.module : undefined
+  const { du, au } = bornesDuMois(mois)
+  const filtre = { du, au, moduleId }
+
+  const [mesModules, tousMesModules, toutesSessions, notes, revenus, aTraiter, catalogue] =
+    await Promise.all([
+      statistiquesModules(formateurId, filtre),
+      statistiquesModules(formateurId),
+      sessionsFormateur(formateurId),
+      listerNotesFormateur(formateurId),
+      revenusFormateur(formateurId, filtre),
+      aTraiterFormateur(formateurId),
+      listerModules(),
+    ])
 
   const publies = mesModules.filter((m) => m.statut === 'disponible')
-  const prochaine = sessions.find((s) => s.statut === 'planifiee') ?? null
-  const sujets = prochaine ? await listerSujetsSession(prochaine.id) : []
+
+  // La prochaine séance ne dépend pas du mois affiché : c'est toujours la
+  // prochaine à animer.
+  const aujourdhui = new Date().toISOString().slice(0, 10)
+  const prochaine =
+    toutesSessions
+      .filter((s) => s.statut === 'planifiee' && s.date >= aujourdhui)
+      .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null
+
+  const sujets = prochaine ? await listerSujetsSessions([prochaine.id]) : []
+
+  // « modules 04, 05, 06 » : les modules publiés de la thématique couverte.
+  const modulesCouverts = prochaine
+    ? catalogue
+        .filter((m) => m.thematiqueId === prochaine.thematiqueId && m.statut === 'disponible')
+        .map((m) => m.numero)
+        .sort((a, b) => a - b)
+    : []
 
   return {
+    mois,
+    moduleId: moduleId ?? '',
+    // Liste du sélecteur « Tous mes modules ▾ », jamais restreinte par le filtre.
+    mesModules: tousMesModules.map((m) => ({ id: m.id, titre: m.titre })),
+
     inscrits: publies.reduce((somme, m) => somme + m.inscrits, 0),
     nouveaux: publies.reduce((somme, m) => somme + m.nouveaux, 0),
     completionMoyenne: publies.length
@@ -30,22 +79,33 @@ export default defineEventHandler(async (event) => {
       : 0,
     nbModules: publies.length,
     // `null` tant qu'aucune présence n'a été relevée en séance.
-    presenceMoyenne: presenceMoyenne(sessions),
+    presenceMoyenne: presenceMoyenne(toutesSessions),
     noteMoyenne: notes.length
       ? Math.round((notes.reduce((somme, n) => somme + n.note, 0) / notes.length) * 10) / 10
       : null,
     nbNotes: notes.length,
     remunerationDuMois: revenus.total.remuneration,
-    prochaineSession: prochaine,
+
+    prochaineSession: prochaine ? { ...prochaine, modulesCouverts, nbSujets: sujets.length } : null,
     // Sujets réellement soumis par les apprenants avant la prochaine session.
-    sujets: sujets.map((s) => ({ apprenant: s.apprenant, sujet: s.preoccupation })),
+    sujets: sujets.map((s) => ({
+      utilisateurId: s.utilisateurId,
+      apprenant: s.apprenant,
+      sujet: s.preoccupation,
+      lu: Boolean(s.luLe),
+    })),
+
+    aTraiter,
+
     dernieresNotes: notes
       .slice(-3)
       .reverse()
       .map((n) => ({
         note: n.note,
         commentaire: n.commentaire ?? '',
-        origine: `${n.origine === 'collective' ? 'session' : 'privé'} ${n.date}`,
+        // « session » ou « privé » ; la page y accole la date au format 12/08.
+        origine: n.origine === 'collective' ? 'session' : 'privé',
+        date: n.date,
       })),
   }
 })

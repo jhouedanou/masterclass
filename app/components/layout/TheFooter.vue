@@ -45,6 +45,7 @@ const { reinitialiser } = useConsentement()
         <NuxtLink to="/cgv">CGV</NuxtLink>
         <NuxtLink to="/confidentialite">Confidentialité</NuxtLink>
         <NuxtLink to="/cookies">Cookies</NuxtLink>
+        <NuxtLink to="/verifier">Vérifier une attestation</NuxtLink>
         <button class="text-left hover:underline" @click="reinitialiser">
           Gérer mes cookies
         </button>

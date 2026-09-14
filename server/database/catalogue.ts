@@ -2,7 +2,7 @@ import type { AlerteLancement, Formateur, Module, Programme, Thematique } from '
 import { supabase } from './client'
 import { traduireErreur, verifier, verifierOptionnel, verifierUn } from './erreurs'
 import { versAlerteLancement, versFormateur, versModule, versProgramme, versThematique } from './mappers'
-import type { ChapitreRow, ProgrammeSlugSql } from './types'
+import type { ChapitreRow, FormateurRow, ProgrammeSlugSql } from './types'
 
 /**
  * Lecture du catalogue : programmes, thématiques, formateurs et modules.
@@ -79,15 +79,50 @@ export async function trouverFormateurParSlug(slug: string): Promise<Formateur |
   return row ? versFormateur(row) : null
 }
 
-/** Le formateur ne pilote que ces trois champs : le tarif de coaching privé et
- *  le rattachement des modules restent du ressort de l'équipe. */
+/**
+ * Champs que le formateur pilote depuis son espace (planche D, écran 02) :
+ * identité publique, coordonnées internes et photo. Le tarif de coaching
+ * privé, son activation et le rattachement des modules restent du ressort de
+ * l'équipe.
+ */
+export type ChampsProfilFormateur = Partial<
+  Pick<Formateur, 'nom' | 'expertise' | 'bio' | 'photo' | 'emailPro' | 'whatsapp'>
+>
+
 export async function majFormateur(
   id: string,
-  champs: Partial<Pick<Formateur, 'nom' | 'expertise' | 'bio'>>,
+  champs: ChampsProfilFormateur,
 ): Promise<Formateur> {
+  const colonnes: Partial<FormateurRow> = {}
+  if (champs.nom !== undefined) colonnes.nom = champs.nom
+  if (champs.expertise !== undefined) colonnes.expertise = champs.expertise
+  if (champs.bio !== undefined) colonnes.bio = champs.bio
+  if (champs.photo !== undefined) colonnes.photo = champs.photo
+  if (champs.emailPro !== undefined) colonnes.email_pro = champs.emailPro
+  if (champs.whatsapp !== undefined) colonnes.whatsapp = champs.whatsapp
+
   const row = verifier(
-    await supabase().from('formateurs').update(champs).eq('id', id).select('*').single(),
+    await supabase().from('formateurs').update(colonnes).eq('id', id).select('*').single(),
     'mise à jour du formateur',
+  )
+  return versFormateur(row)
+}
+
+/**
+ * « Demander l'activation à l'équipe » (planche D, écran 05, état verrouillé).
+ * Le formateur ne s'active pas lui-même : la demande est horodatée, elle
+ * remonte à l'administration qui pose `coaching_prive_actif`.
+ */
+export async function demanderActivationCoachingPrive(id: string): Promise<Formateur> {
+  const row = verifierUn(
+    await supabase()
+      .from('formateurs')
+      .update({ activation_coaching_demandee_le: new Date().toISOString() })
+      .eq('id', id)
+      .select('*')
+      .maybeSingle(),
+    'demande d’activation du coaching privé',
+    'Formateur introuvable',
   )
   return versFormateur(row)
 }

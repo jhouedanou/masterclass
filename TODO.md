@@ -146,8 +146,9 @@ npm run db:seed:generer && npm run db:sql
 ```
 
 **Comptes de démonstration** — mot de passe commun `Masterclass2026!` :
-`admin@bigfive.ci` (administrateur supérieur) · `editeur@bigfive.ci` (droits partiels) ·
-`formateur@bigfive.ci` · `aya@example.ci` (apprenante, 2 modules et 1 attestation).
+`jeanluc@`, `cossi@`, `jeremie.declercq@` et `houefa@bigfiveabidjan.com` (administrateurs
+supérieurs) · `editeur@bigfive.ci` (droits partiels) · `formateur@bigfive.ci` ·
+`aya@example.ci` (apprenante, 2 modules et 1 attestation).
 
 **Attention** : les variables d'environnement sont lues **à l'exécution** et priment sur ce qu'un
 build aurait figé. Un serveur démarré avec un autre `SUPABASE_URL` parle bien à cette base-là.

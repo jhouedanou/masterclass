@@ -1,6 +1,6 @@
 import type { Certificat, CodeEchecPaiement, Commande, Transaction } from '#shared/types'
 import { supabase } from './client'
-import { traduireErreur, verifier, verifierOptionnel } from './erreurs'
+import { traduireErreur, verifier, verifierOptionnel, verifierUn } from './erreurs'
 import { versCertificat, versCommande, versTransaction } from './mappers'
 import type { MoyenCommandeSql, MoyenTransactionSql } from './types'
 
@@ -128,7 +128,8 @@ export async function listerCertificatsUtilisateur(utilisateurId: string): Promi
   return rows.map(versCertificat)
 }
 
-/** Lecture publique par numéro : c'est la cible du QR code du document. */
+/** Lecture par numéro : la vérification publique et le document imprimable en
+ *  partent tous les deux, chacun n'en exposant que ce qui le regarde. */
 export async function trouverCertificat(numero: string): Promise<Certificat | null> {
   const row = verifierOptionnel(
     await supabase().from('certificats').select('*').eq('numero', numero).maybeSingle(),
@@ -152,6 +153,87 @@ export async function delivrerCertificat(
   })
   if (error) throw traduireErreur(error, 'délivrance du certificat')
   return versCertificat(data)
+}
+
+/**
+ * Révocation d'une attestation délivrée à tort. Le document n'est pas effacé —
+ * il a pu être imprimé et diffusé — mais la vérification publique le déclare
+ * désormais non valable, ce qui est le seul recours utile.
+ */
+export async function revoquerCertificat(numero: string, motif: string): Promise<Certificat> {
+  const row = verifierUn(
+    await supabase()
+      .from('certificats')
+      .update({ revoque_le: new Date().toISOString(), motif_revocation: motif })
+      .eq('numero', numero)
+      .select('*')
+      .maybeSingle(),
+    'révocation de l’attestation',
+    'Attestation introuvable',
+  )
+  return versCertificat(row)
+}
+
+export async function retablirCertificat(numero: string): Promise<Certificat> {
+  const row = verifierUn(
+    await supabase()
+      .from('certificats')
+      .update({ revoque_le: null, motif_revocation: null })
+      .eq('numero', numero)
+      .select('*')
+      .maybeSingle(),
+    'rétablissement de l’attestation',
+    'Attestation introuvable',
+  )
+  return versCertificat(row)
+}
+
+// --- Vérification publique -------------------------------------------------
+
+/** Fenêtre glissante sur laquelle les consultations d'une même adresse sont comptées. */
+export const FENETRE_VERIFICATION_MINUTES = 10
+
+export async function enregistrerTentativeVerification(
+  ip: string,
+  numero: string,
+  trouve: boolean,
+): Promise<void> {
+  verifier(
+    await supabase().from('tentatives_verification').insert({ ip, numero, trouve }).select('id'),
+    'consultation de vérification',
+  )
+}
+
+/**
+ * Consultations récentes d'une adresse, réussies et manquées séparément.
+ *
+ * Les numéros étant tirés d'une séquence, qui en connaît un les devine tous :
+ * sans ce comptage, le nom de chaque apprenant serait récoltable un par un.
+ */
+export async function compterTentativesVerification(
+  ip: string,
+): Promise<{ total: number; manquees: number }> {
+  const depuis = new Date(Date.now() - FENETRE_VERIFICATION_MINUTES * 60_000).toISOString()
+  const rows = verifier(
+    await supabase()
+      .from('tentatives_verification')
+      .select('trouve')
+      .eq('ip', ip)
+      .gte('cree_le', depuis),
+    'consultations de vérification',
+  )
+  return { total: rows.length, manquees: rows.filter((r) => !r.trouve).length }
+}
+
+/** Les consultations ne servent qu'à la fenêtre glissante : au-delà d'un jour,
+ *  elles ne sont plus qu'un journal d'adresses IP dont personne n'a l'usage. */
+export async function purgerTentativesVerification(): Promise<number> {
+  const limite = new Date(Date.now() - 24 * 3600 * 1000).toISOString()
+  const rows = verifier(
+    await supabase().from('tentatives_verification').delete().lt('cree_le', limite).select('id'),
+    'purge des consultations de vérification',
+  )
+  return rows.length
 }
 
 // --- Commandes -------------------------------------------------------------

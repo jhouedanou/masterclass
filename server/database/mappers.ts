@@ -166,6 +166,9 @@ export function versFormateur(row: FormateurRow): Formateur {
     ficheComplete: row.fiche_complete,
     coachingPriveFcfaHeure: row.coaching_prive_fcfa_heure,
     coachingPriveActif: row.coaching_prive_actif,
+    emailPro: row.email_pro || undefined,
+    whatsapp: row.whatsapp || undefined,
+    activationCoachingDemandeeLe: optionnel(row.activation_coaching_demandee_le),
     seo: versSeo(row),
   }
 }
@@ -312,6 +315,7 @@ export function versSujetSession(row: SujetSessionRow): SujetSession {
     preoccupation: row.preoccupation,
     attente: row.attente,
     soumisLe: row.soumis_le,
+    luLe: optionnel(row.lu_le),
   }
 }
 
@@ -431,6 +435,8 @@ export function versCertificat(row: CertificatRow): Certificat {
     dateDelivrance: row.date_delivrance,
     tauxCompletion: row.taux_completion,
     prenomNomConfirmeLe: optionnel(row.prenom_nom_confirme_le),
+    revoqueLe: optionnel(row.revoque_le),
+    motifRevocation: optionnel(row.motif_revocation),
   }
 }
 

@@ -54,7 +54,7 @@ explicite.
 | Apprenante | `aya@example.ci` |
 | Formateur | `formateur@bigfive.ci` |
 | Administrateur de contenu | `editeur@bigfive.ci` |
-| Administrateur supérieur | `admin@bigfive.ci` |
+| Administrateurs supérieurs | `jeanluc@bigfiveabidjan.com` · `cossi@bigfiveabidjan.com` · `jeremie.declercq@bigfiveabidjan.com` · `houefa@bigfiveabidjan.com` |
 
 Mot de passe commun : **`Masterclass2026!`** — défini par le seed, à changer avant toute mise en
 ligne publique.
@@ -324,6 +324,26 @@ squelette « Attestation de suivi de module » fourni par le client.
 - Délivrance déclenchée à 100 % de progression (`POST /api/certificats`).
 - QR code produit côté serveur, pointant vers `/verifier/<numero>`.
 - Export PDF via l'impression du navigateur (feuille `@media print`, A4 paysage).
+
+### Vérification publique
+
+`/verifier` (saisie manuelle, indexable) et `/verifier/<numero>` (cible du QR, en `noindex`)
+s'appuient sur `GET /api/verifier/<numero>`, qui ne renvoie **que** les champs imprimés sur le
+document. L'attestation complète — identifiant du compte, du module — reste derrière
+`GET /api/certificats/<numero>`, réservée à son titulaire : un vérificateur n'a pas à savoir quel
+compte a suivi quel module.
+
+La numérotation étant séquentielle, elle est devinable : sans garde-fou, le nom de chaque apprenant
+serait récoltable un par un. Les consultations sont donc comptées par adresse dans
+`tentatives_verification` — dix numéros manqués ou soixante consultations sur dix minutes valent un
+429. Le comptage est en base, non en mémoire : sur un hébergement sans processus permanent, un
+compteur en RAM repartirait de zéro à chaque démarrage à froid. La table est purgée à 24 h par la
+tâche de nuit (`server/tasks/comptes/purger.ts`).
+
+Une attestation délivrée à tort se révoque depuis la fiche apprenant de l'administration
+(`POST /api/admin/certificats`, motif obligatoire, action journalisée). Le document n'est pas
+effacé — il a pu être imprimé — mais `/verifier` le déclare non valable, il n'est plus imprimable
+par son titulaire, et l'espace apprenant l'affiche « Révoquée ». Le motif reste interne.
 
 ## Règles métier appliquées
 

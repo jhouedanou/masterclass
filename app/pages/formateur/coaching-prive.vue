@@ -4,8 +4,10 @@ import type { CreneauCoaching, HistoriqueCoachingPrive, StatutCoachingPrive } fr
 definePageMeta({ layout: 'formateur', middleware: 'formateur' })
 usePagePrivee('Coaching privé — formateur')
 
-const { data } = await useFetch<{
+const { data, refresh } = await useFetch<{
   actif: boolean
+  tarifFcfaHeure: number
+  activationDemandeeLe: string | null
   seances: {
     id: string
     apprenant: string
@@ -13,75 +15,142 @@ const { data } = await useFetch<{
     module: string
     creneau: string | null
     creneaux: CreneauCoaching[]
+    heures: number
     dureeMinutes: number
     statut: StatutCoachingPrive
     paye: boolean
     lienSession: string | null
     sujets: string
+    agendaCree: boolean
     historique: HistoriqueCoachingPrive[]
   }[]
 }>('/api/formateur/coaching-prive')
+
+const envoi = ref(false)
+const erreur = ref('')
+
+async function demanderActivation() {
+  envoi.value = true
+  erreur.value = ''
+  try {
+    await $fetch('/api/formateur/demande-activation', { method: 'POST' })
+    await refresh()
+  } catch (e) {
+    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Demande impossible pour l’instant.'
+  } finally {
+    envoi.value = false
+  }
+}
 </script>
 
 <template>
   <div v-if="data">
     <h1 class="font-title text-[26px] font-light">Coaching privé</h1>
-    <p class="mt-2 max-w-[720px] text-[13.5px] text-discret">
-      Tarif fixe plateforme : 50 000 FCFA / h. La planification et le paiement sont gérés par
-      l’équipe — vous animez. L’apprenant soumet obligatoirement ses préoccupations avant la séance.
+    <p class="mt-1.5 max-w-[720px] text-[12.5px] text-discret">
+      Tarif fixe plateforme : {{ formatFcfa(data.tarifFcfaHeure) }} / h. La planification et le
+      paiement sont gérés par l’équipe — vous animez.
     </p>
 
-    <!-- État verrouillé (planche D, écran 05) : la section s'ouvre depuis
-         l'administration, avec l'accès « Formateur avec coaching privé ». -->
-    <div v-if="!data.actif" class="mt-8 rounded-[14px] border border-dashed border-ligne bg-fond-clair p-8 text-center">
-      <Icon name="ph:lock-simple" size="40" class="text-discret" />
-      <h2 class="mt-3 font-title text-[21px] font-light">Section verrouillée</h2>
-      <p class="mx-auto mt-2 max-w-[520px] text-[14px] text-texte">
-        Le coaching privé n’est pas activé sur votre compte. Il s’ouvre à la demande, par
-        l’équipe E-Masterclass Big Five : vous apparaîtrez alors dans les demandes des apprenants.
+    <!-- État verrouillé (planche D, écran 05, panneau de droite) : la section
+         s'ouvre depuis l'administration, avec l'accès « Formateur avec
+         coaching privé ». -->
+    <div
+      v-if="!data.actif"
+      class="mx-auto mt-8 max-w-[420px] rounded-[14px] border border-ligne bg-white p-9 text-center"
+    >
+      <p class="surtitre text-discret">État — formateur simple (section verrouillée)</p>
+      <span class="mx-auto mt-4 grid size-14 place-items-center rounded-full bg-fond-voile text-discret">
+        <Icon name="ph:lock-simple" size="24" />
+      </span>
+      <b class="mt-3 block text-[16px]">Coaching privé non activé</b>
+      <p class="mx-auto mt-2 max-w-[300px] text-[13px] leading-relaxed text-discret">
+        Votre accès actuel est « Formateur simple ». L’équipe Big Five peut activer le coaching
+        privé pour votre profil : vous apparaîtrez alors sur /formateurs au tarif fixe de
+        {{ formatFcfa(data.tarifFcfaHeure) }} / h.
       </p>
       <UiBaseButton
-        class="mt-5"
+        v-if="!data.activationDemandeeLe"
+        class="mt-4"
+        variante="contour"
         taille="sm"
-        variante="whatsapp"
-        :href="lienWhatsApp('Bonjour, je souhaite activer le coaching privé sur mon compte formateur.')"
+        :disabled="envoi"
+        @click="demanderActivation"
       >
-        Demander l’activation
+        Demander l’activation à l’équipe
       </UiBaseButton>
+      <p v-else class="mt-4 rounded-[10px] bg-succes-voile px-4 py-3 text-[13px] font-bold text-succes">
+        Demande envoyée le {{ formatDate(data.activationDemandeeLe) }} — l’équipe vous répondra.
+      </p>
+      <p v-if="erreur" class="mt-3 text-[13px] text-erreur">{{ erreur }}</p>
     </div>
 
     <template v-else>
-      <p v-if="!data.seances.length" class="mt-6 text-[13.5px] text-discret">Aucune demande pour le moment.</p>
-      <div class="mt-6 flex flex-col gap-4">
+      <p v-if="!data.seances.length" class="mt-6 text-[13.5px] text-discret">
+        Aucune demande pour le moment.
+      </p>
+      <div class="mt-5 flex flex-col gap-3">
         <article
           v-for="seance in data.seances"
           :key="seance.id"
-          class="rounded-[14px] border bg-white p-6"
-          :class="seance.statut === 'payee' ? 'border-succes' : 'border-ligne-douce'"
+          class="rounded-[14px] bg-white"
+          :class="seance.statut === 'payee'
+            ? 'border-2 border-social p-5'
+            : seance.statut === 'realisee'
+              ? 'border border-ligne-douce p-4 opacity-80'
+              : 'border border-ligne-douce p-4'"
         >
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 class="font-title text-[19px] font-light">
-                {{ seance.apprenant }}
-                <span v-if="seance.creneau" class="text-texte"> — {{ seance.creneau }} · {{ formatDuree(seance.dureeMinutes) }}</span>
-                <span v-else class="text-texte"> — demande en cours de traitement par l’équipe</span>
-              </h2>
-              <p class="mt-1 text-[12.5px] text-discret">{{ seance.module }}</p>
-              <p v-if="seance.sujets" class="mt-2 max-w-[640px] whitespace-pre-line text-[14px] text-texte">
-                {{ seance.sujets }}
-              </p>
-            </div>
-            <span class="rounded-full px-3 py-1.5 text-[12px] font-bold" :class="CLASSES_COACHING_PRIVE[seance.statut]">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <b class="text-[15px]">
+              {{ seance.apprenant }}
+              <template v-if="seance.creneau">
+                — {{ seance.creneau }} · {{ seance.heures }} h
+              </template>
+              <template v-else>
+                — demande en cours de traitement par l’équipe (créneau à confirmer)
+              </template>
+            </b>
+            <span
+              class="rounded-full px-2.5 py-1 text-[11px] font-bold"
+              :class="CLASSES_COACHING_PRIVE[seance.statut]"
+            >
               {{ LIBELLES_COACHING_PRIVE[seance.statut] }}{{ seance.paye ? ' · payée ✓' : '' }}
             </span>
           </div>
 
-          <div v-if="seance.statut === 'payee'" class="mt-4 flex flex-wrap gap-2">
-            <UiBaseButton v-if="seance.lienSession" taille="sm" :href="seance.lienSession">Démarrer la session</UiBaseButton>
-            <span v-else class="self-center text-[13px] text-discret">Lien de session en attente de planification.</span>
+          <p v-if="seance.sujets" class="mt-2 max-w-[640px] text-[13px] leading-relaxed text-texte">
+            <b>Sujets soumis :</b> {{ seance.sujets }}
+          </p>
+          <p class="mt-1 text-[12.5px] text-discret">{{ seance.module }}</p>
+
+          <div v-if="seance.statut === 'payee'" class="mt-3 flex flex-wrap items-center gap-2.5">
+            <UiBaseButton taille="sm" :to="`/formateur/session/prive-${seance.id}`">
+              Démarrer la session (jour J)
+            </UiBaseButton>
+            <UiBaseButton variante="contour" taille="sm" :to="`/formateur/apprenant/${seance.utilisateurId}`">
+              Voir la fiche apprenant
+            </UiBaseButton>
+            <span v-if="seance.agendaCree" class="text-[11.5px] text-discret">
+              Événement Google Agenda créé — rappels automatiques
+            </span>
+            <span v-else class="text-[11.5px] text-discret">
+              Créneau en attente de planification par l’équipe.
+            </span>
+          </div>
+          <div v-else-if="seance.statut === 'realisee'" class="mt-2">
+            <NuxtLink
+              :to="`/formateur/apprenant/${seance.utilisateurId}`"
+              class="text-[12.5px] font-bold text-social hover:underline"
+            >
+              Voir la fiche apprenant →
+            </NuxtLink>
           </div>
         </article>
       </div>
+
+      <p class="mt-4 rounded-[12px] border border-ligne-douce bg-white px-4.5 py-3.5 text-[12.5px] leading-relaxed text-discret">
+        L’apprenant soumet obligatoirement ses préoccupations avant d’entrer en session — vous les
+        recevez ici et par e-mail. Votre rémunération coaching apparaît dans l’onglet Revenus.
+      </p>
     </template>
   </div>
 </template>

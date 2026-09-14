@@ -1103,11 +1103,37 @@ export const utilisateurs: Utilisateur[] = [
     role: 'apprenant',
     ficheCompletee: false,
   },
+  // Administrateurs supérieurs : aucun `sectionsAutorisees`, ils voient tout
+  // le back-office (voir `sectionsEffectives`, server/utils/session.ts).
   {
     id: 'usr-admin',
-    prenom: 'Fatou',
-    nom: 'Diarra',
-    email: 'admin@bigfive.ci',
+    prenom: 'Jean-Luc',
+    nom: 'Houedanou',
+    email: 'jeanluc@bigfiveabidjan.com',
+    role: 'admin-superieur',
+  },
+  {
+    id: 'usr-cossi',
+    prenom: 'Cossi',
+    nom: '(à compléter)',
+    email: 'cossi@bigfiveabidjan.com',
+    role: 'admin-superieur',
+  },
+  // Compte d'administration distinct de la fiche formateur `for-declercq` :
+  // le rôle est unique par compte, et `utilisateur_formateur_coherent` interdit
+  // de rattacher une fiche formateur à un compte qui n'est pas `formateur`.
+  {
+    id: 'usr-declercq',
+    prenom: 'Jérémie',
+    nom: 'De Clercq',
+    email: 'jeremie.declercq@bigfiveabidjan.com',
+    role: 'admin-superieur',
+  },
+  {
+    id: 'usr-houefa',
+    prenom: 'Houéfa',
+    nom: '(à compléter)',
+    email: 'houefa@bigfiveabidjan.com',
     role: 'admin-superieur',
   },
   {

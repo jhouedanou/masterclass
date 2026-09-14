@@ -56,7 +56,17 @@ export default defineEventHandler(async (event) => {
         progression: siens.length
           ? Math.round(siens.reduce((somme, a) => somme + a.progression, 0) / siens.length)
           : 0,
-        certificats: certificats.filter((c) => c.utilisateurId === u.id).length,
+        // La liste, et non plus le seul compte : la fiche porte l'action de
+        // révocation, qui a besoin du numéro et de l'état de chaque attestation.
+        certificats: certificats
+          .filter((c) => c.utilisateurId === u.id)
+          .map((c) => ({
+            numero: c.numero,
+            titreModule: c.titreModule,
+            dateDelivrance: c.dateDelivrance,
+            revoqueLe: c.revoqueLe ?? null,
+            motifRevocation: c.motifRevocation ?? null,
+          })),
         persona,
         montantPaye: transactions
           .filter((t) => t.utilisateurId === u.id && t.statut === 'reussie')

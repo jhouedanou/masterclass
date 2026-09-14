@@ -181,6 +181,33 @@ export async function listerSujetsSession(sessionId: string): Promise<SujetSessi
   return rows.map(versSujetSession)
 }
 
+/** Sujets de plusieurs sessions d'un coup, pour le compteur « Sujets à lire »
+ *  du tableau de bord formateur (planche D, écran 01). */
+export async function listerSujetsSessions(sessionIds: string[]): Promise<SujetSession[]> {
+  if (!sessionIds.length) return []
+  const rows = verifier(
+    await supabase().from('sujets_sessions').select('*').in('session_id', sessionIds).order('soumis_le'),
+    'sujets de sessions',
+  )
+  return rows.map(versSujetSession)
+}
+
+/**
+ * Ouvrir la liste des sujets vaut lecture : le compteur « Sujets à lire avant
+ * le 10/09 » retombe. Seuls les sujets encore non lus sont horodatés, pour
+ * garder la date de première lecture.
+ */
+export async function marquerSujetsLus(sessionId: string): Promise<void> {
+  const { error } = await supabase()
+    .from('sujets_sessions')
+    .update({ lu_le: new Date().toISOString() })
+    .eq('session_id', sessionId)
+    .is('lu_le', null)
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: 'Marquage des sujets lus impossible' })
+  }
+}
+
 /**
  * Réservation d'une place. Les six vérifications (session ouverte, fiche
  * complète, module de la thématique acquis, non déjà inscrit, places

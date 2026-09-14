@@ -1,4 +1,5 @@
 import { enregistrerJournal } from '../../database/administration'
+import { purgerTentativesVerification } from '../../database/commerce'
 import { listerSuppressionsEchues, listerSuppressionsJ3, marquerSupprime } from '../../database/comptes'
 import { notifierCompte } from '../../utils/notifications'
 
@@ -7,6 +8,10 @@ import { notifierCompte } from '../../utils/notifications'
  * suppression est passée sont supprimés pour de bon (suppression douce :
  * e-mail libéré, écritures comptables conservées) ; ceux qui tombent dans
  * trois jours reçoivent un rappel.
+ *
+ * La même passe vide les consultations de la page de vérification publique de
+ * plus de vingt-quatre heures : passé la fenêtre de comptage, ce ne serait
+ * plus qu'un journal d'adresses IP sans usage.
  */
 export async function purgerComptes() {
   const [echus, rappels] = await Promise.all([listerSuppressionsEchues(), listerSuppressionsJ3()])
@@ -24,7 +29,9 @@ export async function purgerComptes() {
       objet: 'apprenant',
     })
   }
-  return { supprimes: echus.length, rappels: rappels.length }
+  const verifications = await purgerTentativesVerification()
+
+  return { supprimes: echus.length, rappels: rappels.length, verifications }
 }
 
 export default defineTask({

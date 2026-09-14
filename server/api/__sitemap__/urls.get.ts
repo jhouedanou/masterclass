@@ -30,6 +30,7 @@ export default defineEventHandler(async () => {
       .map((f) => ({ loc: `/formateurs/${f.slug}`, priority: 0.5 })),
     { loc: '/devenir-formateur', priority: 0.5 },
     { loc: '/contact', priority: 0.4 },
+    { loc: '/verifier', priority: 0.3 },
     { loc: '/sessions', priority: 0.4 },
     { loc: '/blog', changefreq: 'weekly', priority: 0.7 },
     ...articles

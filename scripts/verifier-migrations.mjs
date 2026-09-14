@@ -68,7 +68,7 @@ const ATTENDUS = {
   formateurs: 7,
   modules: 18,
   chapitres: 72,
-  utilisateurs: 6,
+  utilisateurs: 9,
   acces: 2,
   sessions_coaching: 3,
   articles: 5,
@@ -431,17 +431,144 @@ await attendValeur(
   `select count(*)::int from certificats where prenom_nom_confirme_le is not null`,
 )
 
+// --- Planche D : profil formateur, sujets lus, agenda -------------------------
+
+console.log('\nEspace formateur (migration 12)')
+await attendValeur(
+  'colonnes de la migration 12 posées',
+  6,
+  `select count(*)::int from information_schema.columns
+    where (table_name, column_name) in (
+      ('formateurs', 'email_pro'),
+      ('formateurs', 'whatsapp'),
+      ('formateurs', 'activation_coaching_demandee_le'),
+      ('sujets_sessions', 'lu_le'),
+      ('sessions_coaching', 'evenement_agenda_id'),
+      ('demandes_coaching_prive', 'evenement_agenda_id')
+    )`,
+)
+
+// Les coordonnées internes valent la chaîne vide, jamais NULL : les écrans les
+// affichent sans garde-fou.
+await attendValeur(
+  'coordonnées du formateur jamais nulles',
+  0,
+  `select count(*)::int from formateurs where email_pro is null or whatsapp is null`,
+)
+
+// « Sujets à lire avant le 10/09 » : le compteur repose sur lu_le à NULL.
+await attendValeur(
+  'sujets non lus avant ouverture de la liste',
+  2,
+  `select count(*)::int from sujets_sessions where session_id = 'ses-002' and lu_le is null`,
+)
+await db.query(`update sujets_sessions set lu_le = now() where session_id = 'ses-002' and lu_le is null`)
+await attendValeur(
+  'liste ouverte : plus aucun sujet à lire',
+  0,
+  `select count(*)::int from sujets_sessions where session_id = 'ses-002' and lu_le is null`,
+)
+
+await db.query(
+  `update formateurs set activation_coaching_demandee_le = now() where id = 'for-declercq'`,
+)
+await attendValeur(
+  'demande d’activation du coaching privé horodatée',
+  1,
+  `select count(*)::int from formateurs
+    where activation_coaching_demandee_le is not null and coaching_prive_actif = false`,
+)
+
+// --- Vérification publique des attestations (migration 13) -------------------
+
+console.log('\nVérification publique des attestations (migration 13)')
+await attendValeur(
+  'colonnes de la migration 13 posées',
+  2,
+  `select count(*)::int from information_schema.columns
+    where (table_name, column_name) in (
+      ('certificats', 'revoque_le'),
+      ('certificats', 'motif_revocation')
+    )`,
+)
+await attendValeur(
+  'table de comptage des vérifications en place',
+  1,
+  `select count(*)::int from information_schema.tables where table_name = 'tentatives_verification'`,
+)
+// L'index porte la fenêtre glissante : sans lui, chaque vérification balaierait
+// la table entière.
+await attendValeur(
+  'index (ip, cree_le) posé sur les consultations',
+  1,
+  `select count(*)::int from pg_indexes
+    where tablename = 'tentatives_verification' and indexname = 'tentatives_verification_ip_idx'`,
+)
+
+// Une attestation délivrée est valable tant qu'elle n'est pas révoquée.
+await attendValeur(
+  'attestation du seed non révoquée',
+  0,
+  `select count(*)::int from certificats where revoque_le is not null`,
+)
+await db.query(
+  `update certificats set revoque_le = now(), motif_revocation = 'identité usurpée'
+    where numero = 'EMBF-ENT-2026-000128'`,
+)
+await attendValeur(
+  'attestation révoquée avec son motif',
+  1,
+  `select count(*)::int from certificats
+    where numero = 'EMBF-ENT-2026-000128' and revoque_le is not null and motif_revocation = 'identité usurpée'`,
+)
+// Le rétablissement efface les deux colonnes ensemble : un motif orphelin
+// laisserait croire à une révocation toujours active.
+await db.query(
+  `update certificats set revoque_le = null, motif_revocation = null
+    where numero = 'EMBF-ENT-2026-000128'`,
+)
+await attendValeur(
+  'rétablissement : plus de révocation ni de motif',
+  1,
+  `select count(*)::int from certificats
+    where numero = 'EMBF-ENT-2026-000128' and revoque_le is null and motif_revocation is null`,
+)
+
+// Le comptage distingue les numéros manqués des consultations abouties : c'est
+// ce qui permet de bloquer un balayage sans pénaliser un employeur qui
+// contrôle plusieurs attestations d'affilée.
+await db.query(
+  `insert into tentatives_verification (ip, numero, trouve)
+   select '198.51.100.7', 'EMBF-ENT-2026-90000' || g, false from generate_series(0, 9) g`,
+)
+await db.query(
+  `insert into tentatives_verification (ip, numero, trouve)
+   values ('198.51.100.8', 'EMBF-ENT-2026-000128', true)`,
+)
+await attendValeur(
+  'balayage repéré sur la fenêtre de 10 minutes',
+  10,
+  `select count(*)::int from tentatives_verification
+    where ip = '198.51.100.7' and not trouve and cree_le > now() - interval '10 minutes'`,
+)
+await attendValeur(
+  'une autre adresse n’est pas pénalisée',
+  0,
+  `select count(*)::int from tentatives_verification
+    where ip = '198.51.100.8' and not trouve and cree_le > now() - interval '10 minutes'`,
+)
+
 // --- Authentification --------------------------------------------------------
 
 console.log('\nAuthentification')
 await attendValeur(
   'empreintes de mot de passe posées (jamais en clair)',
-  6,
+  9,
   `select count(*)::int from utilisateurs where mot_de_passe_hache like 'scrypt$%'`,
 )
 await attendValeur(
   'sels distincts d’un compte à l’autre',
-  6,
+  9,
   `select count(distinct split_part(mot_de_passe_hache, '$', 5))::int from utilisateurs`,
 )
 await attendValeur(
@@ -542,8 +669,8 @@ const { rows: apresRattrapage } = await enLigne.query(
           (select mot_de_passe_hache from utilisateurs where id = 'usr-aya') as aya
      from utilisateurs`,
 )
-if (apresRattrapage[0].pourvus === 5) succes('rattrapage : 5 comptes pourvus')
-else echec(`rattrapage : ${apresRattrapage[0].pourvus} comptes pourvus, 5 attendus`)
+if (apresRattrapage[0].pourvus === 8) succes('rattrapage : 8 comptes pourvus')
+else echec(`rattrapage : ${apresRattrapage[0].pourvus} comptes pourvus, 8 attendus`)
 if (apresRattrapage[0].aya === 'scrypt$deja$choisi') succes('rattrapage : mot de passe existant préservé')
 else echec('rattrapage : un mot de passe existant a été écrasé')
 

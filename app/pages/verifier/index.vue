@@ -2,7 +2,15 @@
 // Saisie manuelle d'un numéro d'attestation — pour les cas où le QR code est
 // illisible ou que l'on ne dispose que du numéro par écrit. La vérification
 // elle-même est portée par /verifier/[numero], cible du QR.
-usePagePrivee('Vérifier une attestation')
+//
+// Cette page-ci est indexable : un employeur qui cherche à contrôler une
+// attestation doit pouvoir la trouver. Les pages de résultat, elles, restent
+// en noindex — le nom des apprenants n'a rien à faire dans un moteur.
+usePageSeo({
+  titreAuto: 'Vérifier une attestation',
+  descriptionAuto:
+    'Contrôlez l’authenticité d’une attestation de suivi de module E-Masterclass Big Five à partir de son numéro ou de son QR code.',
+})
 
 const numero = ref('')
 

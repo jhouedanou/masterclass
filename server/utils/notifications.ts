@@ -31,6 +31,7 @@ export type ModeleNotification =
   | 'contact-accuse'
   | 'paiement-verification'
   | 'alerte-lancement'
+  | 'activation-coaching-demandee'
 
 export interface Notification {
   canal: CanalNotification
@@ -60,6 +61,7 @@ export const SUJETS: Record<ModeleNotification, string> = {
   'contact-accuse': 'Nous avons bien reçu votre message',
   'paiement-verification': 'Votre paiement est en cours de vérification',
   'alerte-lancement': 'Le module que vous attendiez est disponible',
+  'activation-coaching-demandee': 'Un formateur demande l’activation du coaching privé',
 }
 
 const piloteConsole: PiloteNotifications = {
