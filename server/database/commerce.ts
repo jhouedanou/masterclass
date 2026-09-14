@@ -168,11 +168,15 @@ export async function enregistrerCommande(champs: {
   lignes: { moduleId: string; prixFcfa: number }[]
   moyen: MoyenCommandeSql
   statut?: Commande['statut']
+  /** Séance de coaching privé réglée par la commande : aucune ligne module. */
+  demandeCoachingId?: string
+  /** Montant imposé quand la commande ne porte pas de module (séance privée). */
+  total?: number
 }): Promise<Commande> {
   // Référence transmise à FeexPay comme `custom_id` : un suffixe aléatoire
   // évite qu'un même instant produise deux commandes identiques.
   const reference = `CMD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
-  const total = champs.lignes.reduce((somme, ligne) => somme + ligne.prixFcfa, 0)
+  const total = champs.total ?? champs.lignes.reduce((somme, ligne) => somme + ligne.prixFcfa, 0)
 
   const commande = verifier(
     await supabase()
@@ -183,11 +187,14 @@ export async function enregistrerCommande(champs: {
         total,
         moyen: champs.moyen,
         statut: champs.statut ?? 'confirmee',
+        demande_coaching_id: champs.demandeCoachingId ?? null,
       })
       .select('*')
       .single(),
     'création de la commande',
   )
+
+  if (!champs.lignes.length) return versCommande(commande, [])
 
   const { error } = await supabase()
     .from('commandes_modules')
@@ -207,6 +214,44 @@ export async function enregistrerCommande(champs: {
   }
 
   return versCommande(commande, champs.lignes.map((ligne) => ligne.moduleId))
+}
+
+/** Commandes d'un apprenant, les plus récentes d'abord (« Historique d'achats », planche B, 01). */
+export async function listerCommandesUtilisateur(utilisateurId: string): Promise<Commande[]> {
+  const rows = verifier(
+    await supabase()
+      .from('commandes')
+      .select('*')
+      .eq('utilisateur_id', utilisateurId)
+      .order('creee_le', { ascending: false }),
+    'commandes',
+  )
+  if (!rows.length) return []
+  const lignes = verifier(
+    await supabase()
+      .from('commandes_modules')
+      .select('commande_reference, module_id')
+      .in('commande_reference', rows.map((r) => r.reference)),
+    'détail des commandes',
+  )
+  return rows.map((row) =>
+    versCommande(row, lignes.filter((l) => l.commande_reference === row.reference).map((l) => l.module_id)),
+  )
+}
+
+/** Commande ouverte pour régler une séance de coaching privé (« Accepter et payer »). */
+export async function trouverCommandeDemande(demandeId: string): Promise<Commande | null> {
+  const row = verifierOptionnel(
+    await supabase()
+      .from('commandes')
+      .select('*')
+      .eq('demande_coaching_id', demandeId)
+      .order('creee_le', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    'commande de coaching privé',
+  )
+  return row ? versCommande(row, []) : null
 }
 
 export async function trouverCommande(reference: string): Promise<Commande | null> {

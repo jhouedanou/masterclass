@@ -30,6 +30,7 @@
     "@pinia/nuxt": "^1.0.2",
     "@supabase/supabase-js": "^2.112.4",
     "@tailwindcss/vite": "^4.3.3",
+    "@zoom/meetingsdk": "^6.2.0",
     "hls.js": "^1.7.2",
     "nuxt": "^4.5.2",
     "nuxt-schema-org": "^6.2.9",

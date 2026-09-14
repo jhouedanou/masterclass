@@ -28,6 +28,11 @@ const signatureAbsente = ref(false)
 function imprimer() {
   window.print()
 }
+
+// « Télécharger PDF » (planche B, écran 09) : la boîte d'impression s'ouvre à l'arrivée.
+onMounted(() => {
+  if (route.query.telecharger === '1') setTimeout(() => window.print(), 600)
+})
 </script>
 
 <template>

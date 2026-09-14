@@ -3,6 +3,7 @@ import { listerThematiques } from '../../database/catalogue'
 import { annulerSession, listerInscritsSession, reporterSession, trouverSession } from '../../database/coaching'
 import { notifierCompte } from '../../utils/notifications'
 import { exigerAdmin } from '../../utils/session'
+import { debutSession, modifierReunion, supprimerReunion } from '../../utils/zoom'
 
 /** Annulation ou report : les inscrits sont notifiés par e-mail et WhatsApp. */
 export default defineEventHandler(async (event) => {
@@ -25,6 +26,7 @@ export default defineEventHandler(async (event) => {
   let session
   if (action === 'annuler') {
     session = await annulerSession(id)
+    await supprimerReunion(existante.zoomReunionId ?? '')
     await enregistrerJournal(
       auteur,
       'a annulé la session',
@@ -32,6 +34,9 @@ export default defineEventHandler(async (event) => {
     )
   } else {
     session = await reporterSession(id, { date, heure })
+    await modifierReunion(existante.zoomReunionId ?? '', {
+      debutIso: debutSession(session.date, session.heure).toISOString(),
+    })
     await enregistrerJournal(
       auteur,
       'a reporté la session',

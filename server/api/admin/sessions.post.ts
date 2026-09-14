@@ -2,6 +2,7 @@ import { enregistrerJournal } from '../../database/administration'
 import { listerThematiques, trouverFormateur } from '../../database/catalogue'
 import { creerSession } from '../../database/coaching'
 import { exigerAdmin } from '../../utils/session'
+import { creerReunion, debutSession } from '../../utils/zoom'
 
 /**
  * Planification d'une session. La réunion Zoom est créée à la validation —
@@ -19,6 +20,9 @@ export default defineEventHandler(async (event) => {
     heure: string
     dureeMinutes?: number
     places?: number
+    titre?: string
+    ouvertureSalleMinutes?: number
+    enregistrement?: boolean
   }>(event)
 
   const [thematiques, formateur] = await Promise.all([
@@ -31,6 +35,14 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Thématique ou formateur introuvable' })
   }
 
+  // La réunion Zoom est créée à la validation (planche C, écran 03) ; le lien
+  // n'est jamais affiché en clair aux apprenants.
+  const zoom = await creerReunion({
+    sujet: body.titre?.trim() || `${thematique.nom} — coaching collectif`,
+    debutIso: debutSession(body.date, body.heure).toISOString(),
+    dureeMinutes: body.dureeMinutes ?? 120,
+    enregistrement: body.enregistrement === true,
+  })
   const session = await creerSession({
     thematiqueId: body.thematiqueId,
     programme: thematique.programme,
@@ -39,6 +51,10 @@ export default defineEventHandler(async (event) => {
     heure: body.heure,
     dureeMinutes: body.dureeMinutes,
     places: body.places,
+    titre: body.titre?.trim() || undefined,
+    ouvertureSalleMinutes: body.ouvertureSalleMinutes,
+    enregistrement: body.enregistrement === true,
+    zoom,
   })
 
   await enregistrerJournal(

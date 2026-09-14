@@ -79,11 +79,23 @@ export default defineNuxtConfig({
     // POST /api/taches/purger avec cette clé en en-tête Bearer.
     tachesCle: process.env.TACHES_CLE || '',
 
+    // Zoom : `simulation` (réunion fictive, salle simulée) ou `live`. Deux
+    // applications Zoom : Server-to-Server OAuth pour créer les réunions,
+    // Meeting SDK pour les rejoindre depuis la plateforme (voir server/utils/zoom.ts).
+    zoomMode: process.env.ZOOM_MODE || 'simulation',
+    zoomAccountId: process.env.ZOOM_ACCOUNT_ID || '',
+    zoomClientId: process.env.ZOOM_CLIENT_ID || '',
+    zoomClientSecret: process.env.ZOOM_CLIENT_SECRET || '',
+    zoomSdkClientId: process.env.ZOOM_SDK_CLIENT_ID || '',
+    zoomSdkClientSecret: process.env.ZOOM_SDK_CLIENT_SECRET || '',
+
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://emasterclass.bigfive.ci',
       // Le tunnel charge le SDK FeexPay seulement quand le prestataire est branché.
       feexpayActif: (process.env.FEEXPAY_MODE || 'simulation') !== 'simulation',
       feexpaySdkUrl: `${(process.env.FEEXPAY_BASE_URL || 'https://api-v2.feexpay.me').replace(/\/$/, '')}/feexpay-javascript-sdk/index.js`,
+      // La salle Zoom charge le Meeting SDK seulement quand Zoom est branché.
+      zoomActif: (process.env.ZOOM_MODE || 'simulation') === 'live',
     },
   },
 

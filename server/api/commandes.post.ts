@@ -1,5 +1,6 @@
 import type { CodeEchecPaiement } from '#shared/types'
-import { listerModules } from '../database/catalogue'
+import { listerModules, trouverFormateur } from '../database/catalogue'
+import { changerStatutDemandeCoachingPrive, trouverDemandeCoachingPrive } from '../database/coaching'
 import { enregistrerCommande, enregistrerTransaction } from '../database/commerce'
 import { listerAccesUtilisateur, ouvrirAcces } from '../database/comptes'
 import { notifierCompte } from '../utils/notifications'
@@ -65,12 +66,64 @@ const CAS_FEEXPAY: Record<string, 'MOBILE' | 'CARD' | ''> = {
  */
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerUtilisateur(event)
-  const { moduleIds, moyen, simulerEchec } = await readBody<{
-    moduleIds: string[]
+  const { moduleIds, moyen, simulerEchec, demandeId } = await readBody<{
+    moduleIds?: string[]
     moyen?: 'mobile-money' | 'wave' | 'djamo' | 'visa'
     /** Hors production seulement : force un des six motifs d'échec. */
     simulerEchec?: CodeEchecPaiement
+    /** Séance de coaching privé à régler (« Accepter et payer », planche B, 10). */
+    demandeId?: string
   }>(event)
+
+  // --- Séance de coaching privé --------------------------------------------
+  if (demandeId) {
+    const demande = await trouverDemandeCoachingPrive(demandeId)
+    if (!demande || demande.utilisateurId !== utilisateur.id) {
+      throw createError({ statusCode: 404, statusMessage: 'Demande introuvable' })
+    }
+    if (demande.statut === 'payee') {
+      throw createError({ statusCode: 409, statusMessage: DETAILS.doublon, data: { code: 'doublon' satisfies CodeEchecPaiement } })
+    }
+    if (demande.statut !== 'confirmee-attente-paiement') {
+      throw createError({ statusCode: 409, statusMessage: 'Aucun créneau proposé à régler sur cette demande.' })
+    }
+    const formateur = await trouverFormateur(demande.formateurId)
+    const total = demande.montantFcfa ?? demande.heures * (formateur?.coachingPriveFcfaHeure ?? 50_000)
+    const moyenCommande = moyen ?? 'mobile-money'
+    const feexpay = configFeexPay()
+    const commande = await enregistrerCommande({
+      utilisateurId: utilisateur.id,
+      lignes: [],
+      moyen: moyenCommande,
+      statut: feexpay.mode === 'simulation' ? 'confirmee' : 'attente',
+      demandeCoachingId: demande.id,
+      total,
+    })
+    if (feexpay.mode === 'simulation') {
+      await changerStatutDemandeCoachingPrive(demande.id, {
+        statut: 'payee',
+        auteur: 'FeexPay (simulation)',
+        commentaire: `Paiement confirmé (commande ${commande.reference}).`,
+      })
+      return { ...commande, modules: [] }
+    }
+    return {
+      ...commande,
+      modules: [],
+      feexpay: {
+        shopId: feexpay.shopId,
+        token: feexpay.mode === 'live' ? feexpay.cleApi : 'test_sandbox',
+        mode: feexpay.mode === 'live' ? 'LIVE' : 'SANDBOX',
+        montant: commande.total,
+        customId: commande.reference,
+        description: `Coaching privé ${demande.heures} h — ${formateur?.nom ?? ''}`.slice(0, 120),
+        cas: CAS_FEEXPAY[moyenCommande] ?? '',
+        email: utilisateur.email,
+        prenom: utilisateur.prenom,
+        nom: utilisateur.nom,
+      },
+    }
+  }
 
   const modules = await listerModules()
   const achetes = modules.filter((m) => moduleIds?.includes(m.id) && m.statut === 'disponible')

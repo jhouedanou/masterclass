@@ -50,6 +50,10 @@ export async function creerSession(champs: {
   heure: string
   dureeMinutes?: number
   places?: number
+  titre?: string
+  ouvertureSalleMinutes?: number
+  enregistrement?: boolean
+  zoom?: { id: string; motDePasse: string; lienParticipation: string; lienHote: string }
 }): Promise<SessionCoaching> {
   const { data, error } = await supabase()
     .from('sessions_coaching')
@@ -61,6 +65,13 @@ export async function creerSession(champs: {
       heure: champs.heure,
       duree_minutes: champs.dureeMinutes ?? 120,
       places: champs.places ?? 25,
+      titre: champs.titre ?? null,
+      ouverture_salle_minutes: champs.ouvertureSalleMinutes ?? 15,
+      enregistrement: champs.enregistrement ?? false,
+      zoom_reunion_id: champs.zoom?.id ?? null,
+      zoom_mot_de_passe: champs.zoom?.motDePasse ?? null,
+      zoom_lien_participation: champs.zoom?.lienParticipation ?? null,
+      zoom_lien_hote: champs.zoom?.lienHote ?? null,
     })
     .select('*')
     .single()
@@ -96,9 +107,12 @@ export async function reporterSession(
   id: string,
   quand: { date?: string; heure?: string },
 ): Promise<SessionCoaching> {
-  const champs: { date_seance?: string; heure?: string } = {}
+  const champs: { date_seance?: string; heure?: string; reportee_de?: string } = {}
   if (quand.date) champs.date_seance = quand.date
   if (quand.heure) champs.heure = quand.heure
+  // La date initiale reste visible : « Reportée — nouvelle date » (planche B, 08).
+  const actuelle = await trouverSession(id)
+  if (actuelle && quand.date && quand.date !== actuelle.date) champs.reportee_de = actuelle.reporteeDe ?? actuelle.date
 
   const row = verifierUn(
     await supabase().from('sessions_coaching').update(champs).eq('id', id).select('*').maybeSingle(),
@@ -401,4 +415,123 @@ export async function changerStatutDemandeCoachingPrive(
     commentaire: changement.commentaire,
   })
   return versDemandeCoachingPrive(row)
+}
+
+
+// --- Zoom et liste d'attente (planche B, écrans 08 et 11) --------------------
+
+/** Liens Zoom d'une session — réservés au serveur, jamais renvoyés tels quels. */
+export async function liensZoomSession(id: string): Promise<{
+  reunionId: string | null
+  motDePasse: string | null
+  lienParticipation: string | null
+  lienHote: string | null
+}> {
+  const row = verifierOptionnel(
+    await supabase()
+      .from('sessions_coaching')
+      .select('zoom_reunion_id, zoom_mot_de_passe, zoom_lien_participation, zoom_lien_hote')
+      .eq('id', id)
+      .maybeSingle(),
+    'réunion Zoom',
+  )
+  return {
+    reunionId: row?.zoom_reunion_id ?? null,
+    motDePasse: row?.zoom_mot_de_passe ?? null,
+    lienParticipation: row?.zoom_lien_participation ?? null,
+    lienHote: row?.zoom_lien_hote ?? null,
+  }
+}
+
+export async function majZoomDemande(
+  id: string,
+  zoom: { reunionId: string; motDePasse: string; lienParticipation: string } | null,
+  evenementAgendaId?: string | null,
+): Promise<void> {
+  verifier(
+    await supabase()
+      .from('demandes_coaching_prive')
+      .update({
+        zoom_reunion_id: zoom?.reunionId ?? null,
+        zoom_mot_de_passe: zoom?.motDePasse ?? null,
+        lien_session: zoom?.lienParticipation ?? undefined,
+        evenement_agenda_id: evenementAgendaId ?? undefined,
+      })
+      .eq('id', id)
+      .select('id'),
+    'réunion de la séance privée',
+  )
+}
+
+export async function motDePasseZoomDemande(id: string): Promise<string | null> {
+  const row = verifierOptionnel(
+    await supabase().from('demandes_coaching_prive').select('zoom_mot_de_passe').eq('id', id).maybeSingle(),
+    'réunion de la séance privée',
+  )
+  return row?.zoom_mot_de_passe ?? null
+}
+
+export async function majMontantDemande(id: string, montantFcfa: number): Promise<void> {
+  verifier(
+    await supabase().from('demandes_coaching_prive').update({ montant_fcfa: montantFcfa }).eq('id', id).select('id'),
+    'montant de la séance privée',
+  )
+}
+
+/** Liste d'attente d'une session complète (état 5). Idempotent. */
+export async function inscrireListeAttente(sessionId: string, utilisateurId: string): Promise<void> {
+  const { error } = await supabase()
+    .from('liste_attente_sessions')
+    .upsert({ session_id: sessionId, utilisateur_id: utilisateurId }, { onConflict: 'session_id,utilisateur_id' })
+  if (error) throw traduireErreur(error, 'liste d’attente')
+}
+
+export async function listerListeAttenteUtilisateur(utilisateurId: string): Promise<string[]> {
+  const rows = verifier(
+    await supabase().from('liste_attente_sessions').select('session_id').eq('utilisateur_id', utilisateurId),
+    'liste d’attente',
+  )
+  return rows.map((r) => r.session_id)
+}
+
+export async function listerListeAttenteSession(sessionId: string): Promise<Utilisateur[]> {
+  const rows = verifier(
+    await supabase().from('liste_attente_sessions').select('utilisateur_id').eq('session_id', sessionId).order('inscrit_le'),
+    'liste d’attente',
+  )
+  if (!rows.length) return []
+  const comptes = verifier(
+    await supabase().from('utilisateurs').select('*').in('id', rows.map((r) => r.utilisateur_id)),
+    'comptes en liste d’attente',
+  )
+  return comptes.map(versUtilisateur)
+}
+
+/** Sessions auxquelles l'apprenant a été pointé présent (« Vous avez participé ✓ »). */
+export async function listerPresencesUtilisateur(utilisateurId: string): Promise<string[]> {
+  const rows = verifier(
+    await supabase()
+      .from('inscriptions_sessions')
+      .select('session_id, present')
+      .eq('utilisateur_id', utilisateurId),
+    'présences',
+  )
+  return rows.filter((r) => r.present === true).map((r) => r.session_id)
+}
+
+/** Demandes à créneau proposé restées sans réponse depuis `jours` : expirées (statut 6). */
+export async function expirerDemandesCoachingPrive(jours = 7): Promise<number> {
+  const limite = new Date(Date.now() - jours * 24 * 3600 * 1000).toISOString()
+  const rows = verifier(
+    await supabase()
+      .from('demandes_coaching_prive')
+      .select('id')
+      .eq('statut', 'confirmee-attente-paiement')
+      .lt('creneau_retenu_le', limite),
+    'demandes à expirer',
+  )
+  for (const r of rows) {
+    await changerStatutDemandeCoachingPrive(r.id, { statut: 'expiree', auteur: 'Système', commentaire: 'Proposition restée sans réponse.' })
+  }
+  return rows.length
 }

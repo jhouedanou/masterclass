@@ -1,24 +1,38 @@
 import type { StatutCoachingPrive } from '#shared/types'
 
-/** Libellés et couleurs des statuts d'une demande de coaching privé, partagés
- *  entre l'espace apprenant, le back-office et l'espace formateur. */
+/** Les six statuts d'une demande (planche B, écran 10), partagés entre
+ *  l'espace apprenant, le back-office et l'espace formateur. */
 export const LIBELLES_COACHING_PRIVE: Record<StatutCoachingPrive, string> = {
   'en-attente': 'En attente',
-  'confirmee-attente-paiement': 'Confirmée — en attente de paiement',
-  payee: 'Payée',
+  'en-etude': 'En étude',
+  'confirmee-attente-paiement': 'Créneau proposé',
+  payee: 'Confirmée (payée)',
   realisee: 'Réalisée',
   refusee: 'Refusée',
+  expiree: 'Expirée',
   annulee: 'Annulée',
 }
 
 export const CLASSES_COACHING_PRIVE: Record<StatutCoachingPrive, string> = {
   'en-attente': 'bg-alerte-voile text-alerte',
+  'en-etude': 'bg-fond-voile text-texte',
   'confirmee-attente-paiement': 'bg-social-voile text-social',
   payee: 'bg-succes-voile text-succes',
   realisee: 'bg-fond-voile text-discret',
   refusee: 'bg-[#fdeeee] text-erreur',
+  expiree: 'bg-fond-voile text-discret',
   annulee: 'bg-fond-voile text-discret',
 }
+
+/** Ordre de la planche « Les 6 statuts d'une demande ». */
+export const STATUTS_COACHING_PRIVE: { statut: StatutCoachingPrive; numero: number; libelle: string }[] = [
+  { statut: 'en-attente', numero: 1, libelle: 'En attente' },
+  { statut: 'en-etude', numero: 2, libelle: 'En étude' },
+  { statut: 'confirmee-attente-paiement', numero: 3, libelle: 'Créneau proposé' },
+  { statut: 'payee', numero: 4, libelle: 'Confirmée (payée)' },
+  { statut: 'realisee', numero: 5, libelle: 'Réalisée' },
+  { statut: 'refusee', numero: 6, libelle: 'Refusée / expirée' },
+]
 
 /** « lundi 6 octobre, 18:30 – 20:30 » depuis un créneau structuré. */
 export function formatCreneau(c: { date: string; debut: string; fin: string }): string {

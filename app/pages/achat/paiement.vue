@@ -32,6 +32,11 @@ const echec = computed(() => (codeEchec.value ? ECHECS_PAIEMENT[codeEchec.value]
 
 usePagePrivee('Choisissez votre moyen de paiement')
 
+/** Objet réglé : un module (tunnel classique) ou une séance de coaching privé. */
+const seance = computed(() => achat.seance)
+const montant = computed(() => achat.seance?.prixFcfa ?? achat.module?.prixFcfa ?? 0)
+const libelleObjet = computed(() => achat.seance?.titre ?? achat.module?.titre ?? '')
+
 // --- FeexPay (SDK JavaScript, docs.feexpay.me) ------------------------------
 
 interface ParametresFeexPay {
@@ -174,7 +179,7 @@ function afficherEchec(code: CodeEchecPaiement, texte: string, reference?: strin
 // --- Tunnel -------------------------------------------------------------------
 
 async function payer() {
-  if (!achat.module) return
+  if (!achat.module && !achat.seance) return
   etat.value = 'attente'
   message.value = feexpayActif ? 'Ouverture de la commande…' : 'Validez la demande sur votre téléphone.'
   codeEchec.value = null
@@ -182,7 +187,8 @@ async function payer() {
     const commande = await $fetch<ReponseCommande>('/api/commandes', {
       method: 'POST',
       body: {
-        moduleIds: [achat.module.id],
+        moduleIds: achat.module ? [achat.module.id] : [],
+        demandeId: achat.seance?.demandeId,
         moyen: achat.moyen,
         simulerEchec: dev && simulerEchec.value ? simulerEchec.value : undefined,
       },
@@ -218,9 +224,14 @@ function changerDeMoyen() {
 
 <template>
   <div class="conteneur max-w-[840px] py-12">
-    <UiEtapesAchat :etape="3" />
+    <UiEtapesAchat v-if="!seance" :etape="3" />
 
     <h1 class="mt-8 text-[36px] font-medium">Choisissez votre moyen de paiement</h1>
+    <div v-if="seance" class="mt-4 rounded-[14px] border border-ligne-douce bg-fond-clair p-5 text-[14px]">
+      <p class="text-discret">Séance de coaching privé</p>
+      <p class="mt-1 font-title text-[19px] font-light">{{ seance.formateur }} · {{ seance.heures }} h</p>
+      <p class="text-[13.5px] text-texte">{{ seance.creneau }} · {{ formatFcfa(seance.prixFcfa, true) }}</p>
+    </div>
 
     <template v-if="etat === 'choix' || etat === 'echec'">
       <div
@@ -257,7 +268,7 @@ function changerDeMoyen() {
             v-if="echec.action === 'contacter' || tentatives >= 2"
             taille="sm"
             variante="whatsapp"
-            :href="lienWhatsApp(`Bonjour, mon paiement pour le module « ${achat.module?.titre ?? ''} » a échoué (${echec.titre}).`)"
+            :href="lienWhatsApp(`Bonjour, mon paiement pour « ${libelleObjet} » a échoué (${echec.titre}).`)"
           >
             Contacter l’équipe
           </UiBaseButton>
@@ -280,7 +291,7 @@ function changerDeMoyen() {
       </div>
 
       <UiBaseButton class="mt-7 w-full" taille="lg" @click="payer">
-        {{ etat === 'echec' ? 'Réessayer le paiement' : `Payer ${achat.module ? formatFcfa(achat.module.prixFcfa, true) : ''}` }}
+        {{ etat === 'echec' ? 'Réessayer le paiement' : `Payer ${formatFcfa(montant, true)}` }}
       </UiBaseButton>
       <p class="mt-4 rounded-[10px] border border-alerte bg-alerte-voile px-4 py-3 text-[13.5px] text-alerte">
         ⚠ <b>Ne fermez pas cette page</b> avant la confirmation du paiement. Les paiements Mobile Money
@@ -326,18 +337,19 @@ function changerDeMoyen() {
     <div v-else class="mt-10 rounded-carte border border-succes bg-succes-voile p-10 text-center">
       <p class="font-title text-[27px] font-light text-succes">Paiement confirmé</p>
       <p class="mt-3 text-[15px] text-texte">
-        Votre module est maintenant accessible à vie depuis votre espace apprenant.
+        <template v-if="seance">Votre séance de coaching privé est confirmée. Le lien de la salle apparaît dans votre espace le jour J.</template>
+        <template v-else>Votre module est maintenant accessible à vie depuis votre espace apprenant.</template>
       </p>
       <p v-if="achat.reference" class="mt-2 font-mono text-[13px] text-discret">
         Référence {{ achat.reference }}
       </p>
       <UiBaseButton
-        :to="`/mon-espace/module/${achat.module?.slug}`"
+        :to="seance ? '/mon-espace/coaching-prive' : `/mon-espace/module/${achat.module?.slug}`"
         class="mt-6"
         taille="lg"
         @click="achat.vider()"
       >
-        Accéder à mon module
+        {{ seance ? 'Voir ma séance' : 'Accéder à mon module' }}
       </UiBaseButton>
     </div>
   </div>

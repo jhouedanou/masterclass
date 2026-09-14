@@ -1,4 +1,9 @@
 <script setup lang="ts">
+/**
+ * Chrome de l'espace apprenant (planche B) : en-tête dédié — logo, navigation
+ * « Mes modules · Coaching collectif · Coaching privé · Mes certificats »,
+ * pastille d'initiales, Déconnexion — et barre d'onglets basse sous 1024 px.
+ */
 const auth = useAuthStore()
 
 async function seDeconnecter() {
@@ -6,45 +11,78 @@ async function seDeconnecter() {
   await navigateTo('/')
 }
 const liens = [
-  { libelle: 'Tableau de bord', chemin: '/mon-espace', icone: 'ph:squares-four' },
   { libelle: 'Mes modules', chemin: '/mon-espace/modules', icone: 'ph:play-circle' },
-  { libelle: 'Mes sessions', chemin: '/mon-espace/sessions', icone: 'ph:calendar-dots' },
+  { libelle: 'Coaching collectif', chemin: '/mon-espace/sessions', icone: 'ph:calendar-dots' },
   { libelle: 'Coaching privé', chemin: '/mon-espace/coaching-prive', icone: 'ph:target' },
   { libelle: 'Mes certificats', chemin: '/mon-espace/certificats', icone: 'ph:certificate' },
-  { libelle: 'Ma fiche apprenant', chemin: '/mon-espace/profil', icone: 'ph:user' },
-  { libelle: 'Paramètres', chemin: '/mon-espace/parametres', icone: 'ph:gear' },
 ]
+const ongletsMobile = [
+  { libelle: 'Modules', chemin: '/mon-espace/modules', icone: 'ph:squares-four' },
+  { libelle: 'Sessions', chemin: '/mon-espace/sessions', icone: 'ph:calendar-dots' },
+  { libelle: 'Certificats', chemin: '/mon-espace/certificats', icone: 'ph:graduation-cap' },
+  { libelle: 'Profil', chemin: '/mon-espace/profil', icone: 'ph:user' },
+]
+const initiales = computed(
+  () => `${auth.utilisateur?.prenom?.[0] ?? ''}${auth.utilisateur?.nom?.[0] ?? ''}`.toUpperCase(),
+)
+const menuCompte = ref(false)
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-white">
-    <LayoutTheHeader />
-    <div class="conteneur flex-1 py-8 lg:grid lg:grid-cols-[230px_1fr] lg:gap-10">
-      <aside class="mb-6 lg:mb-0">
-        <p class="surtitre text-discret">Mon espace</p>
-        <nav aria-label="Navigation de l’espace apprenant" class="mt-4 flex gap-2 overflow-x-auto lg:flex-col">
+  <div class="flex min-h-screen flex-col bg-fond-clair">
+    <header class="border-b border-ligne-claire bg-white">
+      <div class="conteneur flex items-center justify-between gap-4 py-3.5">
+        <NuxtLink to="/mon-espace" aria-label="Accueil de mon espace">
+          <img src="/images/brand/logo.png" alt="E-Masterclass | Big Five" class="block h-9 w-auto" width="180" height="36">
+        </NuxtLink>
+        <nav aria-label="Navigation de l’espace apprenant" class="hidden items-center gap-7 text-[14.5px] font-semibold lg:flex">
           <NuxtLink
             v-for="lien in liens"
             :key="lien.chemin"
             :to="lien.chemin"
-            class="flex shrink-0 items-center gap-2 rounded-[10px] px-3.5 py-2.5 text-[14px] text-texte hover:bg-fond-clair"
-            active-class="bg-social text-white hover:bg-social"
+            class="text-texte hover:text-encre"
+            active-class="text-social"
           >
-            <Icon :name="lien.icone" size="18" />
             {{ lien.libelle }}
           </NuxtLink>
         </nav>
-        <button
-          class="mt-6 text-[13px] text-discret hover:text-encre"
-          @click="seDeconnecter"
-        >
-          Se déconnecter
-        </button>
-      </aside>
-      <main>
-        <slot />
-      </main>
-    </div>
-    <LayoutTheFooter />
+        <div class="relative flex items-center gap-3">
+          <button
+            type="button"
+            class="grid size-9 place-items-center rounded-full bg-social text-[13px] font-bold text-white"
+            :aria-expanded="menuCompte"
+            aria-haspopup="menu"
+            :aria-label="`Compte de ${auth.utilisateur?.prenom ?? ''}`"
+            @click="menuCompte = !menuCompte"
+          >
+            {{ initiales }}
+          </button>
+          <span class="hidden text-[14px] text-texte md:inline">{{ auth.utilisateur?.prenom }}</span>
+          <button type="button" class="hidden text-[13px] text-discret hover:text-encre md:inline" @click="seDeconnecter">
+            Déconnexion
+          </button>
+          <div
+            v-if="menuCompte"
+            role="menu"
+            class="absolute top-11 right-0 z-30 w-56 rounded-[12px] border border-ligne bg-white p-1.5 text-[14px] shadow-[0_12px_32px_rgba(23,21,28,.12)]"
+            @click="menuCompte = false"
+          >
+            <NuxtLink to="/mon-espace" role="menuitem" class="block rounded-[8px] px-3 py-2 hover:bg-fond-clair">Tableau de bord</NuxtLink>
+            <NuxtLink to="/mon-espace/profil" role="menuitem" class="block rounded-[8px] px-3 py-2 hover:bg-fond-clair">Profil apprenant</NuxtLink>
+            <NuxtLink to="/mon-espace/parametres" role="menuitem" class="block rounded-[8px] px-3 py-2 hover:bg-fond-clair">Paramètres du compte</NuxtLink>
+            <button type="button" role="menuitem" class="block w-full rounded-[8px] px-3 py-2 text-left hover:bg-fond-clair md:hidden" @click="seDeconnecter">
+              Déconnexion
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="conteneur flex-1 py-8 pb-24 lg:pb-8">
+      <slot />
+    </main>
+
+    <LayoutBarreOngletsMobile :liens="ongletsMobile" />
+    <LayoutTheFooter class="hidden lg:block" />
   </div>
 </template>

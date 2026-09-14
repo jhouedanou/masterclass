@@ -48,6 +48,32 @@ const lecteur = useLecteurVideo({
 
 const video = ref<HTMLVideoElement | null>(null)
 watch(video, (element) => lecteur.brancher(element))
+
+// Dernière position, pour « Connexion rétablie — reprise de la lecture à 24:12 » (écran hors ligne).
+watch(
+  () => Math.floor(lecteur.positionSecondes.value / 5),
+  () => {
+    try {
+      localStorage.setItem(
+        'emc-derniere-lecture',
+        JSON.stringify({ slug: moduleCourant.value.slug, chapitre: index.value, secondes: lecteur.positionSecondes.value }),
+      )
+    } catch {
+      /* stockage indisponible */
+    }
+  },
+)
+
+// « Reprendre » depuis la page module : la vidéo repart au temps déjà vu.
+const reprise = Number(route.query.reprise ?? 0)
+if (reprise > 0) {
+  const arreter = watch(lecteur.dureeSecondes, (duree) => {
+    if (duree > 0) {
+      lecteur.allerA(Math.min(reprise, duree - 1))
+      arreter()
+    }
+  })
+}
 // Changer de chapitre recharge le flux : même lecteur, autre source.
 watch([index, source], () => lecteur.charger())
 

@@ -170,6 +170,8 @@ export interface SessionCoaching {
   enregistrement: boolean
   /** Date initiale quand la session a été reportée (B-08, état 6). */
   reporteeDe?: string
+  /** Réunion Zoom créée à la planification ; absente en simulation. */
+  zoomReunionId?: string
 }
 
 export type CategorieArticle = 'Social Média' | 'Entrepreneuriat' | 'Actualités E-Masterclass Big Five'
@@ -280,12 +282,16 @@ export interface Certificat {
   dateRealisation: string
   dateDelivrance: string
   tauxCompletion: number
+  /** Identité confirmée par l'apprenant avant génération (planche B, écran 05). */
+  prenomNomConfirmeLe?: string
 }
 
 export interface Commande {
   reference: string
   utilisateurId: string
   moduleIds: string[]
+  /** Séance de coaching privé réglée par cette commande (« Accepter et payer »). */
+  demandeCoachingId?: string
   total: number
   moyen: 'mobile-money' | 'wave' | 'djamo' | 'visa'
   statut: 'attente' | 'verification' | 'confirmee' | 'echec'
@@ -322,12 +328,19 @@ export type CodeEchecPaiement =
   | 'doublon'
   | 'erreur-inconnue'
 
+/**
+ * Les six statuts de la planche B, écran 10 : En attente · En étude · Créneau
+ * proposé (`confirmee-attente-paiement`) · Confirmée (payée) (`payee`) ·
+ * Réalisée · Refusée / expirée. `annulee` = retirée par l'apprenant.
+ */
 export type StatutCoachingPrive =
   | 'en-attente'
+  | 'en-etude'
   | 'confirmee-attente-paiement'
   | 'payee'
   | 'realisee'
   | 'refusee'
+  | 'expiree'
   | 'annulee'
 
 /** Créneau proposé par l'apprenant dans sa demande. */
@@ -354,6 +367,10 @@ export interface DemandeCoachingPrive {
   lienSession?: string
   motifRefus?: string
   recueLe: string
+  /** Montant proposé par l'équipe (heures × tarif), avec le créneau. */
+  montantFcfa?: number
+  zoomReunionId?: string
+  evenementAgendaId?: string
 }
 
 /** Suivi daté d'une demande (planche B, écran 10). */
@@ -449,4 +466,6 @@ export interface InscriptionSession {
   sessionId: string
   utilisateurId: string
   inscritLe: string
+  /** Présence pointée après la séance ; `null` tant qu'elle n'est pas relevée. */
+  present?: boolean | null
 }

@@ -290,6 +290,7 @@ export function versSessionCoaching(row: SessionCoachingRow): SessionCoaching {
     ouvertureSalleMinutes: row.ouverture_salle_minutes,
     enregistrement: row.enregistrement,
     reporteeDe: optionnel(row.reportee_de),
+    zoomReunionId: optionnel(row.zoom_reunion_id),
   }
 }
 
@@ -298,6 +299,7 @@ export function versInscriptionSession(row: InscriptionSessionRow): InscriptionS
     sessionId: row.session_id,
     utilisateurId: row.utilisateur_id,
     inscritLe: row.inscrit_le,
+    present: row.present,
   }
 }
 
@@ -342,6 +344,9 @@ export function versDemandeCoachingPrive(row: DemandeCoachingPriveRow): DemandeC
     lienSession: optionnel(row.lien_session),
     motifRefus: optionnel(row.motif_refus),
     recueLe: row.recue_le,
+    montantFcfa: optionnelNombre(row.montant_fcfa),
+    zoomReunionId: optionnel(row.zoom_reunion_id),
+    evenementAgendaId: optionnel(row.evenement_agenda_id),
   }
 }
 
@@ -390,6 +395,7 @@ export function versCommande(row: CommandeRow, moduleIds: string[] = []): Comman
     moyen: row.moyen,
     statut: row.statut,
     creeeLe: row.creee_le,
+    demandeCoachingId: optionnel(row.demande_coaching_id),
   }
 }
 
@@ -424,6 +430,7 @@ export function versCertificat(row: CertificatRow): Certificat {
     dateRealisation: row.date_realisation,
     dateDelivrance: row.date_delivrance,
     tauxCompletion: row.taux_completion,
+    prenomNomConfirmeLe: optionnel(row.prenom_nom_confirme_le),
   }
 }
 

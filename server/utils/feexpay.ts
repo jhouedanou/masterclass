@@ -1,5 +1,6 @@
 import type { CodeEchecPaiement, Commande } from '#shared/types'
 import { ouvrirAcces } from '../database/comptes'
+import { changerStatutDemandeCoachingPrive, trouverDemandeCoachingPrive } from '../database/coaching'
 import {
   changerStatutCommande,
   cloreTransactionsCommande,
@@ -278,6 +279,20 @@ export async function rapprocherCommande(
     moyen: moyenDepuisReseau(transaction.reseau) ?? undefined,
   })
   await changerStatutCommande(commande.reference, 'confirmee')
+
+  // Séance de coaching privé (« Accepter et payer », planche B, 10) : le
+  // paiement confirme la demande ; il n'y a aucun module à ouvrir.
+  if (commande.demandeCoachingId) {
+    const demande = await trouverDemandeCoachingPrive(commande.demandeCoachingId)
+    if (demande && demande.statut === 'confirmee-attente-paiement') {
+      await changerStatutDemandeCoachingPrive(demande.id, {
+        statut: 'payee',
+        auteur: 'FeexPay',
+        commentaire: `Paiement confirmé (commande ${commande.reference}).`,
+      })
+    }
+    return { statut: 'confirmee', commande: { ...commande, statut: 'confirmee' } }
+  }
 
   const modules = commande.moduleIds.length
     ? commande.moduleIds

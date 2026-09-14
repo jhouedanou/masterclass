@@ -786,3 +786,77 @@ export async function ouvrirAcces(utilisateurId: string, moduleIds: string[]): P
     'ouverture des accès',
   )
 }
+
+// --- Visionnages (planche B, écrans 01, 02 et 09) ---------------------------
+
+export interface VisionnageChapitre {
+  position: number
+  secondesVues: number
+  /** Chapitre vu en entier (durée mesurée atteinte à 95 %). */
+  vu: boolean
+}
+
+/** Temps vu par chapitre d'un module, pour « 2 / 3 chapitres vus » et « reprise à 24:12 ». */
+export async function listerVisionnagesModule(
+  utilisateurId: string,
+  moduleId: string,
+): Promise<VisionnageChapitre[]> {
+  const chapitres = verifier(
+    await supabase()
+      .from('chapitres')
+      .select('id, position, video_duree_secondes, duree_minutes')
+      .eq('module_id', moduleId)
+      .order('position'),
+    'chapitres',
+  )
+  if (!chapitres.length) return []
+  const vus = verifier(
+    await supabase()
+      .from('visionnages')
+      .select('chapitre_id, secondes_vues')
+      .eq('utilisateur_id', utilisateurId)
+      .in('chapitre_id', chapitres.map((c) => c.id)),
+    'visionnages',
+  )
+  return chapitres.map((c) => {
+    const secondesVues = vus.find((v) => v.chapitre_id === c.id)?.secondes_vues ?? 0
+    const duree = c.video_duree_secondes ?? (c.duree_minutes ?? 0) * 60
+    return { position: c.position, secondesVues, vu: duree > 0 && secondesVues >= duree * 0.95 }
+  })
+}
+
+/** Même relevé pour tous les modules de l'apprenant, en une passe. */
+export async function listerVisionnagesUtilisateur(
+  utilisateurId: string,
+): Promise<Map<string, VisionnageChapitre[]>> {
+  const chapitres = verifier(
+    await supabase().from('chapitres').select('id, module_id, position, video_duree_secondes, duree_minutes'),
+    'chapitres',
+  )
+  const vus = verifier(
+    await supabase().from('visionnages').select('chapitre_id, secondes_vues').eq('utilisateur_id', utilisateurId),
+    'visionnages',
+  )
+  const parModule = new Map<string, VisionnageChapitre[]>()
+  for (const c of [...chapitres].sort((a, b) => a.position - b.position)) {
+    const secondesVues = vus.find((v) => v.chapitre_id === c.id)?.secondes_vues ?? 0
+    const duree = c.video_duree_secondes ?? (c.duree_minutes ?? 0) * 60
+    const liste = parModule.get(c.module_id) ?? []
+    liste.push({ position: c.position, secondesVues, vu: duree > 0 && secondesVues >= duree * 0.95 })
+    parModule.set(c.module_id, liste)
+  }
+  return parModule
+}
+
+/** Confirme l'identité portée par un certificat (planche B, écran 05). */
+export async function confirmerIdentiteCertificat(utilisateurId: string, moduleId: string): Promise<void> {
+  verifier(
+    await supabase()
+      .from('certificats')
+      .update({ prenom_nom_confirme_le: new Date().toISOString() })
+      .eq('utilisateur_id', utilisateurId)
+      .eq('module_id', moduleId)
+      .select('numero'),
+    'confirmation du certificat',
+  )
+}

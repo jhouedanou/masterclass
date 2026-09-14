@@ -34,10 +34,12 @@ export type MoyenTransactionSql =
 export type StatutTransactionSql = 'reussie' | 'echouee' | 'en-attente'
 export type StatutCoachingPriveSql =
   | 'en-attente'
+  | 'en-etude'
   | 'confirmee-attente-paiement'
   | 'payee'
   | 'realisee'
   | 'refusee'
+  | 'expiree'
   | 'annulee'
 export type StatutCandidatureSql = 'nouvelle' | 'en-etude' | 'refusee' | 'acceptee'
 export type CodeEchecPaiementSql =
@@ -256,6 +258,13 @@ export type PersonaRow = {
   clients: string | null
 }
 
+export type VisionnageRow = {
+  utilisateur_id: string
+  chapitre_id: string
+  secondes_vues: number
+  maj_le: string
+}
+
 export type AccesRow = {
   utilisateur_id: string
   module_id: string
@@ -284,6 +293,10 @@ export type SessionCoachingRow = {
   ouverture_salle_minutes: number
   enregistrement: boolean
   reportee_de: string | null
+  zoom_reunion_id: string | null
+  zoom_mot_de_passe: string | null
+  zoom_lien_participation: string | null
+  zoom_lien_hote: string | null
   cree_le: string
 }
 
@@ -291,6 +304,7 @@ export type InscriptionSessionRow = {
   session_id: string
   utilisateur_id: string
   inscrit_le: string
+  present: boolean | null
 }
 
 export type ListeAttenteSessionRow = {
@@ -350,6 +364,7 @@ export type CommandeRow = {
   moyen: MoyenCommandeSql
   statut: StatutCommandeSql
   creee_le: string
+  demande_coaching_id: string | null
 }
 
 export type CommandeModuleRow = {
@@ -387,6 +402,7 @@ export type CertificatRow = {
   date_realisation: string
   date_delivrance: string
   taux_completion: number
+  prenom_nom_confirme_le: string | null
 }
 
 export type DemandeCoachingPriveRow = {
@@ -405,6 +421,10 @@ export type DemandeCoachingPriveRow = {
   lien_session: string | null
   motif_refus: string | null
   recue_le: string
+  zoom_reunion_id: string | null
+  zoom_mot_de_passe: string | null
+  evenement_agenda_id: string | null
+  montant_fcfa: number | null
 }
 
 export type HistoriqueCoachingPriveRow = {
@@ -584,6 +604,7 @@ export type Database = {
       connexions: Table<ConnexionRow, 'id' | 'cree_le' | 'ip' | 'appareil' | 'utilisateur_id'>
       reinitialisations_mot_de_passe: Table<ReinitialisationRow, 'cree_le' | 'utilise_le'>
       personas: Table<PersonaRow, Exclude<keyof PersonaRow, 'utilisateur_id'>>
+      visionnages: Table<VisionnageRow, 'secondes_vues' | 'maj_le'>
       acces: Table<AccesRow, 'progression' | 'achete_le' | 'termine_le' | 'origine' | 'revoque_le' | 'motif_revocation'>
       sessions_coaching: Table<
         SessionCoachingRow,
@@ -598,8 +619,12 @@ export type Database = {
         | 'ouverture_salle_minutes'
         | 'enregistrement'
         | 'reportee_de'
+        | 'zoom_reunion_id'
+        | 'zoom_mot_de_passe'
+        | 'zoom_lien_participation'
+        | 'zoom_lien_hote'
       >
-      inscriptions_sessions: Table<InscriptionSessionRow, 'inscrit_le'>
+      inscriptions_sessions: Table<InscriptionSessionRow, 'inscrit_le' | 'present'>
       liste_attente_sessions: Table<ListeAttenteSessionRow, 'inscrit_le'>
       sujets_sessions: Table<SujetSessionRow, 'id' | 'soumis_le'>
       notes_formateurs: Table<NoteFormateurRow, 'id' | 'cree_le' | 'date_note' | 'commentaire'>
@@ -614,7 +639,7 @@ export type Database = {
         | 'a_la_une'
       >
       articles_modules: Table<ArticleModuleRow>
-      commandes: Table<CommandeRow, 'creee_le' | 'statut'>
+      commandes: Table<CommandeRow, 'creee_le' | 'statut' | 'demande_coaching_id'>
       commandes_modules: Table<CommandeModuleRow>
       transactions: Table<
         TransactionRow,
@@ -627,7 +652,7 @@ export type Database = {
         | 'reference_prestataire'
         | 'reseau'
       >
-      certificats: Table<CertificatRow, 'date_delivrance'>
+      certificats: Table<CertificatRow, 'date_delivrance' | 'prenom_nom_confirme_le'>
       demandes_coaching_prive: Table<
         DemandeCoachingPriveRow,
         | 'id'
@@ -638,6 +663,10 @@ export type Database = {
         | 'creneau_retenu_le'
         | 'lien_session'
         | 'motif_refus'
+        | 'zoom_reunion_id'
+        | 'zoom_mot_de_passe'
+        | 'evenement_agenda_id'
+        | 'montant_fcfa'
       >
       historique_coaching_prive: Table<HistoriqueCoachingPriveRow, 'id' | 'cree_le' | 'commentaire'>
       candidatures_formateurs: Table<

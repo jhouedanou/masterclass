@@ -38,6 +38,10 @@ function envoyer() {
           <textarea v-model="preoccupation" rows="3" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]" />
         </label>
 
+        <p v-if="prive && valeurInitiale" class="text-[12.5px] text-discret">
+          Pré-rempli avec votre demande — complétez-le si vos priorités ont évolué.
+        </p>
+
         <label v-if="!prive" class="block">
           <span class="mb-1.5 block text-[13px] font-bold text-texte">
             Qu’attendez-vous concrètement de cette session ? *
@@ -65,8 +69,8 @@ function envoyer() {
       <p class="mt-4 text-[12px] text-discret">
         {{
           prive
-            ? 'Étape obligatoire : impossible d’entrer dans la salle sans soumettre les sujets. Le formateur les reçoit instantanément.'
-            : 'Ces réponses sont transmises au formateur avant la session, pour préparer les cas pratiques.'
+            ? 'Étape obligatoire : impossible d’entrer dans la salle sans soumettre les sujets. Le formateur les reçoit instantanément, avant votre arrivée.'
+            : 'Réponses obligatoires — le bouton reste grisé tant qu’elles sont vides. Elles sont transmises au formateur avant la session pour préparer les cas pratiques.'
         }}
       </p>
     </div>
