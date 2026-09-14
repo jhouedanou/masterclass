@@ -75,7 +75,7 @@ async function creer() {
   try {
     await $fetch('/api/admin/sessions', { method: 'POST', body: creation })
     formulaireOuvert.value = false
-    message.value = 'Session créée. La réunion Zoom est générée à la validation (à brancher).'
+    message.value = 'Session créée. La réunion Zoom a été générée ; le formateur et les inscrits y entrent depuis la plateforme.'
     await refresh()
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Création impossible.'

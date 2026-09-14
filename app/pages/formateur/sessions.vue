@@ -22,7 +22,8 @@ const { data: sessions } = await useFetch<
     <h1 class="font-title text-[26px] font-light">Mes sessions de coaching</h1>
     <p class="mt-2 text-[13.5px] text-discret">
       Le planning est fixé par l’équipe Big Five. La présence est pointée automatiquement ; les
-      notes proviennent de l’évaluation post-session des apprenants.
+      notes proviennent de l’évaluation post-session des apprenants. Le nom d’une session ouvre sa
+      salle : elle accepte l’entrée à partir de 15 minutes avant le début.
     </p>
 
     <AdminTableauSimple
@@ -31,7 +32,11 @@ const { data: sessions } = await useFetch<
     >
       <tr v-for="session in sessions" :key="session.id">
         <td class="px-4 py-3 font-bold">{{ formatDate(session.date) }} · {{ session.heure }}</td>
-        <td class="px-4 py-3">{{ session.thematique?.nom }}</td>
+        <td class="px-4 py-3">
+          <NuxtLink :to="`/formateur/session/${session.id}`" class="underline hover:text-social">
+            {{ session.thematique?.nom }}
+          </NuxtLink>
+        </td>
         <td class="px-4 py-3">{{ session.inscrits }} / {{ session.places }}</td>
         <td class="px-4 py-3">
           {{ session.participation ? `${session.participation} % présents` : 'à venir' }}

@@ -341,6 +341,96 @@ const compte = await db.query(
 if (/^usr-[0-9a-f]{6}$/.test(compte.rows[0].id)) succes(`compte ${compte.rows[0].id}`)
 else echec(`identifiant de compte inattendu : ${compte.rows[0].id}`)
 
+// --- Planche B : Zoom, séance privée payée, identité du certificat ------------
+
+console.log('\nEspace apprenant (migration 11)')
+// Aucun compteur de lignes ne bouge avec cette migration : sans ces assertions,
+// retirer une de ses colonnes passerait inaperçu.
+await attendValeur(
+  'colonnes de la migration 11 posées',
+  11,
+  `select count(*)::int from information_schema.columns
+    where (table_name, column_name) in (
+      ('sessions_coaching', 'zoom_reunion_id'),
+      ('sessions_coaching', 'zoom_mot_de_passe'),
+      ('sessions_coaching', 'zoom_lien_participation'),
+      ('sessions_coaching', 'zoom_lien_hote'),
+      ('demandes_coaching_prive', 'zoom_reunion_id'),
+      ('demandes_coaching_prive', 'zoom_mot_de_passe'),
+      ('demandes_coaching_prive', 'evenement_agenda_id'),
+      ('demandes_coaching_prive', 'montant_fcfa'),
+      ('inscriptions_sessions', 'present'),
+      ('commandes', 'demande_coaching_id'),
+      ('certificats', 'prenom_nom_confirme_le')
+    )`,
+)
+await attendValeur(
+  'les 8 statuts de coaching privé de la maquette',
+  8,
+  `select count(*)::int from pg_enum e
+     join pg_type t on t.oid = e.enumtypid
+    where t.typname = 'statut_coaching_prive'
+      and e.enumlabel in ('en-attente', 'en-etude', 'confirmee-attente-paiement',
+                          'payee', 'realisee', 'refusee', 'annulee', 'expiree')`,
+)
+
+// Les deux valeurs ajoutées doivent être utilisables, créneau proposé compris.
+await db.query(
+  `update demandes_coaching_prive set statut = 'en-etude' where id = 'dcp-001'`,
+)
+await db.query(
+  `update demandes_coaching_prive set statut = 'confirmee-attente-paiement', montant_fcfa = 100000
+    where id = 'dcp-001'`,
+)
+await attendValeur(
+  'montant du créneau proposé',
+  100000,
+  `select montant_fcfa from demandes_coaching_prive where id = 'dcp-001'`,
+)
+await db.query(`update demandes_coaching_prive set statut = 'expiree' where id = 'dcp-001'`)
+await attendValeur(
+  'statut « expiree » accepté',
+  'expiree',
+  `select statut from demandes_coaching_prive where id = 'dcp-001'`,
+)
+
+await attendErreur(
+  'commande rattachée à une séance inconnue',
+  '23503',
+  `insert into commandes (reference, utilisateur_id, total, moyen, demande_coaching_id)
+   values ('FP-TEST-0001', 'usr-aya', 100000, 'wave', 'dcp-999')`,
+)
+
+// « Accepter et payer » : la commande règle une séance, et la suppression de la
+// séance laisse la commande en place (on delete set null).
+await db.query(
+  `insert into demandes_coaching_prive
+     (id, utilisateur_id, apprenant, module_id, formateur_id, besoins, disponibilites, creneaux, heures)
+   values ('dcp-900', 'usr-aya', 'Awa Koné', 'mod-instagram-formats-et-croissance', 'for-waffo',
+           'Test', 'Test', '[]'::jsonb, 2)`,
+)
+await db.query(
+  `insert into commandes (reference, utilisateur_id, total, moyen, demande_coaching_id)
+   values ('FP-TEST-0002', 'usr-aya', 100000, 'wave', 'dcp-900')`,
+)
+await db.query(`delete from demandes_coaching_prive where id = 'dcp-900'`)
+await attendValeur(
+  'commande conservée après suppression de la séance',
+  1,
+  `select count(*)::int from commandes
+    where reference = 'FP-TEST-0002' and demande_coaching_id is null`,
+)
+
+await db.query(
+  `update certificats set prenom_nom_confirme_le = now()
+    where numero = 'EMBF-ENT-2026-000128'`,
+)
+await attendValeur(
+  'identité confirmée avant délivrance',
+  1,
+  `select count(*)::int from certificats where prenom_nom_confirme_le is not null`,
+)
+
 // --- Authentification --------------------------------------------------------
 
 console.log('\nAuthentification')

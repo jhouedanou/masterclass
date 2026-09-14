@@ -35,3 +35,7 @@ medias/sources
 medias/hls
 docs/Comptes-de-test-E-Masterclass.xlsx
 docs/email-testeurs.md
+
+# Un seul gestionnaire de paquets : npm. package-lock.json fait foi.
+pnpm-lock.yaml
+yarn.lock
