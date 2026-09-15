@@ -285,6 +285,13 @@ export async function majModule(
       | 'thematiqueId'
       | 'formateurId'
       | 'publieLe'
+      // Fiche commerciale (écran 02B) : colonnes posées par le socle
+      // transverse, restées sans écriture jusqu'ici.
+      | 'dateLancement'
+      | 'prixMasque'
+      | 'pointsForts'
+      | 'videoIntroCle'
+      | 'pretLe'
     >
   >,
 ): Promise<Module> {
@@ -301,6 +308,11 @@ export async function majModule(
   if (champs.numero !== undefined) colonnes.numero = champs.numero
   if (champs.thematiqueId !== undefined) colonnes.thematique_id = champs.thematiqueId
   if (champs.formateurId !== undefined) colonnes.formateur_id = champs.formateurId
+  if (champs.dateLancement !== undefined) colonnes.date_lancement = champs.dateLancement
+  if (champs.prixMasque !== undefined) colonnes.prix_masque = champs.prixMasque
+  if (champs.pointsForts !== undefined) colonnes.points_forts = champs.pointsForts
+  if (champs.videoIntroCle !== undefined) colonnes.video_intro_cle = champs.videoIntroCle ?? null
+  if (champs.pretLe !== undefined) colonnes.pret_le = champs.pretLe
 
   // Publier un module lui donne sa date de publication si elle manque : la
   // contrainte `module_publie_date` l'exige.

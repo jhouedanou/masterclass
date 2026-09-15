@@ -114,7 +114,7 @@ function inserer(table: string, colonnes: string, lignes: string[], commentaire?
 inserer(
   'programmes',
   `id, slug, nom, surtitre_hero, h1_variable, description_hero, cta_hero, ` +
-    `description_programme, description_carte, couleur, ${COLONNES_SEO}`,
+    `description_programme, description_carte, couleur, statut, ${COLONNES_SEO}`,
   programmes.map((p) =>
     [
       txt(p.id),
@@ -127,6 +127,7 @@ inserer(
       txt(p.descriptionProgramme),
       txt(p.descriptionCarte),
       txt(p.couleur),
+      txt(p.statut),
       seo(p.seo),
     ].join(', '),
   ),
@@ -148,9 +149,17 @@ if (phases.length) {
 
 inserer(
   'thematiques',
-  'id, numero, nom, programme, phase_id, statut',
+  'id, numero, nom, programme, phase_id, statut, position',
   thematiques.map((t) =>
-    [txt(t.id), num(t.numero), txt(t.nom), txt(t.programme), txt(t.phaseId), txt(t.statut)].join(', '),
+    [
+      txt(t.id),
+      num(t.numero),
+      txt(t.nom),
+      txt(t.programme),
+      txt(t.phaseId),
+      txt(t.statut),
+      num(t.position),
+    ].join(', '),
   ),
   'Thématiques — sections des pages programme',
 )
@@ -181,7 +190,7 @@ inserer(
   'modules',
   `id, slug, numero, titre, programme, thematique_id, formateur_id, promesse, pourquoi, ` +
     `pour_qui, prerequis, acquis, livrable, faq, duree_minutes, prix_fcfa, statut, ` +
-    `publie_le, date_lancement, prix_masque, points_forts, ${COLONNES_SEO}`,
+    `publie_le, date_lancement, prix_masque, points_forts, pret_le, ${COLONNES_SEO}`,
   modules.map((m) =>
     [
       txt(m.id),
@@ -205,6 +214,7 @@ inserer(
       txt(m.dateLancement),
       bool(m.prixMasque),
       tableau(m.pointsForts),
+      txt(m.pretLe),
       seo(m.seo),
     ].join(', '),
   ),

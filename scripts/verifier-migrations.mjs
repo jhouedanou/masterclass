@@ -560,6 +560,59 @@ await attendValeur(
 
 // --- Authentification --------------------------------------------------------
 
+console.log('\nBack-office (migration 23)')
+await attendValeur(
+  'colonnes de la migration 23 posées',
+  3,
+  `select count(*)::int from information_schema.columns
+    where (table_name, column_name) in (
+      ('programmes', 'statut'),
+      ('modules', 'pret_le'),
+      ('thematiques', 'position')
+    )`,
+)
+// « Prêt » doit rester orthogonal au statut commercial : un module peut être
+// filmé et relu sans être en vente, et inversement. Une valeur d'énumération
+// n'aurait pas su l'exprimer.
+await attendValeur(
+  'un module se déclare prêt sans passer en vente',
+  'ok',
+  `with avant as (
+     select id, statut from modules where statut <> 'disponible' order by id limit 1
+   ),
+   pose as (
+     update modules m set pret_le = now()
+       from avant a where m.id = a.id
+      returning m.id, m.statut, m.pret_le
+   )
+   select case
+            when pose.pret_le is not null and pose.statut = avant.statut then 'ok'
+            else format('%s -> %s', avant.statut, pose.statut)
+          end
+     from pose join avant on avant.id = pose.id`,
+)
+// L'ordre d'affichage est distinct du numéro montré à l'apprenant : sans cela,
+// deux thématiques ne pouvaient pas échanger leur place sans collision.
+await attendValeur(
+  'deux thématiques échangent leur ordre sans toucher à leur numéro',
+  '1|0',
+  `with echange as (
+     update thematiques set position = case id
+              when 'th-sm-fondations' then 1
+              when 'th-sm-copywriting' then 0
+            end
+      where id in ('th-sm-fondations', 'th-sm-copywriting')
+      returning id, numero, position
+   )
+   select string_agg(position::text, '|' order by numero) from echange`,
+)
+await attendValeur(
+  'leurs numéros publics sont restés intacts',
+  '1|2',
+  `select string_agg(numero::text, '|' order by numero)
+     from thematiques where id in ('th-sm-fondations', 'th-sm-copywriting')`,
+)
+
 console.log('\nAuthentification')
 await attendValeur(
   'empreintes de mot de passe posées (jamais en clair)',

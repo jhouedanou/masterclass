@@ -97,6 +97,7 @@ export type ProgrammeRow = ColonnesSeo & {
   description_programme: string
   description_carte: string
   couleur: string
+  statut: StatutPublicationSql
   cree_le: string
   maj_le: string
 }
@@ -118,6 +119,7 @@ export type ThematiqueRow = {
   programme: ProgrammeSlugSql
   phase_id: string
   statut: StatutPublicationSql
+  position: number
   cree_le: string
 }
 
@@ -170,6 +172,7 @@ export type ModuleRow = ColonnesSeo & {
   prix_masque: boolean
   points_forts: string[]
   video_intro_cle: string | null
+  pret_le: string | null
   cree_le: string
   maj_le: string
 }
@@ -599,9 +602,9 @@ type Table<Row, Genere extends keyof Row = never> = {
 export type Database = {
   public: {
     Tables: {
-      programmes: Table<ProgrammeRow, 'cree_le' | 'maj_le' | keyof ColonnesSeo>
+      programmes: Table<ProgrammeRow, 'cree_le' | 'maj_le' | 'statut' | keyof ColonnesSeo>
       phases: Table<PhaseRow, 'cree_le' | 'statut' | 'date_ouverture'>
-      thematiques: Table<ThematiqueRow, 'cree_le' | 'statut'>
+      thematiques: Table<ThematiqueRow, 'cree_le' | 'statut' | 'position'>
       alertes_lancement: Table<AlerteLancementRow, 'id' | 'cree_le' | 'whatsapp'>
       formateurs: Table<
         FormateurRow,
@@ -629,6 +632,7 @@ export type Database = {
         | 'prix_masque'
         | 'points_forts'
         | 'video_intro_cle'
+        | 'pret_le'
       >
       chapitres: Table<ChapitreRow, 'id' | 'duree_minutes' | 'script' | 'video_cle' | 'video_duree_secondes'>
       utilisateurs: Table<

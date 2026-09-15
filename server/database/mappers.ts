@@ -121,6 +121,7 @@ export function versProgramme(row: ProgrammeRow): Programme {
     descriptionProgramme: row.description_programme,
     descriptionCarte: row.description_carte,
     couleur: row.couleur,
+    statut: row.statut,
     seo: versSeo(row),
   }
 }
@@ -144,6 +145,7 @@ export function versThematique(row: ThematiqueRow): Thematique {
     programme: row.programme,
     phaseId: row.phase_id,
     statut: row.statut,
+    position: row.position,
   }
 }
 
@@ -214,6 +216,7 @@ export function versModule(row: ModuleRow, chapitres: ChapitreRow[] = []): Modul
     prixMasque: row.prix_masque,
     pointsForts: row.points_forts ?? [],
     videoIntroCle: optionnel(row.video_intro_cle),
+    pretLe: row.pret_le,
     majLe: row.maj_le,
     seo: versSeo(row),
   }

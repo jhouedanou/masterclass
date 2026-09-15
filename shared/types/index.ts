@@ -37,6 +37,9 @@ export interface Thematique {
   programme: ProgrammeSlug
   phaseId: string
   statut: StatutPublication
+  /** Ordre dans la phase, piloté par le glisser-déposer de l'écran 02.
+   *  Distinct de `numero`, qui reste le numéro montré à l'apprenant. */
+  position: number
 }
 
 /** Visiteur à prévenir au lancement d'un module annoncé (planche A, 03c). */
@@ -71,6 +74,7 @@ export interface Programme {
   descriptionProgramme: string
   descriptionCarte: string
   couleur: string
+  statut: StatutPublication
   seo: SeoFields
 }
 
@@ -128,6 +132,10 @@ export interface Module {
   pointsForts: string[]
   /** Vidéo de bienvenue : ne compte pas dans la progression. */
   videoIntroCle?: string
+  /** Horodatage du « Marquer Prêt » (planche C, écran 09). Un module prêt est
+   *  filmé, transcrit et relu ; il n'est pas pour autant en vente. Repasse à
+   *  `null` dès qu'un contenu change. */
+  pretLe: string | null
   majLe: string
   seo: SeoFields
 }

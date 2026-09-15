@@ -49,6 +49,7 @@ export const programmes: Programme[] = [
     id: 'prg-social-media',
     slug: 'social-media',
     nom: 'Social Média',
+    statut: 'publie',
     surtitreHero: 'Programme Social Média',
     h1Variable: 'Restez dans la course.',
     descriptionHero:
@@ -71,6 +72,7 @@ export const programmes: Programme[] = [
     id: 'prg-entrepreneurs',
     slug: 'entrepreneurs',
     nom: 'Entrepreneurs',
+    statut: 'publie',
     surtitreHero: 'Programme Entrepreneurs',
     h1Variable: 'Soyez à jour.',
     descriptionHero:
@@ -97,12 +99,12 @@ export const phases: Phase[] = [
 ]
 
 export const thematiques: Thematique[] = [
-  { id: 'th-sm-fondations', numero: 1, nom: 'Fondations stratégiques', programme: 'social-media', phaseId: 'ph-sm-1', statut: 'publie' },
-  { id: 'th-sm-copywriting', numero: 2, nom: 'Copywriting & contenu', programme: 'social-media', phaseId: 'ph-sm-1', statut: 'publie' },
-  { id: 'th-sm-plateformes', numero: 3, nom: 'Plateformes', programme: 'social-media', phaseId: 'ph-sm-1', statut: 'publie' },
-  { id: 'th-ent-fondations', numero: 1, nom: 'Fondations du business', programme: 'entrepreneurs', phaseId: 'ph-ent-1', statut: 'publie' },
-  { id: 'th-ent-vente', numero: 2, nom: 'Vente & acquisition', programme: 'entrepreneurs', phaseId: 'ph-ent-1', statut: 'publie' },
-  { id: 'th-ent-visibilite', numero: 3, nom: 'Visibilité', programme: 'entrepreneurs', phaseId: 'ph-ent-1', statut: 'publie' },
+  { id: 'th-sm-fondations', numero: 1, nom: 'Fondations stratégiques', programme: 'social-media', phaseId: 'ph-sm-1', statut: 'publie', position: 0 },
+  { id: 'th-sm-copywriting', numero: 2, nom: 'Copywriting & contenu', programme: 'social-media', phaseId: 'ph-sm-1', statut: 'publie', position: 1 },
+  { id: 'th-sm-plateformes', numero: 3, nom: 'Plateformes', programme: 'social-media', phaseId: 'ph-sm-1', statut: 'publie', position: 2 },
+  { id: 'th-ent-fondations', numero: 1, nom: 'Fondations du business', programme: 'entrepreneurs', phaseId: 'ph-ent-1', statut: 'publie', position: 0 },
+  { id: 'th-ent-vente', numero: 2, nom: 'Vente & acquisition', programme: 'entrepreneurs', phaseId: 'ph-ent-1', statut: 'publie', position: 1 },
+  { id: 'th-ent-visibilite', numero: 3, nom: 'Visibilité', programme: 'entrepreneurs', phaseId: 'ph-ent-1', statut: 'publie', position: 2 },
 ]
 
 export const formateurs: Formateur[] = [
@@ -301,6 +303,7 @@ function moduleComplet(b: Brouillon): Module {
     statut,
     publieLe: statut === 'disponible' ? '2026-06-01' : null,
     dateLancement: b.dateLancement ?? null,
+    pretLe: null,
     prixMasque: false,
     pointsForts: b.pointsForts ?? [],
     majLe: '2026-08-01',
