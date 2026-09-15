@@ -308,6 +308,8 @@ function moduleComplet(b: Brouillon): Module {
     publieLe: statut === 'disponible' ? '2026-06-01' : null,
     dateLancement: b.dateLancement ?? null,
     pretLe: null,
+    filigraneActif: true,
+    telechargementBloque: true,
     prixMasque: false,
     pointsForts: b.pointsForts ?? [],
     majLe: '2026-08-01',

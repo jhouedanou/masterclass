@@ -173,6 +173,8 @@ export type ModuleRow = ColonnesSeo & {
   points_forts: string[]
   video_intro_cle: string | null
   pret_le: string | null
+  filigrane_actif: boolean
+  telechargement_bloque: boolean
   cree_le: string
   maj_le: string
 }
@@ -640,6 +642,8 @@ export type Database = {
         | 'points_forts'
         | 'video_intro_cle'
         | 'pret_le'
+        | 'filigrane_actif'
+        | 'telechargement_bloque'
       >
       chapitres: Table<
         ChapitreRow,

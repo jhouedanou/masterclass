@@ -224,6 +224,8 @@ export function versModule(row: ModuleRow, chapitres: ChapitreRow[] = []): Modul
     pointsForts: row.points_forts ?? [],
     videoIntroCle: optionnel(row.video_intro_cle),
     pretLe: row.pret_le,
+    filigraneActif: row.filigrane_actif,
+    telechargementBloque: row.telechargement_bloque,
     majLe: row.maj_le,
     seo: versSeo(row),
   }

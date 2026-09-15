@@ -148,6 +148,12 @@ export interface Module {
    *  filmé, transcrit et relu ; il n'est pas pour autant en vente. Repasse à
    *  `null` dès qu'un contenu change. */
   pretLe: string | null
+  /** Filigrane nominatif en surimpression du lecteur (écran 09). */
+  filigraneActif: boolean
+  /** Masque tout bouton de téléchargement. N'empêche ni l'enregistrement
+   *  d'écran ni la récupération de l'URL signée : c'est le filigrane qui rend
+   *  une rediffusion attribuable. */
+  telechargementBloque: boolean
   majLe: string
   seo: SeoFields
 }

@@ -488,6 +488,8 @@ export async function majModule(
       | 'pointsForts'
       | 'videoIntroCle'
       | 'pretLe'
+      | 'filigraneActif'
+      | 'telechargementBloque'
     >
   >,
 ): Promise<Module> {
@@ -509,6 +511,10 @@ export async function majModule(
   if (champs.pointsForts !== undefined) colonnes.points_forts = champs.pointsForts
   if (champs.videoIntroCle !== undefined) colonnes.video_intro_cle = champs.videoIntroCle ?? null
   if (champs.pretLe !== undefined) colonnes.pret_le = champs.pretLe
+  if (champs.filigraneActif !== undefined) colonnes.filigrane_actif = champs.filigraneActif
+  if (champs.telechargementBloque !== undefined) {
+    colonnes.telechargement_bloque = champs.telechargementBloque
+  }
 
   // Publier un module lui donne sa date de publication si elle manque : la
   // contrainte `module_publie_date` l'exige.
@@ -555,6 +561,7 @@ export async function creerChapitre(
       .select('id'),
     'ajout du chapitre',
   )
+  await retirerEtatPretModule(moduleId)
 }
 
 export async function majChapitre(
@@ -609,6 +616,7 @@ export async function majVideoChapitre(
     'rattachement de la vidéo',
     'Chapitre introuvable',
   )
+  await retirerEtatPret(id)
 }
 
 /** Transcription d'un chapitre, importée ou saisie. */
@@ -635,6 +643,33 @@ export async function majScriptChapitre(
     'import du script',
     'Chapitre introuvable',
   )
+  await retirerEtatPret(id)
+}
+
+/**
+ * Un module déclaré prêt puis retouché ne l'est plus.
+ *
+ * Sans cette remise à zéro, la pastille « Prêt » de l'écran 02 mentirait dès
+ * qu'un chapitre change — et c'est elle qui autorise l'ouverture de l'offre.
+ */
+async function retirerEtatPret(chapitreId: string): Promise<void> {
+  const chapitre = verifierOptionnel(
+    await supabase().from('chapitres').select('module_id').eq('id', chapitreId).maybeSingle(),
+    'chapitre',
+  )
+  if (chapitre) await retirerEtatPretModule(chapitre.module_id)
+}
+
+export async function retirerEtatPretModule(moduleId: string): Promise<void> {
+  verifier(
+    await supabase()
+      .from('modules')
+      .update({ pret_le: null } as never)
+      .eq('id', moduleId)
+      .not('pret_le', 'is', null)
+      .select('id'),
+    'retrait de l’état prêt',
+  )
 }
 
 /** Clé de la vidéo d'un chapitre, pour savoir quoi supprimer au diffuseur. */
@@ -646,8 +681,15 @@ export async function trouverChapitre(id: string) {
 }
 
 export async function supprimerChapitre(id: string): Promise<void> {
+  // Le module est relevé avant la suppression : après, la jointure n'a plus
+  // rien à quoi se raccrocher.
+  const chapitre = verifierOptionnel(
+    await supabase().from('chapitres').select('module_id').eq('id', id).maybeSingle(),
+    'chapitre',
+  )
   const { error } = await supabase().from('chapitres').delete().eq('id', id)
   if (error) throw traduireErreur(error, 'suppression du chapitre')
+  if (chapitre) await retirerEtatPretModule(chapitre.module_id)
 }
 
 /** Réordonnancement par glisser-déposer : la liste reçue fait foi. */

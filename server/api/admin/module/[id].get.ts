@@ -1,10 +1,12 @@
 import { listerRessources, listerVersions } from '../../../database/backoffice'
+import { televersementEnCours } from '../../../database/video'
 import {
   listerChapitres,
   listerFormateurs,
   listerThematiques,
   trouverModule,
 } from '../../../database/catalogue'
+import { checklistPret } from '../../../utils/pret'
 import { exigerSection } from '../../../utils/session'
 
 /** Éditeur d'un module : ses cinq onglets en une seule requête. */
@@ -25,9 +27,19 @@ export default defineEventHandler(async (event) => {
     listerVersions('modules', id, 20),
   ])
 
+  // Un dépôt peut avoir été lancé depuis un autre poste, ou dans un onglet
+  // fermé : l'éditeur doit le montrer plutôt que de proposer d'en ouvrir un
+  // second, que l'index unique refuserait.
+  const depots = await Promise.all(
+    chapitres.map(async (c) => [c.id, await televersementEnCours(c.id)] as const),
+  )
+
   return {
     module: moduleTrouve,
-    chapitres,
+    chapitres: chapitres.map((c) => ({
+      ...c,
+      depotEnCours: depots.find(([id]) => id === c.id)?.[1] ?? null,
+    })),
     ressources,
     thematiques,
     formateurs,
@@ -36,5 +48,6 @@ export default defineEventHandler(async (event) => {
     // proposé — plutôt qu'un refus après coup.
     peutOuvrirOffre:
       Boolean(moduleTrouve.promesse) && Boolean(moduleTrouve.pourquoi) && chapitres.length > 0,
+    checklist: checklistPret(moduleTrouve, chapitres),
   }
 })

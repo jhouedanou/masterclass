@@ -199,29 +199,33 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
 
     <div class="grid gap-6 p-6 xl:grid-cols-[1.6fr_1fr]">
       <div>
-        <div class="relative aspect-16/9 w-full overflow-hidden rounded-carte bg-black">
+        <!-- Le motif de marque est un fond, pas un voile : la vidéo doit le
+             recouvrir. Un élément positionné se peint au-dessus de ceux qui ne
+             le sont pas — sans `relative` sur la vidéo, le motif lui passait
+             devant et teintait l'image de 14 %. -->
+        <div class="relative aspect-16/9 w-full overflow-hidden rounded-carte bg-[#17151c]">
           <img src="/images/brand/pattern.png" alt="" aria-hidden="true"
-            class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[.14]">
-          <video v-if="source" ref="video" class="h-full w-full" controls controlslist="nodownload" playsinline
+            class="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-[.14]">
+          <video v-if="source" ref="video" class="relative z-10 h-full w-full" controls controlslist="nodownload" playsinline
             preload="metadata" @play="lecteur.gestionnaires.onPlay" @pause="lecteur.gestionnaires.onPause"
             @ended="lecteur.gestionnaires.onEnded" @timeupdate="lecteur.gestionnaires.onTimeupdate"
             @loadedmetadata="lecteur.gestionnaires.onLoadedmetadata"
             @error="lecteur.gestionnaires.onError"></video>
 
-          <p v-else class="relative grid h-full place-items-center px-6 text-center text-[13.5px] text-[#b9b4c4]">
+          <p v-else class="relative z-10 grid h-full place-items-center px-6 text-center text-[13.5px] text-[#b9b4c4]">
             La vidéo de ce chapitre n’est pas encore en ligne. Le script ci-contre en donne le
             contenu.
           </p>
 
           <p v-if="lecteur.erreur.value"
-            class="absolute inset-x-0 bottom-14 mx-auto w-fit rounded bg-black/70 px-3 py-2 text-[12.5px] text-white"
+            class="absolute inset-x-0 bottom-14 z-20 mx-auto w-fit rounded bg-black/70 px-3 py-2 text-[12.5px] text-white"
             role="status">
             {{ lecteur.erreur.value }}
           </p>
 
           <!-- Filigrane nominatif : une rediffusion reste attribuable. -->
-          <p v-if="source"
-            class="pointer-events-none absolute top-4 right-4 rounded bg-black/40 px-2 py-1 text-[11px] text-white/70"
+          <p v-if="source && moduleCourant.filigraneActif"
+            class="pointer-events-none absolute top-4 right-4 z-20 rounded bg-black/40 px-2 py-1 text-[11px] text-white/70"
             aria-hidden="true">
             {{ auth.utilisateur?.prenom }} {{ auth.utilisateur?.nom }} · {{ auth.utilisateur?.email }}
           </p>

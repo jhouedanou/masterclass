@@ -149,6 +149,9 @@ export default defineNuxtConfig({
       // bloquerait aussi la page de saisie, qui doit être trouvable.
       '/verifier/',
       '/hors-ligne',
+      // Prévisualisation d'un module non publié : trois protections plutôt
+      // qu'une, la balise noindex étant posée par la page elle-même.
+      '/apercu',
     ],
   },
 
@@ -169,6 +172,7 @@ export default defineNuxtConfig({
       // non « /** » : le globstar emporte aussi le parent et sortirait
       // /verifier du sitemap sans rien signaler.
       '/verifier/*',
+      '/apercu/**',
     ],
     sources: ['/api/__sitemap__/urls'],
   },

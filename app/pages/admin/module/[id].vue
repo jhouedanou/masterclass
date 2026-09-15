@@ -10,6 +10,25 @@ interface Chapitre {
   titre: string
   dureeMinutes: number | null
   nbLignesScript: number
+  videoCle: string | null
+  videoFormat: 'hls' | 'fichier' | null
+  videoNomFichier: string | null
+  videoDureeSecondes: number | null
+  videoTailleOctets: number | null
+  scriptNomFichier: string | null
+  depotEnCours: { nomFichier: string; nbParts: number; parts: unknown[] } | null
+}
+
+interface Checklist {
+  pret: boolean
+  manques: string[]
+  details: {
+    chapitres: number
+    avecVideo: number
+    avecScript: number
+    dureeMinutes: number
+    dureeCibleMinutes: number
+  }
 }
 interface Ressource {
   id: string
@@ -33,6 +52,7 @@ const { data, refresh } = await useFetch<{
   formateurs: Formateur[]
   versions: Version[]
   peutOuvrirOffre: boolean
+  checklist: Checklist
 }>(() => `/api/admin/module/${route.params.id}`)
 
 if (!data.value) {
@@ -101,21 +121,25 @@ async function enregistrerFiche() {
   })
 }
 
-async function appliquer(champs: Record<string, unknown>) {
+/** `silencieux` : l'enregistrement automatique n'affiche ni bandeau de succès
+ *  ni voyant d'attente — il ne doit pas se faire remarquer. */
+async function appliquer(champs: Record<string, unknown>, options: { silencieux?: boolean } = {}) {
   erreur.value = ''
-  succes.value = ''
-  enCours.value = true
+  if (!options.silencieux) {
+    succes.value = ''
+    enCours.value = true
+  }
   try {
     await $fetch('/api/admin/modules', {
       method: 'PUT',
       body: { id: data.value!.module.id, ...champs },
     })
-    succes.value = 'Enregistré. La version précédente reste restaurable.'
+    if (!options.silencieux) succes.value = 'Enregistré. La version précédente reste restaurable.'
     await refresh()
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'L’enregistrement a échoué.'
   } finally {
-    enCours.value = false
+    if (!options.silencieux) enCours.value = false
   }
 }
 
@@ -186,6 +210,108 @@ async function restaurer(versionId: string) {
   }
 }
 
+// --- Chapitre sélectionné, « Prêt », autosave -------------------------------
+
+const chapitreSelectionne = ref<string>('')
+watchEffect(() => {
+  const liste = data.value?.chapitres ?? []
+  if (!liste.some((c) => c.id === chapitreSelectionne.value)) {
+    chapitreSelectionne.value = liste[0]?.id ?? ''
+  }
+})
+const chapitreCourant = computed(
+  () => data.value?.chapitres.find((c) => c.id === chapitreSelectionne.value) ?? null,
+)
+
+async function basculerPret() {
+  erreur.value = ''
+  try {
+    await $fetch('/api/admin/pret', {
+      method: 'POST',
+      body: { id: data.value!.module.id, pret: !data.value!.module.pretLe },
+    })
+    await refresh()
+  } catch (e) {
+    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
+  }
+}
+
+async function reglagesModule(champs: Record<string, unknown>) {
+  await appliquer(champs)
+}
+
+/**
+ * Enregistrement automatique.
+ *
+ * Le drapeau `autosave` coupe côté serveur la création d'une version et
+ * l'écriture au journal : sans lui, une séance de rédaction laisserait des
+ * centaines d'entrées dans l'onglet Historique, où plus personne ne
+ * retrouverait la modification qui compte.
+ */
+const DELAI_AUTOSAVE = 1500
+let minuteurAutosave: ReturnType<typeof setTimeout> | undefined
+const enregistreLe = ref<number | null>(null)
+const maintenantMs = ref(Date.now())
+
+let premierPassage = true
+watch(
+  fiche,
+  () => {
+    // Le premier passage est le remplissage initial du formulaire, pas une
+    // frappe de l'utilisateur.
+    if (premierPassage) {
+      premierPassage = false
+      return
+    }
+    if (onglet.value !== 'informations') return
+    if (minuteurAutosave) clearTimeout(minuteurAutosave)
+    minuteurAutosave = setTimeout(async () => {
+      await appliquer(
+        {
+          titre: fiche.titre,
+          promesse: fiche.promesse,
+          pourquoi: fiche.pourquoi,
+          prerequis: fiche.prerequis,
+          livrable: fiche.livrable,
+          pourQui: lignes(fiche.pourQui),
+          acquis: lignes(fiche.acquis),
+          autosave: true,
+        },
+        { silencieux: true },
+      )
+      enregistreLe.value = Date.now()
+    }, DELAI_AUTOSAVE)
+  },
+  { deep: true },
+)
+
+let horloge: ReturnType<typeof setInterval> | undefined
+onMounted(() => {
+  horloge = setInterval(() => (maintenantMs.value = Date.now()), 5000)
+})
+onBeforeUnmount(() => {
+  if (minuteurAutosave) clearTimeout(minuteurAutosave)
+  if (horloge) clearInterval(horloge)
+})
+
+const mentionAutosave = computed(() => {
+  if (!enregistreLe.value) return ''
+  const secondes = Math.round((maintenantMs.value - enregistreLe.value) / 1000)
+  if (secondes < 60) return `Brouillon — sauvegardé il y a ${Math.max(secondes, 1)} s`
+  if (secondes < 3600) return `Brouillon — sauvegardé il y a ${Math.round(secondes / 60)} min`
+  return `Brouillon — sauvegardé à ${new Date(enregistreLe.value).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+})
+
+const LIBELLE_STATUT: Record<string, string> = {
+  disponible: 'Vente ouverte',
+  'en-preparation': 'En préparation',
+  brouillon: 'Brouillon',
+  annonce: 'Annonce',
+}
+
+const poids = (octets: number | null) =>
+  octets ? `${Math.round(octets / 1024 / 1024)} Mo` : ''
+
 const ONGLETS = [
   { cle: 'informations', libelle: 'Informations' },
   { cle: 'chapitres', libelle: 'Chapitres' },
@@ -220,22 +346,42 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
               'bg-fond-voile text-discret': data.module.statut === 'brouillon',
             }"
           >
-            {{ data.module.statut }}
+            {{ LIBELLE_STATUT[data.module.statut] ?? data.module.statut }}
+          </span>
+          <span
+            v-if="data.module.pretLe"
+            class="rounded-full bg-succes-voile px-2.5 py-1 text-[11px] font-bold text-succes"
+          >
+            Prêt
           </span>
           <span>{{ data.module.programme === 'social-media' ? 'Social Média' : 'Entrepreneurs' }}</span>
           <span>·</span>
           <span>{{ nomThematique }}</span>
         </p>
       </div>
-      <UiBaseButton
-        v-if="data.module.statut !== 'brouillon'"
-        :to="`/modules/${data.module.slug}`"
-        variante="contour"
-        taille="sm"
-        cible="_blank"
-      >
-        Prévisualiser
-      </UiBaseButton>
+      <div class="flex flex-wrap items-center gap-2">
+        <span
+          v-if="mentionAutosave"
+          class="rounded-full bg-[#fff4e2] px-3 py-1.5 text-[12.5px] font-bold text-[#a06a12]"
+          role="status"
+        >
+          {{ mentionAutosave }}
+        </span>
+        <UiBaseButton
+          :to="`/apercu/${data.module.slug}`"
+          variante="contour"
+          taille="sm"
+          cible="_blank"
+        >
+          Prévisualiser
+        </UiBaseButton>
+        <!-- « Prêt » est refusé côté serveur si la checklist ne passe pas : le
+             bouton reste actif pour que le motif s'affiche plutôt que de
+             laisser deviner pourquoi il ne se passe rien. -->
+        <UiBaseButton taille="sm" :variante="data.module.pretLe ? 'contour' : undefined" @click="basculerPret">
+          {{ data.module.pretLe ? 'Retirer « Prêt »' : 'Marquer « Prêt »' }}
+        </UiBaseButton>
+      </div>
     </div>
 
     <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-[#fdeeee] px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>
@@ -308,41 +454,93 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
     </section>
 
     <!-- Chapitres -->
-    <section v-if="onglet === 'chapitres'" class="mt-6 max-w-[760px]">
-      <div v-if="data.chapitres.length" class="flex flex-col gap-2">
-        <article
-          v-for="(c, i) in data.chapitres"
-          :key="c.id"
-          class="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-ligne-douce bg-white p-4"
-        >
-          <div class="min-w-0">
-            <p class="text-[14px] font-bold text-encre">{{ c.libelle }} · {{ c.titre }}</p>
-            <p class="mt-0.5 text-[12.5px] text-discret">
-              {{ c.dureeMinutes ? `${c.dureeMinutes} min` : 'durée non renseignée' }} ·
-              {{ c.nbLignesScript ? `script de ${c.nbLignesScript} lignes` : 'script à importer' }}
-            </p>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <button class="rounded-[8px] border border-ligne px-2 py-1 text-[12px]" :disabled="i === 0" @click="deplacer(i, -1)">↑</button>
-            <button class="rounded-[8px] border border-ligne px-2 py-1 text-[12px]" :disabled="i === data.chapitres.length - 1" @click="deplacer(i, 1)">↓</button>
-            <button class="ml-2 text-[12.5px] text-erreur underline" @click="chapitre({ action: 'supprimer', id: c.id })">Supprimer</button>
-          </div>
-        </article>
-      </div>
-      <p v-else class="rounded-[12px] border border-dashed border-ligne p-5 text-[13.5px] text-discret">
-        Aucun chapitre. Il en faut au moins un pour pouvoir ouvrir l’offre.
-      </p>
+    <section v-if="onglet === 'chapitres'" class="mt-6 grid gap-6 xl:grid-cols-[1fr_380px]">
+      <div>
+        <AdminChecklistPret :checklist="data.checklist" />
 
-      <form class="mt-4 rounded-[14px] border border-ligne-douce bg-white p-5" @submit.prevent="ajouterChapitre">
-        <h3 class="font-title text-[16px] font-light">Ajouter un chapitre</h3>
-        <div class="mt-3 grid gap-3 sm:grid-cols-[1fr_2fr_auto]">
-          <input v-model="nouveauChapitre.libelle" placeholder="Chapitre 1" :class="champ">
-          <input v-model="nouveauChapitre.titre" placeholder="Titre du chapitre" required :class="champ">
-          <input v-model.number="nouveauChapitre.dureeMinutes" type="number" min="1" placeholder="min" :class="champ">
+        <div v-if="data.chapitres.length" class="mt-4 flex flex-col gap-2">
+          <article
+            v-for="(c, i) in data.chapitres"
+            :key="c.id"
+            class="rounded-[12px] border bg-white p-4"
+            :class="chapitreSelectionne === c.id ? 'border-social' : 'border-ligne-douce'"
+          >
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <button class="min-w-0 flex-1 text-left" @click="chapitreSelectionne = c.id">
+                <p class="text-[14px] font-bold text-encre">
+                  <span class="text-discret">⋮⋮</span> {{ c.libelle }} · {{ c.titre }}
+                </p>
+                <!-- Ligne d'état : trois cas seulement, et le plus utile est le
+                     dernier — ce qu'il reste à faire sur ce chapitre. -->
+                <p
+                  class="mt-0.5 text-[12.5px]"
+                  :class="c.depotEnCours ? 'font-bold text-alerte' : c.videoCle ? 'text-succes' : 'text-discret'"
+                >
+                  <template v-if="c.depotEnCours">
+                    Téléversement en cours — {{ c.depotEnCours.nomFichier }}
+                    ({{ c.depotEnCours.parts.length }}/{{ c.depotEnCours.nbParts }} parts)
+                  </template>
+                  <template v-else-if="c.videoCle">
+                    Vidéo : {{ c.videoNomFichier ?? c.videoCle }}
+                    <template v-if="c.videoDureeSecondes"> · {{ Math.round(c.videoDureeSecondes / 60) }} min</template>
+                    <template v-if="poids(c.videoTailleOctets)"> · {{ poids(c.videoTailleOctets) }}</template>
+                    · {{ c.nbLignesScript ? 'script importé ✓' : 'script à importer' }}
+                  </template>
+                  <template v-else>
+                    Aucune vidéo · {{ c.nbLignesScript ? 'script importé ✓' : 'script à importer' }}
+                  </template>
+                </p>
+              </button>
+              <div class="flex items-center gap-1.5">
+                <button class="rounded-[8px] border border-ligne px-2 py-1 text-[12px]" :disabled="i === 0" @click="deplacer(i, -1)">↑</button>
+                <button class="rounded-[8px] border border-ligne px-2 py-1 text-[12px]" :disabled="i === data.chapitres.length - 1" @click="deplacer(i, 1)">↓</button>
+                <button class="ml-2 text-[12.5px] text-erreur underline" @click="chapitre({ action: 'supprimer', id: c.id })">Retirer</button>
+              </div>
+            </div>
+
+            <AdminDepotVideo
+              v-if="chapitreSelectionne === c.id"
+              class="mt-4 border-t border-ligne-claire pt-4"
+              :chapitre-id="c.id"
+              :module-id="data.module.id"
+              :depot-en-cours="c.depotEnCours"
+              @termine="refresh"
+              @annule="refresh"
+            />
+          </article>
         </div>
-        <UiBaseButton type="submit" taille="sm" class="mt-3">Ajouter</UiBaseButton>
-      </form>
+        <p v-else class="mt-4 rounded-[12px] border border-dashed border-ligne p-5 text-[13.5px] text-discret">
+          Aucun chapitre. Il en faut au moins un pour pouvoir ouvrir l’offre.
+        </p>
+
+        <form class="mt-4 rounded-[14px] border border-ligne-douce bg-white p-5" @submit.prevent="ajouterChapitre">
+          <h3 class="font-title text-[16px] font-light">Ajouter un chapitre (illimité)</h3>
+          <div class="mt-3 grid gap-3 sm:grid-cols-[1fr_2fr_auto]">
+            <input v-model="nouveauChapitre.libelle" placeholder="Chapitre 1" :class="champ">
+            <input v-model="nouveauChapitre.titre" placeholder="Titre du chapitre" required :class="champ">
+            <input v-model.number="nouveauChapitre.dureeMinutes" type="number" min="1" placeholder="min" :class="champ">
+          </div>
+          <UiBaseButton type="submit" taille="sm" class="mt-3">Ajouter</UiBaseButton>
+        </form>
+      </div>
+
+      <AdminPanneauChapitre
+        v-if="chapitreCourant"
+        :chapitre="chapitreCourant"
+        :numero="(data.chapitres.findIndex((c) => c.id === chapitreCourant!.id) ?? 0) + 1"
+        :filigrane-actif="data.module.filigraneActif"
+        :telechargement-bloque="data.module.telechargementBloque"
+        @modifier="chapitre({ action: 'modifier', id: chapitreCourant!.id, ...$event })"
+        @reglages="reglagesModule($event)"
+        @rafraichir="refresh"
+      />
     </section>
+
+    <AdminApercuModule
+      v-if="onglet === 'chapitres'"
+      :module-id="data.module.id"
+      :slug="data.module.slug"
+    />
 
     <!-- Ressources -->
     <section v-if="onglet === 'ressources'" class="mt-6 max-w-[760px]">
