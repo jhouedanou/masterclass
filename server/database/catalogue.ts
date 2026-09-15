@@ -576,6 +576,75 @@ export async function majChapitre(
   )
 }
 
+/**
+ * Rattachement d'une vidéo à un chapitre, ou son retrait.
+ *
+ * Distinct de `majChapitre`, qui ne touche qu'à l'éditorial : ces colonnes-là
+ * ne se saisissent pas, elles se constatent à la fin d'un dépôt.
+ */
+export async function majVideoChapitre(
+  id: string,
+  champs: {
+    videoCle: string | null
+    videoFormat: 'hls' | 'fichier' | null
+    videoDureeSecondes: number | null
+    videoNomFichier: string | null
+    videoTailleOctets: number | null
+  },
+): Promise<void> {
+  verifierUn(
+    await supabase()
+      .from('chapitres')
+      .update({
+        video_cle: champs.videoCle,
+        video_format: champs.videoFormat,
+        video_duree_secondes: champs.videoDureeSecondes,
+        video_nom_fichier: champs.videoNomFichier,
+        video_taille_octets: champs.videoTailleOctets,
+        video_importee_le: champs.videoCle ? new Date().toISOString() : null,
+      } as never)
+      .eq('id', id)
+      .select('id')
+      .maybeSingle(),
+    'rattachement de la vidéo',
+    'Chapitre introuvable',
+  )
+}
+
+/** Transcription d'un chapitre, importée ou saisie. */
+export async function majScriptChapitre(
+  id: string,
+  champs: {
+    script: { temps: string; texte: string }[]
+    format: 'srt' | 'vtt' | 'manuel' | null
+    nomFichier: string | null
+  },
+): Promise<void> {
+  verifierUn(
+    await supabase()
+      .from('chapitres')
+      .update({
+        script: champs.script,
+        script_format: champs.format,
+        script_nom_fichier: champs.nomFichier,
+        script_importe_le: champs.script.length ? new Date().toISOString() : null,
+      } as never)
+      .eq('id', id)
+      .select('id')
+      .maybeSingle(),
+    'import du script',
+    'Chapitre introuvable',
+  )
+}
+
+/** Clé de la vidéo d'un chapitre, pour savoir quoi supprimer au diffuseur. */
+export async function trouverChapitre(id: string) {
+  return verifierOptionnel(
+    await supabase().from('chapitres').select('*').eq('id', id).maybeSingle(),
+    'chapitre',
+  )
+}
+
 export async function supprimerChapitre(id: string): Promise<void> {
   const { error } = await supabase().from('chapitres').delete().eq('id', id)
   if (error) throw traduireErreur(error, 'suppression du chapitre')
@@ -615,6 +684,16 @@ export async function listerChapitres(moduleId: string) {
     titre: c.titre,
     dureeMinutes: c.duree_minutes,
     nbLignesScript: c.script.length,
+    // L'éditeur affiche l'état réel de chaque chapitre : sans ces colonnes, sa
+    // ligne « Vidéo : … · script importé ✓ » n'aurait rien à dire.
+    videoCle: c.video_cle,
+    videoFormat: c.video_format,
+    videoNomFichier: c.video_nom_fichier,
+    videoDureeSecondes: c.video_duree_secondes,
+    videoTailleOctets: c.video_taille_octets ? Number(c.video_taille_octets) : null,
+    scriptFormat: c.script_format,
+    scriptNomFichier: c.script_nom_fichier,
+    scriptImporteLe: c.script_importe_le,
   }))
 }
 

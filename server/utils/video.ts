@@ -255,3 +255,84 @@ export function reecrirePlaylist(texte: string, requete: string): string {
     })
     .join('\n')
 }
+
+// --- Plan de contrôle du dépôt ---------------------------------------------
+
+/**
+ * Appel d'une route de dépôt du diffuseur.
+ *
+ * Le fichier ne passe jamais par ici : seules les quelques centaines d'octets
+ * du plan de contrôle transitent — ouvrir, finaliser, abandonner, supprimer.
+ * Les octets des parts vont directement du navigateur au diffuseur, ce qui est
+ * la seule façon de faire passer sept cents mégaoctets malgré le plafond de
+ * quatre mégaoctets et demi imposé à une requête applicative.
+ */
+async function appelerDiffuseur(
+  action: string,
+  cle: string,
+  uploadId: string,
+  utilisateurId: string,
+  options: { methode: string; corps?: unknown },
+): Promise<unknown> {
+  const { requete } = await jetonEcriture(action, cle, uploadId, utilisateurId)
+  const reponse = await fetch(`${baseVideo()}/_televersement/${action}?${requete}`, {
+    method: options.methode,
+    headers: options.corps ? { 'content-type': 'application/json' } : undefined,
+    body: options.corps ? JSON.stringify(options.corps) : undefined,
+  })
+
+  if (reponse.status === 204) return null
+  const texte = await reponse.text()
+  if (!reponse.ok) {
+    // Le message du diffuseur est remonté tel quel : c'est souvent le seul
+    // indice utile quand le stockage refuse une part.
+    throw createError({
+      statusCode: 502,
+      statusMessage: `Le diffuseur a refusé l’opération « ${action} » — ${texte.slice(0, 300)}`,
+    })
+  }
+  return texte ? JSON.parse(texte) : null
+}
+
+export function ouvrirDepot(cle: string, utilisateurId: string) {
+  return appelerDiffuseur('ouvrir', cle, '', utilisateurId, { methode: 'POST', corps: {} }) as Promise<{
+    uploadId: string
+    taillePart: number
+  }>
+}
+
+export function terminerDepot(
+  cle: string,
+  uploadId: string,
+  utilisateurId: string,
+  parts: { n: number; etag: string }[],
+) {
+  return appelerDiffuseur('terminer', cle, uploadId, utilisateurId, {
+    methode: 'POST',
+    corps: { parts: parts.map((p) => ({ partNumber: p.n, etag: p.etag })) },
+  }) as Promise<{ taille: number; etag: string }>
+}
+
+export function abandonnerDepot(cle: string, uploadId: string, utilisateurId: string) {
+  return appelerDiffuseur('abandonner', cle, uploadId, utilisateurId, { methode: 'POST', corps: {} })
+}
+
+export function supprimerObjet(cle: string, utilisateurId: string) {
+  return appelerDiffuseur('objet', cle, '', utilisateurId, { methode: 'DELETE' }) as Promise<{
+    supprimes: number
+  }>
+}
+
+/**
+ * Clé d'un chapitre : le module, la position, et six caractères tirés au sort.
+ *
+ * Le suffixe aléatoire n'est pas un ornement. Un remplacement de vidéo doit
+ * produire une clé neuve, sans quoi le cache d'un an posé sur les fichiers
+ * servirait l'ancienne version pendant des mois. Il rend aussi l'unicité
+ * automatique et l'objet indevinable.
+ */
+export function cleChapitre(slugModule: string, position: number): string {
+  const hasard = Math.random().toString(16).slice(2, 8)
+  const numero = String(position + 1).padStart(2, '0')
+  return `${slugModule.slice(0, 62)}-ch${numero}-${hasard}`
+}

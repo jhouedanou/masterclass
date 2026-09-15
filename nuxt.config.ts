@@ -270,7 +270,7 @@ export default defineNuxtConfig({
     experimental: { tasks: true },
     scheduledTasks: {
       // Chaque nuit à 3 h : suppression définitive des comptes échus et rappel J-3.
-      '0 3 * * *': ['comptes:purger'],
+      '0 3 * * *': ['comptes:purger', 'video:purger'],
     },
     // Les runtimes de ces modules doivent être inlinés : laissés externes, le
     // build de production émet des imports relatifs qui sortent du projet.

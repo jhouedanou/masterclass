@@ -1,4 +1,5 @@
 import { purgerComptes } from '../../tasks/comptes/purger'
+import { purgerTeleversements } from '../../tasks/video/purger'
 import { exigerCleTache } from '../../utils/taches'
 
 /**
@@ -10,5 +11,8 @@ import { exigerCleTache } from '../../utils/taches'
  */
 export default defineEventHandler(async (event) => {
   exigerCleTache(event)
-  return await purgerComptes()
+  // Même passe : les téléversements vidéo restés en plan occupent le
+  // stockage et sont facturés tant qu'ils ne sont pas abandonnés.
+  const [comptes, videos] = await Promise.all([purgerComptes(), purgerTeleversements()])
+  return { ...comptes, ...videos }
 })
