@@ -17,6 +17,10 @@ export function useLecteurVideo(options: {
   moduleId: () => string
   position: () => number
   source: () => string | null
+  /** Forme de la vidéo, donnée par le serveur. On ne la devine pas à
+   *  l'extension de l'URL : celle-ci porte une chaîne de requête, et la règle
+   *  deviendrait implicite le jour où elle changerait. */
+  format: () => 'hls' | 'fichier' | null
 }) {
   const video = ref<HTMLVideoElement | null>(null)
   const enLecture = ref(false)
@@ -34,6 +38,10 @@ export function useLecteurVideo(options: {
   let hls: Hls | null = null
   let dernierInstant = 0
   let secondesEnvoyees = 0
+  /** Position à restaurer après un renouvellement d'autorisation : changer la
+   *  source d'une balise vidéo remet le curseur à zéro. */
+  let repriseApres: number | null = null
+  let reprendreLecture = false
 
   /** Toutes les dix secondes vues : assez fréquent pour ne rien perdre d'une
    *  session interrompue, assez rare pour ne pas inonder le serveur. */
@@ -113,6 +121,21 @@ export function useLecteurVideo(options: {
     }
   }
 
+  /**
+   * Recharge la source en gardant la place.
+   *
+   * Un fichier de sept cents mégaoctets se lit sur plus de quatre heures quand
+   * l'apprenant fait des pauses ; passé ce délai l'autorisation périme et les
+   * requêtes de plage suivantes échouent en plein visionnage. La page renouvelle
+   * alors l'autorisation, et c'est ici qu'on évite de renvoyer l'apprenant au
+   * début du chapitre.
+   */
+  function rechargerEnPlace() {
+    repriseApres = video.value?.currentTime ?? 0
+    reprendreLecture = Boolean(video.value && !video.value.paused)
+    charger()
+  }
+
   function charger() {
     const element = video.value
     const source = options.source()
@@ -126,6 +149,13 @@ export function useLecteurVideo(options: {
 
     if (!element || !source) return
     chargement.value = true
+
+    // Un fichier unique se lit sans hls.js : la balise vidéo suffit, et le
+    // diffuseur répond aux requêtes de plage pour permettre le déplacement.
+    if (options.format() === 'fichier') {
+      element.src = source
+      return
+    }
 
     if (Hls.isSupported()) {
       hls = new Hls({ capLevelToPlayerSize: true, startLevel: -1 })
@@ -163,6 +193,42 @@ export function useLecteurVideo(options: {
     }
   }
 
+  /**
+   * Erreur remontée par la balise vidéo elle-même, seule voie quand hls.js
+   * n'est pas dans la boucle.
+   *
+   * `MediaError` ne porte aucun code HTTP : impossible d'y distinguer une
+   * autorisation expirée d'un fichier absent. On redemande donc le premier
+   * octet du fichier pour obtenir un vrai statut, et on réutilise le même tri
+   * que la voie HLS — le renouvellement automatique continue alors de
+   * fonctionner sans y toucher.
+   */
+  async function surErreurElement() {
+    const source = options.source()
+    if (!source || options.format() !== 'fichier') return
+
+    chargement.value = false
+    try {
+      const reponse = await fetch(source, { headers: { Range: 'bytes=0-0' } })
+      if (!reponse.ok) {
+        const refus = motifRefus(reponse.status, await reponse.text())
+        if (refus) {
+          erreurRenouvelable.value = refus.renouvelable
+          erreur.value = refus.message
+          return
+        }
+      }
+    } catch {
+      erreur.value = 'La vidéo n’a pas pu être chargée. Vérifiez votre connexion.'
+      return
+    }
+
+    // Le fichier est bien là et l'autorisation tient : c'est donc le codec que
+    // le navigateur ne sait pas décoder.
+    erreur.value =
+      'Cette vidéo n’est pas lisible par votre navigateur — signalez-le à l’équipe en précisant votre appareil.'
+  }
+
   function brancher(element: HTMLVideoElement | null) {
     video.value = element
     if (element) charger()
@@ -194,7 +260,16 @@ export function useLecteurVideo(options: {
     onLoadedmetadata: () => {
       chargement.value = false
       dureeSecondes.value = video.value?.duration ?? 0
+      // Renouvellement d'autorisation en cours de lecture : on reprend là où
+      // l'apprenant en était, et on ne redémarre que si la vidéo tournait.
+      if (repriseApres !== null && video.value) {
+        video.value.currentTime = repriseApres
+        if (reprendreLecture) void video.value.play().catch(() => undefined)
+        repriseApres = null
+        reprendreLecture = false
+      }
     },
+    onError: surErreurElement,
   }
 
   onBeforeUnmount(() => {
@@ -205,6 +280,7 @@ export function useLecteurVideo(options: {
   return {
     brancher,
     charger,
+    rechargerEnPlace,
     allerA,
     vitesse,
     gestionnaires,

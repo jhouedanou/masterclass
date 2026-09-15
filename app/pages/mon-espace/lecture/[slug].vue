@@ -31,19 +31,27 @@ usePagePrivee(`Lecture — ${moduleCourant.value.titre}`)
  * cache avec lui — une URL périmée doit pouvoir être renouvelée seule.
  */
 const { data: lecture, refresh: renouvelerAutorisations } = await useFetch<{
-  chapitres: { position: number; url: string | null; dureeSecondes: number | null }[]
+  chapitres: {
+    position: number
+    url: string | null
+    dureeSecondes: number | null
+    format: 'hls' | 'fichier' | null
+  }[]
+  expireDansSecondes: number
 }>(() => `/api/mon-espace/lecture/${route.params.slug}`, { server: false })
 
 const index = ref(Number(route.query.chapitre ?? 0))
 const chapitre = computed(() => moduleCourant.value.chapitres[index.value])
-const source = computed(
-  () => lecture.value?.chapitres.find((c) => c.position === index.value)?.url ?? null,
+const autorisation = computed(() =>
+  lecture.value?.chapitres.find((c) => c.position === index.value),
 )
+const source = computed(() => autorisation.value?.url ?? null)
 
 const lecteur = useLecteurVideo({
   moduleId: () => moduleCourant.value.id,
   position: () => index.value,
   source: () => source.value,
+  format: () => autorisation.value?.format ?? null,
 })
 
 const video = ref<HTMLVideoElement | null>(null)
@@ -97,8 +105,21 @@ function horloge(secondes: number): string {
 }
 
 /** « 04:30 » d'une ligne de script, en secondes. */
+/**
+ * Timecode d'un passage vers des secondes.
+ *
+ * Le format écrit est « mm:ss », les minutes débordant au-delà de soixante —
+ * « 73:20 » pour une heure treize. Trois segments sont acceptés en assurance :
+ * une transcription saisie à la main dans l'autre forme ne produirait plus un
+ * saut au début de la vidéo.
+ */
 function versSecondes(temps: string): number {
-  const [minutes, secondes] = temps.split(':').map(Number)
+  const parties = temps.split(':').map(Number)
+  if (parties.length === 3) {
+    const [heures, minutes, secondes] = parties
+    return (heures ?? 0) * 3600 + (minutes ?? 0) * 60 + (secondes ?? 0)
+  }
+  const [minutes, secondes] = parties
   return (minutes ?? 0) * 60 + (secondes ?? 0)
 }
 
@@ -132,6 +153,34 @@ watch(lecteur.erreur, async (message) => {
   renouvellementTente = true
   await renouvelerAutorisations()
 })
+
+/**
+ * Renouvellement préventif, cinq minutes avant l'échéance.
+ *
+ * Attendre le refus suffisait tant que le lecteur chargeait un manifeste au
+ * démarrage. Un fichier unique, lui, redemande des plages pendant toute la
+ * lecture : un chapitre de quarante minutes suivi avec des pauses dépasse
+ * volontiers les quatre heures d'autorisation, et le refus tombe alors en
+ * plein visionnage. La source est remplacée en gardant la place — changer le
+ * `src` d'une balise vidéo remet sinon le curseur à zéro.
+ */
+const MARGE_RENOUVELLEMENT_SECONDES = 5 * 60
+let minuteurAutorisation: ReturnType<typeof setTimeout> | undefined
+
+function programmerRenouvellement() {
+  if (minuteurAutorisation) clearTimeout(minuteurAutorisation)
+  const validite = lecture.value?.expireDansSecondes
+  if (!validite) return
+  const delai = Math.max(60, validite - MARGE_RENOUVELLEMENT_SECONDES) * 1000
+  minuteurAutorisation = setTimeout(async () => {
+    await renouvelerAutorisations()
+    lecteur.rechargerEnPlace()
+    programmerRenouvellement()
+  }, delai)
+}
+
+watch(lecture, programmerRenouvellement, { immediate: true })
+onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation))
 </script>
 
 <template>
@@ -156,7 +205,8 @@ watch(lecteur.erreur, async (message) => {
           <video v-if="source" ref="video" class="h-full w-full" controls controlslist="nodownload" playsinline
             preload="metadata" @play="lecteur.gestionnaires.onPlay" @pause="lecteur.gestionnaires.onPause"
             @ended="lecteur.gestionnaires.onEnded" @timeupdate="lecteur.gestionnaires.onTimeupdate"
-            @loadedmetadata="lecteur.gestionnaires.onLoadedmetadata"></video>
+            @loadedmetadata="lecteur.gestionnaires.onLoadedmetadata"
+            @error="lecteur.gestionnaires.onError"></video>
 
           <p v-else class="relative grid h-full place-items-center px-6 text-center text-[13.5px] text-[#b9b4c4]">
             La vidéo de ce chapitre n’est pas encore en ligne. Le script ci-contre en donne le
@@ -215,7 +265,7 @@ watch(lecteur.erreur, async (message) => {
         </p>
 
         <ul class="mt-4 space-y-3">
-          <li v-for="ligne in chapitre?.script ?? []" :key="ligne.temps">
+          <li v-for="(ligne, i) in chapitre?.script ?? []" :key="i">
             <button class="w-full rounded-[10px] p-3 text-left text-[13.5px] transition hover:bg-encre"
               :class="ligneActive === ligne.temps ? 'bg-encre' : ''" @click="lecteur.allerA(versSecondes(ligne.temps))">
               <span class="block font-mono text-[11.5px] text-social-clair">{{ ligne.temps }}</span>
