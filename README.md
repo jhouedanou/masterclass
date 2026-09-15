@@ -163,7 +163,7 @@ formateurs, articles — tant qu'aucun back-office ne permet de le saisir. Aprè
 ```bash
 npm run db:seed:generer   # régénère supabase/seed.sql
 npm run db:sql            # régénère supabase/en-ligne/
-npm run video:verifier    # contrôle la chaîne vidéo (signature, flux transcodés)
+npm run video:verifier    # contrôle la chaîne vidéo (signatures, sous-titres, flux)
 ```
 
 Aucun endpoint n'importe ce fichier : l'application passe par les dépôts de `server/database`.
@@ -414,36 +414,110 @@ formateurs et le partage d'articles.
 
 ## Vidéo
 
-Trois pièces, aucun abonnement :
+Deux formes coexistent, et le lecteur sait les distinguer par `chapitres.video_format` :
 
-| Pièce | Rôle | Coût |
+| Forme | Ce que c'est | D'où elle vient |
 | --- | --- | --- |
-| `ffmpeg`, sur un poste de travail | découpe une vidéo en flux HLS à plusieurs débits | nul |
-| Cloudflare R2 | stocke les fichiers produits | gratuit sous 10 Go, sortie de données gratuite |
-| Un Worker Cloudflare (`infra/worker-video`) | vérifie l'autorisation et sert les fichiers | gratuit sous 100 000 requêtes par jour |
+| `fichier` | un MP4 unique | déposé depuis `/admin/module/[id]`, onglet Chapitres |
+| `hls` | un dossier de manifestes et de segments | transcodé à la main par `ffmpeg`, historique |
 
-L'application ne diffuse aucune vidéo. Elle vérifie l'accès une fois, puis remet à l'apprenant une
-URL signée valable quatre heures et nominative. Le Worker recalcule la signature et sert le
-fichier ; aucun segment ne traverse le serveur Nuxt, d'où le coût.
+### Le dépôt depuis l'administration
 
-En développement, le Worker n'est pas nécessaire : la route `/medias` applique exactement la même
-règle de signature sur les fichiers locaux. `npm run video:verifier` compare les deux
-implémentations et échoue si elles divergent — une divergence rendrait toutes les vidéos illisibles
-en production alors que tout fonctionnerait en local.
+C'est la voie normale depuis le lot C. **Aucun transcodage n'est fait par la
+plateforme** : le formateur ou l'administrateur livre un MP4 déjà optimisé, et
+l'application se contente de le recevoir, de le ranger et de le servir.
+
+La marche à suivre est affichée dans l'interface, sous la zone de dépôt
+(`app/components/admin/MarcheASuivre.vue`) — elle ne vit pas ici, parce qu'un
+mode d'emploi qui n'est pas sous les yeux au moment du dépôt n'est lu par
+personne. En résumé : HandBrake, préréglage *Fast 1080p30*, case **Web
+Optimized** cochée.
+
+Cette case n'est pas un détail. Elle place la table des matières du fichier —
+la boîte `moov` — en tête ; derrière les données, le navigateur doit tout
+télécharger avant la première image et se déplacer dans la vidéo devient
+impossible. Le dépôt vérifie ce point dans le navigateur et refuse le fichier
+en l'expliquant, plutôt que de laisser découvrir la panne trois semaines plus
+tard sur un forfait mobile.
+
+Le fichier ne traverse jamais l'application : il part du navigateur vers le
+diffuseur, en parts de seize mégaoctets, avec reprise après coupure. C'est la
+seule voie possible quand une requête applicative plafonne à 4,5 Mo et que les
+sources en pèsent sept cents. Les routes correspondantes sont sous
+`server/api/admin/video/` ; elles ne portent que le plan de contrôle.
+
+Un dépôt abandonné est nettoyé par la tâche quotidienne `video:purger`, au-delà
+de vingt-quatre heures : ses parts occupent le stockage et sont facturées tant
+qu'elles ne sont pas explicitement abandonnées.
+
+### La transcription
+
+Fournie elle aussi par celui qui dépose, en `.srt` ou `.vtt`. Les trois voies
+possibles — YouTube en non répertoriée, Subtitle Edit avec Whisper en local,
+MacWhisper — sont détaillées dans la même marche à suivre.
+
+`server/utils/soustitres.ts` l'analyse et la range dans `chapitres.script`. Il
+ne s'agit pas de la transcription brute : une réplique de sous-titre dure deux
+à cinq secondes, un chapitre de quarante minutes en produit huit cents. Elles
+sont regroupées en passages lisibles, sans couper une phrase en cours ni fondre
+deux voix. Neuf cas tirés de fichiers réels sont contrôlés par
+`npm run video:verifier`.
+
+### Le transcodage HLS, toujours disponible
+
+Les deux vidéos de démonstration sont des flux HLS à plusieurs débits. La
+chaîne existe toujours et reste préférable pour une vidéo très longue ou très
+regardée, puisque le lecteur y choisit tout seul la qualité que la connexion
+supporte :
 
 ```bash
 npm run video:transcoder -- medias/sources/chapitre.mp4 mod-monslug-ch01
 npm run video:publier -- mod-monslug-ch01
 ```
 
-Le transcodage imprime la clé et la durée mesurée, à reporter dans `server/data/db.ts` (contenu de
-référence) ou directement en base. Un chapitre sans clé affiche l'écran d'attente du lecteur.
+Le transcodage imprime la clé et la durée mesurée, à reporter en base — il n'y
+a pas d'écran pour cette voie-là, et une vidéo HLS ne se retire pas depuis
+l'administration : son dossier contient des centaines de fichiers que rien ne
+référence en base.
 
-Le Worker est en service depuis le 2 septembre 2026 sur le compte `analyticsbigfive` :
-`https://emasterclass-videos.analyticsbigfive.workers.dev`. Détails et redéploiement dans `infra/worker-video/README.md`.
+### Le diffuseur
 
-Le filigrane nominatif reste indispensable : la signature empêche le partage d'un lien, pas
-l'enregistrement d'écran. Elle rend une rediffusion attribuable.
+| Pièce | Rôle | Coût |
+| --- | --- | --- |
+| Cloudflare R2 | stocke les fichiers | gratuit sous 10 Go, sortie de données gratuite |
+| Un Worker Cloudflare (`infra/worker-video`) | vérifie l'autorisation, sert les fichiers, reçoit les dépôts | gratuit sous 100 000 requêtes par jour |
+
+L'application ne diffuse aucune vidéo. Elle vérifie l'accès une fois, puis
+remet à l'apprenant une URL signée valable quatre heures et nominative. Le
+Worker recalcule la signature et sert le fichier ; aucun octet ne traverse le
+serveur Nuxt, d'où le coût.
+
+Le Worker répond aux requêtes `Range`, ce qui n'est pas un confort : sans
+`Accept-Ranges`, Safari refuse purement et simplement de lire un média, et se
+déplacer dans une vidéo devient impossible partout.
+
+En développement, le Worker n'est pas nécessaire : la route `/medias` applique
+exactement la même règle de signature et le même traitement des plages sur les
+fichiers locaux. `npm run video:verifier` compare les deux implémentations et
+échoue si elles divergent — une divergence rendrait toutes les vidéos illisibles
+en production alors que tout fonctionnerait en local.
+
+L'autorisation d'écriture est volontairement étanche à celle de lecture :
+préfixe distinct, action dans le message signé, paramètre de requête différent.
+Un jeton d'écriture volé ne publie pourtant rien — l'objet ne se matérialise
+qu'à la finalisation, que seule l'application déclenche après contrôle des
+droits.
+
+Le Worker est en service depuis le 2 septembre 2026 sur le compte
+`analyticsbigfive` : `https://emasterclass-videos.analyticsbigfive.workers.dev`.
+Détails et redéploiement dans `infra/worker-video/README.md`.
+
+⚠ **Les routes de dépôt exigent un redéploiement du Worker** (`npx wrangler
+deploy` dans `infra/worker-video`) : sans lui, l'ouverture d'un téléversement
+échoue en 404.
+
+Le filigrane nominatif reste indispensable : la signature empêche le partage
+d'un lien, pas l'enregistrement d'écran. Elle rend une rediffusion attribuable.
 
 ## Hébergement Vercel
 

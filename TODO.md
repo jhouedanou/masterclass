@@ -44,8 +44,15 @@ vidéos de démonstration tournent déjà de bout en bout.
 - [x] Bucket R2 créé, Worker déployé et vérifié le 02/09 — `https://emasterclass-videos.analyticsbigfive.workers.dev`.
       Les deux vidéos de démonstration se lisent depuis le CDN, une autorisation d'un chapitre
       ne donne pas accès à un autre.
-- [ ] Obtenir **les 18 vidéos** montées et validées — c'est le vrai sujet, et il reste entier
-- [ ] Récupérer les transcriptions (script synchronisé sous le lecteur)
+- [x] **Le dépôt depuis l'administration existe** — `/admin/module/[id]`, onglet Chapitres :
+      glisser un MP4, reprise après coupure, import du `.srt` ou `.vtt`, checklist avant « Prêt ».
+      Plus aucune ligne de commande ni aucun `UPDATE` à la main.
+      ⚠ Exige un redéploiement du Worker (`npx wrangler deploy` dans `infra/worker-video`),
+      sans quoi l'ouverture d'un téléversement échoue en 404.
+- [ ] Obtenir **les 18 vidéos** montées et validées — c'est le vrai sujet, et il reste entier.
+      Elles doivent être exportées en **MP4 avec la case « Web Optimized »** de HandBrake :
+      le dépôt refuse les autres, et la marche à suivre est affichée dans l'écran.
+- [ ] Récupérer les transcriptions en `.srt` ou `.vtt` — elles s'importent chapitre par chapitre.
 
 **Sans les vidéos, l'écran de lecture affiche son message d'attente.**
 
