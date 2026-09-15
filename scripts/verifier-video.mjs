@@ -87,6 +87,101 @@ const accepte = await verifier(
 if (accepte === null) succes('segment du dossier autorisé → accepté')
 else echec(`segment légitime refusé : ${accepte}`)
 
+// --- Le jeton d'écriture est-il bien étanche à celui de lecture ? ------------
+//
+// Trois confusions doivent être impossibles : rejouer une autorisation de
+// lecture en écriture, l'inverse, et se servir d'un jeton émis pour pousser
+// des parts afin de supprimer l'objet. Les vérifier vaut mieux que les décrire.
+
+console.log('\nJeton d’écriture')
+
+const verifierEcritureWorker = new Function(
+  `${source.slice(source.indexOf('function messageASigner'), source.indexOf('export default'))}
+   return verifierEcriture`,
+)()
+
+const CLE = 'mod-essai-ch01-a1b2c3'
+const UPLOAD = 'upload-de-controle'
+const ECHEANCE = maintenant + 100
+
+const jetonPart = await signerWorker(
+  `ecriture.part.${CLE}.${UPLOAD}.${ECHEANCE}.usr-houefa`,
+  SECRET,
+)
+const parametresPart = () =>
+  new URLSearchParams({ e: String(ECHEANCE), u: 'usr-houefa', j: jetonPart })
+
+const accepteEcriture = await verifierEcritureWorker(
+  'part',
+  CLE,
+  UPLOAD,
+  parametresPart(),
+  SECRET,
+  maintenant,
+)
+if (accepteEcriture === null) succes('jeton d’écriture légitime → accepté')
+else echec(`jeton d’écriture légitime refusé : ${accepteEcriture}`)
+
+// Le même jeton pour une autre action : refusé.
+const autreAction = await verifierEcritureWorker(
+  'objet',
+  CLE,
+  UPLOAD,
+  parametresPart(),
+  SECRET,
+  maintenant,
+)
+if (autreAction === 'signature invalide') succes('jeton « part » refusé pour l’action « objet »')
+else echec(`jeton « part » accepté pour « objet » : ${autreAction}`)
+
+// Le même jeton pour un autre dépôt : refusé.
+const autreDepot = await verifierEcritureWorker(
+  'part',
+  CLE,
+  'un-autre-upload',
+  parametresPart(),
+  SECRET,
+  maintenant,
+)
+if (autreDepot === 'signature invalide') succes('jeton refusé pour un autre téléversement')
+else echec(`jeton accepté pour un autre téléversement : ${autreDepot}`)
+
+// Une autorisation de lecture rejouée en écriture : refusée.
+const jetonLecture = await signerWorker(`${CLE}.${ECHEANCE}.usr-houefa`, SECRET)
+const lectureEnEcriture = await verifierEcritureWorker(
+  'part',
+  CLE,
+  UPLOAD,
+  new URLSearchParams({ e: String(ECHEANCE), u: 'usr-houefa', j: jetonLecture }),
+  SECRET,
+  maintenant,
+)
+if (lectureEnEcriture === 'signature invalide') succes('autorisation de lecture refusée en écriture')
+else echec(`autorisation de lecture acceptée en écriture : ${lectureEnEcriture}`)
+
+// Et l'inverse : un jeton d'écriture présenté au vérificateur de lecture.
+const ecritureEnLecture = await verifier(
+  `${CLE}/video.mp4`,
+  new URLSearchParams({ e: String(ECHEANCE), u: 'usr-houefa', s: jetonPart }),
+  SECRET,
+  maintenant,
+)
+if (ecritureEnLecture === 'signature invalide') succes('jeton d’écriture refusé en lecture')
+else echec(`jeton d’écriture accepté en lecture : ${ecritureEnLecture}`)
+
+// Le paramètre porte un nom distinct : un jeton d'écriture posé en `s` n'est
+// même pas vu par le vérificateur d'écriture.
+const mauvaisParametre = await verifierEcritureWorker(
+  'part',
+  CLE,
+  UPLOAD,
+  new URLSearchParams({ e: String(ECHEANCE), u: 'usr-houefa', s: jetonPart }),
+  SECRET,
+  maintenant,
+)
+if (mauvaisParametre === 'autorisation absente') succes('jeton d’écriture attendu en « j », pas en « s »')
+else echec(`paramètre « s » accepté en écriture : ${mauvaisParametre}`)
+
 // --- Les deux vérificateurs disent-ils la même chose ? -----------------------
 //
 // Comparer les résultats ne suffit pas : une branche oubliée d'un côté ne se
@@ -114,7 +209,13 @@ function corps(texte, nom) {
 
 const cotéServeur = readFileSync(join(RACINE, 'server/utils/video.ts'), 'utf8')
 
-for (const nom of ['messageASigner', 'verifierSignature', 'reecrirePlaylist']) {
+for (const nom of [
+  'messageASigner',
+  'verifierSignature',
+  'reecrirePlaylist',
+  'messageEcriture',
+  'verifierEcriture',
+]) {
   if (corps(cotéServeur, nom) === corps(source, nom)) succes(`${nom} identique de part et d'autre`)
   else echec(`${nom} diverge entre server/utils/video.ts et le Worker`)
 }

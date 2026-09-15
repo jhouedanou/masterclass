@@ -613,6 +613,76 @@ await attendValeur(
      from thematiques where id in ('th-sm-fondations', 'th-sm-copywriting')`,
 )
 
+console.log('\nTéléversement vidéo (migration 24)')
+await attendValeur(
+  'colonnes de la migration 24 posées',
+  9,
+  `select count(*)::int from information_schema.columns
+    where (table_name, column_name) in (
+      ('chapitres', 'video_format'),
+      ('chapitres', 'video_nom_fichier'),
+      ('chapitres', 'video_taille_octets'),
+      ('chapitres', 'video_importee_le'),
+      ('chapitres', 'script_format'),
+      ('chapitres', 'script_nom_fichier'),
+      ('chapitres', 'script_importe_le'),
+      ('modules', 'telechargement_bloque'),
+      ('modules', 'filigrane_actif')
+    )`,
+)
+// Les deux vidéos de démonstration sont des flux HLS : le lecteur doit
+// continuer de les lire pendant que les nouvelles arrivent en fichier unique.
+await attendValeur(
+  'les vidéos existantes sont marquées HLS',
+  2,
+  `select count(*)::int from chapitres where video_cle is not null and video_format = 'hls'`,
+)
+// Une clé sans format serait illisible : le lecteur ne saurait pas quoi
+// demander au diffuseur.
+await attendErreur(
+  'une clé vidéo sans format est refusée',
+  '23514',
+  `update chapitres set video_cle = 'sans-format-test', video_format = null
+    where id = (select id from chapitres where video_cle is null limit 1)`,
+)
+await attendErreur(
+  'un format de vidéo inconnu est refusé',
+  '23514',
+  `update chapitres set video_cle = 'format-inconnu-test', video_format = 'mp4'
+    where id = (select id from chapitres where video_cle is null limit 1)`,
+)
+// Deux dépôts concurrents laisseraient un téléversement orphelin, facturé
+// sans que rien ne le montre.
+await db.query(
+  `insert into televersements_video (chapitre_id, cle, upload_id, nom_fichier, taille_octets, taille_part_octets, nb_parts)
+   select id, 'cle-a', 'up-a', 'a.mp4', 1000, 16777216, 1 from chapitres order by id limit 1`,
+)
+await attendErreur(
+  'deux téléversements vivants pour un même chapitre sont refusés',
+  '23505',
+  `insert into televersements_video (chapitre_id, cle, upload_id, nom_fichier, taille_octets, taille_part_octets, nb_parts)
+   select id, 'cle-b', 'up-b', 'b.mp4', 1000, 16777216, 1 from chapitres order by id limit 1`,
+)
+// Abandonné, il libère la place : c'est ce que fait la purge quotidienne.
+await db.query(`update televersements_video set statut = 'abandonne' where upload_id = 'up-a'`)
+await attendValeur(
+  'un dépôt abandonné libère la place pour un nouveau',
+  1,
+  `with pose as (
+     insert into televersements_video (chapitre_id, cle, upload_id, nom_fichier, taille_octets, taille_part_octets, nb_parts)
+     select id, 'cle-d', 'up-d', 'd.mp4', 1000, 16777216, 1 from chapitres order by id limit 1
+     returning 1
+   )
+   select count(*)::int from pose`,
+)
+// Le stockage d'objets impose des parts d'au moins cinq mégaoctets.
+await attendErreur(
+  'une taille de part sous le seuil du stockage est refusée',
+  '23514',
+  `insert into televersements_video (chapitre_id, cle, upload_id, nom_fichier, taille_octets, taille_part_octets, nb_parts)
+   select id, 'cle-c', 'up-c', 'c.mp4', 1000, 1024, 1 from chapitres order by id offset 1 limit 1`,
+)
+
 console.log('\nAuthentification')
 await attendValeur(
   'empreintes de mot de passe posées (jamais en clair)',

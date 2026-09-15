@@ -97,6 +97,18 @@ export interface Chapitre {
   /** Script synchronisé avec la lecture. Vide tant que la transcription
    *  de production n'a pas été importée. */
   script?: LigneScript[]
+  /** Forme de la vidéo : `hls` pour un dossier de manifestes produit par
+   *  ffmpeg, `fichier` pour un MP4 unique déposé depuis l'administration. Le
+   *  lecteur ne demande pas le même fichier ni n'emprunte le même chemin. */
+  videoFormat?: 'hls' | 'fichier'
+  /** Nom du fichier d'origine, affiché dans l'éditeur. */
+  videoNomFichier?: string
+  videoTailleOctets?: number
+  videoImporteeLe?: string
+  /** Origine de la transcription : fichier importé ou saisie manuelle. */
+  scriptFormat?: 'srt' | 'vtt' | 'manuel'
+  scriptNomFichier?: string
+  scriptImporteLe?: string
 }
 
 export interface QuestionReponse {

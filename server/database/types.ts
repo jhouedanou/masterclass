@@ -187,6 +187,13 @@ export type ChapitreRow = {
   script: { temps: string; texte: string }[]
   video_cle: string | null
   video_duree_secondes: number | null
+  video_format: 'hls' | 'fichier' | null
+  video_nom_fichier: string | null
+  video_taille_octets: number | null
+  video_importee_le: string | null
+  script_format: 'srt' | 'vtt' | 'manuel' | null
+  script_nom_fichier: string | null
+  script_importe_le: string | null
 }
 
 export type UtilisateurRow = {
@@ -634,7 +641,21 @@ export type Database = {
         | 'video_intro_cle'
         | 'pret_le'
       >
-      chapitres: Table<ChapitreRow, 'id' | 'duree_minutes' | 'script' | 'video_cle' | 'video_duree_secondes'>
+      chapitres: Table<
+        ChapitreRow,
+        | 'id'
+        | 'duree_minutes'
+        | 'script'
+        | 'video_cle'
+        | 'video_duree_secondes'
+        | 'video_format'
+        | 'video_nom_fichier'
+        | 'video_taille_octets'
+        | 'video_importee_le'
+        | 'script_format'
+        | 'script_nom_fichier'
+        | 'script_importe_le'
+      >
       utilisateurs: Table<
         UtilisateurRow,
         | 'id'

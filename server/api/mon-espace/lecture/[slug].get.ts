@@ -32,9 +32,16 @@ export default defineEventHandler(async (event) => {
     moduleTrouve.chapitres.map(async (chapitre, position) => ({
       position,
       dureeSecondes: chapitre.videoDureeSecondes ?? null,
+      // Le lecteur ne prend pas le même chemin selon la forme : hls.js pour un
+      // flux transcodé, la balise vidéo seule pour un fichier unique. Deviner
+      // à l'extension de l'URL rendrait la règle implicite — et l'URL porte
+      // une chaîne de requête.
+      format: chapitre.videoFormat ?? null,
       // Un chapitre sans vidéo montée renvoie `null` : le lecteur affiche son
       // écran d'attente plutôt qu'une erreur.
-      url: chapitre.videoCle ? await urlLectureSignee(chapitre.videoCle, utilisateur.id) : null,
+      url: chapitre.videoCle
+        ? await urlLectureSignee(chapitre.videoCle, utilisateur.id, chapitre.videoFormat ?? 'hls')
+        : null,
     })),
   )
 

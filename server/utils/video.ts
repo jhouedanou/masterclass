@@ -77,8 +77,27 @@ export function baseVideo(): string {
   return (process.env.VIDEO_BASE_URL || config.videoBaseUrl || '/medias').replace(/\/+$/, '')
 }
 
-/** URL du manifeste HLS d'un chapitre, autorisée pour cet apprenant. */
-export async function urlLectureSignee(cle: string, utilisateurId: string): Promise<string> {
+/** Nom du fichier à demander au diffuseur selon la forme de la vidéo. Le
+ *  dossier, lui, ne change pas : c'est lui que porte la signature. */
+export const FICHIER_VIDEO = { hls: 'master.m3u8', fichier: 'video.mp4' } as const
+
+/** Formats de dépôt acceptés. Une seule liste, lue par le contrôle du
+ *  navigateur, celui du serveur et celui du diffuseur — l'élargir un jour ne
+ *  demandera qu'une ligne. */
+export const FORMATS_VIDEO_ACCEPTES = ['mp4'] as const
+
+/**
+ * URL de lecture d'un chapitre, autorisée pour cet apprenant.
+ *
+ * Le dernier segment dépend de la forme de la vidéo, jamais la signature : le
+ * message signé reste le dossier, l'échéance et le destinataire, exactement
+ * comme avant l'arrivée du dépôt depuis l'administration.
+ */
+export async function urlLectureSignee(
+  cle: string,
+  utilisateurId: string,
+  format: 'hls' | 'fichier' = 'hls',
+): Promise<string> {
   const expiration = Math.floor(Date.now() / 1000) + DUREE_AUTORISATION_SECONDES
   const signature = await signer(messageASigner(cle, expiration, utilisateurId), secretVideo())
   const parametres = new URLSearchParams({
@@ -86,7 +105,93 @@ export async function urlLectureSignee(cle: string, utilisateurId: string): Prom
     u: utilisateurId,
     s: signature,
   })
-  return `${baseVideo()}/${cle}/master.m3u8?${parametres}`
+  return `${baseVideo()}/${cle}/${FICHIER_VIDEO[format]}?${parametres}`
+}
+
+/**
+ * Jeton d'écriture remis au navigateur pour pousser les parts d'un dépôt.
+ *
+ * Il vaut une heure et se renouvelle sans rouvrir le téléversement : sur un
+ * lien montant ouest-africain, sept cents mégaoctets dépassent volontiers
+ * l'heure.
+ */
+export const DUREE_JETON_ECRITURE_SECONDES = 60 * 60
+
+export async function jetonEcriture(
+  action: string,
+  cle: string,
+  uploadId: string,
+  utilisateurId: string,
+): Promise<{ jeton: string; expiration: number; requete: string }> {
+  const expiration = Math.floor(Date.now() / 1000) + DUREE_JETON_ECRITURE_SECONDES
+  const jeton = await signer(
+    messageEcriture(action, cle, uploadId, expiration, utilisateurId),
+    secretVideo(),
+  )
+  const requete = new URLSearchParams({
+    c: cle,
+    t: uploadId,
+    e: String(expiration),
+    u: utilisateurId,
+    j: jeton,
+  }).toString()
+  return { jeton, expiration, requete }
+}
+
+/**
+ * Autorisation d'écriture — le pendant de `messageASigner` pour le dépôt d'une
+ * vidéo.
+ *
+ * Trois séparations volontaires d'avec la lecture :
+ *
+ *   1. Le préfixe littéral « ecriture. » : un jeton de lecture ne peut jamais
+ *      être rejoué en écriture, ni l'inverse. Sans lui, `cle.expiration.
+ *      utilisateur` vaudrait pour les deux.
+ *   2. L'action dans le message : un jeton émis pour pousser des parts ne
+ *      permet pas de supprimer l'objet.
+ *   3. Le paramètre `j` et non `s` : impossible de se tromper de vérificateur
+ *      par inattention.
+ *
+ * Un jeton volé ne publie pourtant rien : l'objet ne se matérialise qu'à la
+ * finalisation, que seule l'application déclenche après contrôle des droits.
+ */
+export function messageEcriture(
+  action: string,
+  cle: string,
+  uploadId: string,
+  expiration: number,
+  utilisateurId: string,
+): string {
+  return `ecriture.${action}.${cle}.${uploadId}.${expiration}.${utilisateurId}`
+}
+
+export async function verifierEcriture(
+  action: string,
+  cle: string,
+  uploadId: string,
+  parametres: URLSearchParams,
+  secret: string,
+  maintenant = Math.floor(Date.now() / 1000),
+): Promise<string | null> {
+  const expiration = Number(parametres.get('e'))
+  const utilisateurId = parametres.get('u') ?? ''
+  const signature = parametres.get('j') ?? ''
+
+  if (!expiration || !utilisateurId || !signature) return 'autorisation absente'
+  if (expiration < maintenant) return 'autorisation expirée'
+  if (!cle) return 'chemin invalide'
+
+  const attendue = await signer(
+    messageEcriture(action, cle, uploadId, expiration, utilisateurId),
+    secret,
+  )
+
+  if (signature.length !== attendue.length) return 'signature invalide'
+  let ecart = 0
+  for (let i = 0; i < attendue.length; i++) {
+    ecart |= signature.charCodeAt(i) ^ attendue.charCodeAt(i)
+  }
+  return ecart === 0 ? null : 'signature invalide'
 }
 
 /**

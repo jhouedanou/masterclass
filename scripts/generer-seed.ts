@@ -223,7 +223,7 @@ inserer(
 
 inserer(
   'chapitres',
-  'module_id, position, libelle, titre, duree_minutes, script, video_cle, video_duree_secondes',
+  'module_id, position, libelle, titre, duree_minutes, script, video_cle, video_duree_secondes, video_format, script_format',
   modules.flatMap((m) =>
     m.chapitres.map((c, i) =>
       [
@@ -235,6 +235,8 @@ inserer(
         json(c.script ?? []),
         txt(c.videoCle),
         num(c.videoDureeSecondes),
+        txt(c.videoFormat),
+        txt(c.scriptFormat),
       ].join(', '),
     ),
   ),

@@ -294,6 +294,10 @@ function moduleComplet(b: Brouillon): Module {
       ...c,
       videoCle: videos[i]?.cle,
       videoDureeSecondes: videos[i]?.dureeSecondes,
+      // Les vidéos de démonstration sont antérieures au dépôt depuis
+      // l'administration : elles restent des flux HLS transcodés à la main.
+      videoFormat: videos[i] ? ('hls' as const) : undefined,
+      scriptFormat: c.script?.length ? ('manuel' as const) : undefined,
     })),
     acquis: b.acquis,
     livrable: b.livrable,
