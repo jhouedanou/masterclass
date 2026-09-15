@@ -43,9 +43,17 @@ export default defineEventHandler(async (event) => {
   const verrouille = await enregistrerTentative(adresse, ip, appareil, valide)
   if (!valide) {
     if (verrouille) throw createError({ statusCode: 429, statusMessage: VERROU })
-    // Même message qu'un compte inconnu : un compte apprenant n'est pas
-    // reconnu ici, sans le dire.
-    throw createError({ statusCode: 401, statusMessage: 'Adresse e-mail ou mot de passe incorrect.' })
+    // Un seul et même message pour les trois refus possibles — compte inconnu,
+    // mot de passe faux, rôle sans accès à l'administration. Les énumérer n'en
+    // désigne aucun : la réponse reste identique dans les trois cas, donc rien
+    // ne filtre sur l'existence d'un compte. Mais un formateur qui s'est trompé
+    // d'écran comprend enfin ce qui lui arrive, au lieu de croire son mot de
+    // passe refusé.
+    throw createError({
+      statusCode: 401,
+      statusMessage:
+        'Adresse e-mail ou mot de passe incorrect, ou compte sans accès à l’administration.',
+    })
   }
 
   const compte = identifiants.utilisateur
