@@ -7,6 +7,9 @@ const route = useRoute()
 const email = ref('')
 const motDePasse = ref('')
 const resterConnecte = ref(false)
+/** Affichage en clair du mot de passe, sur demande explicite. Toujours masqué
+ *  au chargement : l'écran peut être ouvert devant quelqu'un. */
+const motDePasseVisible = ref(false)
 const erreur = ref('')
 /** « Il vous reste N tentatives avant verrouillage temporaire du compte (15 min). » */
 const tentativesRestantes = ref<number | null>(null)
@@ -74,7 +77,26 @@ async function soumettre() {
       </label>
       <label class="block">
         <span class="mb-1.5 block text-[13px] font-bold text-texte">Mot de passe</span>
-        <input v-model="motDePasse" type="password" autocomplete="current-password" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+        <div class="relative">
+          <!-- `type` lié plutôt que deux champs alternés : un seul champ garde
+               la valeur, le curseur et le remplissage du gestionnaire. -->
+          <input
+            v-model="motDePasse"
+            :type="motDePasseVisible ? 'text' : 'password'"
+            autocomplete="current-password"
+            required
+            class="w-full rounded-[10px] border border-ligne py-2.5 pr-12 pl-4 text-[15px] focus:border-social focus:outline-none"
+          >
+          <button
+            type="button"
+            class="absolute inset-y-0 right-0 grid w-12 place-items-center text-discret transition hover:text-encre"
+            :aria-label="motDePasseVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+            :aria-pressed="motDePasseVisible"
+            @click="motDePasseVisible = !motDePasseVisible"
+          >
+            <Icon :name="motDePasseVisible ? 'ph:eye-slash' : 'ph:eye'" size="20" />
+          </button>
+        </div>
       </label>
 
       <div class="flex items-center justify-between text-[14px]">
