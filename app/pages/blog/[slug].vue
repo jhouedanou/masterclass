@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { rendreTexteRiche } from '#shared/utils/texteRiche'
 import type { Article, Formateur, Module } from '#shared/types'
 
 const route = useRoute()
@@ -46,39 +47,14 @@ useJsonLd(() => ({
 }))
 
 /**
- * Le contenu de l'article est du texte, pas du HTML : chaque fragment est
- * échappé avant d'être inséré dans le balisage. Sans cela, un article rédigé
- * depuis le back-office pouvait porter du script exécuté chez tous les
- * visiteurs du blog — page publique, donc XSS stocké de plein exercice.
+ * Rendu du corps de l'article.
+ *
+ * Le contenu neuf vient de l'éditeur du back-office et a été assaini à
+ * l'écriture ; le contenu hérité, rédigé en Markdown allégé, est échappé puis
+ * balisé. `rendreTexteRiche` tranche entre les deux — voir
+ * `shared/utils/texteRiche.ts`.
  */
-function echapper(texte: string): string {
-  return texte
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
-/** Rendu léger du contenu éditorial (titres, listes, paragraphes). */
-const html = computed(() =>
-  article.value.contenu
-    .split('\n\n')
-    .map((bloc) => {
-      const t = bloc.trim()
-      if (t.startsWith('### ')) return `<h3>${echapper(t.slice(4))}</h3>`
-      if (t.startsWith('## ')) return `<h2>${echapper(t.slice(3))}</h2>`
-      if (/^\d+\.\s/.test(t)) {
-        const items = t
-          .split('\n')
-          .map((l) => `<li>${echapper(l.replace(/^\d+\.\s/, ''))}</li>`)
-          .join('')
-        return `<ol class="my-4 list-decimal space-y-1.5 pl-6 text-[15.5px] text-texte">${items}</ol>`
-      }
-      return `<p>${echapper(t)}</p>`
-    })
-    .join(''),
-)
+const html = computed(() => rendreTexteRiche(article.value.contenu))
 </script>
 
 <template>

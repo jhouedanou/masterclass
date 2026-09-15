@@ -1,3 +1,4 @@
+import { sansBalises } from '#shared/utils/texteRiche'
 import type { Article } from '#shared/types'
 import { supabase } from './client'
 import { traduireErreur, verifier, verifierOptionnel, verifierUn } from './erreurs'
@@ -162,7 +163,12 @@ export async function majArticle(
 }
 
 /** 220 mots par minute, arrondi au supérieur — la convention retenue pour les
- *  articles d'origine. */
+ *  articles d'origine.
+ *
+ *  Le balisage est retiré avant le comptage : depuis que le corps est saisi
+ *  dans un éditeur riche, `<strong>` et `</p>` seraient sinon comptés comme des
+ *  mots et gonfleraient la durée annoncée. */
 function tempsLecture(contenu: string): number {
-  return Math.max(1, Math.ceil(contenu.trim().split(/\s+/).length / 220))
+  const mots = sansBalises(contenu)
+  return Math.max(1, Math.ceil((mots ? mots.split(/\s+/).length : 0) / 220))
 }

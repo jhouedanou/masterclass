@@ -1,6 +1,7 @@
 import { enregistrerJournal } from '../../database/administration'
 import { creerArticle } from '../../database/blog'
 import type { CategorieArticleSql } from '../../database/types'
+import { assainirHtml } from '../../utils/texteRiche'
 import { exigerSection } from '../../utils/session'
 
 export default defineEventHandler(async (event) => {
@@ -22,7 +23,7 @@ export default defineEventHandler(async (event) => {
     slug: body.slug.trim(),
     titre: body.titre.trim(),
     chapo: body.chapo ?? '',
-    contenu: body.contenu ?? '',
+    contenu: assainirHtml(body.contenu),
     auteurId: body.auteurId,
     categorie: body.categorie,
   })

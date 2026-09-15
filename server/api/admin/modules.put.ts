@@ -1,6 +1,7 @@
 import { enregistrerJournal } from '../../database/administration'
 import { enregistrerVersion } from '../../database/backoffice'
 import { majModule, trouverModule } from '../../database/catalogue'
+import { assainirHtml } from '../../utils/texteRiche'
 import { exigerSection } from '../../utils/session'
 
 /**
@@ -38,6 +39,14 @@ export default defineEventHandler(async (event) => {
   })
 
   const { id, ...champs } = body
+
+  // `pourquoi` et `livrable` sortent de l'éditeur riche et s'affichent en
+  // `v-html` sur la fiche publique : c'est ici, à l'écriture, que le balisage
+  // est ramené à une liste blanche. Rien n'est réexaminé à l'affichage.
+  for (const cle of ['pourquoi', 'livrable'] as const) {
+    if (typeof champs[cle] === 'string') champs[cle] = assainirHtml(champs[cle] as string)
+  }
+
   const modifie = await majModule(id, champs as never)
 
   if (body.statut && body.statut !== actuel.statut) {

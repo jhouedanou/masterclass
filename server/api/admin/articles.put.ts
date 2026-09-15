@@ -2,6 +2,7 @@ import { enregistrerJournal } from '../../database/administration'
 import { enregistrerVersion } from '../../database/backoffice'
 import { majArticle, trouverArticleParSlug } from '../../database/blog'
 import { listerArticles } from '../../database/blog'
+import { assainirHtml } from '../../utils/texteRiche'
 import { exigerSection } from '../../utils/session'
 
 export default defineEventHandler(async (event) => {
@@ -22,6 +23,11 @@ export default defineEventHandler(async (event) => {
   })
 
   const { id, ...champs } = body
+
+  // Le corps de l'article part en `v-html` sur /blog/[slug], page publique :
+  // le balisage est ramené à la liste blanche ici, à l'écriture.
+  if (typeof champs.contenu === 'string') champs.contenu = assainirHtml(champs.contenu)
+
   const modifie = await majArticle(id, champs as never)
 
   await enregistrerJournal(

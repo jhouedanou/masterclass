@@ -255,10 +255,15 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
           <textarea v-model="fiche.promesse" rows="2" :class="champ" />
           <span class="mt-1 block text-[12px] text-discret">Sous le titre, en une phrase — le bénéfice concret.</span>
         </label>
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Pourquoi ce module ?</span>
-          <textarea v-model="fiche.pourquoi" rows="4" :class="champ" />
-        </label>
+        <div class="block">
+          <span id="champ-pourquoi" class="mb-1.5 block text-[13px] font-bold">Pourquoi ce module ?</span>
+          <UiChampTexteRiche
+            v-model="fiche.pourquoi"
+            :hauteur="160"
+            placeholder="Ce que ce module apporte, et à qui…"
+            aria-labelledby="champ-pourquoi"
+          />
+        </div>
         <label class="block">
           <span class="mb-1.5 block text-[13px] font-bold">Pour qui ?</span>
           <textarea v-model="fiche.pourQui" rows="3" :class="champ" />
@@ -273,10 +278,15 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
           <textarea v-model="fiche.acquis" rows="3" :class="champ" />
           <span class="mt-1 block text-[12px] text-discret">Une ligne = un objectif.</span>
         </label>
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Ce que vous construisez pendant le module</span>
-          <textarea v-model="fiche.livrable" rows="2" :class="champ" />
-        </label>
+        <div class="block">
+          <span id="champ-livrable" class="mb-1.5 block text-[13px] font-bold">Ce que vous construisez pendant le module</span>
+          <UiChampTexteRiche
+            v-model="fiche.livrable"
+            :hauteur="110"
+            placeholder="Le livrable concret, à la fin du module…"
+            aria-labelledby="champ-livrable"
+          />
+        </div>
       </div>
       <UiBaseButton class="mt-5" taille="sm" :disabled="enCours" @click="enregistrerFiche">
         {{ enCours ? 'Enregistrement…' : 'Enregistrer' }}

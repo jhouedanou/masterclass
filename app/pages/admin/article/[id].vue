@@ -198,11 +198,16 @@ async function enregistrer(statut?: 'brouillon' | 'publie') {
           <span class="mb-1.5 block text-[13px] font-bold text-texte">Introduction (chapô)</span>
           <textarea v-model="fiche.chapo" rows="3" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]" />
         </label>
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold text-texte">Corps de l’article</span>
-          <textarea v-model="fiche.contenu" rows="18" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 font-mono text-[13.5px]" />
-          <span class="mt-1 block text-[12px] text-discret">Titres H2/H3 en Markdown (##, ###). Le temps de lecture est recalculé à l’enregistrement.</span>
-        </label>
+        <div class="block">
+          <span id="champ-contenu" class="mb-1.5 block text-[13px] font-bold text-texte">Corps de l’article</span>
+          <UiChampTexteRiche
+            aria-labelledby="champ-contenu"
+            v-model="fiche.contenu"
+            :hauteur="420"
+            placeholder="Le corps de l’article…"
+          />
+          <span class="mt-1 block text-[12px] text-discret">Le temps de lecture est recalculé à l’enregistrement.</span>
+        </div>
       </div>
 
       <aside class="space-y-4">

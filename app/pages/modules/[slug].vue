@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { rendreTexteRiche } from '#shared/utils/texteRiche'
 import type { Formateur, Module, Programme, Thematique } from '#shared/types'
 
 const route = useRoute()
@@ -139,7 +140,8 @@ function acheter() {
 
         <section class="mt-10">
           <h2 class="font-title text-[27px] font-light">Pourquoi ce module ?</h2>
-          <p class="mt-3 text-[15.5px] leading-relaxed text-texte">{{ moduleCourant.pourquoi }}</p>
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <div class="editorial mt-3 text-[15.5px] leading-relaxed text-texte" v-html="rendreTexteRiche(moduleCourant.pourquoi)" />
         </section>
 
         <section class="mt-10 grid gap-6 sm:grid-cols-2">
@@ -196,7 +198,8 @@ function acheter() {
 
         <section class="mt-10">
           <h2 class="font-title text-[27px] font-light">Livrable</h2>
-          <p class="mt-3 text-[15.5px] leading-relaxed text-texte">{{ moduleCourant.livrable }}</p>
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <div class="editorial mt-3 text-[15.5px] leading-relaxed text-texte" v-html="rendreTexteRiche(moduleCourant.livrable)" />
         </section>
 
         <section v-if="moduleCourant.pointsForts.length" class="mt-10">
