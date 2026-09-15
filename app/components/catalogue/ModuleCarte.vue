@@ -5,6 +5,9 @@ const props = defineProps<{
   module: Module & { formateur?: Formateur | null }
   thematiqueNom?: string
   statutVisible?: boolean
+  /** Marque un module auquel l'apprenant a déjà accès (espace privé). Faux
+   *  partout ailleurs : sur le site public, personne n'est identifié. */
+  possede?: boolean
 }>()
 
 const social = computed(() => props.module.programme === 'social-media')
@@ -21,7 +24,13 @@ const teinte = computed(() => (social.value ? 'text-social' : 'text-entrepreneur
         Module {{ numeroModule(module.numero) }}<template v-if="thematiqueNom"> · {{ thematiqueNom }}</template>
       </p>
       <span
-        v-if="statutVisible"
+        v-if="possede"
+        class="shrink-0 rounded-full bg-succes-voile px-2.5 py-1 text-[11px] font-bold text-succes"
+      >
+        Vous y avez accès
+      </span>
+      <span
+        v-else-if="statutVisible"
         class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold"
         :class="
           module.statut === 'disponible'

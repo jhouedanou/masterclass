@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { StatutCoachingPrive } from '#shared/types'
+import type { Formateur, Module, StatutCoachingPrive, Thematique } from '#shared/types'
 
 definePageMeta({ layout: 'espace', middleware: 'auth' })
 usePagePrivee('Tableau de bord')
@@ -41,6 +41,14 @@ interface TableauDeBord {
 const auth = useAuthStore()
 const route = useRoute()
 const { data, refresh } = await useFetch<TableauDeBord>('/api/mon-espace')
+
+// Le catalogue complet, pour le rail de découverte. L'endpoint public suffit :
+// il écarte déjà les brouillons et joint formateur et thématique.
+const { data: catalogue } = await useFetch<
+  (Module & { formateur?: Formateur | null; thematique?: Thematique | null })[]
+>('/api/modules', { default: () => [] })
+
+const moduleIdsPossedes = computed(() => data.value?.cartes.map((c) => c.moduleId) ?? [])
 
 const prenom = computed(() => auth.utilisateur?.prenom ?? '')
 const feminin = computed(() => /[ae]$/i.test(prenom.value))
@@ -211,5 +219,8 @@ const lienCommunaute = lienWhatsApp('Bonjour, je souhaite rejoindre la Communaut
         </section>
       </aside>
     </div>
+
+    <!-- Hors de la grille : le rail occupe toute la largeur disponible. -->
+    <EspaceCarouselModules :modules="catalogue" :module-ids-possedes="moduleIdsPossedes" />
   </div>
 </template>
