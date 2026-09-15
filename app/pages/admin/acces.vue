@@ -19,11 +19,20 @@ interface Compte {
   revocable: boolean
 }
 
+interface FormateurAcces {
+  id: string
+  nom: string
+  email: string
+  coachingPriveActif: boolean
+  aUnCompte: boolean
+}
+
 const { data, refresh } = await useFetch<{
   sections: Section[]
   role: string
   mesSections: SectionAdmin[] | 'toutes'
   comptes: Compte[]
+  formateurs: FormateurAcces[]
 }>('/api/admin/acces')
 
 const estSuperieur = computed(() => data.value?.role === 'admin-superieur')
@@ -155,14 +164,38 @@ async function revoquer() {
       <div>
         <h1 class="font-title text-[26px] font-light">Administration des accès</h1>
         <p class="mt-2 max-w-[680px] text-[13.5px] text-discret">
-          Trois rôles distincts. Les comptes d’administration se paramètrent section par section :
-          une section non cochée est <b>masquée</b>, pas seulement désactivée. Toute action de cet
-          écran est journalisée.
+          Les comptes d’administration se paramètrent section par section : une section non cochée
+          est <b>masquée</b>, pas seulement désactivée. Toute action de cet écran est journalisée.
         </p>
       </div>
       <UiBaseButton taille="sm" @click="creation.ouverte = !creation.ouverte">
         {{ creation.ouverte ? 'Annuler' : 'Créer un compte administrateur' }}
       </UiBaseButton>
+    </div>
+
+    <!-- Les trois rôles de l'écran 07b, énoncés plutôt que sous-entendus -->
+    <div class="mt-5 grid gap-3 sm:grid-cols-3">
+      <section class="rounded-[12px] border border-ligne-douce bg-white p-4">
+        <p class="text-[14px] font-bold text-encre">Administrateur</p>
+        <p class="mt-1.5 text-[12.5px] text-texte">
+          Accède au back-office, section par section. L’administrateur supérieur voit tout et peut
+          seul accorder « Transactions » et le référencement avancé.
+        </p>
+      </section>
+      <section class="rounded-[12px] border border-ligne-douce bg-white p-4">
+        <p class="text-[14px] font-bold text-encre">Formateur simple</p>
+        <p class="mt-1.5 text-[12.5px] text-texte">
+          Son espace seulement : ses modules, ses séances collectives, ses apprenants, ses revenus.
+          Aucun accès au back-office.
+        </p>
+      </section>
+      <section class="rounded-[12px] border border-ligne-douce bg-white p-4">
+        <p class="text-[14px] font-bold text-encre">Formateur avec coaching privé</p>
+        <p class="mt-1.5 text-[12.5px] text-texte">
+          Le même espace, plus les demandes de coaching privé à 50 000 FCFA / h. L’activation se
+          fait depuis l’écran Formateurs.
+        </p>
+      </section>
     </div>
 
     <p v-if="message" class="mt-4 rounded-[10px] border border-succes bg-succes-voile px-4 py-3 text-[14px] text-succes">
@@ -257,7 +290,7 @@ async function revoquer() {
     <!-- Comptes existants -->
     <AdminTableauSimple
       class="mt-6"
-      :colonnes="['Compte', 'Rôle', 'Sections', '']"
+      :colonnes="['Compte', 'Rôle', 'Périmètre', 'Actions']"
     >
       <tr v-for="compte in data.comptes" :key="compte.id">
         <td class="px-4 py-3">
@@ -275,8 +308,8 @@ async function revoquer() {
           </span>
         </td>
         <td class="px-4 py-3 text-[13px]">
-          <span v-if="compte.sections === 'toutes'" class="text-discret">Toutes</span>
-          <span v-else>{{ compte.sections.length }} / {{ data.sections.length }}</span>
+          <span v-if="compte.sections === 'toutes'" class="text-discret">Tout le back-office</span>
+          <span v-else>{{ compte.sections.length }} section{{ compte.sections.length > 1 ? 's' : '' }} sur {{ data.sections.length }}</span>
         </td>
         <td class="px-4 py-3 text-right">
           <button
@@ -302,6 +335,37 @@ async function revoquer() {
             Révoquer
           </button>
         </td>
+      </tr>
+    </AdminTableauSimple>
+
+    <h2 class="mt-10 font-title text-[19px] font-light">Comptes formateurs</h2>
+    <p class="mt-1 text-[12.5px] text-discret">
+      Ils n’accèdent pas au back-office : leur périmètre est leur propre espace. Le passage entre
+      « simple » et « avec coaching privé » se fait depuis l’écran Formateurs.
+    </p>
+    <AdminTableauSimple class="mt-3" :colonnes="['Formateur', 'Rôle', 'Périmètre', 'Actions']">
+      <tr v-for="f in data.formateurs" :key="f.id">
+        <td class="px-4 py-3">
+          <p class="font-bold">{{ f.nom }}</p>
+          <p class="text-[12px] text-discret">{{ f.email || 'Aucun compte rattaché' }}</p>
+        </td>
+        <td class="px-4 py-3">
+          <span
+            class="rounded-full px-2.5 py-1 text-[11px] font-bold"
+            :class="f.coachingPriveActif ? 'bg-social-voile text-social' : 'bg-fond-voile text-discret'"
+          >
+            {{ f.coachingPriveActif ? 'Formateur avec coaching privé' : 'Formateur simple' }}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-[13px] text-discret">
+          Son espace formateur{{ f.coachingPriveActif ? ' et ses coachings privés' : '' }}
+        </td>
+        <td class="px-4 py-3 text-right">
+          <NuxtLink to="/admin/formateurs" class="text-[12.5px] underline">Gérer</NuxtLink>
+        </td>
+      </tr>
+      <tr v-if="!data.formateurs.length">
+        <td colspan="4" class="px-4 py-8 text-center text-discret">Aucun formateur.</td>
       </tr>
     </AdminTableauSimple>
 

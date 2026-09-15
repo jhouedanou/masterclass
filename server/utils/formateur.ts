@@ -327,6 +327,9 @@ export async function statistiquesFormateurs() {
       id: f.id,
       nom: f.nom,
       nbModules: siens.filter((m) => m.statut === 'disponible').length,
+      // La maquette affiche « 4 modules · 2 sessions » : les séances annulées
+      // n'y comptent pas, elles n'ont pas eu lieu.
+      nbSessions: sesSessions.filter((s) => s.statut !== 'annulee').length,
       inscrits: accesSiens.length,
       completion: accesSiens.length ? Math.round(cumul / accesSiens.length) : 0,
       presence: releves.length

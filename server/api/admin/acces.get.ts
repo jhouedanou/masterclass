@@ -1,4 +1,5 @@
-import { listerComptesAdmin } from '../../database/comptes'
+import { listerFormateurs } from '../../database/catalogue'
+import { listerComptesAdmin, listerUtilisateurs } from '../../database/comptes'
 import { exigerSection, sectionsEffectives } from '../../utils/session'
 
 /** Sections proposées à la création d'un compte, dans l'ordre de la maquette. */
@@ -24,9 +25,26 @@ const SECTIONS = [
 
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerSection(event, 'administration-acces')
-  const comptes = await listerComptesAdmin()
+  const [comptes, formateurs, utilisateurs] = await Promise.all([
+    listerComptesAdmin(),
+    listerFormateurs(),
+    listerUtilisateurs(),
+  ])
 
   return {
+    // Les formateurs sont le deuxième et le troisième des trois rôles de
+    // l'écran 07b. Ils n'ont pas de sections : leur périmètre est leur propre
+    // espace, et le coaching privé s'y ajoute ou non.
+    formateurs: formateurs.map((f) => {
+      const compte = utilisateurs.find((u) => u.formateurId === f.id)
+      return {
+        id: f.id,
+        nom: f.nom,
+        email: compte?.email ?? '',
+        coachingPriveActif: f.coachingPriveActif,
+        aUnCompte: Boolean(compte),
+      }
+    }),
     sections: SECTIONS,
     role: utilisateur.role,
     mesSections: sectionsEffectives(utilisateur),

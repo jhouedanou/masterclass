@@ -18,6 +18,7 @@ const { data, refresh } = await useFetch<{
     id: string
     nom: string
     nbModules: number
+    nbSessions: number
     inscrits: number
     completion: number
     presence: number | null
@@ -29,10 +30,12 @@ const filtre = ref<StatutCoachingPrive | 'toutes'>('toutes')
 const filtres: { valeur: StatutCoachingPrive | 'toutes'; libelle: string }[] = [
   { valeur: 'toutes', libelle: 'Toutes' },
   { valeur: 'en-attente', libelle: 'À traiter' },
+  { valeur: 'en-etude', libelle: 'En étude' },
   { valeur: 'confirmee-attente-paiement', libelle: 'Attente de paiement' },
   { valeur: 'payee', libelle: 'Payées' },
   { valeur: 'realisee', libelle: 'Réalisées' },
   { valeur: 'refusee', libelle: 'Refusées' },
+  { valeur: 'expiree', libelle: 'Expirées' },
 ]
 const visibles = computed(() =>
   (data.value?.demandes ?? []).filter((d) => filtre.value === 'toutes' || d.statut === filtre.value),
@@ -45,12 +48,16 @@ const creneauLibre = ref('')
 const lienSession = ref('')
 const motif = ref('')
 const commentaire = ref('')
+/** Durée retenue avec le formateur : le montant en découle (heures × tarif). */
+const heures = ref(1)
+const TARIF_HORAIRE = 50_000
 const message = ref('')
 const erreur = ref('')
 const envoi = ref(false)
 
 function ouvrir(demande: Demande, action: Action) {
   modale.value = { demande, action }
+  heures.value = demande.heures
   creneauChoisi.value = demande.creneaux[0] ?? null
   creneauLibre.value = demande.creneau ?? ''
   lienSession.value = demande.lienSession ?? ''
@@ -80,8 +87,16 @@ function valider() {
   const creneau = creneauChoisi.value ?? creneauLibre.value
   if (action === 'refuser') return agir(demande, action, { motif })
   if (action === 'planifier') return agir(demande, action, { creneau, lienSession })
+  if (action === 'confirmer') return agir(demande, action, { creneau, commentaire, heures: heures.value })
   return agir(demande, action, { creneau, commentaire })
 }
+
+const filtreFormateur = ref('')
+const statistiquesVisibles = computed(() =>
+  (data.value?.statistiquesFormateurs ?? []).filter(
+    (f) => !filtreFormateur.value || f.id === filtreFormateur.value,
+  ),
+)
 
 const TITRES: Record<Action, string> = {
   confirmer: 'Confirmer et envoyer le lien de paiement',
@@ -179,17 +194,31 @@ const TITRES: Record<Action, string> = {
       <p v-if="!visibles.length" class="text-[13.5px] text-discret">Aucune demande dans ce filtre.</p>
     </div>
 
-    <h2 class="mt-10 font-title text-[19px] font-light">Statistiques par formateur</h2>
-    <p class="mt-1 text-[12.5px] text-discret">
-      Vue consolidée : chaque formateur ne voit que ses propres chiffres dans son espace.
-    </p>
+    <div class="mt-10 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h2 class="font-title text-[19px] font-light">Statistiques par formateur</h2>
+        <p class="mt-1 text-[12.5px] text-discret">
+          Vue consolidée : chaque formateur ne voit que ses propres chiffres dans son espace.
+        </p>
+      </div>
+      <label>
+        <span class="sr-only">Formateur</span>
+        <select v-model="filtreFormateur" class="rounded-[10px] border border-ligne bg-white px-3 py-2 text-[13.5px]">
+          <option value="">Tous les formateurs</option>
+          <option v-for="f in data.statistiquesFormateurs" :key="f.id" :value="f.id">{{ f.nom }}</option>
+        </select>
+      </label>
+    </div>
     <AdminTableauSimple
       class="mt-3"
       :colonnes="['Formateur', 'Modules', 'Inscrits', 'Complétion', 'Présence sessions', 'Coaching privé']"
     >
-      <tr v-for="f in data.statistiquesFormateurs" :key="f.id">
+      <tr v-for="f in statistiquesVisibles" :key="f.id">
         <td class="px-4 py-3 font-bold">{{ f.nom }}</td>
-        <td class="px-4 py-3">{{ f.nbModules }}</td>
+        <td class="px-4 py-3 whitespace-nowrap">
+          {{ f.nbModules }} module{{ f.nbModules > 1 ? 's' : '' }}
+          <span class="block text-[12px] text-discret">{{ f.nbSessions }} session{{ f.nbSessions > 1 ? 's' : '' }}</span>
+        </td>
         <td class="px-4 py-3">{{ f.inscrits }}</td>
         <td class="px-4 py-3">{{ f.completion }} %</td>
         <td class="px-4 py-3">{{ f.presence === null ? '—' : `${f.presence} %` }}</td>
@@ -215,9 +244,29 @@ const TITRES: Record<Action, string> = {
             </label>
           </fieldset>
 
+          <fieldset v-if="modale.action === 'confirmer'">
+            <legend class="mb-2 text-[13px] font-bold text-texte">Durée retenue</legend>
+            <div class="flex flex-wrap gap-2">
+              <label v-for="h in [1, 2, 3]" :key="h" class="flex items-center gap-2 rounded-[10px] border px-3 py-2 text-[14px]" :class="heures === h ? 'border-social bg-social-voile' : 'border-ligne'">
+                <input v-model.number="heures" type="radio" :value="h" class="accent-social">
+                {{ h }} h
+              </label>
+            </div>
+            <p class="mt-2 text-[13px] text-texte">
+              Montant proposé : <b>{{ formatFcfa(heures * TARIF_HORAIRE) }}</b>
+              <span class="text-discret"> — {{ heures }} × {{ formatFcfa(TARIF_HORAIRE) }} / h</span>
+            </p>
+          </fieldset>
+
           <label v-if="modale.action === 'planifier'" class="block">
-            <span class="mb-1.5 block text-[13px] font-bold text-texte">Lien de la séance (Zoom) *</span>
-            <input v-model="lienSession" type="url" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]" placeholder="https://zoom.us/j/…">
+            <span class="mb-1.5 block text-[13px] font-bold text-texte">
+              Lien de la séance <span class="font-normal text-discret">(facultatif)</span>
+            </span>
+            <input v-model="lienSession" type="url" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]" placeholder="Laissez vide : la réunion Zoom est générée">
+            <span class="mt-1 block text-[12.5px] text-discret">
+              Laissé vide, le lien est généré avec la réunion Zoom et l’événement Google Agenda,
+              rappels compris. Un lien fourni à la main reste accepté en secours.
+            </span>
           </label>
 
           <label v-if="modale.action === 'refuser'" class="block">
@@ -240,7 +289,10 @@ const TITRES: Record<Action, string> = {
 
         <p class="mt-4 text-[12px] text-discret">
           <template v-if="modale.action === 'confirmer'">L’apprenant reçoit la confirmation du créneau et le lien de paiement FeexPay.</template>
-          <template v-else-if="modale.action === 'planifier'">L’apprenant et le formateur reçoivent la date, l’heure et le lien de la séance.</template>
+          <template v-else-if="modale.action === 'planifier'">
+            L’apprenant et le formateur reçoivent la date, l’heure et le lien de la séance, puis un
+            rappel 48 h avant.
+          </template>
           <template v-else-if="modale.action === 'refuser'">Le motif est transmis tel quel à l’apprenant.</template>
         </p>
       </div>

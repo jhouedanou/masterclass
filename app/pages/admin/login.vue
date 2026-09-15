@@ -49,6 +49,82 @@ function demarrerCompteARebours() {
 }
 onBeforeUnmount(() => minuteur && clearInterval(minuteur))
 
+/**
+ * Six cases plutôt qu'un champ (planche C, écran 08). Le code de secours, lui,
+ * fait onze caractères : il garde un champ simple, sans quoi on l'écrirait
+ * dans six cases de un.
+ */
+const codeDeSecours = ref(false)
+const cases = ref<HTMLInputElement[]>([])
+
+function saisirCase(index: number, evenement: Event) {
+  const champ = evenement.target as HTMLInputElement
+  const chiffres = champ.value.replace(/\D/g, '')
+  if (!chiffres) {
+    champ.value = ''
+    majCode()
+    return
+  }
+  // Un collage de six chiffres remplit toutes les cases d'un coup : c'est le
+  // geste naturel depuis une application d'authentification.
+  if (chiffres.length > 1) {
+    chiffres
+      .slice(0, 6 - index)
+      .split('')
+      .forEach((c, i) => {
+        const cible = cases.value[index + i]
+        if (cible) cible.value = c
+      })
+    cases.value[Math.min(index + chiffres.length, 5)]?.focus()
+  } else {
+    champ.value = chiffres
+    cases.value[index + 1]?.focus()
+  }
+  majCode()
+}
+
+/** Retour arrière sur une case vide : on remonte à la précédente. */
+function effacerCase(index: number, evenement: KeyboardEvent) {
+  const champ = evenement.target as HTMLInputElement
+  if (evenement.key === 'Backspace' && !champ.value && index > 0) {
+    cases.value[index - 1]?.focus()
+  }
+}
+
+function majCode() {
+  code.value = cases.value.map((c) => c?.value ?? '').join('')
+}
+
+watch(codeDeSecours, () => {
+  code.value = ''
+  cases.value.forEach((c) => c && (c.value = ''))
+})
+
+/**
+ * Délai avant de pouvoir redemander un code. Sans lui, le bouton « Renvoyer »
+ * invite à marteler un envoi qui coûte, et chaque renvoi invalide le code
+ * précédent — l'utilisateur se retrouve à courir après ses propres codes.
+ */
+const DELAI_RENVOI_SECONDES = 60
+const avantRenvoi = ref(0)
+let minuteurRenvoi: ReturnType<typeof setInterval> | undefined
+
+function bloquerRenvoi() {
+  avantRenvoi.value = DELAI_RENVOI_SECONDES
+  if (minuteurRenvoi) clearInterval(minuteurRenvoi)
+  minuteurRenvoi = setInterval(() => {
+    avantRenvoi.value = Math.max(0, avantRenvoi.value - 1)
+    if (avantRenvoi.value === 0 && minuteurRenvoi) clearInterval(minuteurRenvoi)
+  }, 1000)
+}
+onBeforeUnmount(() => minuteurRenvoi && clearInterval(minuteurRenvoi))
+
+const delaiRenvoi = computed(() => {
+  const m = Math.floor(avantRenvoi.value / 60)
+  const s = String(avantRenvoi.value % 60).padStart(2, '0')
+  return `${m}:${s}`
+})
+
 const compteARebours = computed(() => {
   const m = Math.floor(restant.value / 60)
   const s = String(restant.value % 60).padStart(2, '0')
@@ -76,7 +152,10 @@ async function soumettreIdentifiants() {
     etape.value = 'code'
     // Le compte à rebours n'a de sens que pour un code envoyé : celui d'une
     // application se renouvelle tout seul.
-    if (!totp.value) demarrerCompteARebours()
+    if (!totp.value) {
+      demarrerCompteARebours()
+      bloquerRenvoi()
+    }
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Connexion impossible.'
   } finally {
@@ -149,7 +228,9 @@ async function renvoyer() {
     await $fetch('/api/auth/admin/renvoyer-code', { method: 'POST' })
     info.value = 'Nouveau code envoyé.'
     code.value = ''
+    cases.value.forEach((c) => c && (c.value = ''))
     demarrerCompteARebours()
+    bloquerRenvoi()
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Renvoi impossible.'
   }
@@ -158,8 +239,11 @@ async function renvoyer() {
 
 <template>
   <div>
-    <p class="surtitre text-discret">Administration</p>
+    <p class="surtitre text-discret">Espace administration</p>
     <h1 class="mt-2 text-[34px] font-medium">Connexion sécurisée</h1>
+    <p v-if="etape !== 'identifiants'" class="mt-1 text-[12.5px] font-bold tracking-[0.08em] text-discret uppercase">
+      Étape 2 / 2
+    </p>
 
     <form v-if="etape === 'identifiants'" class="mt-8 space-y-4" @submit.prevent="soumettreIdentifiants">
       <p class="text-[15px] text-texte">
@@ -277,17 +361,34 @@ async function renvoyer() {
         Un code à six chiffres a été envoyé à <b>{{ masque }}</b><span v-if="whatsapp"> et sur votre WhatsApp</span>.
         Il reste valable <b>{{ compteARebours }}</b>.
       </p>
-      <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Code de vérification</span>
+      <fieldset v-if="!codeDeSecours">
+        <legend class="mb-1.5 text-[13px] font-bold text-texte">Code de vérification</legend>
+        <div class="flex gap-2">
+          <input
+            v-for="(_, i) in 6"
+            :key="i"
+            ref="cases"
+            inputmode="numeric"
+            maxlength="6"
+            autocomplete="one-time-code"
+            :aria-label="`Chiffre ${i + 1} sur 6`"
+            :autofocus="i === 0"
+            class="h-14 w-full min-w-0 rounded-[10px] border border-ligne text-center font-mono text-[24px] focus:border-social focus:outline-none"
+            @input="saisirCase(i, $event)"
+            @keydown="effacerCase(i, $event)"
+          >
+        </div>
+      </fieldset>
+
+      <label v-else class="block">
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Code de secours</span>
         <input
           v-model="code"
-          :inputmode="totp ? 'text' : 'numeric'"
-          :maxlength="totp ? 11 : 6"
-          autocomplete="one-time-code"
+          inputmode="text"
+          maxlength="11"
           required
           autofocus
-          class="w-full rounded-[10px] border border-ligne px-4 py-3 text-center font-mono uppercase focus:border-social focus:outline-none"
-          :class="totp ? 'text-[22px] tracking-[.25em]' : 'text-[28px] tracking-[.5em]'"
+          class="w-full rounded-[10px] border border-ligne px-4 py-3 text-center font-mono text-[22px] tracking-[.25em] uppercase focus:border-social focus:outline-none"
         >
       </label>
       <p v-if="erreur" class="text-[14px] text-erreur">{{ erreur }}</p>
@@ -297,17 +398,32 @@ async function renvoyer() {
         class="w-full"
         taille="lg"
         variante="sombre"
-        :disabled="enCours || (totp ? code.trim().length < 6 : code.length !== 6)"
+        :disabled="enCours || (codeDeSecours ? code.trim().length < 6 : code.length !== 6)"
       >
-        {{ enCours ? 'Vérification…' : 'Accéder à l’administration' }}
+        {{ enCours ? 'Vérification…' : 'Vérifier et entrer' }}
       </UiBaseButton>
-      <div class="flex items-center justify-between text-[14px]">
-        <button v-if="!totp" type="button" class="text-discret hover:underline" @click="renvoyer">Renvoyer le code</button>
-        <span v-else />
+      <div class="flex flex-wrap items-center justify-between gap-2 text-[14px]">
+        <button
+          v-if="!totp"
+          type="button"
+          class="text-discret hover:underline disabled:cursor-not-allowed disabled:no-underline disabled:opacity-60"
+          :disabled="avantRenvoi > 0"
+          @click="renvoyer"
+        >
+          Renvoyer le code<span v-if="avantRenvoi > 0"> ({{ delaiRenvoi }})</span>
+        </button>
+        <button
+          v-else
+          type="button"
+          class="text-discret hover:underline"
+          @click="codeDeSecours = !codeDeSecours"
+        >
+          {{ codeDeSecours ? 'Revenir au code à six chiffres' : 'Utiliser un code de secours' }}
+        </button>
         <button type="button" class="text-discret hover:underline" @click="etape = 'identifiants'; erreur = ''">Changer de compte</button>
       </div>
       <p v-if="totp" class="text-[12.5px] text-discret">
-        Téléphone perdu ? Saisissez l’un de vos codes de secours à la place.
+        Téléphone perdu ? Passez au code de secours par le lien ci-dessus.
       </p>
       <p v-else-if="fournisseur === 'interne'" class="text-[12.5px] text-discret">
         Tant que l’envoi automatique n’est pas branché, le code apparaît dans la sortie du serveur.
