@@ -1,9 +1,20 @@
 # Diffusion des vidéos E-Masterclass.
 #
 # Mise en service :
+#   npx wrangler login                             # ou CLOUDFLARE_API_TOKEN dans l'environnement
 #   npx wrangler r2 bucket create emasterclass-videos
 #   npx wrangler secret put VIDEO_SIGNING_SECRET   # même valeur que le .env de l'application
 #   npx wrangler deploy
+#
+# ⚠ Les routes de dépôt (/_televersement/*) n'existent que dans les versions
+# déployées après septembre 2026. Sans redéploiement, l'ouverture d'un
+# téléversement depuis l'administration échoue en 404.
+#
+# À poser une fois sur le seau, faute de quoi les parts d'un dépôt abandonné
+# restent facturées indéfiniment — c'est le filet de dernier recours derrière
+# la tâche quotidienne `video:purger` :
+#   npx wrangler r2 bucket lifecycle add emasterclass-videos \
+#     --name abandonner-multipart --abort-multipart-days 7
 #
 # Puis renseigner VIDEO_BASE_URL dans le .env de l'application avec l'URL du
 # Worker (ou le domaine personnalisé qui lui est rattaché).
