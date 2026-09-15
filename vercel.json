@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nuxtjs",
+  "crons": [
+    {
+      "path": "/api/taches/purger",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

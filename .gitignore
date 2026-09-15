@@ -35,3 +35,6 @@ medias/sources
 medias/hls
 docs/Comptes-de-test-E-Masterclass.xlsx
 docs/email-testeurs.md
+.vercel
+.env*
+.wrangler

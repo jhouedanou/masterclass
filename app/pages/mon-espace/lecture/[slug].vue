@@ -74,8 +74,18 @@ if (reprise > 0) {
     }
   })
 }
-// Changer de chapitre recharge le flux : même lecteur, autre source.
+// Changer de chapitre recharge le flux : même lecteur, autre source. Un
+// renouvellement d'autorisation change aussi `source` : c'est ce qui relance la
+// lecture après une expiration, sans second appel à `charger()`.
 watch([index, source], () => lecteur.charger())
+
+/** Un seul renouvellement par chapitre : si l'autorisation fraîche est refusée
+ *  à son tour, on s'arrête là plutôt que de boucler entre le renouvellement et
+ *  le diffuseur. Remis à zéro au changement de chapitre. */
+let renouvellementTente = false
+watch(index, () => {
+  renouvellementTente = false
+})
 
 const vitesses = [0.75, 1, 1.25, 1.5, 2]
 const vitesse = ref(1)
@@ -106,13 +116,21 @@ const progressionAffichee = computed(
   () => lecteur.progression.value ?? data.value?.acces.progression ?? 0,
 )
 
-// Une autorisation expirée en cours de session se renouvelle sans quitter la
-// page : l'apprenant ne voit qu'une reprise de lecture.
+/**
+ * Une autorisation expirée en cours de session se renouvelle sans quitter la
+ * page : l'apprenant ne voit qu'une reprise de lecture.
+ *
+ * Seulement celle-là. Renouveler sur n'importe quelle erreur enfermait la page
+ * dans une boucle : le refus déclenchait un renouvellement, la nouvelle URL
+ * relançait la lecture par le veilleur ci-dessus, le diffuseur refusait encore
+ * — des dizaines de requêtes par minute, derrière un message d'erreur déjà
+ * affiché. Une signature que le diffuseur n'accepte pas ne s'arrange pas en la
+ * redemandant.
+ */
 watch(lecteur.erreur, async (message) => {
-  if (message) {
-    await renouvelerAutorisations()
-    lecteur.charger()
-  }
+  if (!message || !lecteur.erreurRenouvelable.value || renouvellementTente) return
+  renouvellementTente = true
+  await renouvelerAutorisations()
 })
 </script>
 

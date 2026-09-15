@@ -22,6 +22,10 @@ export function useLecteurVideo(options: {
   const enLecture = ref(false)
   const chargement = ref(false)
   const erreur = ref<string | null>(null)
+  /** Vrai quand l'erreur courante se lève en redemandant une autorisation —
+   *  c'est-à-dire seulement quand la précédente a expiré. Toute autre erreur
+   *  est définitive : la renouveler ne ferait que rejouer le même refus. */
+  const erreurRenouvelable = ref(false)
   const positionSecondes = ref(0)
   const dureeSecondes = ref(0)
   const secondesVues = ref(0)
@@ -80,11 +84,41 @@ export function useLecteurVideo(options: {
     hls = null
   }
 
+  /**
+   * Message d'un refus définitif du diffuseur, `null` si la requête mérite
+   * d'être réessayée.
+   *
+   * Le Worker renvoie le motif en clair dans le corps de sa réponse
+   * (« Lecture refusée — autorisation expirée »), ce qui permet de distinguer
+   * l'autorisation périmée — l'onglet est resté ouvert au-delà des quatre
+   * heures, et recharger suffit — d'une signature que le diffuseur n'accepte
+   * pas, qui relève de l'équipe.
+   */
+  function motifRefus(code?: number, texte?: string): { message: string; renouvelable: boolean } | null {
+    if (code === undefined) return null
+    if (code === 404) {
+      return {
+        message: 'Cette vidéo est introuvable sur le serveur de diffusion. Signalez-le à l’équipe.',
+        renouvelable: false,
+      }
+    }
+    if (code !== 401 && code !== 403) return null
+    if (texte?.includes('expirée')) {
+      return { message: 'Autorisation de lecture expirée — renouvellement en cours…', renouvelable: true }
+    }
+    return {
+      message:
+        'Lecture refusée : votre autorisation n’a pas été acceptée. Rechargez la page ; si le refus persiste, signalez-le à l’équipe.',
+      renouvelable: false,
+    }
+  }
+
   function charger() {
     const element = video.value
     const source = options.source()
     detruire()
     erreur.value = null
+    erreurRenouvelable.value = false
     positionSecondes.value = 0
     secondesVues.value = 0
     secondesEnvoyees = 0
@@ -99,6 +133,20 @@ export function useLecteurVideo(options: {
       hls.attachMedia(element)
       hls.on(Hls.Events.ERROR, (_, donnees) => {
         if (!donnees.fatal) return
+
+        // Un refus du diffuseur se reconnaît avant tout le reste : il arrive
+        // sous l'étiquette « erreur réseau », mais réessayer ne le lèvera
+        // jamais. Sans ce tri, `startLoad()` relançait indéfiniment une requête
+        // refusée, sans message ni arrêt du voyant de chargement.
+        const refus = motifRefus(donnees.response?.code, donnees.response?.text)
+        if (refus) {
+          hls?.stopLoad()
+          erreurRenouvelable.value = refus.renouvelable
+          erreur.value = refus.message
+          chargement.value = false
+          return
+        }
+
         // Une coupure réseau se rattrape ; le reste est définitif.
         if (donnees.type === Hls.ErrorTypes.NETWORK_ERROR) hls?.startLoad()
         else if (donnees.type === Hls.ErrorTypes.MEDIA_ERROR) hls?.recoverMediaError()
@@ -163,6 +211,7 @@ export function useLecteurVideo(options: {
     enLecture,
     chargement,
     erreur,
+    erreurRenouvelable,
     positionSecondes,
     dureeSecondes,
     secondesVues,

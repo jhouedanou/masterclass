@@ -90,7 +90,7 @@ export default defineNuxtConfig({
     zoomSdkClientSecret: process.env.ZOOM_SDK_CLIENT_SECRET || '',
 
     public: {
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://emasterclass.bigfive.ci',
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://masterclass-jhouedanous-projects.vercel.app',
       // Le tunnel charge le SDK FeexPay seulement quand le prestataire est branché.
       feexpayActif: (process.env.FEEXPAY_MODE || 'simulation') !== 'simulation',
       feexpaySdkUrl: `${(process.env.FEEXPAY_BASE_URL || 'https://api-v2.feexpay.me').replace(/\/$/, '')}/feexpay-javascript-sdk/index.js`,
@@ -112,7 +112,7 @@ export default defineNuxtConfig({
   },
 
   site: {
-    url: process.env.NUXT_PUBLIC_SITE_URL || 'https://emasterclass.bigfive.ci',
+    url: process.env.NUXT_PUBLIC_SITE_URL || 'https://masterclass-jhouedanous-projects.vercel.app',
     name: 'E-Masterclass Big Five',
     description:
       "Plateforme de formation en ligne de BigFiveAbidjan SARL : programmes Social Média et Entrepreneurs, modules courts et attestations de suivi.",
@@ -164,7 +164,7 @@ export default defineNuxtConfig({
       type: 'Organization',
       name: 'E-Masterclass Big Five',
       legalName: 'BigFiveAbidjan SARL',
-      url: process.env.NUXT_PUBLIC_SITE_URL || 'https://emasterclass.bigfive.ci',
+      url: process.env.NUXT_PUBLIC_SITE_URL || 'https://masterclass-jhouedanous-projects.vercel.app',
       logo: '/images/logo.svg',
       sameAs: [],
     },
