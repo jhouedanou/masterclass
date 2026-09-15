@@ -1,7 +1,14 @@
-import type { AlerteLancement, Formateur, Module, Programme, Thematique } from '#shared/types'
+import type { AlerteLancement, Formateur, Module, Phase, Programme, Thematique } from '#shared/types'
 import { supabase } from './client'
 import { traduireErreur, verifier, verifierOptionnel, verifierUn } from './erreurs'
-import { versAlerteLancement, versFormateur, versModule, versProgramme, versThematique } from './mappers'
+import {
+  versAlerteLancement,
+  versFormateur,
+  versModule,
+  versPhase,
+  versProgramme,
+  versThematique,
+} from './mappers'
 import type { ChapitreRow, FormateurRow, ProgrammeSlugSql } from './types'
 
 /**
@@ -46,14 +53,203 @@ export async function trouverProgramme(slug: string): Promise<Programme | null> 
   return row ? versProgramme(row) : null
 }
 
+/** Le nom, la couleur d'accent et la publication d'un programme s'éditent ;
+ *  son slug, lui, est un type énuméré en base et le pivot de six tables. */
+export async function majProgramme(
+  slug: string,
+  champs: Partial<Pick<Programme, 'nom' | 'couleur' | 'statut' | 'descriptionCarte' | 'descriptionProgramme'>>,
+): Promise<Programme> {
+  const colonnes: Record<string, unknown> = {}
+  if (champs.nom !== undefined) colonnes.nom = champs.nom
+  if (champs.couleur !== undefined) colonnes.couleur = champs.couleur
+  if (champs.statut !== undefined) colonnes.statut = champs.statut
+  if (champs.descriptionCarte !== undefined) colonnes.description_carte = champs.descriptionCarte
+  if (champs.descriptionProgramme !== undefined) {
+    colonnes.description_programme = champs.descriptionProgramme
+  }
+
+  const row = verifierUn(
+    await supabase()
+      .from('programmes')
+      .update(colonnes as never)
+      .eq('slug', slug as ProgrammeSlugSql)
+      .select('*')
+      .maybeSingle(),
+    'mise à jour du programme',
+    'Programme introuvable',
+  )
+  return versProgramme(row)
+}
+
+// --- Phases ----------------------------------------------------------------
+
+export async function listerPhases(): Promise<Phase[]> {
+  const rows = verifier(await supabase().from('phases').select('*').order('numero'), 'phases')
+  return rows
+    .sort((a, b) => {
+      const ecart = ORDRE_PROGRAMMES.indexOf(a.programme) - ORDRE_PROGRAMMES.indexOf(b.programme)
+      return ecart !== 0 ? ecart : a.numero - b.numero
+    })
+    .map(versPhase)
+}
+
+export async function creerPhase(champs: {
+  programme: ProgrammeSlugSql
+  nom: string
+  dateOuverture?: string | null
+}): Promise<Phase> {
+  const existantes = verifier(
+    await supabase().from('phases').select('numero').eq('programme', champs.programme),
+    'phases du programme',
+  )
+  const numero = Math.max(0, ...existantes.map((p) => p.numero)) + 1
+  const { data, error } = await supabase()
+    .from('phases')
+    .insert({
+      id: `ph-${champs.programme === 'social-media' ? 'sm' : 'ent'}-${numero}`,
+      programme: champs.programme,
+      numero,
+      nom: champs.nom,
+      // Une phase naît en brouillon, comme tout le reste de la hiérarchie.
+      statut: 'brouillon',
+      date_ouverture: champs.dateOuverture ?? null,
+    })
+    .select('*')
+    .single()
+  if (error?.code === '23505') {
+    throw createError({ statusCode: 409, statusMessage: 'Une phase porte déjà ce numéro.' })
+  }
+  if (error) throw traduireErreur(error, 'création de la phase')
+  return versPhase(data)
+}
+
+export async function majPhase(
+  id: string,
+  champs: Partial<Pick<Phase, 'nom' | 'statut' | 'dateOuverture'>>,
+): Promise<Phase> {
+  const colonnes: Record<string, unknown> = {}
+  if (champs.nom !== undefined) colonnes.nom = champs.nom
+  if (champs.statut !== undefined) colonnes.statut = champs.statut
+  if (champs.dateOuverture !== undefined) colonnes.date_ouverture = champs.dateOuverture
+
+  const row = verifierUn(
+    await supabase().from('phases').update(colonnes as never).eq('id', id).select('*').maybeSingle(),
+    'mise à jour de la phase',
+    'Phase introuvable',
+  )
+  return versPhase(row)
+}
+
+/** Une phase ne se supprime que vide : ses thématiques porteraient sinon une
+ *  référence morte, et la contrainte les protège déjà. */
+export async function supprimerPhase(id: string): Promise<void> {
+  const attachees = verifier(
+    await supabase().from('thematiques').select('id').eq('phase_id', id),
+    'thématiques de la phase',
+  )
+  if (attachees.length) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: `Cette phase porte ${attachees.length} thématique${attachees.length > 1 ? 's' : ''} : déplacez-les avant de la supprimer.`,
+    })
+  }
+  const { error } = await supabase().from('phases').delete().eq('id', id)
+  if (error) throw traduireErreur(error, 'suppression de la phase')
+}
+
 // --- Thématiques -----------------------------------------------------------
 
 export async function listerThematiques(): Promise<Thematique[]> {
   const rows = verifier(
-    await supabase().from('thematiques').select('*').order('numero'),
+    await supabase().from('thematiques').select('*').order('position'),
     'thematiques',
   )
-  return rows.sort(parProgrammePuisNumero).map(versThematique)
+  // L'ordre affiché est celui que l'administration a posé au glisser-déposer,
+  // pas la numérotation montrée à l'apprenant : les deux ont divergé le jour
+  // où réordonner est devenu possible.
+  return rows
+    .sort((a, b) => {
+      const ecart = ORDRE_PROGRAMMES.indexOf(a.programme) - ORDRE_PROGRAMMES.indexOf(b.programme)
+      return ecart !== 0 ? ecart : a.position - b.position
+    })
+    .map(versThematique)
+}
+
+/** Réordonnancement d'une phase : la liste reçue fait foi. */
+export async function reordonnerThematiques(phaseId: string, ids: string[]): Promise<void> {
+  // Deux passages : l'index unique (phase_id, position) refuserait toute
+  // permutation directe, la position cible étant occupée le temps du passage.
+  for (const [position, id] of ids.entries()) {
+    verifier(
+      await supabase()
+        .from('thematiques')
+        .update({ position: 1000 + position } as never)
+        .eq('id', id)
+        .eq('phase_id', phaseId)
+        .select('id'),
+      'réordonnancement des thématiques',
+    )
+  }
+  for (const [position, id] of ids.entries()) {
+    verifier(
+      await supabase()
+        .from('thematiques')
+        .update({ position } as never)
+        .eq('id', id)
+        .select('id'),
+      'réordonnancement des thématiques',
+    )
+  }
+}
+
+export async function creerThematique(champs: {
+  id: string
+  nom: string
+  programme: ProgrammeSlugSql
+  phaseId: string
+}): Promise<Thematique> {
+  const existantes = verifier(
+    await supabase().from('thematiques').select('numero, position').eq('phase_id', champs.phaseId),
+    'thématiques de la phase',
+  )
+  const row = verifierUn(
+    await supabase()
+      .from('thematiques')
+      .insert({
+        id: champs.id,
+        nom: champs.nom,
+        programme: champs.programme,
+        phase_id: champs.phaseId,
+        // Une thématique naît en brouillon : publier un parent ne publie
+        // jamais ses enfants (règle de l'écran 02).
+        statut: 'brouillon',
+        numero: Math.max(0, ...existantes.map((t) => t.numero)) + 1,
+        position: existantes.length,
+      })
+      .select('*')
+      .maybeSingle(),
+    'création de la thématique',
+    'Thématique introuvable',
+  )
+  return versThematique(row)
+}
+
+export async function majThematique(
+  id: string,
+  champs: Partial<Pick<Thematique, 'nom' | 'numero' | 'statut' | 'phaseId'>>,
+): Promise<Thematique> {
+  const colonnes: Record<string, unknown> = {}
+  if (champs.nom !== undefined) colonnes.nom = champs.nom
+  if (champs.numero !== undefined) colonnes.numero = champs.numero
+  if (champs.statut !== undefined) colonnes.statut = champs.statut
+  if (champs.phaseId !== undefined) colonnes.phase_id = champs.phaseId
+
+  const row = verifierUn(
+    await supabase().from('thematiques').update(colonnes as never).eq('id', id).select('*').maybeSingle(),
+    'mise à jour de la thématique',
+    'Thématique introuvable',
+  )
+  return versThematique(row)
 }
 
 // --- Formateurs ------------------------------------------------------------

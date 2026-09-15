@@ -41,7 +41,21 @@ if (!data.value) {
 
 usePagePrivee(`${data.value.module.titre} — édition`)
 
-const onglet = ref<'informations' | 'chapitres' | 'ressources' | 'offre' | 'referencement' | 'historique'>('informations')
+type Onglet = 'informations' | 'chapitres' | 'ressources' | 'offre' | 'referencement' | 'historique'
+const ONGLETS_VALIDES: Onglet[] = [
+  'informations',
+  'chapitres',
+  'ressources',
+  'offre',
+  'referencement',
+  'historique',
+]
+// L'arbre des contenus et la fiche commerciale pointent directement sur un
+// onglet : sans cette lecture, leurs liens retombaient tous sur « Informations ».
+const ongletDemande = route.query.onglet as Onglet | undefined
+const onglet = ref<Onglet>(
+  ongletDemande && ONGLETS_VALIDES.includes(ongletDemande) ? ongletDemande : 'informations',
+)
 const erreur = ref('')
 const succes = ref('')
 const enCours = ref(false)

@@ -4,6 +4,9 @@ import type { EntreeJournal } from '#shared/types'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Administration')
 
+const mois = ref('')
+const programme = ref('')
+
 const { data } = await useFetch<{
   role: string
   inscriptions: number
@@ -28,19 +31,58 @@ const { data } = await useFetch<{
     module: string
     montant: number
     statut: string
+    referenceFeexpay: string | null
   }[]
   journal: EntreeJournal[]
   comptesActifs: number
-}>('/api/admin/vue-ensemble')
+  moisDisponibles: string[]
+}>('/api/admin/vue-ensemble', {
+  query: { mois, programme },
+})
 
 const partObjectif = computed(() =>
   data.value ? Math.round((data.value.inscriptions / data.value.objectifInscriptions) * 100) : 0,
 )
+
+const nomDuMois = (valeur: string) =>
+  new Date(`${valeur}-01T00:00:00`).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
 </script>
 
 <template>
   <div v-if="data">
-    <h1 class="font-title text-[26px] font-light">Vue d’ensemble</h1>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h1 class="font-title text-[26px] font-light">Vue d’ensemble</h1>
+      <div class="flex flex-wrap gap-2">
+        <label>
+          <span class="sr-only">Mois</span>
+          <select v-model="mois" class="rounded-[10px] border border-ligne bg-white px-3 py-2 text-[13.5px] focus:border-social focus:outline-none">
+            <option value="">30 derniers jours</option>
+            <option v-for="m in data.moisDisponibles" :key="m" :value="m">{{ nomDuMois(m) }}</option>
+          </select>
+        </label>
+        <label>
+          <span class="sr-only">Programme</span>
+          <select v-model="programme" class="rounded-[10px] border border-ligne bg-white px-3 py-2 text-[13.5px] focus:border-social focus:outline-none">
+            <option value="">Tous les programmes</option>
+            <option value="social-media">Social Média</option>
+            <option value="entrepreneurs">Entrepreneurs</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <!-- Trafic du jour : les six mesures d'audience viennent de Google
+         Analytics, qui n'est pas encore relié. Un tiret vaut mieux qu'un
+         chiffre inventé. -->
+    <div class="mt-4 flex flex-wrap items-center gap-x-8 gap-y-2 rounded-[12px] border border-ligne-claire bg-white px-5 py-3 text-[13px]">
+      <p class="font-bold text-encre">Trafic du jour</p>
+      <p class="text-discret">Visites <span class="font-bold text-encre">—</span></p>
+      <p class="text-discret">Visiteurs <span class="font-bold text-encre">—</span></p>
+      <p class="text-discret">Pages vues <span class="font-bold text-encre">—</span></p>
+      <NuxtLink to="/admin/tracking" class="text-social underline">
+        Reliez Google Analytics pour renseigner ces mesures →
+      </NuxtLink>
+    </div>
 
     <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
       <AdminCarteIndicateur
@@ -145,9 +187,11 @@ const partObjectif = computed(() =>
             Transactions & paiements
           </NuxtLink>
         </div>
-        <AdminTableauSimple class="mt-3" :colonnes="['Référence', 'Apprenant · module', 'Montant', 'Statut']">
+        <AdminTableauSimple class="mt-3" :colonnes="['Référence', 'Réf. FeexPay', 'Apprenant · module', 'Montant', 'Statut']">
           <tr v-for="t in data.dernieresTransactions" :key="t.reference">
             <td class="px-4 py-3 font-mono text-[12.5px]">{{ t.reference }}</td>
+            <!-- Celle que cite le support FeexPay : la nôtre ne lui dit rien. -->
+            <td class="px-4 py-3 font-mono text-[12.5px] text-discret">{{ t.referenceFeexpay ?? '—' }}</td>
             <td class="px-4 py-3">{{ t.apprenant }} · {{ t.module }}</td>
             <td class="px-4 py-3">{{ formatFcfa(t.montant) }}</td>
             <td class="px-4 py-3">

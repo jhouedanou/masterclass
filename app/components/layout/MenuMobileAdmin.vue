@@ -4,7 +4,7 @@
  * variante en icônes (tablette, C-17) n'y existent pas.
  */
 defineProps<{
-  groupes: { titre: string; liens: { libelle: string; chemin: string; icone: string }[] }[]
+  liens: { libelle: string; chemin: string; icone: string }[]
 }>()
 const ouvert = ref(false)
 const route = useRoute()
@@ -36,20 +36,17 @@ watch(() => route.path, () => (ouvert.value = false))
               <Icon name="ph:x" size="22" />
             </button>
           </div>
-          <div v-for="groupe in groupes" :key="groupe.titre">
-            <p class="surtitre mb-2 text-[#8f8a9c]">{{ groupe.titre }}</p>
-            <div class="flex flex-col gap-0.5">
-              <NuxtLink
-                v-for="lien in groupe.liens"
-                :key="lien.chemin"
-                :to="lien.chemin"
-                class="flex items-center gap-2 rounded-[10px] px-3 py-2 text-[14px] text-[#b9b4c4] hover:bg-encre-800 hover:text-white"
-                active-class="bg-social text-white"
-              >
-                <Icon :name="lien.icone" size="17" />
-                {{ lien.libelle }}
-              </NuxtLink>
-            </div>
+          <div class="flex flex-col gap-0.5">
+            <NuxtLink
+              v-for="lien in liens"
+              :key="lien.chemin"
+              :to="lien.chemin"
+              class="flex items-center gap-2 rounded-[10px] px-3 py-2 text-[14px] text-[#b9b4c4] hover:bg-encre-800 hover:text-white"
+              active-class="bg-social text-white"
+            >
+              <Icon :name="lien.icone" size="17" />
+              {{ lien.libelle }}
+            </NuxtLink>
           </div>
         </nav>
         <div class="flex-1 bg-black/40" />

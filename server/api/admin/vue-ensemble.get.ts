@@ -13,6 +13,12 @@ import { exigerAdmin } from '../../utils/session'
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerAdmin(event)
 
+  // Filtres de l'écran 01 : un mois « AAAA-MM » et un programme. Absents, la
+  // vue porte sur les trente derniers jours, comme les objectifs mensuels.
+  const requete = getQuery(event)
+  const mois = typeof requete.mois === 'string' && /^\d{4}-\d{2}$/.test(requete.mois) ? requete.mois : ''
+  const programme = typeof requete.programme === 'string' ? requete.programme : ''
+
   const [
     reglages,
     modules,
@@ -41,14 +47,21 @@ export default defineEventHandler(async (event) => {
     listerJournal(3),
   ])
 
-  // Les objectifs du back-office sont mensuels : les compteurs comparés portent
-  // sur les trente derniers jours.
-  const periode = surPeriode(transactions, DEBUT_PERIODE())
+  const modulesDuProgramme = new Set(
+    modules.filter((m) => !programme || m.programme === programme).map((m) => m.id),
+  )
+  const retenues = transactions.filter((t) => modulesDuProgramme.has(t.moduleId))
+
+  // Les objectifs du back-office sont mensuels : sans filtre de mois, les
+  // compteurs comparés portent sur les trente derniers jours.
+  const periode = mois
+    ? retenues.filter((t) => t.date.slice(0, 7) === mois)
+    : surPeriode(retenues, DEBUT_PERIODE())
   const ca = chiffreAffaires(periode)
   const frais = Math.round((ca * reglages.fraisPaiementPourcent) / 100)
 
   const ventesParModule = new Map<string, number>()
-  for (const t of transactions.filter((x) => x.statut === 'reussie')) {
+  for (const t of periode.filter((x) => x.statut === 'reussie')) {
     ventesParModule.set(t.moduleId, (ventesParModule.get(t.moduleId) ?? 0) + 1)
   }
 
@@ -84,7 +97,8 @@ export default defineEventHandler(async (event) => {
         inscrits: s.inscrits,
         places: s.places,
       })),
-    dernieresTransactions: transactions.slice(0, 3).map((t) => {
+    moisDisponibles: [...new Set(transactions.map((t) => t.date.slice(0, 7)))].sort().reverse(),
+    dernieresTransactions: retenues.slice(0, 5).map((t) => {
       const u = utilisateurs.find((x) => x.id === t.utilisateurId)
       return {
         reference: t.reference,
@@ -92,6 +106,9 @@ export default defineEventHandler(async (event) => {
         module: modules.find((m) => m.id === t.moduleId)?.titre ?? '—',
         montant: t.montant,
         statut: t.statut,
+        // La référence du prestataire est celle que l'équipe cite au support
+        // FeexPay ; la nôtre ne lui dit rien.
+        referenceFeexpay: t.referencePrestataire ?? null,
       }
     }),
     journal,

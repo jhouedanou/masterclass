@@ -248,6 +248,14 @@ export default defineNuxtConfig({
     },
     client: { installPrompt: true },
     devOptions: { enabled: false },
+    // Le Meeting SDK de Zoom embarque son propre React : deux fragments de
+    // 5,4 Mo et 3,2 Mo, que Workbox écarte du préchargement au-delà de 2 Mio.
+    // C'est le bon comportement — les précharger reviendrait à imposer neuf
+    // mégaoctets à l'installation de l'application à tout apprenant, y compris
+    // à ceux qui n'ouvriront jamais une session de coaching, sur un forfait
+    // mobile ivoirien. Ils restent servis par le réseau quand la salle s'ouvre.
+    // Sans cette ligne, l'exclusion fait échouer le build au lieu d'avertir.
+    showMaximumFileSizeToCacheInBytesWarning: true,
   },
 
   fonts: {

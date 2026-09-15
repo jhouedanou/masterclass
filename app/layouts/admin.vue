@@ -22,53 +22,33 @@ interface Lien {
   restreint?: boolean
 }
 
-const tousLesGroupes: { titre: string; liens: Lien[] }[] = [
-  {
-    titre: 'Pilotage',
-    liens: [
-      { libelle: 'Vue d’ensemble', chemin: '/admin', icone: 'ph:gauge', section: null },
-      { libelle: 'Performances', chemin: '/admin/performances', icone: 'ph:chart-line-up', section: 'performances-marketing' },
-      { libelle: 'Revenus', chemin: '/admin/revenus', icone: 'ph:currency-circle-dollar', section: 'statistiques-performance' },
-    ],
-  },
-  {
-    titre: 'Contenus',
-    liens: [
-      { libelle: 'Modules & chapitres', chemin: '/admin/contenus', icone: 'ph:stack', section: 'modules-chapitres' },
-      { libelle: 'CMS Site vitrine', chemin: '/admin/cms', icone: 'ph:layout', section: 'cms-site-vitrine' },
-      { libelle: 'Blog', chemin: '/admin/blog', icone: 'ph:article', section: 'blog' },
-      { libelle: 'Référencement (SEO)', chemin: '/admin/referencement', icone: 'ph:magnifying-glass', section: 'referencement-contenu' },
-    ],
-  },
-  {
-    titre: 'Communauté',
-    liens: [
-      { libelle: 'Formateurs', chemin: '/admin/formateurs', icone: 'ph:users-three', section: 'formateurs' },
-      { libelle: 'Calendrier des sessions', chemin: '/admin/sessions', icone: 'ph:calendar-dots', section: 'calendrier-sessions' },
-      { libelle: 'Coaching privé', chemin: '/admin/coaching-prive', icone: 'ph:target', section: 'coaching-prive' },
-      { libelle: 'Apprenants', chemin: '/admin/apprenants', icone: 'ph:student', section: null },
-    ],
-  },
-  {
-    titre: 'Administration',
-    liens: [
-      { libelle: 'Transactions', chemin: '/admin/transactions', icone: 'ph:lock-key', section: 'transactions-paiements', restreint: true },
-      { libelle: 'Tracking & pixels', chemin: '/admin/tracking', icone: 'ph:crosshair', section: null },
-      { libelle: 'Administration des accès', chemin: '/admin/acces', icone: 'ph:shield-check', section: 'administration-acces' },
-      { libelle: 'Historique & versions', chemin: '/admin/historique', icone: 'ph:clock-counter-clockwise', section: 'historique-versions' },
-      { libelle: 'Paramètres', chemin: '/admin/parametres', icone: 'ph:sliders', section: null },
-    ],
-  },
+/**
+ * Ordre de la planche C, écran 01 : une liste plate, du pilotage éditorial vers
+ * l'administration. Les regroupements par intertitres qui existaient ici ne
+ * figurent pas dans la maquette.
+ */
+const tousLesLiens: Lien[] = [
+  { libelle: 'Vue d’ensemble', chemin: '/admin', icone: 'ph:gauge', section: null },
+  { libelle: 'CMS Site vitrine', chemin: '/admin/cms', icone: 'ph:layout', section: 'cms-site-vitrine' },
+  { libelle: 'Blog', chemin: '/admin/blog', icone: 'ph:article', section: 'blog' },
+  { libelle: 'Référencement (SEO)', chemin: '/admin/referencement', icone: 'ph:magnifying-glass', section: 'referencement-contenu' },
+  { libelle: 'Programmes & phases', chemin: '/admin/programmes', icone: 'ph:tree-structure', section: 'modules-chapitres' },
+  { libelle: 'Fiches commerciales', chemin: '/admin/fiches', icone: 'ph:megaphone', section: 'fiches-commerciales' },
+  { libelle: 'Modules & chapitres', chemin: '/admin/contenus', icone: 'ph:stack', section: 'modules-chapitres' },
+  { libelle: 'Formateurs', chemin: '/admin/formateurs', icone: 'ph:users-three', section: 'formateurs' },
+  { libelle: 'Calendrier des sessions', chemin: '/admin/sessions', icone: 'ph:calendar-dots', section: 'calendrier-sessions' },
+  { libelle: 'Coaching privé', chemin: '/admin/coaching-prive', icone: 'ph:target', section: 'coaching-prive' },
+  { libelle: 'Apprenants', chemin: '/admin/apprenants', icone: 'ph:student', section: null },
+  { libelle: 'Performances', chemin: '/admin/performances', icone: 'ph:chart-line-up', section: 'performances-marketing' },
+  { libelle: 'Revenus', chemin: '/admin/revenus', icone: 'ph:currency-circle-dollar', section: 'statistiques-performance' },
+  { libelle: 'Historique & versions', chemin: '/admin/historique', icone: 'ph:clock-counter-clockwise', section: 'historique-versions' },
+  { libelle: 'Tracking & pixels', chemin: '/admin/tracking', icone: 'ph:crosshair', section: null },
+  { libelle: 'Administration des accès', chemin: '/admin/acces', icone: 'ph:shield-check', section: 'administration-acces' },
+  { libelle: 'Paramètres', chemin: '/admin/parametres', icone: 'ph:sliders', section: null },
+  { libelle: 'Transactions & paiements', chemin: '/admin/transactions', icone: 'ph:lock-key', section: 'transactions-paiements', restreint: true },
 ]
 
-const groupes = computed(() =>
-  tousLesGroupes
-    .map((groupe) => ({
-      titre: groupe.titre,
-      liens: groupe.liens.filter((l) => !l.section || auth.voitSection(l.section)),
-    }))
-    .filter((groupe) => groupe.liens.length > 0),
-)
+const liens = computed(() => tousLesLiens.filter((l) => !l.section || auth.voitSection(l.section)))
 </script>
 
 <template>
@@ -78,23 +58,18 @@ const groupes = computed(() =>
         <img src="/images/brand/logo.png" alt="E-Masterclass Big Five" class="h-9 w-auto brightness-0 invert">
       </NuxtLink>
 
-      <nav aria-label="Navigation d’administration" class="flex flex-col gap-5">
-        <div v-for="groupe in groupes" :key="groupe.titre">
-          <p class="surtitre mb-2 text-[#8f8a9c]">{{ groupe.titre }}</p>
-          <div class="flex flex-col gap-0.5">
-            <NuxtLink
-              v-for="lien in groupe.liens"
-              :key="lien.chemin"
-              :to="lien.chemin"
-              class="flex items-center gap-2 rounded-[10px] px-3 py-2 text-[13.5px] text-[#b9b4c4] hover:bg-encre-800 hover:text-white"
-              active-class="bg-social text-white"
-            >
-              <Icon :name="lien.icone" size="17" />
-              <span class="flex-1">{{ lien.libelle }}</span>
-              <Icon v-if="lien.restreint && !auth.estAdminSuperieur" name="ph:lock-simple" size="14" />
-            </NuxtLink>
-          </div>
-        </div>
+      <nav aria-label="Navigation d’administration" class="flex flex-col gap-0.5">
+        <NuxtLink
+          v-for="lien in liens"
+          :key="lien.chemin"
+          :to="lien.chemin"
+          class="flex items-center gap-2 rounded-[10px] px-3 py-2 text-[13.5px] text-[#b9b4c4] hover:bg-encre-800 hover:text-white"
+          active-class="bg-social text-white"
+        >
+          <Icon :name="lien.icone" size="17" />
+          <span class="flex-1">{{ lien.libelle }}</span>
+          <Icon v-if="lien.restreint && !auth.estAdminSuperieur" name="ph:lock-simple" size="14" />
+        </NuxtLink>
       </nav>
 
       <div class="mt-auto pt-6 text-[12px] text-[#8f8a9c]">
@@ -111,24 +86,25 @@ const groupes = computed(() =>
       <NuxtLink to="/" class="mb-2 rounded-[8px] bg-white p-[5px]" aria-label="Accueil du site">
         <img src="/images/brand/pattern.png" alt="" class="size-[26px] rounded-[4px] object-cover">
       </NuxtLink>
-      <template v-for="groupe in groupes" :key="groupe.titre">
-        <NuxtLink
-          v-for="lien in groupe.liens"
-          :key="lien.chemin"
-          :to="lien.chemin"
-          :title="lien.libelle"
-          :aria-label="lien.libelle"
-          class="grid size-10 place-items-center rounded-[8px] text-[#b9b4c4] hover:bg-encre-800 hover:text-white"
-          active-class="bg-social text-white"
-        >
-          <Icon :name="lien.icone" size="18" />
-        </NuxtLink>
-      </template>
+      <NuxtLink
+        v-for="lien in liens"
+        :key="lien.chemin"
+        :to="lien.chemin"
+        :title="lien.libelle"
+        :aria-label="lien.libelle"
+        class="grid size-10 place-items-center rounded-[8px] text-[#b9b4c4] hover:bg-encre-800 hover:text-white"
+        active-class="bg-social text-white"
+      >
+        <Icon :name="lien.icone" size="18" />
+      </NuxtLink>
     </aside>
 
     <div class="flex min-w-0 flex-1 flex-col">
-      <header class="flex h-14 items-center justify-between border-b border-ligne-claire bg-white px-6">
-        <p class="font-title text-[17px] font-light">Back-office</p>
+      <header class="flex h-14 items-center justify-between gap-3 border-b border-ligne-claire bg-white px-4 md:px-6">
+        <div class="flex min-w-0 items-center gap-2">
+          <LayoutMenuMobileAdmin :liens="liens" />
+          <p class="truncate font-title text-[17px] font-light">Back-office</p>
+        </div>
         <button
           class="text-[13px] text-discret hover:text-encre"
           @click="seDeconnecter"
