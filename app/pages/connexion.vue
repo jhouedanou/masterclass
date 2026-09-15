@@ -28,8 +28,12 @@ async function soumettre() {
       await navigateTo('/mon-espace?bon-retour=1')
       return
     }
-    // L'achat en cours est conservé : on revient là où l'utilisateur s'était arrêté.
-    await navigateTo(String(route.query.suite ?? '/mon-espace'))
+    // L'achat en cours est conservé : on revient là où l'utilisateur s'était
+    // arrêté. À défaut, chacun rejoint son espace : un formateur n'a rien à
+    // faire dans /mon-espace, qui ne montre que des modules achetés — il y
+    // arrivait sur un tableau de bord vide et croyait son compte inopérant.
+    const accueil = auth.utilisateur?.role === 'formateur' ? '/formateur' : '/mon-espace'
+    await navigateTo(String(route.query.suite ?? accueil))
   } catch (e) {
     // Le serveur distingue mot de passe erroné, compte verrouillé et champ
     // manquant : son message est déjà rédigé pour l'utilisateur.
