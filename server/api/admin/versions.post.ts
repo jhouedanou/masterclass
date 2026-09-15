@@ -41,6 +41,12 @@ export default defineEventHandler(async (event) => {
         livrable: c.livrable,
         faq: c.faq,
         prixFcfa: c.prixFcfa,
+        // Les champs de la fiche commerciale font partie de la version
+        // enregistrée : les omettre ici laisserait une restauration à moitié
+        // faite, avec des points forts d'une version et un texte d'une autre.
+        pointsForts: c.pointsForts,
+        dateLancement: c.dateLancement,
+        prixMasque: c.prixMasque,
       })
       break
 

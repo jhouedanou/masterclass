@@ -21,39 +21,74 @@ interface Temoignage {
   publie: boolean
 }
 
-const { data, refresh } = await useFetch<{ blocs: Bloc[]; temoignages: Temoignage[] }>('/api/admin/cms')
+interface Version {
+  id: string
+  libelle: string
+  auteur: string
+  creeLe: string
+  entiteId: string
+}
+
+const { data, refresh } = await useFetch<{
+  blocs: Bloc[]
+  temoignages: Temoignage[]
+  versions: Version[]
+}>('/api/admin/cms')
 
 const erreur = ref('')
 const enCours = ref(false)
 
-/** Le bloc ouvert en édition. Le JSON est manipulé tel quel : chaque bloc a sa
- *  forme propre, et un formulaire figé obligerait à une migration à chaque
- *  évolution éditoriale. */
-const edition = ref<{ cle: string; libelle: string; json: string; statut: string } | null>(null)
-const jsonInvalide = ref(false)
+// La restauration relève du droit « Historique & versions », distinct de celui
+// du CMS : proposer le bouton à qui ne l'a pas promettrait un refus.
+const auth = useAuthStore()
+const peutRestaurer = computed(() => auth.voitSection('historique-versions'))
+
+/**
+ * Le bloc ouvert en édition.
+ *
+ * Le contenu est désormais manipulé par un formulaire propre à chaque type de
+ * bloc plutôt qu'en JSON : une virgule de trop suffisait à tout bloquer, et ce
+ * n'est pas ce qu'on demande à quelqu'un qui vient changer une accroche. Les
+ * blocs sans forme stable gardent le JSON, dans le composant d'édition.
+ */
+const edition = ref<{
+  cle: string
+  libelle: string
+  contenu: Record<string, unknown>
+  statut: string
+  publieDu: string
+  publieAu: string
+} | null>(null)
 
 function ouvrir(bloc: Bloc) {
   edition.value = {
     cle: bloc.cle,
     libelle: bloc.libelle,
-    json: JSON.stringify(bloc.contenu, null, 2),
+    contenu: JSON.parse(JSON.stringify(bloc.contenu)),
     statut: bloc.statut,
+    publieDu: bloc.publieDu?.slice(0, 10) ?? '',
+    publieAu: bloc.publieAu?.slice(0, 10) ?? '',
   }
-  jsonInvalide.value = false
 }
 
-watch(() => edition.value?.json, (v) => {
-  if (v === undefined) return
+/** Historique du bloc ouvert : chaque enregistrement y dépose l'état précédent. */
+const historique = computed(() =>
+  (data.value?.versions ?? []).filter((v) => v.entiteId === edition.value?.cle),
+)
+
+async function restaurer(versionId: string) {
+  erreur.value = ''
   try {
-    JSON.parse(v)
-    jsonInvalide.value = false
-  } catch {
-    jsonInvalide.value = true
+    await $fetch('/api/admin/versions', { method: 'POST', body: { versionId } })
+    edition.value = null
+    await refresh()
+  } catch (e) {
+    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'La restauration a échoué.'
   }
-})
+}
 
 async function enregistrer() {
-  if (!edition.value || jsonInvalide.value) return
+  if (!edition.value) return
   erreur.value = ''
   enCours.value = true
   try {
@@ -61,8 +96,12 @@ async function enregistrer() {
       method: 'PUT',
       body: {
         cle: edition.value.cle,
-        contenu: JSON.parse(edition.value.json),
+        contenu: edition.value.contenu,
         statut: edition.value.statut,
+        // Un bandeau programmé se publie et se retire tout seul : sans dates,
+        // il faut penser à revenir l'éteindre.
+        publieDu: edition.value.publieDu || null,
+        publieAu: edition.value.publieAu || null,
       },
     })
     edition.value = null
@@ -162,38 +201,79 @@ function resume(bloc: Bloc): string {
     </div>
 
     <!-- Éditeur -->
-    <div v-if="edition" class="mt-6 rounded-[14px] border border-social bg-white p-6">
-      <h2 class="font-title text-[19px] font-light">{{ edition.libelle }}</h2>
+    <div v-if="edition" class="mt-6 grid gap-6 xl:grid-cols-[1fr_300px]">
+      <div class="rounded-[14px] border border-social bg-white p-6">
+        <h2 class="font-title text-[19px] font-light">{{ edition.libelle }}</h2>
 
-      <label class="mt-4 block">
-        <span class="mb-1.5 block text-[13px] font-bold">Contenu</span>
-        <textarea
-          v-model="edition.json"
-          rows="14"
-          spellcheck="false"
-          class="w-full rounded-[10px] border px-3 py-2.5 font-mono text-[13px] focus:outline-none"
-          :class="jsonInvalide ? 'border-erreur' : 'border-ligne focus:border-social'"
-        />
-      </label>
-      <p v-if="jsonInvalide" class="text-[13px] text-erreur">
-        Le contenu n’est pas un JSON valide — vérifiez les virgules et les guillemets.
-      </p>
+        <div class="mt-4">
+          <AdminEditeurBloc
+            :key="edition.cle"
+            :cle="edition.cle"
+            :contenu="edition.contenu"
+            @maj="edition.contenu = $event"
+          />
+        </div>
 
-      <label class="mt-4 flex items-center gap-2.5">
-        <input
-          type="checkbox"
-          :checked="edition.statut === 'publie'"
-          @change="edition.statut = edition.statut === 'publie' ? 'brouillon' : 'publie'"
-        >
-        <span class="text-[13.5px]">Publier ce bloc sur le site</span>
-      </label>
+        <label class="mt-5 flex items-center gap-2.5">
+          <input
+            type="checkbox"
+            :checked="edition.statut === 'publie'"
+            @change="edition.statut = edition.statut === 'publie' ? 'brouillon' : 'publie'"
+          >
+          <span class="text-[13.5px]">Publier ce bloc sur le site</span>
+        </label>
 
-      <div class="mt-5 flex gap-2">
-        <UiBaseButton taille="sm" :disabled="jsonInvalide || enCours" @click="enregistrer">
-          {{ enCours ? 'Enregistrement…' : 'Enregistrer' }}
-        </UiBaseButton>
-        <UiBaseButton variante="contour" taille="sm" @click="edition = null">Annuler</UiBaseButton>
+        <!-- Programmation : un bandeau qui s'éteint tout seul évite d'avoir à
+             penser à revenir l'éteindre. -->
+        <div class="mt-4 grid gap-3 border-t border-ligne-claire pt-4 sm:grid-cols-2">
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">
+              Visible à partir du <span class="font-normal text-discret">(facultatif)</span>
+            </span>
+            <input v-model="edition.publieDu" type="date" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">
+              Jusqu’au <span class="font-normal text-discret">(facultatif)</span>
+            </span>
+            <input v-model="edition.publieAu" type="date" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+          </label>
+        </div>
+
+        <div class="mt-5 flex flex-wrap gap-2">
+          <UiBaseButton taille="sm" :disabled="enCours" @click="enregistrer">
+            {{ enCours ? 'Enregistrement…' : 'Enregistrer' }}
+          </UiBaseButton>
+          <UiBaseButton to="/" variante="contour" taille="sm" cible="_blank">
+            Voir la page publique
+          </UiBaseButton>
+          <UiBaseButton variante="contour" taille="sm" @click="edition = null">Annuler</UiBaseButton>
+        </div>
       </div>
+
+      <aside class="h-fit rounded-[14px] border border-ligne-douce bg-white p-5">
+        <h3 class="font-title text-[17px] font-light">Historique</h3>
+        <p class="mt-1 text-[12.5px] text-discret">
+          Chaque enregistrement dépose ici l’état précédent. Un bloc en brouillon ne s’affiche pas
+          sur la page publique, quelles que soient ses dates.
+        </p>
+        <ul v-if="historique.length" class="mt-3 flex flex-col gap-2">
+          <li
+            v-for="v in historique"
+            :key="v.id"
+            class="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-ligne-claire p-3 text-[12.5px]"
+          >
+            <span class="text-discret">{{ formatDate(v.creeLe) }} · {{ v.auteur }}</span>
+            <button v-if="peutRestaurer" class="text-social underline" @click="restaurer(v.id)">
+              Restaurer
+            </button>
+          </li>
+        </ul>
+        <p v-else class="mt-3 text-[13px] text-discret">Aucune version antérieure.</p>
+        <p v-if="historique.length && !peutRestaurer" class="mt-3 text-[12px] text-discret">
+          Restaurer une version demande le droit « Historique &amp; versions ».
+        </p>
+      </aside>
     </div>
 
     <!-- Témoignages -->
