@@ -20,8 +20,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Module introuvable' })
   }
 
+  // `revoqueLe` compte autant que l'absence de ligne : sans ce contrôle, un
+  // accès retiré continuait de délivrer des URL de lecture signées, alors que
+  // la page module (`mon-espace/module/[slug]`) le refusait déjà.
   const acces = await trouverAcces(utilisateur.id, moduleTrouve.id)
-  if (!acces) {
+  if (!acces || acces.revoqueLe) {
     throw createError({ statusCode: 403, statusMessage: 'Ce module ne fait pas partie de vos accès' })
   }
 

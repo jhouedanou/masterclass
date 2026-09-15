@@ -1,15 +1,14 @@
 import { purgerComptes } from '../../tasks/comptes/purger'
+import { exigerCleTache } from '../../utils/taches'
 
 /**
  * Déclencheur externe de la purge des comptes, pour les hébergements sans
- * processus permanent (cron Vercel, GitHub Actions…). Clé partagée en
+ * processus permanent (GitHub Actions, cron-job.org…). Clé partagée en
  * en-tête Bearer : `TACHES_CLE`.
+ *
+ * Le cron Vercel, lui, n'émet que des GET : il passe par `purger.get.ts`.
  */
 export default defineEventHandler(async (event) => {
-  const cle = (useRuntimeConfig().tachesCle || '').trim()
-  const entete = getRequestHeader(event, 'authorization') ?? ''
-  if (!cle || entete !== `Bearer ${cle}`) {
-    throw createError({ statusCode: 401, statusMessage: 'Clé de tâche invalide' })
-  }
+  exigerCleTache(event)
   return await purgerComptes()
 })

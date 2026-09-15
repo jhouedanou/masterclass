@@ -249,6 +249,9 @@ export interface Utilisateur {
   /** Suppression programmée : définitive à cette date, annulée par une reconnexion. */
   suppressionPrevueLe?: string | null
   motDePasseMajLe?: string | null
+  /** URL publique de la photo de profil, absente tant qu'aucune n'a été déposée
+   *  — l'interface retombe alors sur les initiales. */
+  photo?: string
   /** Pourcentage de complétion du profil apprenant (planche B). */
   completionProfil?: number
 }

@@ -38,7 +38,7 @@ npm run build && node .output/server/index.mjs
 Créer un fichier `.env` à la racine (non versionné, comme tout fichier `.env*`) :
 
 ```bash
-NUXT_PUBLIC_SITE_URL=https://emasterclass.bigfive.ci
+NUXT_PUBLIC_SITE_URL=https://masterclass-jhouedanous-projects.vercel.app
 SUPABASE_URL=            # console Supabase → Settings → API
 SUPABASE_SECRET_KEY=         # Settings → API keys → Secret keys — jamais la clé publishable
 ```
@@ -120,8 +120,21 @@ Secret keys* — l'ancienne clé `service_role` JWT reste acceptée via `SUPABAS
 et les reporter dans `.env`. Ces deux fichiers sont assemblés depuis les migrations : les régénérer avec `npm run db:sql`
 après toute modification du schéma.
 
-Avec la CLI, la voie recommandée reste `npm run db:migrer` (`supabase db push`), qui tient le
-registre des migrations appliquées.
+Avec la CLI, `npm run db:migrer` (`supabase db push`) tient le registre des migrations appliquées.
+Il demande `supabase link` au préalable — sans lien, la commande échoue sur
+`LegacyProjectNotLinkedError`.
+
+**État du projet hébergé.** Il a été installé depuis `supabase/en-ligne/`, qui n'écrit pas dans le
+registre : `supabase_migrations.schema_migrations` était donc incomplet, et un `db push` aurait
+voulu rejouer des migrations déjà en place — `column … already exists`. Le registre a été aligné
+sur les treize fichiers de `supabase/migrations/`, après vérification que chacun est bien présent
+dans le schéma ; `db push` n'a plus rien à y appliquer.
+
+Le registre garde en plus une dizaine d'entrées antérieures, appliquées hors dépôt depuis le
+tableau de bord (`formateur`, `verification_attestation`, `comptes_admin`, `rattrapage_planche_e`,
+`nettoyage_tests_planche_e`), dont certaines portent le même nom qu'une migration du dépôt sous une
+autre version. Elles sont inoffensives pour `db push`, qui ne regarde que les fichiers locaux
+absents du registre ; `supabase migration list` les signalera comme distantes uniquement.
 
 ### En local
 
@@ -429,6 +442,57 @@ Le Worker est en service depuis le 2 septembre 2026 sur le compte `analyticsbigf
 
 Le filigrane nominatif reste indispensable : la signature empêche le partage d'un lien, pas
 l'enregistrement d'écran. Elle rend une rediffusion attribuable.
+
+## Hébergement Vercel
+
+Le projet `masterclass` de l'équipe `jhouedanous-projects`. `vercel.json` porte deux réglages qui
+ne dépendent donc pas du tableau de bord :
+
+- `framework: "nuxtjs"` — le préréglage du projet valait `nextjs`, hérité d'un prototype. Posé dans
+  le fichier, il est versionné et l'emporte sur le réglage distant.
+- `crons` — la purge quotidienne, détaillée ci-dessous.
+
+Les variables d'environnement se poussent depuis le `.env` local. Attention aux apostrophes : dotenv
+les retire, `vercel env add` non — une valeur enregistrée avec ses apostrophes fait deux caractères
+de trop et ne correspond plus à celle utilisée en local.
+
+**Protection de déploiement.** Tant que l'authentification Vercel est active, toute URL `.vercel.app`
+redirige vers `vercel.com/sso-api`. Les appels automatisés en font les frais, à commencer par le
+webhook FeexPay, qui ne peut pas s'authentifier : les paiements ne seraient jamais confirmés. À
+lever quand le site doit être joignable :
+
+```bash
+vercel project protection disable --sso masterclass
+```
+
+## Purge des comptes supprimés
+
+Une suppression demandée par un apprenant est différée de quatorze jours (planche B, écran 12).
+`comptes:purger` supprime définitivement les comptes échus et envoie le rappel à J-3.
+
+Sur un serveur Node, Nitro s'en charge seul : `scheduledTasks` dans `nuxt.config.ts`, chaque nuit à
+3 h. Sur Vercel, rien ne tourne entre deux requêtes — la tâche est appelée de l'extérieur, par le
+cron déclaré dans `vercel.json`.
+
+Le planificateur de Vercel n'émet que des **GET**, d'où `server/api/taches/purger.get.ts` à côté de
+la variante POST, les deux partageant le même garde-fou (`server/utils/taches.ts`). Sans en-tête
+`Authorization: Bearer <TACHES_CLE>`, la requête est refusée — et elle l'est aussi quand la clé
+n'est pas configurée, pour qu'une variable oubliée ne laisse pas la purge ouverte à tous.
+
+Vercel ajoute cet en-tête lui-même, à partir de `CRON_SECRET`. **Les deux variables doivent porter
+la même valeur**, sinon le cron reçoit un 401 :
+
+```bash
+TACHES_CLE='…'     # lue par l'application
+CRON_SECRET='…'    # même valeur, lue par le planificateur Vercel
+```
+
+Le plan Hobby limite à deux tâches et à un déclenchement par jour, à une heure approchée : l'horaire
+`0 3 * * *` est une intention, pas une garantie. Déclenchement manuel :
+
+```bash
+curl -X POST https://<site>/api/taches/purger -H "Authorization: Bearer $TACHES_CLE"
+```
 
 ## Reste à faire
 

@@ -45,22 +45,37 @@ useJsonLd(() => ({
   publisher: { '@type': 'Organization', name: 'E-Masterclass Big Five' },
 }))
 
+/**
+ * Le contenu de l'article est du texte, pas du HTML : chaque fragment est
+ * échappé avant d'être inséré dans le balisage. Sans cela, un article rédigé
+ * depuis le back-office pouvait porter du script exécuté chez tous les
+ * visiteurs du blog — page publique, donc XSS stocké de plein exercice.
+ */
+function echapper(texte: string): string {
+  return texte
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 /** Rendu léger du contenu éditorial (titres, listes, paragraphes). */
 const html = computed(() =>
   article.value.contenu
     .split('\n\n')
     .map((bloc) => {
       const t = bloc.trim()
-      if (t.startsWith('### ')) return `<h3>${t.slice(4)}</h3>`
-      if (t.startsWith('## ')) return `<h2>${t.slice(3)}</h2>`
+      if (t.startsWith('### ')) return `<h3>${echapper(t.slice(4))}</h3>`
+      if (t.startsWith('## ')) return `<h2>${echapper(t.slice(3))}</h2>`
       if (/^\d+\.\s/.test(t)) {
         const items = t
           .split('\n')
-          .map((l) => `<li>${l.replace(/^\d+\.\s/, '')}</li>`)
+          .map((l) => `<li>${echapper(l.replace(/^\d+\.\s/, ''))}</li>`)
           .join('')
         return `<ol class="my-4 list-decimal space-y-1.5 pl-6 text-[15.5px] text-texte">${items}</ol>`
       }
-      return `<p>${t}</p>`
+      return `<p>${echapper(t)}</p>`
     })
     .join(''),
 )

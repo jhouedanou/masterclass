@@ -324,8 +324,20 @@ export async function verifierEtRapprocher(
   // En sandbox, le SDK FeexPay n'ouvre aucune transaction chez le prestataire :
   // il rend une référence fictive `ref_…` après un succès joué dans le
   // navigateur. On la tient pour un succès du montant attendu, ce qui permet
-  // de dérouler tout le tunnel sans débit. Jamais en live.
-  if (mode === 'sandbox' && referenceFeexPay?.startsWith('ref_')) {
+  // de dérouler tout le tunnel sans débit.
+  //
+  // Ce raccourci ne croit que le navigateur : n'importe quel compte connecté
+  // peut poster `{ referenceFeexPay: 'ref_x' }` sur la confirmation et
+  // s'ouvrir les accès sans payer. Il est donc doublement fermé — mode
+  // `sandbox` ET hors production. `configFeexPay()` n'interdit que le mode
+  // `simulation` en production : une recette bâtie en production contre le
+  // bac à sable de FeexPay (le cas de ce dépôt, `FEEXPAY_MODE=sandbox`)
+  // passait sinon ici et distribuait les modules gratuitement.
+  if (
+    mode === 'sandbox' &&
+    process.env.NODE_ENV !== 'production' &&
+    referenceFeexPay?.startsWith('ref_')
+  ) {
     return await rapprocherCommande(commande, {
       reference: `${referenceFeexPay}-${commande.reference}`,
       statut: 'SUCCESSFUL',

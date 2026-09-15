@@ -50,6 +50,7 @@ import type {
   TransactionRow,
   UtilisateurRow,
 } from './types'
+import { urlPhoto } from '../utils/photos'
 
 /**
  * Conversion entre les lignes SQL (snake_case) et les types métier de
@@ -235,6 +236,8 @@ export function versUtilisateur(row: UtilisateurRow): Utilisateur {
     supprimeLe: row.supprime_le,
     suppressionPrevueLe: row.suppression_prevue_le,
     motDePasseMajLe: row.mot_de_passe_maj_le,
+    // La base garde le chemin dans le seau ; les vues reçoivent l'URL prête à poser dans un `src`.
+    photo: urlPhoto(row.photo),
   }
 }
 

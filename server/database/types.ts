@@ -209,6 +209,8 @@ export type UtilisateurRow = {
   suppression_prevue_le: string | null
   mot_de_passe_maj_le: string | null
   derniere_reactivation_le: string | null
+  /** Chemin dans le seau « photos-profil », jamais une URL. */
+  photo: string | null
   cree_le: string
 }
 
@@ -623,6 +625,7 @@ export type Database = {
         | 'suppression_prevue_le'
         | 'mot_de_passe_maj_le'
         | 'derniere_reactivation_le'
+        | 'photo'
       >
       codes_verification: Table<CodeVerificationRow, 'id' | 'cree_le' | 'utilise_le' | 'tentatives'>
       connexions: Table<ConnexionRow, 'id' | 'cree_le' | 'ip' | 'appareil' | 'utilisateur_id'>

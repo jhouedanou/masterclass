@@ -1,5 +1,7 @@
+import { randomBytes } from 'node:crypto'
 import type { Acces, Persona, PreferencesNotifications, ProgrammeSlug, SectionAdmin, Utilisateur } from '#shared/types'
 import { calculerCompletionProfil } from '#shared/utils/profil'
+import { SEAU_PHOTOS, type FormatPhoto } from '../utils/photos'
 import { supabase } from './client'
 import { traduireErreur, verifier, verifierOptionnel, verifierUn } from './erreurs'
 import { versAcces, versPersona, versUtilisateur } from './mappers'
@@ -164,6 +166,126 @@ export async function majPreferencesNotifications(
   return versUtilisateur(row)
 }
 
+// --- Complétion de la fiche apprenant --------------------------------------
+
+/**
+ * Recalcule la complétion et reporte `fiche_completee`, source de vérité de
+ * `reserver_place_session` (EM403).
+ *
+ * Toute écriture qui touche un champ compté doit passer par ici — la fiche
+ * persona, mais aussi la photo, qui compte depuis qu'elle figure dans
+ * `CHAMPS_COMMUNS`. Sans cet appel, déposer la dernière pièce manquante
+ * afficherait 100 % sans rouvrir l'accès aux coaching sessions, et la retirer
+ * laisserait le drapeau à vrai.
+ */
+async function reporterCompletion(
+  utilisateurId: string,
+  persona?: Persona | null,
+  programme: ProgrammeSlug | null = null,
+): Promise<number> {
+  const utilisateur = await trouverUtilisateur(utilisateurId)
+  const { pourcentage } = calculerCompletionProfil(
+    utilisateur ?? { prenom: '', nom: '' },
+    persona ?? (await trouverPersona(utilisateurId)),
+    programme ?? (await programmeDeReference(utilisateurId)),
+  )
+  verifier(
+    await supabase()
+      .from('utilisateurs')
+      .update({ fiche_completee: pourcentage === 100 })
+      .eq('id', utilisateurId)
+      .select('id'),
+    'état de la fiche apprenant',
+  )
+  return pourcentage
+}
+
+// --- Photo de profil (planche B, écran 04) ---------------------------------
+
+/** Chemin de la photo dans le seau, pour la remplacer ou la supprimer. */
+async function cheminPhoto(utilisateurId: string): Promise<string | null> {
+  const row = verifierOptionnel(
+    await supabase().from('utilisateurs').select('photo').eq('id', utilisateurId).maybeSingle(),
+    'photo de profil',
+  )
+  return row?.photo ?? null
+}
+
+/**
+ * Efface un objet du seau. Volontairement silencieux : un fichier déjà absent
+ * (seau purgé, double suppression) ne doit pas faire échouer l'opération
+ * métier qui l'accompagne — le remplacement de la photo ou la suppression du
+ * compte.
+ */
+async function effacerObjetPhoto(chemin: string | null): Promise<void> {
+  if (!chemin) return
+  await supabase().storage.from(SEAU_PHOTOS).remove([chemin])
+}
+
+/**
+ * Dépose la photo de profil et la rattache au compte.
+ *
+ * Le nom de l'objet est entièrement fabriqué ici — identifiant du compte, puis
+ * seize octets d'aléa et l'extension déduite des octets du fichier. Le nom
+ * envoyé par le navigateur n'est jamais réutilisé : il porterait sinon des
+ * séparateurs de chemin ou une extension mensongère.
+ *
+ * L'ancienne photo n'est effacée qu'une fois la nouvelle en place et la base à
+ * jour : interrompu avant, le compte garde une photo valable, et au pire un
+ * objet orphelin subsiste — préférable à un profil qui pointe vers le vide.
+ */
+export async function deposerPhoto(
+  utilisateurId: string,
+  contenu: Buffer,
+  format: FormatPhoto,
+): Promise<Utilisateur> {
+  const ancien = await cheminPhoto(utilisateurId)
+  const chemin = `${utilisateurId}/${randomBytes(16).toString('hex')}.${format.extension}`
+
+  const { error } = await supabase()
+    .storage.from(SEAU_PHOTOS)
+    .upload(chemin, contenu, { contentType: format.type, upsert: false })
+  if (error) {
+    throw createError({
+      statusCode: 502,
+      statusMessage: `Dépôt de la photo impossible — ${error.message}`,
+    })
+  }
+
+  let row
+  try {
+    row = verifierUn(
+      await supabase().from('utilisateurs').update({ photo: chemin }).eq('id', utilisateurId).select('*').maybeSingle(),
+      'photo de profil',
+      'Compte introuvable',
+    )
+  } catch (erreur) {
+    // La base a refusé : le fichier tout juste déposé n'est rattaché à rien.
+    await effacerObjetPhoto(chemin)
+    throw erreur
+  }
+
+  await effacerObjetPhoto(ancien)
+  // La photo est un champ compté : elle peut porter la fiche à 100 %. Le compte
+  // est relu après coup, sinon la réponse porterait le `fiche_completee`
+  // d'avant le recalcul.
+  await reporterCompletion(utilisateurId)
+  return (await trouverUtilisateur(utilisateurId)) ?? versUtilisateur(row)
+}
+
+/** Retire la photo : le compte retombe sur ses initiales, et sous les 100 %. */
+export async function retirerPhoto(utilisateurId: string): Promise<Utilisateur> {
+  const ancien = await cheminPhoto(utilisateurId)
+  const row = verifierUn(
+    await supabase().from('utilisateurs').update({ photo: null }).eq('id', utilisateurId).select('*').maybeSingle(),
+    'retrait de la photo',
+    'Compte introuvable',
+  )
+  await effacerObjetPhoto(ancien)
+  await reporterCompletion(utilisateurId)
+  return (await trouverUtilisateur(utilisateurId)) ?? versUtilisateur(row)
+}
+
 /**
  * Suppression douce (planche B, écran 12). Le compte devient inaccessible et
  * son e-mail est libéré pour une éventuelle réinscription ; commandes,
@@ -238,6 +360,8 @@ export async function listerSuppressionsJ3(): Promise<Utilisateur[]> {
 }
 
 export async function marquerSupprime(id: string): Promise<void> {
+  // Le chemin est relu avant l'anonymisation, qui l'efface de la ligne.
+  const photo = await cheminPhoto(id)
   verifierUn(
     await supabase()
       .from('utilisateurs')
@@ -247,6 +371,7 @@ export async function marquerSupprime(id: string): Promise<void> {
         mot_de_passe_hache: null,
         email: `supprime-${id}@compte-supprime.invalid`,
         whatsapp: null,
+        photo: null,
       })
       .eq('id', id)
       .is('supprime_le', null)
@@ -255,6 +380,8 @@ export async function marquerSupprime(id: string): Promise<void> {
     'suppression du compte',
     'Compte introuvable',
   )
+  // Donnée personnelle : le portrait part avec l'e-mail et le numéro.
+  await effacerObjetPhoto(photo)
 }
 
 export async function trouverPersona(utilisateurId: string): Promise<Persona | null> {
@@ -308,21 +435,8 @@ export async function majPersona(
       .single(),
     'fiche apprenant',
   )
-  const utilisateur = await trouverUtilisateur(utilisateurId)
   const resultat = versPersona(row)
-  const { pourcentage } = calculerCompletionProfil(
-    utilisateur ?? { prenom: '', nom: '' },
-    resultat,
-    programme ?? (await programmeDeReference(utilisateurId)),
-  )
-  verifier(
-    await supabase()
-      .from('utilisateurs')
-      .update({ fiche_completee: pourcentage === 100 })
-      .eq('id', utilisateurId)
-      .select('id'),
-    'état de la fiche apprenant',
-  )
+  const pourcentage = await reporterCompletion(utilisateurId, resultat, programme)
   return { persona: resultat, completion: pourcentage }
 }
 

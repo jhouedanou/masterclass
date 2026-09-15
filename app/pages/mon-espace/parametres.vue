@@ -101,8 +101,9 @@ const suppression = ref(false)
           </div>
           <UiBaseButton taille="sm" variante="contour" @click="ouvert = ouvert === 'whatsapp' ? '' : 'whatsapp'">Modifier</UiBaseButton>
         </div>
-        <form v-if="ouvert === 'whatsapp'" class="mt-4 flex flex-wrap gap-3" @submit.prevent="changerWhatsapp">
-          <input v-model="whatsapp" type="tel" required placeholder="+225 07 09 88 12 34" class="min-w-[240px] flex-1 rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+        <form v-if="ouvert === 'whatsapp'" class="mt-4 flex flex-wrap items-start gap-3" @submit.prevent="changerWhatsapp">
+          <!-- Même composant que la fiche apprenant : un seul masque pour un seul champ. -->
+          <UiChampTelephone v-model="whatsapp" :pays="auth.utilisateur?.pays" class="min-w-[280px] flex-1" />
           <UiBaseButton type="submit" taille="sm" variante="sombre">Enregistrer</UiBaseButton>
         </form>
         <p v-if="messages.whatsapp" class="mt-2 text-[13.5px] text-succes">{{ messages.whatsapp }}</p>

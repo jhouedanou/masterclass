@@ -3,6 +3,8 @@ definePageMeta({ middleware: 'auth' })
 
 const achat = useAchatStore()
 const conditions = ref(false)
+/** Les CGV s'ouvrent en surimpression : quitter la page ferait perdre sa place à l'acheteur. */
+const cgvOuvertes = ref(false)
 
 usePagePrivee('Vérifiez votre achat')
 
@@ -67,7 +69,8 @@ async function annuler() {
       <span>
         Je reconnais acheter un <b>contenu numérique à accès immédiat</b> et accepte que la vente
         soit <b>ferme et définitive</b> après confirmation, conformément aux
-        <NuxtLink to="/cgv" class="font-bold">CGV</NuxtLink>.
+        <!-- `.stop` : le bouton est dans le `<label>`, son clic cocherait la case. -->
+        <button type="button" class="font-bold underline" @click.stop="cgvOuvertes = true">CGV</button>.
       </span>
     </label>
 
@@ -83,6 +86,8 @@ async function annuler() {
     <p class="mt-3 text-center text-[13px] text-discret">
       Vous serez redirigé vers FeexPay pour régler votre achat.
     </p>
+
+    <LegalModaleCgv v-if="cgvOuvertes" @fermer="cgvOuvertes = false" />
     <p class="mt-5 text-center">
       <button type="button" class="text-[14px] text-discret hover:text-encre hover:underline" @click="annuler">
         ← Revenir en arrière ou annuler

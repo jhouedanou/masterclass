@@ -39,3 +39,7 @@ docs/email-testeurs.md
 # Un seul gestionnaire de paquets : npm. package-lock.json fait foi.
 pnpm-lock.yaml
 yarn.lock
+
+# Artefacts des plateformes de déploiement
+.vercel
+.wrangler
