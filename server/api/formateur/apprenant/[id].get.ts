@@ -1,4 +1,4 @@
-import { libellesReferentiel } from '#shared/utils/referentiels'
+import { libellesPaires, libellesReferentiel } from '#shared/utils/referentiels'
 import { listerModules } from '../../../database/catalogue'
 import {
   listerDemandesCoachingPriveFormateur,
@@ -103,7 +103,8 @@ export default defineEventHandler(async (event) => {
           reseaux: libellesReferentiel(persona.reseaux ?? persona.canaux, referentiels),
           objectif: persona.objectif ?? persona.defi ?? '',
           entreprise: persona.entreprise ?? '',
-          audience: persona.audience ?? '',
+          // Paires réseau:tranche — « Instagram : 1 000 à 10 000 abonnés ».
+          audience: libellesPaires(persona.audience, referentiels),
         }
       : null,
     progressions,

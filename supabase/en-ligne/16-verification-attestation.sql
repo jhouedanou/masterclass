@@ -4,7 +4,7 @@
 -- FICHIER GÉNÉRÉ : ne pas éditer à la main.
 -- Régénération : npm run db:sql
 --
--- Migration 16 sur 18 · source : 20260921120100_verification_attestation.sql
+-- Migration 16 sur 20 · source : 20260921120100_verification_attestation.sql
 --
 -- À exécuter dans SQL Editor du projet Supabase, dans l'ordre des numéros.
 -- Ces scripts ne sont pas rejouables : sur une base déjà installée,

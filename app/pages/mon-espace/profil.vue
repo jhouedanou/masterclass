@@ -2,7 +2,7 @@
 import type { Persona, ProgrammeSlug, Utilisateur } from '#shared/types'
 import { CHAMPS_ENTREPRENEUR, CHAMPS_SOCIAL_MEDIA, NIVEAUX_EXPERIENCE, calculerCompletionProfil, champsProfil } from '#shared/utils/profil'
 import type { EntreeReferentiel } from '#shared/utils/referentiels'
-import { entreesDe, libellesReferentiel } from '#shared/utils/referentiels'
+import { entreesDe, joindrePaires, libellesPaires, libellesReferentiel, separerCles, separerPaires } from '#shared/utils/referentiels'
 
 definePageMeta({ layout: 'espace', middleware: 'auth' })
 usePagePrivee('Votre profil apprenant')
@@ -20,6 +20,31 @@ const { data: referentiels } = await useFetch<EntreeReferentiel[]>('/api/referen
 const reseaux = computed(() => entreesDe(referentiels.value, 'reseau'))
 const outils = computed(() => entreesDe(referentiels.value, 'outil'))
 const canaux = computed(() => entreesDe(referentiels.value, 'canal'))
+const tranches = computed(() => entreesDe(referentiels.value, 'audience'))
+
+// La taille d'audience se renseigne réseau par réseau : la liste des lignes à
+// afficher suit donc la sélection de « Réseaux gérés », et non l'inverse.
+const reseauxChoisis = computed(() =>
+  separerCles(formulaire.reseaux).map((cle) => ({
+    cle,
+    libelle: reseaux.value.find((e) => e.cle === cle)?.libelle ?? cle,
+  })),
+)
+
+const audiences = computed(() => separerPaires(formulaire.audience))
+
+/** Une tranche vidée retire la paire ; les réseaux désélectionnés sont écartés
+ *  au passage, pour que la valeur stockée ne traîne pas de tranche orpheline. */
+function definirAudience(cle: string, tranche: string) {
+  const suivant: Record<string, string> = { ...audiences.value }
+  if (tranche) suivant[cle] = tranche
+  else delete suivant[cle]
+
+  const retenus = new Set(separerCles(formulaire.reseaux))
+  formulaire.audience = joindrePaires(
+    Object.fromEntries(Object.entries(suivant).filter(([k]) => retenus.has(k))),
+  )
+}
 
 const formulaire = reactive<Persona & { prenom: string; nom: string; whatsapp: string }>({
   prenom: data.value?.utilisateur.prenom ?? '',
@@ -76,6 +101,10 @@ function libelleValeur(cle: string): string {
   if (CHAMPS_REFERENTIEL.includes(cle as ChampReferentiel)) {
     return libellesReferentiel(String(valeurs.value[cle] ?? ''), referentiels.value)
   }
+  // Paires réseau:tranche — « Instagram : 1 000 à 10 000 abonnés ».
+  if (cle === 'audience') return libellesPaires(String(valeurs.value[cle] ?? ''), referentiels.value)
+  // Saisie libre à plusieurs valeurs : la virgule sépare, l'aperçu l'espace.
+  if (cle === 'clients') return separerCles(String(valeurs.value[cle] ?? '')).join(', ')
   return String(valeurs.value[cle])
 }
 
@@ -163,7 +192,6 @@ edition.value = completion.value < 100
 const STADES = ['En projet / idée', 'Lancement (< 2 ans)', 'En croissance (2 ans et +)']
 const TAILLES = ['Seul(e)', '2 à 5 personnes', '6 à 20 personnes', 'Plus de 20']
 const BUDGETS = ['Moins de 50 000 FCFA', '50 000 – 150 000 FCFA', '150 000 – 500 000 FCFA', 'Plus de 500 000 FCFA']
-const AUDIENCES = ['Moins de 1 000 abonnés', '1 000 à 10 000 abonnés', '10 000 à 100 000 abonnés', 'Plus de 100 000 abonnés']
 
 const CHAMP = 'w-full rounded-[10px] border px-4 py-2.5 text-[15px] focus:outline-none disabled:bg-fond-clair disabled:text-texte'
 const classe = computed(() => [CHAMP, edition.value ? 'border-ligne focus:border-social' : 'border-ligne-claire'])
@@ -374,13 +402,28 @@ async function enregistrer() {
               aria-labelledby="champ-reseaux"
             />
           </div>
-          <label class="block">
+          <div class="block sm:col-span-2">
             <span class="mb-1.5 block text-[13px] font-bold text-texte">Taille d’audience approximative</span>
-            <select v-model="formulaire.audience" :class="[...classe, 'bg-white']">
-              <option value="">Choisir…</option>
-              <option v-for="a in AUDIENCES" :key="a">{{ a }}</option>
-            </select>
-          </label>
+            <p v-if="!reseauxChoisis.length" class="rounded-[12px] border border-dashed border-ligne p-3 text-[13px] text-discret">
+              Sélectionnez d’abord vos réseaux : la tranche se renseigne réseau par réseau.
+            </p>
+            <ul v-else class="grid gap-2 sm:grid-cols-2">
+              <li v-for="reseau in reseauxChoisis" :key="reseau.cle" class="flex items-center gap-2">
+                <span :id="`aud-${reseau.cle}`" class="w-[38%] shrink-0 truncate text-[13px] text-texte">
+                  {{ reseau.libelle }}
+                </span>
+                <select
+                  :value="audiences[reseau.cle] ?? ''"
+                  :aria-labelledby="`aud-${reseau.cle}`"
+                  :class="[...classe, 'bg-white']"
+                  @change="definirAudience(reseau.cle, ($event.target as HTMLSelectElement).value)"
+                >
+                  <option value="">Non renseignée</option>
+                  <option v-for="t in tranches" :key="t.cle" :value="t.cle">{{ t.libelle }}</option>
+                </select>
+              </li>
+            </ul>
+          </div>
           <div class="block">
             <span id="champ-outils" class="mb-1.5 block text-[13px] font-bold text-texte">Outils utilisés</span>
             <UiChampMultiChoix
@@ -390,10 +433,15 @@ async function enregistrer() {
               aria-labelledby="champ-outils"
             />
           </div>
-          <label class="block">
-            <span class="mb-1.5 block text-[13px] font-bold text-texte">Clients / marques accompagnés</span>
-            <input v-model="formulaire.clients" :class="classe" placeholder="Une marque de cosmétiques, un restaurant…">
-          </label>
+          <div class="block">
+            <span id="champ-clients" class="mb-1.5 block text-[13px] font-bold text-texte">Clients / marques accompagnés</span>
+            <UiChampTags
+              id="champ-clients"
+              v-model="formulaire.clients"
+              :disabled="!edition"
+              placeholder="Une marque de cosmétiques…"
+            />
+          </div>
         </fieldset>
 
         <p v-else class="mt-8 rounded-[12px] border border-dashed border-ligne p-4 text-[13.5px] text-discret">

@@ -1402,8 +1402,9 @@ export const personas: Record<string, Persona> = {
     niveau: 'intermediaire',
     experience: '1 à 3 ans',
     reseaux: 'instagram,tiktok',
-    audience: '1 000 à 10 000 abonnés',
+    audience: 'instagram:1k-10k,tiktok:moins-1k',
     outils: 'canva,capcut',
+    clients: 'Une marque de cosmétiques,Un restaurant',
     objectif: 'Signer 3 clients d’ici décembre',
   },
   'usr-moussa': {

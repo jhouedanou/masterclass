@@ -20,7 +20,7 @@
  * toutes les fiches, sans migration.
  */
 
-export type CategorieReferentiel = 'reseau' | 'outil' | 'canal'
+export type CategorieReferentiel = 'reseau' | 'outil' | 'canal' | 'audience'
 
 export interface EntreeReferentiel {
   id: string
@@ -38,6 +38,7 @@ export const CATEGORIES: { valeur: CategorieReferentiel; libelle: string; usage:
   { valeur: 'reseau', libelle: 'Réseaux sociaux', usage: 'Réseaux gérés · Présence en ligne' },
   { valeur: 'outil', libelle: 'Outils', usage: 'Outils utilisés' },
   { valeur: 'canal', libelle: 'Canaux de vente', usage: 'Canaux de vente actuels' },
+  { valeur: 'audience', libelle: 'Tranches d’audience', usage: 'Taille d’audience, réseau par réseau' },
 ]
 
 /**
@@ -101,4 +102,50 @@ export function cleDepuisLibelle(libelle: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 40)
+}
+
+/**
+ * Valeurs appariées : une clé de réseau, une tranche d'audience.
+ *
+ * Même convention que les listes simples — segments séparés par des virgules —
+ * avec un `:` à l'intérieur de chaque segment : `instagram:1k-10k,tiktok:plus-100k`.
+ * La colonne reste du `text`, et `renseigne()` continue de compter le champ à
+ * l'identique : les pourcentages de complétion ne bougent pas.
+ */
+export function separerPaires(valeur: string | null | undefined): Record<string, string> {
+  const paires: Record<string, string> = {}
+  for (const segment of separerCles(valeur)) {
+    const coupure = segment.indexOf(':')
+    // Un segment sans `:` est une valeur d'avant l'appariement : on l'ignore
+    // plutôt que de l'attribuer au hasard à un réseau.
+    if (coupure <= 0) continue
+    const cle = segment.slice(0, coupure).trim()
+    const valeurPaire = segment.slice(coupure + 1).trim()
+    if (cle && valeurPaire) paires[cle] = valeurPaire
+  }
+  return paires
+}
+
+/** Recompose la valeur à stocker, en écartant les paires vides. */
+export function joindrePaires(paires: Record<string, string | undefined>): string {
+  return Object.entries(paires)
+    .filter(([cle, valeur]) => cle && valeur)
+    .map(([cle, valeur]) => `${cle}:${valeur}`)
+    .join(',')
+}
+
+/**
+ * Rend les paires lisibles : « Instagram : 1 000 à 10 000 abonnés ».
+ *
+ * Comme `libellesReferentiel`, une clé inconnue est rendue telle quelle plutôt
+ * qu'escamotée.
+ */
+export function libellesPaires(
+  valeur: string | null | undefined,
+  entrees: readonly EntreeReferentiel[],
+): string {
+  const libelle = (cle: string) => entrees.find((e) => e.cle === cle)?.libelle ?? cle
+  return Object.entries(separerPaires(valeur))
+    .map(([cle, tranche]) => `${libelle(cle)} : ${libelle(tranche)}`)
+    .join(' · ')
 }

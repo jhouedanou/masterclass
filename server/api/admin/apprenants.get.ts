@@ -1,4 +1,4 @@
-import { libellesReferentiel } from '#shared/utils/referentiels'
+import { libellesPaires, libellesReferentiel, separerCles } from '#shared/utils/referentiels'
 import { listerModules } from '../../database/catalogue'
 import { listerCertificats, listerTransactions } from '../../database/commerce'
 import { listerAcces, listerPersonas, listerUtilisateurs } from '../../database/comptes'
@@ -78,6 +78,8 @@ export default defineEventHandler(async (event) => {
           outils: libellesReferentiel(persona.outils, referentiels),
           canaux: libellesReferentiel(persona.canaux, referentiels),
           presenceEnLigne: libellesReferentiel(persona.presenceEnLigne, referentiels),
+          audience: libellesPaires(persona.audience, referentiels),
+          clients: separerCles(persona.clients).join(', '),
         },
         montantPaye: transactions
           .filter((t) => t.utilisateurId === u.id && t.statut === 'reussie')

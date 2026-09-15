@@ -52,7 +52,7 @@ export type CodeEchecPaiementSql =
   | 'doublon'
   | 'erreur-inconnue'
 export type OrigineNoteSql = 'collective' | 'privee'
-export type CategorieReferentielSql = 'reseau' | 'outil' | 'canal'
+export type CategorieReferentielSql = 'reseau' | 'outil' | 'canal' | 'audience'
 export type CleBlocVitrineSql = 'accueil' | 'banniere' | 'programmes' | 'annonce' | 'legales'
 export type SectionAdminSql =
   | 'administration-acces'

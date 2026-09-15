@@ -1,5 +1,5 @@
 import type { Persona } from '#shared/types'
-import { cleValide, separerCles } from '#shared/utils/referentiels'
+import { cleValide, separerCles, separerPaires } from '#shared/utils/referentiels'
 import { validerTelephone } from '#shared/utils/telephone'
 import { majPersona, majProfilUtilisateur } from '../../../database/comptes'
 import { exigerUtilisateur } from '../../../utils/session'
@@ -64,6 +64,35 @@ export default defineEventHandler(async (event) => {
         statusMessage: `Valeur non reconnue pour « ${LIBELLES_REFERENTIEL[champ]} »`,
       })
     }
+  }
+
+  // La taille d'audience porte des paires `reseau:tranche` : les deux moitiés
+  // sont des clés de référentiel. Un segment mal formé est ignoré par
+  // `separerPaires`, donc on compare les comptes pour ne rien laisser passer en
+  // silence.
+  const audience = body.persona?.audience
+  if (audience) {
+    const paires = Object.entries(separerPaires(audience))
+    const malForme =
+      paires.length !== separerCles(audience).length ||
+      paires.some(([reseau, tranche]) => !cleValide(reseau) || !cleValide(tranche))
+    if (malForme) {
+      throw createError({
+        statusCode: 422,
+        statusMessage: 'Valeur non reconnue pour « Taille d’audience »',
+      })
+    }
+  }
+
+  // « Clients / marques » reste en saisie libre — ce sont des noms propres à
+  // chaque apprenant, aucun référentiel ne peut les couvrir. Seule la forme est
+  // tenue : des valeurs courtes, en nombre borné.
+  const clients = separerCles(body.persona?.clients)
+  if (clients.length > 12 || clients.some((c) => c.length > 60)) {
+    throw createError({
+      statusCode: 422,
+      statusMessage: 'Clients / marques : 12 entrées au maximum, 60 caractères chacune',
+    })
   }
 
   const compte = await majProfilUtilisateur(utilisateur.id, {
