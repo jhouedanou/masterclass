@@ -32,6 +32,19 @@ alter table chapitres
   add column script_nom_fichier  text,
   add column script_importe_le   timestamptz;
 
+-- Les lignes existantes sont mises en conformité AVANT la contrainte.
+-- L'ordre inverse passe sur une base neuve — le jeu de données arrive après les
+-- migrations, la table est donc vide — et échoue sur une base en service, où
+-- des chapitres portent déjà une clé vidéo.
+
+-- Les vidéos déjà en place sont antérieures à ce choix : elles sont en HLS.
+update chapitres set video_format = 'hls' where video_cle is not null;
+
+-- Les scripts du jeu de démonstration ont été saisis à la main.
+update chapitres
+   set script_format = 'manuel'
+ where jsonb_array_length(script) > 0;
+
 alter table chapitres
   add constraint chapitres_video_format_valeurs
     check (video_format is null or video_format in ('hls', 'fichier')),
@@ -43,14 +56,6 @@ alter table chapitres
     check (video_cle is null or video_format is not null),
   add constraint chapitres_script_format_valeurs
     check (script_format is null or script_format in ('srt', 'vtt', 'manuel'));
-
--- Les vidéos déjà en place sont antérieures à ce choix : elles sont en HLS.
-update chapitres set video_format = 'hls' where video_cle is not null;
-
--- Les scripts du jeu de démonstration ont été saisis à la main.
-update chapitres
-   set script_format = 'manuel'
- where jsonb_array_length(script) > 0;
 
 comment on column chapitres.video_format is
   'hls = dossier de manifestes produit par ffmpeg (démonstrations historiques) ; fichier = MP4 unique déposé depuis l''administration. Décide du fichier demandé au diffuseur et du chemin de lecture côté navigateur.';
