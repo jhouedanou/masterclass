@@ -13,9 +13,32 @@ interface DonneesSession {
   utilisateurId?: string
   /** Connexion admin en deux temps : mot de passe accepté, code attendu. */
   adminEnAttenteId?: string
+  /**
+   * Début de cette attente, en millisecondes.
+   *
+   * Le code par e-mail expirait en base au bout de dix minutes, ce qui bornait
+   * l'étape 2 sans que la session s'en mêle. Un TOTP n'expire nulle part : sans
+   * cet horodatage, une attente ouverte vivrait aussi longtemps que le cookie,
+   * soit une semaine.
+   */
+  adminEnAttenteDepuis?: number
+  /**
+   * Codes refusés depuis le début de l'attente.
+   *
+   * Le plafond de cinq essais tenait à `codes_verification.tentatives`, qui
+   * disparaît avec le code en base. Sans compteur ici, quelqu'un tenant le mot
+   * de passe pourrait marteler les six chiffres sans limite.
+   */
+  adminEchecs?: number
   /** Session longue demandée à la connexion (« Rester connecté »). */
   longue?: boolean
 }
+
+/** Au-delà, l'étape 2 est refermée : il faut ressaisir le mot de passe. */
+export const ATTENTE_ADMIN_MINUTES = 10
+
+/** Nombre de codes refusés avant de refermer l'étape 2. */
+export const ECHECS_ADMIN_MAX = 5
 
 /**
  * Session applicative : cookie scellé par h3 (chiffré et signé, iron).
@@ -84,19 +107,61 @@ export async function ouvrirSession(
   options: { longue?: boolean } = {},
 ) {
   const courante = await session(event, options.longue === true)
-  await courante.update({ utilisateurId: utilisateur.id, adminEnAttenteId: undefined, longue: options.longue === true })
+  await courante.update({
+    utilisateurId: utilisateur.id,
+    adminEnAttenteId: undefined,
+    adminEnAttenteDepuis: undefined,
+    adminEchecs: undefined,
+    longue: options.longue === true,
+  })
 }
 
 /** Étape 1 de la connexion admin (planche C, écran 08) : le mot de passe est
  *  bon, la session ne s'ouvre qu'après le code. */
 export async function ouvrirSessionPartielle(event: H3Event, utilisateurId: string) {
   const courante = await session(event)
-  await courante.update({ adminEnAttenteId: utilisateurId })
+  await courante.update({
+    adminEnAttenteId: utilisateurId,
+    adminEnAttenteDepuis: Date.now(),
+    adminEchecs: 0,
+  })
 }
 
+/**
+ * Compte en attente du second facteur, `null` si l'attente est absente,
+ * périmée ou épuisée. Une attente hors délai est effacée au passage, pour ne
+ * pas laisser traîner un demi-droit dans le cookie.
+ */
 export async function lireSessionPartielle(event: H3Event): Promise<string | null> {
-  const { data } = await session(event)
-  return data.adminEnAttenteId ?? null
+  const courante = await session(event)
+  const { adminEnAttenteId, adminEnAttenteDepuis, adminEchecs } = courante.data
+  if (!adminEnAttenteId) return null
+
+  const perimee =
+    !adminEnAttenteDepuis || Date.now() - adminEnAttenteDepuis > ATTENTE_ADMIN_MINUTES * 60_000
+  if (perimee || (adminEchecs ?? 0) >= ECHECS_ADMIN_MAX) {
+    await fermerAttenteAdmin(event)
+    return null
+  }
+  return adminEnAttenteId
+}
+
+/** Compte un code refusé et dit s'il reste des essais. */
+export async function compterEchecAdmin(event: H3Event): Promise<{ restants: number }> {
+  const courante = await session(event)
+  const echecs = (courante.data.adminEchecs ?? 0) + 1
+  await courante.update({ adminEchecs: echecs })
+  if (echecs >= ECHECS_ADMIN_MAX) await fermerAttenteAdmin(event)
+  return { restants: Math.max(0, ECHECS_ADMIN_MAX - echecs) }
+}
+
+export async function fermerAttenteAdmin(event: H3Event) {
+  const courante = await session(event)
+  await courante.update({
+    adminEnAttenteId: undefined,
+    adminEnAttenteDepuis: undefined,
+    adminEchecs: undefined,
+  })
 }
 
 export async function fermerSession(event: H3Event) {

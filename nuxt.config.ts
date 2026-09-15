@@ -47,6 +47,9 @@ export default defineNuxtConfig({
     // code avec son SMTP) ou `aucun` (double vérification suspendue) — voir
     // server/utils/codeAdmin.ts.
     codeAdminFournisseur: process.env.CODE_ADMIN_FOURNISSEUR || 'interne',
+    // Chiffre les secrets TOTP au repos. Distincte du scellement de session :
+    // compromettre l'une ne doit pas livrer l'autre.
+    totpCle: process.env.TOTP_CLE || '',
 
     // Accès à la base Supabase. La clé secrète (`sb_secret_…`, nouveau système
     // de clés — l'ancienne `service_role` reste acceptée en secours) contourne

@@ -75,12 +75,14 @@ Connexion par e-mail et mot de passe, selon la planche C (« Connexion sécuris�
 Le compte est relu en base à chaque requête : révoquer un droit ou supprimer un compte prend effet
 immédiatement, sans attendre l'expiration de la session.
 
-**Deux points restent ouverts**, faute de fournisseur d'envoi :
+La **double vérification** des comptes d'administration se fait par application
+d'authentification (TOTP, RFC 6238) : `CODE_ADMIN_FOURNISSEUR=totp`. Rien n'est envoyé — c'est
+tout l'intérêt, puisqu'aucun fournisseur d'e-mail n'est branché. Voir « Double authentification
+admin » plus bas.
 
-- la **double vérification** par code à six chiffres (e-mail + WhatsApp) prévue par la maquette :
-  la table `codes_verification` est en place, l'étape n'est pas activée ;
-- le **lien de réinitialisation** n'est pas envoyé par e-mail — il est journalisé côté serveur,
-  à transmettre à la main en attendant.
+**Un point reste ouvert**, faute de fournisseur d'envoi : le **lien de réinitialisation** de mot
+de passe n'est pas envoyé par e-mail — il est journalisé côté serveur, à transmettre à la main
+en attendant.
 
 ## Base de données
 
@@ -503,7 +505,35 @@ curl -X POST https://<site>/api/taches/purger -H "Authorization: Bearer $TACHES_
   `NOTIFICATIONS_DRIVER`. Tant qu'il n'y en a pas, la connexion admin et l'invitation d'un formateur
   se déroulent avec le code ou le lien lu dans les journaux (le lien d'invitation est aussi affiché
   à l'écran à l'administrateur).
-- **Code de connexion admin par Supabase Auth** : avec `CODE_ADMIN_FOURNISSEUR=supabase-auth`,
+- **Double authentification admin (TOTP)** : avec `CODE_ADMIN_FOURNISSEUR=totp`, le second
+  facteur vient d'une application d'authentification — Google Authenticator, Authy, le
+  gestionnaire de mots de passe du téléphone. Le secret est partagé une fois par QR code, à la
+  première connexion ; les codes se calculent ensuite hors ligne de part et d'autre. Rien ne
+  transite, donc rien à configurer ni à attendre. L'algorithme est écrit dans
+  `server/utils/totp.ts` avec `node:crypto`, sans dépendance, et vérifié sur les vecteurs de test
+  de la RFC 6238.
+
+  `TOTP_CLE` (32 caractères minimum, tirés au sort) chiffre les secrets au repos en AES-256-GCM.
+  Sans elle, l'enrôlement est refusé plutôt que d'écrire un secret en clair. La perdre rend les
+  secrets illisibles : chaque administrateur devra se réenrôler, ses codes de secours restant
+  valables entre-temps.
+
+  **Codes de secours.** Huit codes à usage unique sont remis à l'enrôlement, affichés une seule
+  fois — la base n'en garde que l'empreinte. Ils sont le seul moyen d'entrer quand le téléphone
+  est perdu, et s'utilisent à la place des six chiffres, dans le même champ.
+
+  **Si un administrateur perd téléphone et codes de secours**, un administrateur supérieur
+  réinitialise sa double authentification depuis `/admin/acces` : le compte rescanne un QR code
+  à sa prochaine connexion. L'opération est journalisée.
+
+  **Si plus aucun administrateur supérieur ne peut entrer** — le cas où tout le monde a perdu
+  son téléphone en même temps —, le verrou se lève en posant `CODE_ADMIN_FOURNISSEUR=aucun` le
+  temps d'une connexion : le mot de passe ouvre alors la session directement. Remettre `totp`
+  aussitôt après. À défaut d'accès aux variables d'environnement, la même chose en SQL :
+  `update utilisateurs set totp_secret = null, totp_active_le = null where email = '…';`
+
+- **Code de connexion admin par Supabase Auth** (voie historique) : avec
+  `CODE_ADMIN_FOURNISSEUR=supabase-auth`,
   Supabase Auth émet, envoie et vérifie le code à six chiffres (`signInWithOtp` / `verifyOtp`,
   `server/utils/codeAdmin.ts`). Le gabarit « Magic Link » doit porter `{{ .Token }}` :
   `npm run auth:configurer` le règle par l'API de gestion (jeton `SUPABASE_ACCESS_TOKEN` dans

@@ -47,6 +47,7 @@ const creation = reactive({
   sections: [] as SectionAdmin[],
 })
 const erreur = ref('')
+const message = ref('')
 const enCours = ref(false)
 
 function basculer(cle: SectionAdmin) {
@@ -110,6 +111,29 @@ async function enregistrerDroits() {
 
 const revocation = ref<Compte | null>(null)
 
+const totpEnCours = ref('')
+
+/**
+ * Dernier recours quand téléphone et codes de secours sont perdus : le compte
+ * se réenrôle à sa prochaine connexion. Affaiblissement temporaire, donc
+ * confirmation explicite et journalisation côté serveur.
+ */
+async function reinitialiserTotp(compte: { id: string; nom: string; email: string }) {
+  if (!confirm(`Réinitialiser la double authentification de ${compte.nom} (${compte.email}) ?\n\nSon application actuelle et ses codes de secours cesseront de fonctionner. Il devra scanner un nouveau QR code à sa prochaine connexion.`)) {
+    return
+  }
+  erreur.value = ''
+  totpEnCours.value = compte.id
+  try {
+    await $fetch('/api/admin/totp-reinitialiser', { method: 'POST', body: { utilisateurId: compte.id } })
+    message.value = `Double authentification réinitialisée pour ${compte.email} — modification journalisée.`
+  } catch (e) {
+    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Réinitialisation impossible.'
+  } finally {
+    totpEnCours.value = ''
+  }
+}
+
 async function revoquer() {
   if (!revocation.value) return
   try {
@@ -141,6 +165,9 @@ async function revoquer() {
       </UiBaseButton>
     </div>
 
+    <p v-if="message" class="mt-4 rounded-[10px] border border-succes bg-succes-voile px-4 py-3 text-[14px] text-succes">
+      {{ message }}
+    </p>
     <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-[#fdeeee] px-4 py-3 text-[14px] text-erreur">
       {{ erreur }}
     </p>
@@ -258,6 +285,14 @@ async function revoquer() {
             @click="ouvrirEdition(compte)"
           >
             Modifier les droits
+          </button>
+          <button
+            v-if="estSuperieur"
+            class="ml-3 text-[12.5px] underline"
+            :disabled="totpEnCours === compte.id"
+            @click="reinitialiserTotp(compte)"
+          >
+            {{ totpEnCours === compte.id ? 'Réinitialisation…' : 'Réinitialiser la 2FA' }}
           </button>
           <button
             v-if="compte.revocable"

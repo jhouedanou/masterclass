@@ -4,7 +4,7 @@
 -- FICHIER GÉNÉRÉ : ne pas éditer à la main.
 -- Régénération : npm run db:sql
 --
--- Migration 4 sur 21 · source : 20260828130000_authentification.sql
+-- Migration 4 sur 22 · source : 20260828130000_authentification.sql
 --
 -- À exécuter dans SQL Editor du projet Supabase, dans l'ordre des numéros.
 -- Ces scripts ne sont pas rejouables : sur une base déjà installée,
@@ -22,9 +22,12 @@
 -- Le hachage est fait côté Node (scrypt, `server/utils/motDePasse.ts`) : la
 -- base ne stocke que l'empreinte, jamais le mot de passe.
 --
--- La double vérification par code (e-mail + WhatsApp) prévue par la maquette
--- attend un fournisseur d'envoi : la table `codes_verification` est en place,
--- l'étape n'est pas encore activée.
+-- La double vérification prévue par la maquette repose ici sur `codes_verification`,
+-- pour un code à six chiffres transmis par e-mail. Faute de fournisseur d'envoi,
+-- cette voie n'a jamais servi en pratique : la plateforme est passée à une
+-- application d'authentification (TOTP), qui n'a rien à transmettre — voir
+-- `…_totp_admin.sql`. La table reste en place, le fournisseur étant
+-- interchangeable (`CODE_ADMIN_FOURNISSEUR`).
 -- ---------------------------------------------------------------------------
 
 -- ---------------------------------------------------------------------------

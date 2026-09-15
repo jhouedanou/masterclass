@@ -212,7 +212,20 @@ export type UtilisateurRow = {
   derniere_reactivation_le: string | null
   /** Chemin dans le seau « photos-profil », jamais une URL. */
   photo: string | null
+  /** Secret TOTP chiffré (AES-256-GCM). Ne sort jamais vers le client. */
+  totp_secret: string | null
+  totp_active_le: string | null
+  /** Dernier pas de temps consommé, verrou anti-rejeu. */
+  totp_dernier_pas: number | null
   cree_le: string
+}
+
+export type CodeSecoursRow = {
+  id: string
+  utilisateur_id: string
+  empreinte: string
+  cree_le: string
+  utilise_le: string | null
 }
 
 export type CodeVerificationRow = {
@@ -637,6 +650,9 @@ export type Database = {
         | 'mot_de_passe_maj_le'
         | 'derniere_reactivation_le'
         | 'photo'
+        | 'totp_secret'
+        | 'totp_active_le'
+        | 'totp_dernier_pas'
       >
       codes_verification: Table<CodeVerificationRow, 'id' | 'cree_le' | 'utilise_le' | 'tentatives'>
       connexions: Table<ConnexionRow, 'id' | 'cree_le' | 'ip' | 'appareil' | 'utilisateur_id'>
@@ -726,6 +742,7 @@ export type Database = {
       ressources_modules: Table<RessourceModuleRow, 'id' | 'cree_le' | 'position' | 'format'>
       versions_contenu: Table<VersionContenuRow, 'id' | 'cree_le'>
       referentiels: Table<ReferentielRow, 'ordre' | 'actif'>
+      codes_secours: Table<CodeSecoursRow, 'id' | 'cree_le' | 'utilise_le'>
     }
     // `{ [_ in never]: never }` est la forme qu'attend postgrest-js pour une
     // collection vide : `Record<string, never>` ne satisfait pas la contrainte

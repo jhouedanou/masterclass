@@ -1,4 +1,5 @@
 import { enregistrerTentative, trouverIdentifiants } from '../../../database/comptes'
+import { lireTotp } from '../../../database/totp'
 import { emettreCode, fournisseurCode } from '../../../utils/codeAdmin'
 import { verifierMotDePasse } from '../../../utils/motDePasse'
 import { ouvrirSession, ouvrirSessionPartielle } from '../../../utils/session'
@@ -54,6 +55,18 @@ export default defineEventHandler(async (event) => {
   if (fournisseurCode() === 'aucun') {
     await ouvrirSession(event, compte)
     return { etape: 'session' as const, utilisateur: compte }
+  }
+
+  // Application d'authentification : rien à émettre, mais il reste à savoir si
+  // ce compte est déjà enrôlé — sinon l'écran doit présenter le QR code plutôt
+  // qu'un champ de saisie.
+  if (fournisseurCode() === 'totp') {
+    const etat = await lireTotp(compte.id)
+    await ouvrirSessionPartielle(event, compte.id)
+    return {
+      etape: etat.secret && etat.activeLe ? ('totp' as const) : ('enrolement' as const),
+      fournisseur: 'totp' as const,
+    }
   }
 
   await emettreCode(compte)

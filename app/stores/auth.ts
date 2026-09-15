@@ -46,13 +46,17 @@ export const useAuthStore = defineStore('auth', () => {
   async function connexionAdmin(email: string, motDePasse: string) {
     const reponse = await $fetch<
       | { etape: 'code'; masque: string; whatsapp?: boolean; fournisseur?: 'interne' | 'supabase-auth' }
+      // Application d'authentification : rien n'est envoyé, donc ni adresse
+      // masquée ni délai. `enrolement` quand le compte n'a pas encore de secret.
+      | { etape: 'totp' | 'enrolement'; masque?: string; whatsapp?: boolean; fournisseur: 'totp' }
       | { etape: 'session'; utilisateur: Utilisateur }
     >('/api/auth/admin/connexion', { method: 'POST', body: { email, motDePasse } })
     if (reponse.etape === 'session') utilisateur.value = reponse.utilisateur
     return reponse
   }
 
-  /** Étape 2 : code à six chiffres. Ouvre la session. */
+  /** Étape 2 : code du second facteur — six chiffres, ou code de secours avec
+   *  une application d'authentification. Ouvre la session. */
   async function validerCode(code: string) {
     utilisateur.value = await $fetch<Utilisateur>('/api/auth/admin/verifier-code', {
       method: 'POST',

@@ -1,11 +1,19 @@
 import { trouverUtilisateur } from '../../../database/comptes'
-import { emettreCode } from '../../../utils/codeAdmin'
+import { emettreCode, fournisseurCode } from '../../../utils/codeAdmin'
 import { lireSessionPartielle } from '../../../utils/session'
 
 /** Renvoi du code : au plus un par minute, règle portée par le fournisseur
  *  (`codeAdmin.ts`) — de quoi couvrir un message perdu sans offrir un canal
  *  de harcèlement. */
 export default defineEventHandler(async (event) => {
+  // Rien à renvoyer quand le code se calcule dans l'application.
+  if (fournisseurCode() === 'totp') {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Le code est calculé par votre application : il n’y a rien à renvoyer.',
+    })
+  }
+
   const utilisateurId = await lireSessionPartielle(event)
   if (!utilisateurId) {
     throw createError({ statusCode: 401, statusMessage: 'Recommencez la connexion : aucune vérification en cours.' })

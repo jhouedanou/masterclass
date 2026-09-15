@@ -115,17 +115,17 @@ Débloque les six lignes qui affichent « — » dans l'écran Performances.
 - [ ] **Pilote d'envoi réel** dans `server/utils/notifications.ts` (e-mail puis WhatsApp) dès que
       le fournisseur est choisi — tous les points d'appel sont en place, y compris le code de la
       connexion admin.
-- [x] Double vérification à la connexion admin — `/admin/login`, code à six chiffres, 10 minutes,
-      renvoi limité à un par minute. Envoi par **Supabase Auth** (`CODE_ADMIN_FOURNISSEUR=supabase-auth`).
-- [ ] **Supabase Auth — SMTP personnalisé obligatoire.** Sur l'offre gratuite, Supabase refuse de
-      modifier le gabarit Magic Link tant qu'aucun SMTP personnalisé n'est configuré (réponse 400
-      « Email template modification is not available for free tier projects using the default
-      email provider »). Tant que ce n'est pas fait, l'e-mail ne porte qu'un lien, pas de code :
-      `CODE_ADMIN_FOURNISSEUR` reste sur `interne` (code dans la sortie du serveur). Dès qu'un
-      compte SMTP existe (Brevo, Resend, Gmail avec mot de passe d'application…) : renseigner
-      `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` et `SUPABASE_ACCESS_TOKEN` dans `.env`, lancer
-      `npm run auth:configurer` (pose le SMTP, le gabarit en français avec `{{ .Token }}` et
-      l'expiration à 10 min), puis passer `CODE_ADMIN_FOURNISSEUR=supabase-auth`.
+- [x] Double vérification à la connexion admin — `/admin/login`, par **application
+      d'authentification** (TOTP, `CODE_ADMIN_FOURNISSEUR=totp`) : secret partagé une fois par QR
+      code, codes calculés hors ligne, huit codes de secours à usage unique. Rien n'est envoyé,
+      donc plus rien à attendre. Poser `TOTP_CLE` avant le déploiement, sans quoi l'enrôlement est
+      refusé.
+- [x] ~~Supabase Auth — SMTP personnalisé obligatoire~~ — sans objet pour la connexion admin, que
+      le TOTP a rendue indépendante de tout envoi. Sur l'offre gratuite, Supabase refusait de
+      modifier le gabarit Magic Link sans SMTP personnalisé (400 « Email template modification is
+      not available for free tier projects »), ce qui bloquait cette voie. `supabase-auth` et
+      `interne` restent disponibles en repli. Un SMTP reste nécessaire pour le **lien de
+      réinitialisation de mot de passe**, lui toujours journalisé faute d'envoi.
 - [x] Parcours de la planche E : coaching privé de bout en bout, paramètres et suppression du
       compte apprenant, candidature → compte formateur, éditeur d'article, onglet SEO du module,
       `/programmes`, motifs d'échec de paiement, écrans PWA (hors ligne, mise à jour, installation).
