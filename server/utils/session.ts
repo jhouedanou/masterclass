@@ -31,7 +31,13 @@ function secret(): string {
 
   if (mot.length >= 32) return mot
 
-  if (process.env.NODE_ENV === 'production') {
+  // Porte fermée par défaut : le repli n'existe que sous un `NODE_ENV` de
+  // développement déclaré. N'interdire que `production` laissait un
+  // hébergement qui ne pose pas la variable (`node .output/server/index.mjs`
+  // sans environnement) sceller ses sessions avec le mot de passe publié
+  // ci-dessous — n'importe qui pouvait alors forger le cookie de n'importe
+  // quel compte, administrateur compris.
+  if (process.env.NODE_ENV !== 'development') {
     throw createError({
       statusCode: 500,
       statusMessage:
