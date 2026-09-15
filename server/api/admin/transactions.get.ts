@@ -8,7 +8,11 @@ import { exigerAdmin } from '../../utils/session'
  *  « Transactions ». Filtrable par statut et motif d'échec (écran 18f). */
 export default defineEventHandler(async (event) => {
   await exigerAdmin(event, true)
-  const { statut, codeEchec } = getQuery(event) as { statut?: string; codeEchec?: CodeEchecPaiement }
+  const { statut, codeEchec, mois } = getQuery(event) as {
+    statut?: string
+    codeEchec?: CodeEchecPaiement
+    mois?: string
+  }
 
   const [transactions, utilisateurs, modules] = await Promise.all([
     listerTransactions(),
@@ -25,9 +29,13 @@ export default defineEventHandler(async (event) => {
   }
 
   return {
+    // Les mois où il s'est passé quelque chose, du plus récent au plus ancien :
+    // proposer une année entière de mois vides n'aide personne.
+    moisDisponibles: [...new Set(transactions.map((t) => t.date.slice(0, 7)))].sort().reverse(),
     transactions: transactions
       .filter((t) => !statut || t.statut === statut)
       .filter((t) => !codeEchec || t.codeEchec === codeEchec)
+      .filter((t) => !mois || t.date.slice(0, 7) === mois)
       .map((t) => {
         const u = utilisateurs.find((x) => x.id === t.utilisateurId)
         return {

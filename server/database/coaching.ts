@@ -89,6 +89,57 @@ export async function creerSession(champs: {
   return versSessionCoaching(data)
 }
 
+/**
+ * Modification d'une séance déjà planifiée (planche C, écran 03, action
+ * « Modifier »). Le report de date passe par `reporterSession`, qui garde trace
+ * de la date d'origine ; ici on touche à tout le reste.
+ */
+export async function majSession(
+  id: string,
+  champs: {
+    formateurId?: string
+    titre?: string | null
+    dureeMinutes?: number
+    places?: number
+    ouvertureSalleMinutes?: number
+    enregistrement?: boolean
+  },
+): Promise<SessionCoaching> {
+  const actuelle = await trouverSession(id)
+  if (!actuelle) throw createError({ statusCode: 404, statusMessage: 'Session introuvable' })
+
+  // Réduire la capacité sous le nombre d'inscrits reviendrait à désinscrire
+  // quelqu'un sans le lui dire. La base l'accepterait ; pas nous.
+  if (champs.places !== undefined && champs.places < actuelle.inscrits) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: `${actuelle.inscrits} personnes sont déjà inscrites : la capacité ne peut pas descendre en dessous.`,
+    })
+  }
+
+  const colonnes: Record<string, unknown> = {}
+  if (champs.formateurId !== undefined) colonnes.formateur_id = champs.formateurId
+  if (champs.titre !== undefined) colonnes.titre = champs.titre || null
+  if (champs.dureeMinutes !== undefined) colonnes.duree_minutes = champs.dureeMinutes
+  if (champs.places !== undefined) colonnes.places = champs.places
+  if (champs.ouvertureSalleMinutes !== undefined) {
+    colonnes.ouverture_salle_minutes = champs.ouvertureSalleMinutes
+  }
+  if (champs.enregistrement !== undefined) colonnes.enregistrement = champs.enregistrement
+
+  const row = verifierUn(
+    await supabase()
+      .from('sessions_coaching')
+      .update(colonnes as never)
+      .eq('id', id)
+      .select('*')
+      .maybeSingle(),
+    'modification de session',
+    'Session introuvable',
+  )
+  return versSessionCoaching(row)
+}
+
 export async function annulerSession(id: string): Promise<SessionCoaching> {
   const row = verifierUn(
     await supabase()

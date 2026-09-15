@@ -20,10 +20,12 @@ export type ModeleNotification =
   | 'code-verification'
   | 'reinitialisation'
   | 'invitation-formateur'
+  | 'invitation-apprenant'
   | 'coaching-prive-statut'
   | 'session-annulee'
   | 'session-reportee'
   | 'acces-attribue'
+  | 'acces-revoque'
   | 'suppression-programmee'
   | 'suppression-rappel'
   | 'compte-reactive'
@@ -50,10 +52,12 @@ export const SUJETS: Record<ModeleNotification, string> = {
   'code-verification': 'Votre code de vérification E-Masterclass Big Five',
   reinitialisation: 'Réinitialisation de votre mot de passe',
   'invitation-formateur': 'Bienvenue parmi les formateurs E-Masterclass Big Five',
+  'invitation-apprenant': 'Votre accès à E-Masterclass Big Five',
   'coaching-prive-statut': 'Votre demande de coaching privé',
   'session-annulee': 'Session de coaching annulée',
   'session-reportee': 'Session de coaching reportée',
   'acces-attribue': 'Un module a été ajouté à votre espace',
+  'acces-revoque': 'Un accès a été retiré de votre espace',
   'suppression-programmee': 'Suppression de votre compte programmée',
   'suppression-rappel': 'Votre compte sera supprimé dans 3 jours',
   'compte-reactive': 'Bon retour sur E-Masterclass Big Five',

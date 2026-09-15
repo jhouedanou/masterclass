@@ -414,6 +414,47 @@ export async function majPersona(
 }
 
 /**
+ * Révocation d'un accès (planche C, écran 13).
+ *
+ * L'accès n'est pas effacé : il est daté et motivé. Le supprimer ferait perdre
+ * la trace de l'achat, et avec elle la justification comptable ; un apprenant
+ * qui conteste doit pouvoir être retrouvé.
+ */
+export async function revoquerAcces(
+  utilisateurId: string,
+  moduleId: string,
+  motif: string,
+): Promise<void> {
+  verifierUn(
+    await supabase()
+      .from('acces')
+      .update({ revoque_le: new Date().toISOString(), motif_revocation: motif } as never)
+      .eq('utilisateur_id', utilisateurId)
+      .eq('module_id', moduleId)
+      .is('revoque_le', null)
+      .select('module_id')
+      .maybeSingle(),
+    'révocation de l’accès',
+    'Cet accès est introuvable ou déjà révoqué',
+  )
+}
+
+/** Retour en arrière : l'accès reprend, la trace de la révocation s'efface. */
+export async function retablirAcces(utilisateurId: string, moduleId: string): Promise<void> {
+  verifierUn(
+    await supabase()
+      .from('acces')
+      .update({ revoque_le: null, motif_revocation: null } as never)
+      .eq('utilisateur_id', utilisateurId)
+      .eq('module_id', moduleId)
+      .select('module_id')
+      .maybeSingle(),
+    'rétablissement de l’accès',
+    'Accès introuvable',
+  )
+}
+
+/**
  * Programme qui gouverne le bloc persona du profil : celui du premier module
  * possédé. Sans module, seuls les champs communs comptent.
  */

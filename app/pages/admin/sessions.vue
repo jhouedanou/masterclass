@@ -12,11 +12,15 @@ type SessionAdmin = SessionCoaching & {
 
 const filtreProgramme = ref('')
 const filtreStatut = ref('')
+const filtreThematique = ref('')
+const filtreFormateur = ref('')
 
 const { data: sessions, refresh } = await useFetch<SessionAdmin[]>('/api/admin/sessions', {
   query: computed(() => ({
     programme: filtreProgramme.value || undefined,
     statut: filtreStatut.value || undefined,
+    thematique: filtreThematique.value || undefined,
+    formateur: filtreFormateur.value || undefined,
   })),
 })
 const { data: thematiques } = await useFetch<Thematique[]>('/api/thematiques')
@@ -66,15 +70,112 @@ async function annuler() {
   await refresh()
 }
 
-const creation = reactive({ thematiqueId: '', formateurId: '', date: '', heure: '19:00' })
+const DEFAUTS = {
+  thematiqueId: '',
+  formateurId: '',
+  date: '',
+  heure: '19:00',
+  titre: '',
+  dureeMinutes: 120,
+  places: 25,
+  ouvertureSalleMinutes: 15,
+  enregistrement: false,
+}
+const creation = reactive({ ...DEFAUTS })
 const formulaireOuvert = ref(false)
 const erreur = ref('')
+
+// --- Modification d'une séance existante ------------------------------------
+
+const modification = ref<SessionAdmin | null>(null)
+const retouche = reactive({
+  formateurId: '',
+  titre: '',
+  dureeMinutes: 120,
+  places: 25,
+  ouvertureSalleMinutes: 15,
+  enregistrement: false,
+  date: '',
+  heure: '',
+})
+const erreurModification = ref('')
+
+function ouvrirModification(session: SessionAdmin) {
+  modification.value = session
+  erreurModification.value = ''
+  Object.assign(retouche, {
+    formateurId: session.formateurId,
+    titre: session.titre ?? '',
+    dureeMinutes: session.dureeMinutes,
+    places: session.places,
+    ouvertureSalleMinutes: session.ouvertureSalleMinutes,
+    enregistrement: session.enregistrement,
+    date: session.date,
+    heure: session.heure,
+  })
+}
+
+async function enregistrerModification() {
+  if (!modification.value) return
+  erreurModification.value = ''
+  const session = modification.value
+  try {
+    await $fetch('/api/admin/sessions', {
+      method: 'PATCH',
+      body: {
+        id: session.id,
+        action: 'modifier',
+        formateurId: retouche.formateurId,
+        titre: retouche.titre,
+        dureeMinutes: retouche.dureeMinutes,
+        places: retouche.places,
+        ouvertureSalleMinutes: retouche.ouvertureSalleMinutes,
+        enregistrement: retouche.enregistrement,
+      },
+    })
+    // Le report est une action distincte : il garde trace de la date d'origine
+    // et prévient les inscrits, ce qu'une modification de réglages ne fait pas.
+    if (retouche.date !== session.date || retouche.heure !== session.heure) {
+      const r = await $fetch<{ notifies: number }>('/api/admin/sessions', {
+        method: 'PATCH',
+        body: { id: session.id, action: 'reporter', date: retouche.date, heure: retouche.heure },
+      })
+      message.value = `Séance reportée — ${r.notifies} apprenant(s) notifié(s) par e-mail et WhatsApp.`
+    } else {
+      message.value = 'Séance modifiée.'
+    }
+    modification.value = null
+    await refresh()
+  } catch (e) {
+    erreurModification.value =
+      (e as { statusMessage?: string }).statusMessage ?? 'La modification a échoué.'
+  }
+}
+
+/** Au-delà de 80 % de remplissage, la maquette prévient avant que ce soit
+ *  complet : c'est le moment d'ouvrir une seconde séance. */
+function remplissage(session: SessionAdmin) {
+  if (session.statut === 'annulee') return 'annulee'
+  if (session.statut === 'terminee') return 'terminee'
+  if (session.inscrits >= session.places) return 'complete'
+  if (session.inscrits >= session.places * 0.8) return 'presque-pleine'
+  return 'confirmee'
+}
+
+const LIBELLE_REMPLISSAGE: Record<string, string> = {
+  annulee: 'Annulée',
+  terminee: 'Terminée',
+  complete: 'Complète',
+  'presque-pleine': 'Presque pleine',
+  confirmee: 'Confirmée',
+}
 
 async function creer() {
   erreur.value = ''
   try {
     await $fetch('/api/admin/sessions', { method: 'POST', body: creation })
     formulaireOuvert.value = false
+    Object.assign(creation, DEFAUTS)
     message.value = 'Session créée. La réunion Zoom a été générée ; le formateur et les inscrits y entrent depuis la plateforme.'
     await refresh()
   } catch (e) {
@@ -131,6 +232,36 @@ async function creer() {
         <span class="mb-1.5 block text-[13px] font-bold text-texte">Heure (GMT Abidjan)</span>
         <input v-model="creation.heure" type="time" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
       </label>
+      <label class="block sm:col-span-2">
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">
+          Titre <span class="font-normal text-discret">(facultatif)</span>
+        </span>
+        <input
+          v-model="creation.titre"
+          placeholder="Repris de la thématique si laissé vide"
+          class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]"
+        >
+      </label>
+      <label class="block">
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Durée (minutes)</span>
+        <input v-model.number="creation.dureeMinutes" type="number" min="30" step="15" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+      </label>
+      <label class="block">
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Capacité</span>
+        <input v-model.number="creation.places" type="number" min="1" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+      </label>
+      <label class="block">
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Ouverture de la salle</span>
+        <select v-model.number="creation.ouvertureSalleMinutes" class="w-full rounded-[10px] border border-ligne bg-white px-3 py-2.5 text-[14px]">
+          <option :value="15">15 minutes avant</option>
+          <option :value="10">10 minutes avant</option>
+          <option :value="5">5 minutes avant</option>
+        </select>
+      </label>
+      <label class="flex items-center gap-2.5 self-end pb-2.5 text-[13.5px]">
+        <input v-model="creation.enregistrement" type="checkbox">
+        Enregistrer la séance
+      </label>
       <div class="sm:col-span-2 xl:col-span-4">
         <p v-if="erreur" class="mb-3 text-[13.5px] text-erreur">{{ erreur }}</p>
         <UiBaseButton type="submit" taille="sm">Valider et créer la réunion Zoom</UiBaseButton>
@@ -142,6 +273,14 @@ async function creer() {
         <option value="">Tous programmes</option>
         <option value="social-media">Social Média</option>
         <option value="entrepreneurs">Entrepreneurs</option>
+      </select>
+      <select v-model="filtreThematique" class="rounded-full border border-ligne bg-white px-3.5 py-2">
+        <option value="">Toutes thématiques</option>
+        <option v-for="t in thematiques" :key="t.id" :value="t.id">{{ t.nom }}</option>
+      </select>
+      <select v-model="filtreFormateur" class="rounded-full border border-ligne bg-white px-3.5 py-2">
+        <option value="">Tous formateurs</option>
+        <option v-for="f in formateurs" :key="f.id" :value="f.id">{{ f.nom }}</option>
       </select>
       <select v-model="filtreStatut" class="rounded-full border border-ligne bg-white px-3.5 py-2">
         <option value="">Tous statuts</option>
@@ -184,35 +323,92 @@ async function creer() {
           <span
             class="rounded-full px-2.5 py-1 text-[11px] font-bold"
             :class="{
-              'bg-succes-voile text-succes': session.statut === 'planifiee' && session.inscrits < session.places,
-              'bg-alerte-voile text-alerte': session.statut === 'planifiee' && session.inscrits >= session.places,
-              'bg-[#fdeeee] text-erreur': session.statut === 'annulee',
-              'bg-fond-voile text-discret': session.statut === 'terminee',
+              'bg-succes-voile text-succes': remplissage(session) === 'confirmee',
+              'bg-alerte-voile text-alerte': ['presque-pleine', 'complete'].includes(remplissage(session)),
+              'bg-[#fdeeee] text-erreur': remplissage(session) === 'annulee',
+              'bg-fond-voile text-discret': remplissage(session) === 'terminee',
             }"
           >
-            {{
-              session.statut === 'annulee'
-                ? 'Annulée'
-                : session.statut === 'terminee'
-                  ? 'Terminée'
-                  : session.inscrits >= session.places
-                    ? 'Complète'
-                    : 'Confirmée'
-            }}
+            {{ LIBELLE_REMPLISSAGE[remplissage(session)] }}
           </span>
         </td>
-        <td class="px-4 py-3">
-          <button
-            v-if="session.statut === 'planifiee'"
-            class="text-[12.5px] text-erreur underline"
-            @click="annulation = session"
-          >
-            Annuler
-          </button>
+        <td class="px-4 py-3 whitespace-nowrap">
+          <template v-if="session.statut === 'planifiee'">
+            <button class="text-[12.5px] underline" @click="ouvrirModification(session)">Modifier</button>
+            <button class="ml-3 text-[12.5px] text-erreur underline" @click="annulation = session">Annuler</button>
+          </template>
           <span v-else class="text-[12px] text-discret">Notifiée — e-mail + WhatsApp ✓</span>
         </td>
       </tr>
     </AdminTableauSimple>
+
+    <div v-if="modification" class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">
+      <form class="w-full max-w-xl rounded-carte bg-white p-6" @submit.prevent="enregistrerModification">
+        <h2 class="font-title text-[21px] font-light">
+          Modifier la séance du {{ formatDate(modification.date) }}
+        </h2>
+        <p class="mt-2 text-[13px] text-discret">
+          {{ modification.thematique?.nom }} · {{ modification.inscrits }} inscrit(s).
+          Changer la date ou l’heure vaut report : les inscrits en sont prévenus.
+        </p>
+
+        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+          <label class="block sm:col-span-2">
+            <span class="mb-1.5 block text-[13px] font-bold">Titre</span>
+            <input v-model="retouche.titre" placeholder="Repris de la thématique si laissé vide" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Formateur</span>
+            <select v-model="retouche.formateurId" class="w-full rounded-[10px] border border-ligne bg-white px-3 py-2.5 text-[14px]">
+              <option v-for="f in formateurs" :key="f.id" :value="f.id">{{ f.nom }}</option>
+            </select>
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Durée (minutes)</span>
+            <input v-model.number="retouche.dureeMinutes" type="number" min="30" step="15" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Date</span>
+            <input v-model="retouche.date" type="date" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Heure</span>
+            <input v-model="retouche.heure" type="time" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Capacité</span>
+            <input
+              v-model.number="retouche.places"
+              type="number"
+              :min="modification.inscrits || 1"
+              class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]"
+            >
+            <span class="mt-1 block text-[12px] text-discret">
+              Pas en dessous des {{ modification.inscrits }} déjà inscrits.
+            </span>
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Ouverture de la salle</span>
+            <select v-model.number="retouche.ouvertureSalleMinutes" class="w-full rounded-[10px] border border-ligne bg-white px-3 py-2.5 text-[14px]">
+              <option :value="15">15 minutes avant</option>
+              <option :value="10">10 minutes avant</option>
+              <option :value="5">5 minutes avant</option>
+            </select>
+          </label>
+          <label class="flex items-center gap-2.5 text-[13.5px] sm:col-span-2">
+            <input v-model="retouche.enregistrement" type="checkbox">
+            Enregistrer la séance
+          </label>
+        </div>
+
+        <p v-if="erreurModification" class="mt-3 text-[13.5px] text-erreur">{{ erreurModification }}</p>
+
+        <div class="mt-5 flex flex-wrap gap-2">
+          <UiBaseButton type="submit" taille="sm">Enregistrer</UiBaseButton>
+          <UiBaseButton taille="sm" variante="contour" @click="modification = null">Retour</UiBaseButton>
+        </div>
+      </form>
+    </div>
 
     <div v-if="presence" class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">
       <div class="w-full max-w-md rounded-carte bg-white p-6">

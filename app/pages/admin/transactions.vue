@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CodeEchecPaiement, Transaction } from '#shared/types'
+import type { ColonneCsv } from '~/utils/csv'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Transactions — administration')
@@ -7,20 +8,61 @@ usePagePrivee('Transactions — administration')
 const auth = useAuthStore()
 const statut = ref<'' | 'reussie' | 'echouee' | 'en-attente'>('')
 const codeEchec = ref<'' | CodeEchecPaiement>('')
+const mois = ref('')
+
+type LigneTransaction = Transaction & { apprenant: string; module: string }
 
 const { data, error } = await useFetch<{
-  transactions: (Transaction & { apprenant: string; module: string })[]
+  transactions: LigneTransaction[]
+  moisDisponibles: string[]
   echecs30j: { total: number; parMotif: Partial<Record<CodeEchecPaiement, number>> }
 }>('/api/admin/transactions', {
-  query: computed(() => ({ statut: statut.value || undefined, codeEchec: codeEchec.value || undefined })),
+  query: computed(() => ({
+    statut: statut.value || undefined,
+    codeEchec: codeEchec.value || undefined,
+    mois: mois.value || undefined,
+  })),
 })
 
 const LIBELLES_STATUT = { reussie: 'Réussie', echouee: 'Échouée', 'en-attente': 'En attente' } as const
+
+const nomDuMois = (valeur: string) =>
+  new Date(`${valeur}-01T00:00:00`).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+
+/** L'export suit les filtres : ce qui est à l'écran est ce qui part. */
+function exporter() {
+  exporterCsv(
+    `transactions-${mois.value || 'toutes'}`,
+    [
+      { cle: 'date', libelle: 'Date' },
+      { cle: 'reference', libelle: 'Référence' },
+      { cle: (t) => t.referencePrestataire ?? '', libelle: 'Réf. FeexPay' },
+      { cle: 'apprenant', libelle: 'Apprenant' },
+      { cle: 'module', libelle: 'Module' },
+      { cle: 'moyen', libelle: 'Moyen de paiement' },
+      { cle: (t) => t.reseau ?? '', libelle: 'Réseau' },
+      { cle: 'montant', libelle: 'Montant (FCFA)' },
+      { cle: (t) => LIBELLES_STATUT[t.statut], libelle: 'Statut' },
+      { cle: (t) => t.codeEchec ?? '', libelle: 'Motif d’échec' },
+      { cle: (t) => t.detailEchec ?? '', libelle: 'Détail' },
+    ] satisfies ColonneCsv<LigneTransaction>[],
+    data.value?.transactions ?? [],
+  )
+}
 </script>
 
 <template>
   <div>
-    <h1 class="font-title text-[26px] font-light">Transactions & paiements</h1>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h1 class="font-title text-[26px] font-light">Transactions &amp; paiements</h1>
+      <div v-if="data" class="flex flex-wrap gap-2">
+        <select v-model="mois" class="rounded-[10px] border border-ligne bg-white px-3 py-2 text-[13.5px]">
+          <option value="">Tous les mois</option>
+          <option v-for="m in data.moisDisponibles" :key="m" :value="m">{{ nomDuMois(m) }}</option>
+        </select>
+        <UiBaseButton taille="sm" variante="contour" @click="exporter">Exporter en CSV</UiBaseButton>
+      </div>
+    </div>
 
     <!-- Droit « Transactions » réservé à l'administrateur supérieur. -->
     <div v-if="error" class="mt-6 rounded-[14px] border border-ligne bg-white p-10 text-center">

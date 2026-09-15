@@ -4,7 +4,10 @@ import { exigerAdmin } from '../../utils/session'
 
 export default defineEventHandler(async (event) => {
   await exigerAdmin(event)
-  const { programme, statut } = getQuery(event) as Record<string, string | undefined>
+  const { programme, statut, thematique, formateur } = getQuery(event) as Record<
+    string,
+    string | undefined
+  >
 
   const [sessions, thematiques, formateurs, modules] = await Promise.all([
     listerSessions(),
@@ -16,6 +19,8 @@ export default defineEventHandler(async (event) => {
   return sessions
     .filter((s) => !programme || s.programme === programme)
     .filter((s) => !statut || s.statut === statut)
+    .filter((s) => !thematique || s.thematiqueId === thematique)
+    .filter((s) => !formateur || s.formateurId === formateur)
     .map((s) => ({
       ...s,
       thematique: thematiques.find((t) => t.id === s.thematiqueId) ?? null,

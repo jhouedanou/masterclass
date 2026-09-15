@@ -260,6 +260,9 @@ export interface Utilisateur {
   /** URL publique de la photo de profil, absente tant qu'aucune n'a été déposée
    *  — l'interface retombe alors sur les initiales. */
   photo?: string
+  /** Date de création du compte. Posée par la base, absente du contenu de
+   *  référence — d'où l'optionnel. */
+  creeLe?: string
   /** Pourcentage de complétion du profil apprenant (planche B). */
   completionProfil?: number
 }

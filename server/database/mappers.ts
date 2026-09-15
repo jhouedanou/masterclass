@@ -226,6 +226,7 @@ export function versModule(row: ModuleRow, chapitres: ChapitreRow[] = []): Modul
 
 export function versUtilisateur(row: UtilisateurRow): Utilisateur {
   return {
+    creeLe: row.cree_le,
     id: row.id,
     prenom: row.prenom,
     nom: row.nom,
