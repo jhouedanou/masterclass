@@ -170,6 +170,7 @@ export function versFormateur(row: FormateurRow): Formateur {
     photo: row.photo,
     ficheComplete: row.fiche_complete,
     coachingPriveFcfaHeure: row.coaching_prive_fcfa_heure,
+    position: row.position,
     coachingPriveActif: row.coaching_prive_actif,
     emailPro: row.email_pro || undefined,
     whatsapp: row.whatsapp || undefined,

@@ -141,6 +141,7 @@ export type FormateurRow = ColonnesSeo & {
   photo: string
   fiche_complete: boolean
   coaching_prive_fcfa_heure: number
+  position: number
   coaching_prive_actif: boolean
   email_pro: string
   whatsapp: string
@@ -623,6 +624,7 @@ export type Database = {
         | 'email_pro'
         | 'whatsapp'
         | 'activation_coaching_demandee_le'
+        | 'position'
         | keyof ColonnesSeo
       >
       modules: Table<

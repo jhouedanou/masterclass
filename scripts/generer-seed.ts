@@ -166,7 +166,7 @@ inserer(
 
 inserer(
   'formateurs',
-  `id, slug, nom, expertise, bio, programme_principal, photo, fiche_complete, ` +
+  `id, slug, nom, expertise, bio, programme_principal, photo, fiche_complete, position, ` +
     `coaching_prive_fcfa_heure, coaching_prive_actif, ${COLONNES_SEO}`,
   formateurs.map((f) =>
     [
@@ -178,6 +178,7 @@ inserer(
       txt(f.programmePrincipal),
       txt(f.photo),
       bool(f.ficheComplete),
+      num(f.position),
       num(f.coachingPriveFcfaHeure),
       bool(f.coachingPriveActif),
       seo(f.seo),

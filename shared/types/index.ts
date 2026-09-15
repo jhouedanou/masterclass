@@ -169,6 +169,9 @@ export interface Formateur {
   /** Une fiche incomplète reste non indexable (spec SEO §1). */
   ficheComplete: boolean
   coachingPriveFcfaHeure: number
+  /** Ordre d'affichage sur /formateurs, piloté par le glisser-déposer de
+   *  l'écran 11. */
+  position: number
   /** Accès « Formateur avec coaching privé » (planche D, écran 05) :
    *  verrouillé par défaut, ouvert par l'administration. */
   coachingPriveActif: boolean

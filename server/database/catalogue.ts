@@ -255,9 +255,30 @@ export async function majThematique(
 // --- Formateurs ------------------------------------------------------------
 
 export async function listerFormateurs(): Promise<Formateur[]> {
-  const rows = verifier(await supabase().from('formateurs').select('*').order('id'), 'formateurs')
+  // L'ordre est celui que l'administration a posé, sur la page publique comme
+  // dans le back-office : `id` servait faute de mieux, et la poignée de
+  // glisser-déposer ne commandait rien.
+  const rows = verifier(
+    await supabase().from('formateurs').select('*').order('position').order('id'),
+    'formateurs',
+  )
   return rows.map(versFormateur)
 }
+
+/** Réordonnancement de la page publique : la liste reçue fait foi. */
+export async function reordonnerFormateurs(ids: string[]): Promise<void> {
+  for (const [position, id] of ids.entries()) {
+    verifier(
+      await supabase()
+        .from('formateurs')
+        .update({ position } as never)
+        .eq('id', id)
+        .select('id'),
+      'réordonnancement des formateurs',
+    )
+  }
+}
+
 
 export async function trouverFormateur(id: string): Promise<Formateur | null> {
   const row = verifierOptionnel(
@@ -281,8 +302,20 @@ export async function trouverFormateurParSlug(slug: string): Promise<Formateur |
  * privé, son activation et le rattachement des modules restent du ressort de
  * l'équipe.
  */
+/** Ce que le formateur édite lui-même, plus ce que l'administration édite en
+ *  son nom depuis l'écran 11. */
 export type ChampsProfilFormateur = Partial<
-  Pick<Formateur, 'nom' | 'expertise' | 'bio' | 'photo' | 'emailPro' | 'whatsapp'>
+  Pick<
+    Formateur,
+    | 'nom'
+    | 'expertise'
+    | 'bio'
+    | 'photo'
+    | 'emailPro'
+    | 'whatsapp'
+    | 'programmePrincipal'
+    | 'ficheComplete'
+  >
 >
 
 export async function majFormateur(
@@ -296,6 +329,12 @@ export async function majFormateur(
   if (champs.photo !== undefined) colonnes.photo = champs.photo
   if (champs.emailPro !== undefined) colonnes.email_pro = champs.emailPro
   if (champs.whatsapp !== undefined) colonnes.whatsapp = champs.whatsapp
+  // L'écran 11 édite aussi le programme de rattachement et la complétude de la
+  // fiche, que l'espace formateur ne touche pas.
+  if (champs.programmePrincipal !== undefined) {
+    colonnes.programme_principal = champs.programmePrincipal
+  }
+  if (champs.ficheComplete !== undefined) colonnes.fiche_complete = champs.ficheComplete
 
   const row = verifier(
     await supabase().from('formateurs').update(colonnes).eq('id', id).select('*').single(),

@@ -10,13 +10,22 @@ type FormateurAdmin = Formateur & {
   ordrePublic: number
   supprimable: boolean
   sessionsAVenir: number
+  compte: { email: string; aUnMotDePasse: boolean } | null
 }
 
 const { data: formateurs, refresh } = await useFetch<FormateurAdmin[]>('/api/admin/formateurs')
 const message = ref('')
 const erreur = ref('')
 
-/** Bascule « simple » / « avec coaching privé » (planche C, écran 07b), journalisée. */
+/**
+ * Bascule « simple » / « avec coaching privé » (écran 07b).
+ *
+ * L'activation passe par une confirmation : elle engage un tarif et ouvre une
+ * section entière de l'espace formateur. Le retour en arrière, lui, se fait
+ * sans cérémonie — il ne retire rien de déjà payé.
+ */
+const activation = ref<FormateurAdmin | null>(null)
+
 async function basculerCoachingPrive(f: FormateurAdmin) {
   erreur.value = ''
   try {
@@ -27,9 +36,67 @@ async function basculerCoachingPrive(f: FormateurAdmin) {
     message.value = f.coachingPriveActif
       ? `${f.nom} repasse « Formateur simple » : sa section se referme, les séances déjà payées restent honorées.`
       : `${f.nom} devient « Formateur avec coaching privé » : sa section est déverrouillée.`
+    activation.value = null
     await refresh()
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Modification impossible.'
+  }
+}
+
+// --- Édition d'une fiche (écran 11) -----------------------------------------
+
+const edition = ref<FormateurAdmin | null>(null)
+const fiche = reactive({ nom: '', expertise: '', bio: '', programmePrincipal: 'social-media', ficheComplete: false })
+
+function ouvrirEdition(f: FormateurAdmin) {
+  edition.value = f
+  Object.assign(fiche, {
+    nom: f.nom,
+    expertise: f.expertise,
+    bio: f.bio,
+    programmePrincipal: f.programmePrincipal,
+    ficheComplete: f.ficheComplete,
+  })
+}
+
+async function enregistrerFiche() {
+  erreur.value = ''
+  try {
+    await $fetch('/api/admin/formateurs', {
+      method: 'PATCH',
+      body: { action: 'modifier', id: edition.value!.id, ...fiche },
+    })
+    message.value = `Fiche de ${fiche.nom} enregistrée.`
+    edition.value = null
+    await refresh()
+  } catch (e) {
+    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Enregistrement impossible.'
+  }
+}
+
+// --- Ordre de la page publique ----------------------------------------------
+
+/** L'ordre touche `/formateurs` : c'est celui que voit le visiteur, pas un
+ *  confort d'administration. La poignée ne commandait rien jusqu'ici. */
+const tire = ref('')
+
+async function deposer(cible: FormateurAdmin) {
+  if (!tire.value || tire.value === cible.id || !formateurs.value) return
+  const ids = formateurs.value.map((f) => f.id)
+  const depuis = ids.indexOf(tire.value)
+  const vers = ids.indexOf(cible.id)
+  tire.value = ''
+  if (depuis < 0 || vers < 0) return
+  ids.splice(vers, 0, ...ids.splice(depuis, 1))
+  try {
+    await $fetch('/api/admin/formateurs', {
+      method: 'PATCH',
+      body: { action: 'reordonner', ordre: ids },
+    })
+    message.value = 'Ordre de la page publique mis à jour.'
+    await refresh()
+  } catch (e) {
+    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Réordonnancement impossible.'
   }
 }
 const { data: candidatures, refresh: rafraichirCandidatures } = await useFetch<CandidatureFormateur[]>('/api/admin/candidatures')
@@ -47,22 +114,6 @@ async function apresCreation() {
   await Promise.all([refresh(), rafraichirCandidatures()])
 }
 
-async function traiterCandidature(c: CandidatureFormateur, action: 'en-etude' | 'refuser' | 'nouvelle') {
-  erreur.value = ''
-  try {
-    await $fetch('/api/admin/candidatures', { method: 'PATCH', body: { id: c.id, action } })
-    await rafraichirCandidatures()
-  } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
-  }
-}
-
-const LIBELLES_CANDIDATURE: Record<CandidatureFormateur['statut'], string> = {
-  nouvelle: 'Nouvelle',
-  'en-etude': 'En étude',
-  refusee: 'Refusée',
-  acceptee: 'Acceptée',
-}
 
 const suppression = ref<FormateurAdmin | null>(null)
 const confirmation = ref('')
@@ -89,108 +140,161 @@ const confirmation = ref('')
 
     <AdminTableauSimple
       class="mt-5"
-      :colonnes="['Formateur', 'Modules', 'Tarif coaching', 'Coaching privé', 'Ordre public', '']"
+      :colonnes="['Formateur', 'Accès', 'Modules', 'Coaching privé', 'Ordre public', 'Actions']"
     >
-      <tr v-for="f in formateurs" :key="f.id">
+      <tr
+        v-for="f in formateurs"
+        :key="f.id"
+        :class="tire === f.id && 'opacity-50'"
+        @dragover.prevent
+        @drop.prevent="deposer(f)"
+      >
         <td class="px-4 py-3">
           <p class="font-bold">{{ f.nom }}</p>
           <p class="text-[12px] text-discret">{{ f.expertise }}</p>
         </td>
-        <td class="px-4 py-3">{{ f.nbModules }} modules · {{ f.nbProgrammes }} programme(s)</td>
-        <td class="px-4 py-3">
-          {{ formatFcfa(f.coachingPriveFcfaHeure) }}/h <span class="text-discret">(fixe)</span>
+        <td class="px-4 py-3 text-[13px]">
+          <template v-if="f.compte">
+            <span class="text-succes">Compte actif</span>
+            <span class="block text-[12px] text-discret">{{ f.compte.email }}</span>
+          </template>
+          <span v-else class="text-alerte">Aucun compte rattaché</span>
         </td>
         <td class="px-4 py-3">
-          <label class="inline-flex cursor-pointer items-center gap-2 text-[12.5px]">
-            <input
-              type="checkbox"
-              role="switch"
-              class="size-4 accent-social"
-              :checked="f.coachingPriveActif"
-              :aria-label="`Coaching privé de ${f.nom}`"
-              @change="basculerCoachingPrive(f)"
-            >
-            {{ f.coachingPriveActif ? 'Activé' : 'Simple' }}
-          </label>
+          {{ f.nbModules }} module{{ f.nbModules > 1 ? 's' : '' }}
+          <span class="block text-[12px] text-discret">
+            {{ formatFcfa(f.coachingPriveFcfaHeure) }}/h (fixe)
+          </span>
         </td>
-        <td class="px-4 py-3">⋮⋮ {{ f.ordrePublic }}</td>
-        <td class="px-4 py-3 text-right">
-          <NuxtLink :to="`/formateurs/${f.slug}`" class="mr-3 text-[12.5px] underline">Voir</NuxtLink>
-          <button class="text-[12.5px] text-erreur underline" @click="suppression = f">Supprimer</button>
+        <td class="px-4 py-3">
+          <span
+            class="rounded-full px-2.5 py-1 text-[11px] font-bold"
+            :class="f.coachingPriveActif ? 'bg-social-voile text-social' : 'bg-fond-voile text-discret'"
+          >
+            {{ f.coachingPriveActif ? 'Avec coaching privé' : 'Formateur simple' }}
+          </span>
+          <button
+            v-if="f.coachingPriveActif"
+            class="mt-1 block text-[12.5px] underline"
+            @click="basculerCoachingPrive(f)"
+          >
+            Repasser simple
+          </button>
+          <button v-else class="mt-1 block text-[12.5px] text-social underline" @click="activation = f">
+            Activer le coaching privé →
+          </button>
+        </td>
+        <td class="px-4 py-3">
+          <span
+            class="cursor-grab text-discret"
+            draggable="true"
+            :aria-label="`Déplacer ${f.nom}`"
+            @dragstart="tire = f.id"
+            @dragend="tire = ''"
+          >⋮⋮</span>
+          {{ f.ordrePublic }}
+        </td>
+        <td class="px-4 py-3 text-right whitespace-nowrap">
+          <button class="text-[12.5px] underline" @click="ouvrirEdition(f)">Modifier</button>
+          <NuxtLink :to="`/formateurs/${f.slug}`" class="ml-3 text-[12.5px] underline">Voir</NuxtLink>
+          <button class="ml-3 text-[12.5px] text-erreur underline" @click="suppression = f">Supprimer</button>
         </td>
       </tr>
     </AdminTableauSimple>
 
-    <h2 class="mt-10 font-title text-[19px] font-light">
-      Candidatures formateurs
-      <span class="ml-2 rounded-full bg-alerte-voile px-2.5 py-1 text-[12px] font-bold text-alerte">
-        {{ (candidatures ?? []).filter((c) => c.statut === 'nouvelle').length }} nouvelles
-      </span>
-    </h2>
+    <section class="mt-10 rounded-[14px] border border-ligne-douce bg-white p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="font-title text-[19px] font-light">Candidatures « Devenir formateur »</h2>
+          <p class="mt-1 text-[13px] text-discret">
+            {{ (candidatures ?? []).filter((c) => c.statut === 'nouvelle').length }} nouvelle(s) ·
+            {{ (candidatures ?? []).filter((c) => c.statut === 'en-etude').length }} en étude
+          </p>
+        </div>
+        <UiBaseButton to="/admin/candidatures" taille="sm" variante="contour">
+          Ouvrir les candidatures
+        </UiBaseButton>
+      </div>
+    </section>
 
-    <div class="mt-4 flex flex-col gap-3">
-      <article
-        v-for="candidature in candidatures"
-        :key="candidature.id"
-        class="rounded-[14px] border border-ligne-douce bg-white p-5"
-      >
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div class="min-w-[280px] flex-1">
-            <h3 class="font-title text-[18px] font-light">
-              {{ candidature.nom }} — {{ candidature.expertise }}
-            </h3>
-            <p class="mt-2 whitespace-pre-line text-[13.5px] text-texte">{{ candidature.message }}</p>
-            <p class="mt-1 text-[12.5px] text-discret">
-              {{ candidature.whatsapp }}<span v-if="candidature.email"> · {{ candidature.email }}</span>
-              <a v-if="candidature.lien" :href="candidature.lien" target="_blank" rel="noopener" class="underline"> · lien joint</a>
-              · reçue le {{ formatDate(candidature.recueLe) }}
-            </p>
-          </div>
-          <span
-            class="rounded-full px-3 py-1.5 text-[12px] font-bold"
-            :class="{
-              'bg-alerte-voile text-alerte': candidature.statut === 'nouvelle',
-              'bg-social-voile text-social': candidature.statut === 'en-etude',
-              'bg-succes-voile text-succes': candidature.statut === 'acceptee',
-              'bg-fond-voile text-discret': candidature.statut === 'refusee',
-            }"
-          >
-            {{ LIBELLES_CANDIDATURE[candidature.statut] }}
-          </span>
+    <!-- Activation du coaching privé : elle engage un tarif et ouvre une
+         section entière de l'espace formateur. Le retour en arrière, lui, ne
+         demande pas de confirmation — il ne retire rien de déjà payé. -->
+    <div v-if="activation" class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">
+      <div class="w-full max-w-lg rounded-carte bg-white p-6">
+        <h2 class="font-title text-[21px] font-light">
+          Activer le coaching privé pour {{ activation.nom }} ?
+        </h2>
+        <ul class="mt-4 ml-4 list-disc text-[13.5px] text-texte">
+          <li class="mt-1.5">
+            La section « Coaching privé » s’ouvre dans son espace formateur : il y voit les
+            demandes qui le concernent et leurs créneaux.
+          </li>
+          <li class="mt-1.5">
+            Il devient sélectionnable par les apprenants au moment de leur demande.
+          </li>
+          <li class="mt-1.5">
+            Le tarif est fixe à {{ formatFcfa(activation.coachingPriveFcfaHeure) }} de l’heure,
+            identique pour tous les formateurs.
+          </li>
+          <li class="mt-1.5">
+            Sa rémunération suit la même répartition que les modules : part du formateur sur la
+            marge, après frais de paiement.
+          </li>
+        </ul>
+        <div class="mt-5 flex flex-wrap gap-2">
+          <UiBaseButton taille="sm" @click="basculerCoachingPrive(activation)">
+            Activer le coaching privé
+          </UiBaseButton>
+          <UiBaseButton taille="sm" variante="contour" @click="activation = null">Annuler</UiBaseButton>
         </div>
-        <div v-if="candidature.statut !== 'acceptee'" class="mt-4 flex flex-wrap gap-2">
-          <UiBaseButton
-            taille="sm"
-            variante="whatsapp"
-            :href="lienWhatsApp(`Bonjour ${candidature.nom}, nous revenons vers vous au sujet de votre candidature formateur.`)"
-          >
-            Contacter sur WhatsApp
-          </UiBaseButton>
-          <UiBaseButton v-if="candidature.statut === 'nouvelle'" taille="sm" variante="contour" @click="traiterCandidature(candidature, 'en-etude')">
-            Marquer en étude
-          </UiBaseButton>
-          <UiBaseButton v-if="candidature.statut !== 'refusee'" taille="sm" variante="sombre" @click="ouvrirCreation(candidature)">
-            Créer le compte formateur
-          </UiBaseButton>
-          <UiBaseButton v-if="candidature.statut !== 'refusee'" taille="sm" variante="contour" @click="traiterCandidature(candidature, 'refuser')">
-            Refuser
-          </UiBaseButton>
-          <UiBaseButton v-else taille="sm" variante="contour" @click="traiterCandidature(candidature, 'nouvelle')">
-            Rouvrir
-          </UiBaseButton>
-        </div>
-        <p v-else class="mt-3 text-[12.5px] text-succes">
-          Compte formateur créé<span v-if="candidature.traiteeLe"> le {{ formatDate(candidature.traiteeLe) }}</span>.
-        </p>
-      </article>
+      </div>
     </div>
 
-    <AdminModaleCreationFormateur
-      v-if="creationOuverte"
-      :candidature="creation"
-      @fermer="creationOuverte = false"
-      @cree="apresCreation"
-    />
+    <!-- Édition de la fiche publique -->
+    <div v-if="edition" class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">
+      <form class="w-full max-w-lg rounded-carte bg-white p-6" @submit.prevent="enregistrerFiche">
+        <h2 class="font-title text-[21px] font-light">Fiche de {{ edition.nom }}</h2>
+        <p class="mt-1 text-[12.5px] text-discret">
+          Ce que voit le visiteur sur /formateurs et dans le bloc « Votre formateur » des fiches
+          commerciales.
+        </p>
+        <div class="mt-4 grid gap-3">
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Nom</span>
+            <input v-model="fiche.nom" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Expertise</span>
+            <input v-model="fiche.expertise" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Biographie</span>
+            <textarea v-model="fiche.bio" rows="4" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]" />
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Programme de rattachement</span>
+            <select v-model="fiche.programmePrincipal" class="w-full rounded-[10px] border border-ligne bg-white px-3 py-2.5 text-[14px]">
+              <option value="social-media">Social Média</option>
+              <option value="entrepreneurs">Entrepreneurs</option>
+            </select>
+          </label>
+          <label class="flex items-start gap-2.5 text-[13.5px]">
+            <input v-model="fiche.ficheComplete" type="checkbox" class="mt-0.5">
+            <span>
+              Fiche complète
+              <span class="block text-[12px] text-discret">
+                Une fiche incomplète reste hors du plan de site et non indexable.
+              </span>
+            </span>
+          </label>
+        </div>
+        <div class="mt-5 flex flex-wrap gap-2">
+          <UiBaseButton type="submit" taille="sm">Enregistrer</UiBaseButton>
+          <UiBaseButton taille="sm" variante="contour" @click="edition = null">Annuler</UiBaseButton>
+        </div>
+      </form>
+    </div>
 
     <div v-if="suppression" class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">
       <div class="w-full max-w-lg rounded-carte bg-white p-6">
