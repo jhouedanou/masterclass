@@ -29,6 +29,17 @@ export interface PaysTelephone {
   groupes: number[]
   /** Numéro national d'exemple, déjà découpé. */
   exemple: string
+  /**
+   * Le `0` de tête est un préfixe interurbain, qui saute à l'international
+   * (France, Belgique, Ghana, Nigeria).
+   *
+   * Absent partout ailleurs, et c'est l'essentiel : en Côte d'Ivoire et au
+   * Bénin, passés à dix chiffres, ce zéro appartient au numéro. Le retirer
+   * fabrique un numéro à neuf chiffres qui ne joint personne — c'est ce que
+   * faisait `versE164`, alors que les exemples de la table ci-dessous le
+   * portent bien.
+   */
+  zeroInterurbain?: boolean
 }
 
 /**
@@ -46,10 +57,10 @@ export const PAYS_TELEPHONE: PaysTelephone[] = [
   { code: 'NE', nom: 'Niger', indicatif: '227', groupes: [2, 2, 2, 2], exemple: '90 12 34 56' },
   { code: 'GN', nom: 'Guinée', indicatif: '224', groupes: [3, 2, 2, 2], exemple: '620 12 34 56' },
   { code: 'CM', nom: 'Cameroun', indicatif: '237', groupes: [1, 2, 2, 2, 2], exemple: '6 71 23 45 67' },
-  { code: 'GH', nom: 'Ghana', indicatif: '233', groupes: [2, 3, 4], exemple: '24 123 4567' },
-  { code: 'NG', nom: 'Nigeria', indicatif: '234', groupes: [3, 3, 4], exemple: '802 123 4567' },
-  { code: 'FR', nom: 'France', indicatif: '33', groupes: [1, 2, 2, 2, 2], exemple: '6 12 34 56 78' },
-  { code: 'BE', nom: 'Belgique', indicatif: '32', groupes: [3, 2, 2, 2], exemple: '470 12 34 56' },
+  { code: 'GH', nom: 'Ghana', indicatif: '233', groupes: [2, 3, 4], exemple: '24 123 4567', zeroInterurbain: true },
+  { code: 'NG', nom: 'Nigeria', indicatif: '234', groupes: [3, 3, 4], exemple: '802 123 4567', zeroInterurbain: true },
+  { code: 'FR', nom: 'France', indicatif: '33', groupes: [1, 2, 2, 2, 2], exemple: '6 12 34 56 78', zeroInterurbain: true },
+  { code: 'BE', nom: 'Belgique', indicatif: '32', groupes: [3, 2, 2, 2], exemple: '470 12 34 56', zeroInterurbain: true },
   { code: 'CA', nom: 'Canada', indicatif: '1', groupes: [3, 3, 4], exemple: '514 123 4567' },
 ]
 
@@ -96,9 +107,21 @@ export function chiffres(valeur: string): string {
   return valeur.replace(/\D/g, '')
 }
 
+/**
+ * Partie nationale significative : celle qui suit l'indicatif à l'international.
+ *
+ * Un seul zéro de tête saute, et seulement là où il sert de préfixe
+ * interurbain. Retirer *tous* les zéros amputerait un numéro qui commence
+ * légitimement par `00`, et en retirer un en Côte d'Ivoire ou au Bénin ampute
+ * le numéro tout court.
+ */
+function significatif(brut: string, pays: PaysTelephone | undefined): string {
+  return pays?.zeroInterurbain ? brut.replace(/^0/, '') : brut
+}
+
 /** Découpe un numéro national selon les groupes du pays, sans jamais tronquer. */
 export function formaterNational(valeur: string, pays: PaysTelephone | undefined): string {
-  const brut = chiffres(valeur)
+  const brut = significatif(chiffres(valeur), pays)
   if (!pays || !brut) return brut
   const morceaux: string[] = []
   let reste = brut
@@ -118,8 +141,7 @@ export function versE164(pays: PaysTelephone | undefined, national: string): str
   const brut = chiffres(national)
   if (!brut) return ''
   if (!pays) return `+${brut}`
-  // Le zéro de la forme nationale ne se porte pas à l'international.
-  return `+${pays.indicatif}${brut.replace(/^0+/, '')}`
+  return `+${pays.indicatif}${significatif(brut, pays)}`
 }
 
 /**
