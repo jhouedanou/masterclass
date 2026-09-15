@@ -220,6 +220,155 @@ for (const nom of [
   else echec(`${nom} diverge entre server/utils/video.ts et le Worker`)
 }
 
+// --- Le lecteur de sous-titres tient-il les fichiers réels ? -----------------
+//
+// La grammaire de SRT et de VTT est simple ; ce qui casse, c'est ce que les
+// exportateurs y laissent traîner. Les cas ci-dessous viennent tous de fichiers
+// rencontrés : marqueur d'ordre des octets, fins de ligne Windows, en-tête de
+// métadonnées, changement de locuteur, entités imbriquées, heures omises.
+
+console.log('\nSous-titres')
+
+const { analyserSousTitres } = await import(join(RACINE, 'server/utils/soustitres.ts'))
+
+function attendScript(nom, contenu, controle) {
+  const lignes = analyserSousTitres(contenu)
+  const probleme = controle(lignes)
+  if (probleme) echec(`${nom} — ${probleme}`)
+  else succes(nom)
+}
+
+// Un SRT d'export Windows : marqueur d'ordre des octets, CRLF, virgule
+// décimale, index numériques.
+attendScript(
+  'SRT avec marqueur d’ordre des octets et fins de ligne Windows',
+  '\uFEFF1\r\n00:00:12,000 --> 00:00:15,500\r\nPremière réplique.\r\n\r\n' +
+    '2\r\n00:04:30,250 --> 00:04:33,000\r\nDeuxième réplique.\r\n',
+  (l) => {
+    if (l.length !== 2) return `2 passages attendus, ${l.length} obtenus`
+    if (l[0].temps !== '0:12') return `« 0:12 » attendu, « ${l[0].temps} » obtenu`
+    if (l[0].texte !== 'Première réplique.') return `texte inattendu : ${l[0].texte}`
+    if (l[1].temps !== '4:30') return `« 4:30 » attendu, « ${l[1].temps} » obtenu`
+    return null
+  },
+)
+
+// Un VTT complet : en-tête commenté, métadonnées, NOTE, STYLE, réglages de
+// placement après le second horodatage, heures omises.
+attendScript(
+  'VTT avec en-tête, métadonnées, NOTE, STYLE et réglages de placement',
+  'WEBVTT - Transcription du chapitre 3\nKind: captions\nLanguage: fr\n' +
+    'X-TIMESTAMP-MAP=LOCAL:00:00:00.000,MPEGTS:0\n\n' +
+    'NOTE Ce commentaire ne doit pas apparaître\n\n' +
+    'STYLE\n::cue { color: white }\n\n' +
+    'identifiant-libre\n02:14.500 --> 02:18.000 align:start position:10%\n' +
+    'Le texte, lui, doit apparaître.\n',
+  (l) => {
+    if (l.length !== 1) return `1 passage attendu, ${l.length} obtenus`
+    if (l[0].temps !== '2:14') return `« 2:14 » attendu, « ${l[0].temps} » obtenu`
+    if (l[0].texte !== 'Le texte, lui, doit apparaître.') return `texte inattendu : ${l[0].texte}`
+    return null
+  },
+)
+
+// Le changement de locuteur coupe le regroupement : deux voix ne se fondent
+// pas en un seul passage.
+attendScript(
+  'changement de locuteur : les voix ne se mélangent pas',
+  'WEBVTT\n\n' +
+    '00:00.000 --> 00:02.000\n<v Marie>Bonjour à tous\n\n' +
+    '00:02.000 --> 00:04.000\n<v Marie>et bienvenue\n\n' +
+    '00:04.000 --> 00:06.000\n<v Paul>Merci Marie\n',
+  (l) => {
+    if (l.length !== 2) return `2 passages attendus, ${l.length} obtenus`
+    if (l[0].texte !== 'Bonjour à tous et bienvenue') return `regroupement manqué : ${l[0].texte}`
+    if (l[1].texte !== 'Merci Marie') return `coupure manquée : ${l[1].texte}`
+    return null
+  },
+)
+
+// Les entités se décodent après le retrait des balises. Décoder d'abord
+// transformerait `&lt;i&gt;` en une balise que l'étape suivante mangerait,
+// emportant le texte avec elle.
+attendScript(
+  'entités et balises : l’ordre de nettoyage est le bon',
+  '1\n00:00:01,000 --> 00:00:03,000\n<i>Ford &amp; fils</i> écrit &lt;i&gt;ainsi&lt;/i&gt;\n',
+  (l) => {
+    if (l.length !== 1) return `1 passage attendu, ${l.length} obtenus`
+    if (l[0].texte !== 'Ford & fils écrit <i>ainsi</i>') return `texte inattendu : ${l[0].texte}`
+    return null
+  },
+)
+
+// Au-delà d'une heure, les minutes débordent plutôt que de passer en heures :
+// `versSecondes`, côté navigateur, n'attend que deux segments.
+attendScript(
+  'une réplique à 1 h 13 déborde les minutes sans casser le format',
+  '1\n01:13:20,000 --> 01:13:24,000\nTrès loin dans la vidéo.\n',
+  (l) => (l[0]?.temps === '73:20' ? null : `« 73:20 » attendu, « ${l[0]?.temps} » obtenu`),
+)
+
+// Un fichier mal ordonné existe : le regroupement suppose l'ordre, et la page
+// de lecture aussi.
+attendScript(
+  'des répliques désordonnées sont remises en ordre',
+  '1\n00:05:00,000 --> 00:05:02,000\nDeuxième.\n\n' +
+    '2\n00:01:00,000 --> 00:01:02,000\nPremière.\n',
+  (l) => {
+    if (l.length !== 2) return `2 passages attendus, ${l.length} obtenus`
+    if (l[0].texte !== 'Première.') return `ordre non rétabli : ${l[0].texte}`
+    return null
+  },
+)
+
+// Deux passages sur la même seconde produiraient une clé dupliquée dans la
+// liste du lecteur, et Vue rendrait mal sans rien dire.
+attendScript(
+  'deux passages retombant sur la même seconde sont fusionnés',
+  '1\n00:00:10,100 --> 00:00:10,300\nPremier bout.\n\n' +
+    '2\n00:00:10,600 --> 00:00:10,900\nSecond bout.\n',
+  (l) => {
+    const temps = l.map((x) => x.temps)
+    if (new Set(temps).size !== temps.length) return `timecodes dupliqués : ${temps.join(', ')}`
+    return null
+  },
+)
+
+// Les timecodes doivent rester strictement croissants sur un fichier long :
+// c'est ce dont dépend la mise en évidence du passage courant.
+{
+  const repliques = Array.from({ length: 900 }, (_, i) => {
+    const debut = i * 3
+    const mm = String(Math.floor(debut / 60)).padStart(2, '0')
+    const ss = String(debut % 60).padStart(2, '0')
+    const finTotal = debut + 2
+    const fmm = String(Math.floor(finTotal / 60)).padStart(2, '0')
+    const fss = String(finTotal % 60).padStart(2, '0')
+    return `${i + 1}\n00:${mm}:${ss},000 --> 00:${fmm}:${fss},000\nPassage numéro ${i + 1} de la transcription`
+  }).join('\n\n')
+
+  const lignes = analyserSousTitres(repliques)
+  const temps = lignes.map((l) => l.temps)
+  const secondes = temps.map((t) => {
+    const [m, s] = t.split(':').map(Number)
+    return m * 60 + s
+  })
+  const croissant = secondes.every((v, i) => i === 0 || v > secondes[i - 1])
+
+  if (!lignes.length) echec('transcription longue — aucun passage produit')
+  else if (new Set(temps).size !== temps.length) echec('transcription longue — timecodes dupliqués')
+  else if (!croissant) echec('transcription longue — timecodes non croissants')
+  else succes(`transcription de 900 répliques ramenée à ${lignes.length} passages, timecodes uniques et croissants`)
+}
+
+// Un fichier qui n'en est pas un ne doit pas passer pour une transcription vide
+// mais valable : la route d'import s'appuie sur ce zéro pour refuser.
+attendScript(
+  'un texte sans horodatage ne produit aucun passage',
+  'Ceci est un compte rendu de réunion.\nIl n’a aucun horodatage.\n',
+  (l) => (l.length === 0 ? null : `${l.length} passage(s) produit(s) à tort`),
+)
+
 // --- Les flux transcodés sont-ils complets ? ---------------------------------
 
 console.log('\nFlux transcodés')
