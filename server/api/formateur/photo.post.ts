@@ -1,5 +1,5 @@
 import { majFormateur, trouverFormateur } from '../../database/catalogue'
-import { televerserPortrait, typesPortraitLisibles } from '../../utils/portraits'
+import { SEAU_PORTRAITS, cheminDansSeau, effacerImage, lireImageDeposee, televerserImage, urlPhoto } from '../../utils/photos'
 import { exigerFormateur } from '../../utils/session'
 
 /** « Changer la photo » (planche D, écran 02). L'image remplace le portrait
@@ -7,22 +7,34 @@ import { exigerFormateur } from '../../utils/session'
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerFormateur(event)
   const formateurId = utilisateur.formateurId!
-  if (!(await trouverFormateur(formateurId))) {
+  const formateur = await trouverFormateur(formateurId)
+  if (!formateur) {
     throw createError({ statusCode: 404, statusMessage: 'Profil introuvable' })
   }
 
-  const parties = await readMultipartFormData(event)
-  const fichier = parties?.find((p) => p.name === 'photo' && p.filename)
-  if (!fichier) {
-    throw createError({
-      statusCode: 422,
-      statusMessage: `Aucune image reçue : ${typesPortraitLisibles()}, 2 Mo au maximum.`,
-    })
+  const { contenu, format } = await lireImageDeposee(event, SEAU_PORTRAITS)
+  const chemin = await televerserImage(SEAU_PORTRAITS, formateurId, contenu, format)
+
+  // La colonne garde une adresse affichable, pas un chemin : elle est `not null`
+  // et les formateurs installés par le seed pointent vers un fichier du site.
+  const url = urlPhoto(SEAU_PORTRAITS, chemin)
+  if (!url) {
+    await effacerImage(SEAU_PORTRAITS, chemin)
+    throw createError({ statusCode: 500, statusMessage: 'Adresse du stockage introuvable' })
   }
 
-  const url = await televerserPortrait(formateurId, {
-    donnees: fichier.data,
-    type: fichier.type ?? '',
-  })
-  return await majFormateur(formateurId, { photo: url })
+  let profil
+  try {
+    profil = await majFormateur(formateurId, { photo: url })
+  } catch (erreur) {
+    // La base a refusé : le fichier tout juste déposé n'est rattaché à rien.
+    await effacerImage(SEAU_PORTRAITS, chemin)
+    throw erreur
+  }
+
+  // Le portrait précédent n'est effacé qu'une fois le nouveau en place. Rien à
+  // faire si c'était une image du site : `cheminDansSeau` ne rend un chemin que
+  // pour ce qui vient bien du seau.
+  await effacerImage(SEAU_PORTRAITS, cheminDansSeau(SEAU_PORTRAITS, formateur.photo))
+  return profil
 })
