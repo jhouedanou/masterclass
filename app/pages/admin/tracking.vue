@@ -63,7 +63,7 @@ interface Carte {
 
 const CARTES: Carte[] = [
   { cle: 'gtmConteneur', titre: 'Google Tag Manager', libelle: 'ID du conteneur', exemple: 'GTM-XXXXXXX',
-    note: 'Injecté dans le <head> de toutes les pages, consentement cookies respecté.' },
+    note: 'Chargé sur les pages publiques après acceptation de la mesure. L’administration et l’espace apprenant ne sont pas mesurés.' },
   { cle: 'ga4Mesure', titre: 'Google Analytics 4', libelle: 'ID de mesure', exemple: 'G-XXXXXXXXXX',
     note: 'E-commerce : vue de module, ajout au panier, début de commande, achat.' },
   { cle: 'metaPixelId', titre: 'Meta Pixel', libelle: 'Pixel ID', exemple: '1234567890',
@@ -80,6 +80,47 @@ function etat(valeur: string) {
   return valeur
     ? { texte: 'Renseigné', classe: 'bg-succes-voile text-succes' }
     : { texte: 'En attente', classe: 'bg-alerte-voile text-alerte' }
+}
+
+// --- Vérification de l'installation (écran 19) ------------------------------
+
+/**
+ * Le conteneur est-il réellement là ?
+ *
+ * On ne peut pas le savoir depuis le back-office : les pages privées ne sont
+ * pas mesurées, et le conteneur ne s'y charge donc jamais. On ouvre la page
+ * publique et on regarde si le script est présent — c'est ce que ferait
+ * l'assistant de prévisualisation de Google, en plus simple.
+ */
+const verification = ref('')
+const evenementTest = ref('')
+
+async function verifierInstallation() {
+  verification.value = 'Vérification en cours…'
+  try {
+    const page = await $fetch<string>('/', { responseType: 'text' })
+    const idPresent = champs.gtmConteneur && page.includes(champs.gtmConteneur)
+    // Le conteneur est chargé par un script client, après consentement : il
+    // n'apparaît pas dans le HTML rendu par le serveur. On le dit plutôt que
+    // de conclure à une panne.
+    verification.value = idPresent
+      ? 'Conteneur trouvé dans la page publique.'
+      : champs.gtmConteneur
+        ? 'Le conteneur n’apparaît pas dans le HTML servi — c’est attendu : il se charge côté navigateur, après acceptation des cookies. Ouvrez la page publique en navigation privée, acceptez la mesure, puis vérifiez dans l’aperçu de Google Tag Manager.'
+        : 'Aucun identifiant de conteneur renseigné : rien n’est injecté.'
+  } catch {
+    verification.value = 'La page publique n’a pas répondu.'
+  }
+}
+
+/** Un événement de contrôle poussé dans la couche de données, pour voir
+ *  arriver quelque chose dans l'aperçu de Google Tag Manager. */
+function envoyerEvenementTest() {
+  const w = window as unknown as { dataLayer?: unknown[] }
+  w.dataLayer = w.dataLayer ?? []
+  w.dataLayer.push({ event: 'emc_test', origine: 'back-office', horodatage: new Date().toISOString() })
+  evenementTest.value =
+    'Événement « emc_test » poussé dans la couche de données de cet onglet. Il n’arrivera chez Google que si le conteneur y est chargé — ce qui n’est pas le cas des pages d’administration, volontairement.'
 }
 
 async function enregistrer() {
@@ -107,9 +148,29 @@ async function enregistrer() {
   <div v-if="data">
     <h1 class="font-title text-[26px] font-light">Tracking &amp; pixels</h1>
     <p class="mt-2 max-w-[720px] text-[13.5px] text-discret">
-      Un seul conteneur Google Tag Manager est injecté sur le site et la PWA ; tous les pixels se
+      Un seul conteneur Google Tag Manager est chargé sur les pages publiques ; tous les pixels se
       gèrent ensuite dans GTM. Les identifiants ci-dessous alimentent les événements serveur et la
       vérification de propriété.
+    </p>
+    <p class="mt-2 max-w-[720px] text-[12.5px] text-discret">
+      Le conteneur ne se charge qu’après acceptation de la mesure dans le bandeau cookies, et
+      jamais sur l’administration, l’espace apprenant ni le tunnel d’achat : ces pages n’ont rien à
+      faire dans une audience publicitaire.
+    </p>
+
+    <div class="mt-4 flex flex-wrap items-center gap-3">
+      <UiBaseButton taille="sm" variante="contour" @click="verifierInstallation">
+        Vérifier l’installation
+      </UiBaseButton>
+      <UiBaseButton taille="sm" variante="contour" @click="envoyerEvenementTest">
+        Envoyer un événement test
+      </UiBaseButton>
+    </div>
+    <p v-if="verification" class="mt-2 max-w-[720px] rounded-[10px] border border-ligne bg-white p-3 text-[12.5px] text-texte">
+      {{ verification }}
+    </p>
+    <p v-if="evenementTest" class="mt-2 max-w-[720px] rounded-[10px] border border-ligne bg-white p-3 text-[12.5px] text-texte">
+      {{ evenementTest }}
     </p>
 
     <!-- Verrou -->
