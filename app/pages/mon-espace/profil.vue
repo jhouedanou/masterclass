@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Persona, ProgrammeSlug, Utilisateur } from '#shared/types'
 import { CHAMPS_ENTREPRENEUR, CHAMPS_SOCIAL_MEDIA, NIVEAUX_EXPERIENCE, calculerCompletionProfil, champsProfil } from '#shared/utils/profil'
+import type { EntreeReferentiel } from '#shared/utils/referentiels'
+import { entreesDe, libellesReferentiel } from '#shared/utils/referentiels'
 
 definePageMeta({ layout: 'espace', middleware: 'auth' })
 usePagePrivee('Votre profil apprenant')
@@ -9,6 +11,15 @@ const auth = useAuthStore()
 const { data, refresh } = await useFetch<{ utilisateur: Utilisateur; persona: Persona; programme: ProgrammeSlug | null }>(
   '/api/mon-espace/compte',
 )
+
+// Valeurs proposées aux quatre champs à choix multiple. Chargées ici plutôt
+// que figées dans la page : elles s'administrent sans déploiement.
+const { data: referentiels } = await useFetch<EntreeReferentiel[]>('/api/referentiels', {
+  default: () => [],
+})
+const reseaux = computed(() => entreesDe(referentiels.value, 'reseau'))
+const outils = computed(() => entreesDe(referentiels.value, 'outil'))
+const canaux = computed(() => entreesDe(referentiels.value, 'canal'))
 
 const formulaire = reactive<Persona & { prenom: string; nom: string; whatsapp: string }>({
   prenom: data.value?.utilisateur.prenom ?? '',
@@ -50,12 +61,20 @@ const consigneEdition = computed(() => completion.value === 100
  * renseigné » et « à renseigner » vient de `champsManquants`, jamais d'un
  * second test de présence — sinon la carte dérive du pourcentage affiché.
  */
+const CHAMPS_REFERENTIEL = ['reseaux', 'outils', 'canaux', 'presenceEnLigne'] as const
+type ChampReferentiel = (typeof CHAMPS_REFERENTIEL)[number]
+
 /** Ce qu'affiche la colonne « Déjà renseigné » pour un champ donné. */
 function libelleValeur(cle: string): string {
   // La photo est un fichier : en montrer l'URL n'apprendrait rien.
   if (cle === 'photo') return 'Déposée'
   if (cle === 'niveau') {
     return NIVEAUX_EXPERIENCE.find((n) => n.valeur === valeurs.value.niveau)?.libelle ?? String(valeurs.value.niveau)
+  }
+  // Les champs à choix multiple stockent des clés : sans traduction, l'aperçu
+  // afficherait « instagram,tiktok » au lieu de « Instagram, TikTok ».
+  if (CHAMPS_REFERENTIEL.includes(cle as ChampReferentiel)) {
+    return libellesReferentiel(String(valeurs.value[cle] ?? ''), referentiels.value)
   }
   return String(valeurs.value[cle])
 }
@@ -311,15 +330,24 @@ async function enregistrer() {
               <option v-for="t in TAILLES" :key="t">{{ t }}</option>
             </select>
           </label>
-          <label class="block">
-            <span class="mb-1.5 block text-[13px] font-bold text-texte">Canaux de vente actuels</span>
-            <input v-model="formulaire.canaux" :class="classe" placeholder="WhatsApp, boutique, marchés, site…">
-          </label>
-          <label class="block">
-            <span class="mb-1.5 block text-[13px] font-bold text-texte">Présence en ligne existante</span>
-            <input v-model="formulaire.presenceEnLigne" :class="classe"
-              placeholder="Page Facebook, compte Instagram, site…">
-          </label>
+          <div class="block">
+            <span id="champ-canaux" class="mb-1.5 block text-[13px] font-bold text-texte">Canaux de vente actuels</span>
+            <UiChampMultiChoix
+              v-model="formulaire.canaux"
+              :entrees="canaux"
+              :disabled="!edition"
+              aria-labelledby="champ-canaux"
+            />
+          </div>
+          <div class="block">
+            <span id="champ-presence" class="mb-1.5 block text-[13px] font-bold text-texte">Présence en ligne existante</span>
+            <UiChampMultiChoix
+              v-model="formulaire.presenceEnLigne"
+              :entrees="reseaux"
+              :disabled="!edition"
+              aria-labelledby="champ-presence"
+            />
+          </div>
           <label class="block">
             <span class="mb-1.5 block text-[13px] font-bold text-texte">Budget communication mensuel</span>
             <select v-model="formulaire.budget" :class="[...classe, 'bg-white']">
@@ -336,11 +364,16 @@ async function enregistrer() {
 
         <fieldset v-else-if="programme === 'social-media'" :disabled="!edition" class="mt-8 grid gap-5 sm:grid-cols-2">
           <legend class="surtitre mb-4 text-social">Spécifique au programme Social Média</legend>
-          <label class="block">
-            <span class="mb-1.5 block text-[13px] font-bold text-texte">{{ CHAMPS_SOCIAL_MEDIA[0]!.libelle }}
+          <div class="block">
+            <span id="champ-reseaux" class="mb-1.5 block text-[13px] font-bold text-texte">{{ CHAMPS_SOCIAL_MEDIA[0]!.libelle }}
               actuellement</span>
-            <input v-model="formulaire.reseaux" :class="classe" placeholder="Instagram, TikTok, LinkedIn…">
-          </label>
+            <UiChampMultiChoix
+              v-model="formulaire.reseaux"
+              :entrees="reseaux"
+              :disabled="!edition"
+              aria-labelledby="champ-reseaux"
+            />
+          </div>
           <label class="block">
             <span class="mb-1.5 block text-[13px] font-bold text-texte">Taille d’audience approximative</span>
             <select v-model="formulaire.audience" :class="[...classe, 'bg-white']">
@@ -348,10 +381,15 @@ async function enregistrer() {
               <option v-for="a in AUDIENCES" :key="a">{{ a }}</option>
             </select>
           </label>
-          <label class="block">
-            <span class="mb-1.5 block text-[13px] font-bold text-texte">Outils utilisés</span>
-            <input v-model="formulaire.outils" :class="classe" placeholder="Canva, CapCut, Meta Business Suite…">
-          </label>
+          <div class="block">
+            <span id="champ-outils" class="mb-1.5 block text-[13px] font-bold text-texte">Outils utilisés</span>
+            <UiChampMultiChoix
+              v-model="formulaire.outils"
+              :entrees="outils"
+              :disabled="!edition"
+              aria-labelledby="champ-outils"
+            />
+          </div>
           <label class="block">
             <span class="mb-1.5 block text-[13px] font-bold text-texte">Clients / marques accompagnés</span>
             <input v-model="formulaire.clients" :class="classe" placeholder="Une marque de cosmétiques, un restaurant…">

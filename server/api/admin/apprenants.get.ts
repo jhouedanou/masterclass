@@ -1,6 +1,8 @@
+import { libellesReferentiel } from '#shared/utils/referentiels'
 import { listerModules } from '../../database/catalogue'
 import { listerCertificats, listerTransactions } from '../../database/commerce'
 import { listerAcces, listerPersonas, listerUtilisateurs } from '../../database/comptes'
+import { listerReferentiels } from '../../database/referentiels'
 import { exigerAdmin } from '../../utils/session'
 
 /** Champs attendus d'une fiche apprenant complète — le pourcentage affiché est
@@ -11,13 +13,14 @@ export default defineEventHandler(async (event) => {
   await exigerAdmin(event)
   const { programme, profil } = getQuery(event) as Record<string, string | undefined>
 
-  const [utilisateurs, acces, modules, certificats, personas, transactions] = await Promise.all([
+  const [utilisateurs, acces, modules, certificats, personas, transactions, referentiels] = await Promise.all([
     listerUtilisateurs(),
     listerAcces(),
     listerModules(),
     listerCertificats(),
     listerPersonas(),
     listerTransactions(),
+    listerReferentiels(),
   ])
 
   return utilisateurs
@@ -67,7 +70,15 @@ export default defineEventHandler(async (event) => {
             revoqueLe: c.revoqueLe ?? null,
             motifRevocation: c.motifRevocation ?? null,
           })),
-        persona,
+        // Les champs à choix multiple stockent des clés : la fiche du back-office
+        // les affiche telles quelles, on les traduit avant de les lui remettre.
+        persona: persona && {
+          ...persona,
+          reseaux: libellesReferentiel(persona.reseaux, referentiels),
+          outils: libellesReferentiel(persona.outils, referentiels),
+          canaux: libellesReferentiel(persona.canaux, referentiels),
+          presenceEnLigne: libellesReferentiel(persona.presenceEnLigne, referentiels),
+        },
         montantPaye: transactions
           .filter((t) => t.utilisateurId === u.id && t.statut === 'reussie')
           .reduce((somme, t) => somme + t.montant, 0),

@@ -100,5 +100,7 @@ async function enregistrer() {
         <NuxtLink to="/admin/referencement" class="underline">Référencement (SEO)</NuxtLink>.
       </p>
     </section>
+
+    <AdminReferentiels />
   </div>
 </template>

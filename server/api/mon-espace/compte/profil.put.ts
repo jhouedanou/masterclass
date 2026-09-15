@@ -1,7 +1,18 @@
 import type { Persona } from '#shared/types'
+import { cleValide, separerCles } from '#shared/utils/referentiels'
 import { validerTelephone } from '#shared/utils/telephone'
 import { majPersona, majProfilUtilisateur } from '../../../database/comptes'
 import { exigerUtilisateur } from '../../../utils/session'
+
+/** Les champs dont la valeur est une liste de clés de référentiel. */
+const CHAMPS_REFERENTIEL = ['reseaux', 'outils', 'canaux', 'presenceEnLigne'] as const
+
+const LIBELLES_REFERENTIEL: Record<(typeof CHAMPS_REFERENTIEL)[number], string> = {
+  reseaux: 'Réseaux gérés',
+  outils: 'Outils utilisés',
+  canaux: 'Canaux de vente actuels',
+  presenceEnLigne: 'Présence en ligne existante',
+}
 
 /**
  * Fiche apprenant (planche B, écran 04) : identité et contexte transmis au
@@ -39,6 +50,20 @@ export default defineEventHandler(async (event) => {
   const age = body.persona?.age ? Number(body.persona.age) : undefined
   if (age !== undefined && (!Number.isInteger(age) || age < 12 || age > 120)) {
     throw createError({ statusCode: 422, statusMessage: 'Âge invalide' })
+  }
+
+  // Les quatre champs à choix multiple ne portent que des clés de référentiel.
+  // Le contrôle s'arrête à la forme de la clé, sans consulter la table : une
+  // fiche enregistrée avant qu'une entrée ne soit retirée doit rester
+  // enregistrable telle quelle, même si son propriétaire n'y a pas touché.
+  for (const champ of CHAMPS_REFERENTIEL) {
+    const valeur = body.persona?.[champ]
+    if (valeur && !separerCles(valeur).every(cleValide)) {
+      throw createError({
+        statusCode: 422,
+        statusMessage: `Valeur non reconnue pour « ${LIBELLES_REFERENTIEL[champ]} »`,
+      })
+    }
   }
 
   const compte = await majProfilUtilisateur(utilisateur.id, {

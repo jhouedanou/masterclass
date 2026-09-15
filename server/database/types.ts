@@ -52,6 +52,7 @@ export type CodeEchecPaiementSql =
   | 'doublon'
   | 'erreur-inconnue'
 export type OrigineNoteSql = 'collective' | 'privee'
+export type CategorieReferentielSql = 'reseau' | 'outil' | 'canal'
 export type CleBlocVitrineSql = 'accueil' | 'banniere' | 'programmes' | 'annonce' | 'legales'
 export type SectionAdminSql =
   | 'administration-acces'
@@ -564,6 +565,16 @@ export type RedirectionRow = {
   creee_le: string
 }
 
+export type ReferentielRow = {
+  id: string
+  categorie: CategorieReferentielSql
+  /** Clé stable stockée dans les fiches apprenant, jamais le libellé. */
+  cle: string
+  libelle: string
+  ordre: number
+  actif: boolean
+}
+
 /** Les colonnes à valeur par défaut sont facultatives à l'insertion. */
 type Table<Row, Genere extends keyof Row = never> = {
   Row: Row
@@ -714,6 +725,7 @@ export type Database = {
       reglages_tracking: Table<ReglagesTrackingRow, 'id' | 'maj_le' | 'maj_par'>
       ressources_modules: Table<RessourceModuleRow, 'id' | 'cree_le' | 'position' | 'format'>
       versions_contenu: Table<VersionContenuRow, 'id' | 'cree_le'>
+      referentiels: Table<ReferentielRow, 'ordre' | 'actif'>
     }
     // `{ [_ in never]: never }` est la forme qu'attend postgrest-js pour une
     // collection vide : `Record<string, never>` ne satisfait pas la contrainte
@@ -776,6 +788,7 @@ export type Database = {
       origine_note: OrigineNoteSql
       section_admin: SectionAdminSql
       cle_bloc_vitrine: CleBlocVitrineSql
+      categorie_referentiel: CategorieReferentielSql
     }
     CompositeTypes: { [_ in never]: never }
   }

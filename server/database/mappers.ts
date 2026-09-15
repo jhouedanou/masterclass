@@ -48,8 +48,10 @@ import type {
   SujetSessionRow,
   ThematiqueRow,
   TransactionRow,
+  ReferentielRow,
   UtilisateurRow,
 } from './types'
+import type { EntreeReferentiel } from '#shared/utils/referentiels'
 import { SEAU_PHOTOS_PROFIL, urlPhoto } from '../utils/photos'
 
 /**
@@ -260,6 +262,17 @@ export function versPersona(row: PersonaRow): Persona {
     audience: optionnel(row.audience),
     outils: optionnel(row.outils),
     clients: optionnel(row.clients),
+  }
+}
+
+export function versReferentiel(row: ReferentielRow): EntreeReferentiel {
+  return {
+    id: row.id,
+    categorie: row.categorie,
+    cle: row.cle,
+    libelle: row.libelle,
+    ordre: row.ordre,
+    actif: row.actif,
   }
 }
 

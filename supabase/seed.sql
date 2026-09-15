@@ -148,8 +148,8 @@ insert into utilisateurs (id, prenom, nom, email, whatsapp, pays, role, fiche_co
 
 -- Personas apprenants transmis aux formateurs
 insert into personas (utilisateur_id, age, ville, secteur, niveau, experience, objectif, entreprise, stade, taille_equipe, canaux, presence_en_ligne, budget, defi, reseaux, audience, outils, clients) values
-  ('usr-aya', 27, 'Abidjan', 'Agence digitale', 'intermediaire', '1 à 3 ans', 'Signer 3 clients d’ici décembre', null, null, null, null, null, null, null, 'Instagram, TikTok', '1 000 à 10 000 abonnés', 'Canva, CapCut', null),
-  ('usr-moussa', 34, 'Bouaké', 'Commerce de détail', 'confirme', '3 à 5 ans', 'Doubler les commandes entrantes', 'Boutique Diabaté', 'En activité depuis plus de 2 ans', '2 à 5 personnes', 'WhatsApp, boutique physique', null, null, null, 'WhatsApp, Facebook', null, null, null);
+  ('usr-aya', 27, 'Abidjan', 'Agence digitale', 'intermediaire', '1 à 3 ans', 'Signer 3 clients d’ici décembre', null, null, null, null, null, null, null, 'instagram,tiktok', '1 000 à 10 000 abonnés', 'canva,capcut', null),
+  ('usr-moussa', 34, 'Bouaké', 'Commerce de détail', 'confirme', '3 à 5 ans', 'Doubler les commandes entrantes', 'Boutique Diabaté', 'En activité depuis plus de 2 ans', '2 à 5 personnes', 'whatsapp,boutique-physique', null, null, null, 'whatsapp,facebook', null, null, null);
 
 -- Accès acquis
 insert into acces (utilisateur_id, module_id, progression, achete_le, termine_le, origine) values

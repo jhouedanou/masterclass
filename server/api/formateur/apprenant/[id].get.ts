@@ -1,3 +1,4 @@
+import { libellesReferentiel } from '#shared/utils/referentiels'
 import { listerModules } from '../../../database/catalogue'
 import {
   listerDemandesCoachingPriveFormateur,
@@ -11,6 +12,7 @@ import {
   trouverPersona,
   trouverUtilisateur,
 } from '../../../database/comptes'
+import { listerReferentiels } from '../../../database/referentiels'
 import { exigerFormateur } from '../../../utils/session'
 
 /**
@@ -57,9 +59,10 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const [persona, visionnages] = await Promise.all([
+  const [persona, visionnages, referentiels] = await Promise.all([
     trouverPersona(apprenant.id),
     listerVisionnagesUtilisateur(apprenant.id),
+    listerReferentiels(),
   ])
 
   // « Progression — Accroches & IA : 2 / 3 chapitres », module par module.
@@ -96,7 +99,8 @@ export default defineEventHandler(async (event) => {
       ? {
           secteur: persona.secteur ?? '',
           experience: persona.experience ?? persona.niveau ?? '',
-          reseaux: persona.reseaux ?? persona.canaux ?? '',
+          // Clés du référentiel en base : le formateur doit lire des libellés.
+          reseaux: libellesReferentiel(persona.reseaux ?? persona.canaux, referentiels),
           objectif: persona.objectif ?? persona.defi ?? '',
           entreprise: persona.entreprise ?? '',
           audience: persona.audience ?? '',
