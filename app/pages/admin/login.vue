@@ -200,6 +200,18 @@ async function renvoyer() {
         Chaque tentative est journalisée (adresse IP, appareil, horodatage). Cinq échecs bloquent le compte 30 minutes.
       </p>
       <NuxtLink to="/mot-de-passe-oublie" class="block text-[14px] text-discret hover:underline">Mot de passe oublié ?</NuxtLink>
+      <!--
+        Renvoi permanent, affiché à tout le monde et en toute circonstance.
+        Cet écran refuse les comptes apprenant et formateur derrière le message
+        d'un identifiant inconnu, pour ne pas révéler qu'un compte existe : un
+        formateur qui s'y trompe croit son mot de passe faux. Le dire d'emblée
+        lève la confusion sans rien divulguer — n'afficher ce renvoi qu'après
+        une tentative, lui, trahirait le compte saisi.
+      -->
+      <p class="border-t border-ligne-claire pt-4 text-[13.5px] text-discret">
+        Cet accès est réservé à l’administration. Apprenants et formateurs se connectent depuis
+        <NuxtLink to="/connexion" class="font-bold hover:underline">la page de connexion habituelle</NuxtLink>.
+      </p>
     </form>
 
     <!-- Enrôlement : première connexion avec une application d'authentification. -->
