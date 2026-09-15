@@ -631,6 +631,7 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
         :libelle="data.module.titre"
         :chemin="`/modules/${data.module.slug}`"
         :seo="data.module.seo"
+        :statut="data.module.statut"
         integre
         @enregistre="refresh()"
       />

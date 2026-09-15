@@ -258,6 +258,7 @@ async function enregistrer(statut?: 'brouillon' | 'publie') {
         :libelle="data.article.titre"
         :chemin="`/blog/${data.article.slug}`"
         :seo="data.article.seo"
+        :statut="data.article.statut"
         :autres="data.autres"
         integre
         @enregistre="refresh()"

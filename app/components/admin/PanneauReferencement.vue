@@ -16,6 +16,9 @@ const props = defineProps<{
   autres?: { id: string; title?: string; metaDescription?: string }[]
   /** Sans en-tête ni bouton « Fermer » quand le panneau vit dans un onglet. */
   integre?: boolean
+  /** État de publication de la page, affiché en rappel : une page en brouillon
+   *  ne sera pas indexée quoi qu'on règle ici. */
+  statut?: string
 }>()
 const emit = defineEmits<{ fermer: []; enregistre: [] }>()
 
@@ -132,6 +135,28 @@ async function enregistrer() {
           <legend class="px-1 text-xs text-texte">Réservé aux administrateurs supérieurs</legend>
           <div class="space-y-3">
             <div>
+              <p v-if="statut" class="mb-3 text-xs">
+                <span
+                  class="rounded-full px-2.5 py-1 font-bold"
+                  :class="{
+                    'bg-succes-voile text-succes': statut === 'disponible' || statut === 'publie',
+                    'bg-alerte-voile text-alerte': statut === 'annonce',
+                    'bg-fond-voile text-discret': statut === 'brouillon' || statut === 'en-preparation',
+                  }"
+                >
+                  {{
+                    statut === 'disponible' || statut === 'publie'
+                      ? 'Publié'
+                      : statut === 'annonce'
+                        ? 'À venir'
+                        : 'Brouillon'
+                  }}
+                </span>
+                <span v-if="statut === 'brouillon' || statut === 'en-preparation'" class="ml-2 text-discret">
+                  Une page en brouillon n’est pas indexée, quels que soient ces réglages.
+                </span>
+              </p>
+
               <label class="mb-1 block text-xs text-texte" :for="`slug-${id}`">Slug / URL</label>
               <input
                 :id="`slug-${id}`"
