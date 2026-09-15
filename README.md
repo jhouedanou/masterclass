@@ -120,8 +120,21 @@ Secret keys* — l'ancienne clé `service_role` JWT reste acceptée via `SUPABAS
 et les reporter dans `.env`. Ces deux fichiers sont assemblés depuis les migrations : les régénérer avec `npm run db:sql`
 après toute modification du schéma.
 
-Avec la CLI, la voie recommandée reste `npm run db:migrer` (`supabase db push`), qui tient le
-registre des migrations appliquées.
+Avec la CLI, `npm run db:migrer` (`supabase db push`) tient le registre des migrations appliquées.
+Il demande `supabase link` au préalable — sans lien, la commande échoue sur
+`LegacyProjectNotLinkedError`.
+
+**État du projet hébergé.** Il a été installé depuis `supabase/en-ligne/`, qui n'écrit pas dans le
+registre : `supabase_migrations.schema_migrations` était donc incomplet, et un `db push` aurait
+voulu rejouer des migrations déjà en place — `column … already exists`. Le registre a été aligné
+sur les treize fichiers de `supabase/migrations/`, après vérification que chacun est bien présent
+dans le schéma ; `db push` n'a plus rien à y appliquer.
+
+Le registre garde en plus une dizaine d'entrées antérieures, appliquées hors dépôt depuis le
+tableau de bord (`formateur`, `verification_attestation`, `comptes_admin`, `rattrapage_planche_e`,
+`nettoyage_tests_planche_e`), dont certaines portent le même nom qu'une migration du dépôt sous une
+autre version. Elles sont inoffensives pour `db push`, qui ne regarde que les fichiers locaux
+absents du registre ; `supabase migration list` les signalera comme distantes uniquement.
 
 ### En local
 

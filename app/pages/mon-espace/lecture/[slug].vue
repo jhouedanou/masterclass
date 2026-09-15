@@ -119,10 +119,7 @@ watch(lecteur.erreur, async (message) => {
 <template>
   <div v-if="data" class="sur-sombre min-h-screen bg-encre text-white">
     <header class="flex flex-wrap items-center justify-between gap-3 border-b border-encre-800 px-6 py-4">
-      <NuxtLink
-        :to="`/mon-espace/module/${moduleCourant.slug}`"
-        class="text-[13.5px] text-[#b9b4c4] hover:text-white"
-      >
+      <NuxtLink :to="`/mon-espace/module/${moduleCourant.slug}`" class="text-[13.5px] text-[#b9b4c4] hover:text-white">
         ← Retour au module
       </NuxtLink>
       <p class="font-title text-[17px] font-light">
@@ -136,46 +133,28 @@ watch(lecteur.erreur, async (message) => {
     <div class="grid gap-6 p-6 xl:grid-cols-[1.6fr_1fr]">
       <div>
         <div class="relative aspect-16/9 w-full overflow-hidden rounded-carte bg-black">
-          <img
-            src="/images/brand/pattern.png"
-            alt=""
-            aria-hidden="true"
-            class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[.14]"
-          >
-          <video
-            v-if="source"
-            ref="video"
-            class="h-full w-full"
-            controls
-            controlslist="nodownload"
-            playsinline
-            preload="metadata"
-            @play="lecteur.gestionnaires.onPlay"
-            @pause="lecteur.gestionnaires.onPause"
-            @ended="lecteur.gestionnaires.onEnded"
-            @timeupdate="lecteur.gestionnaires.onTimeupdate"
-            @loadedmetadata="lecteur.gestionnaires.onLoadedmetadata"
-          ></video>
+          <img src="/images/brand/pattern.png" alt="" aria-hidden="true"
+            class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[.14]">
+          <video v-if="source" ref="video" class="h-full w-full" controls controlslist="nodownload" playsinline
+            preload="metadata" @play="lecteur.gestionnaires.onPlay" @pause="lecteur.gestionnaires.onPause"
+            @ended="lecteur.gestionnaires.onEnded" @timeupdate="lecteur.gestionnaires.onTimeupdate"
+            @loadedmetadata="lecteur.gestionnaires.onLoadedmetadata"></video>
 
           <p v-else class="relative grid h-full place-items-center px-6 text-center text-[13.5px] text-[#b9b4c4]">
             La vidéo de ce chapitre n’est pas encore en ligne. Le script ci-contre en donne le
             contenu.
           </p>
 
-          <p
-            v-if="lecteur.erreur.value"
+          <p v-if="lecteur.erreur.value"
             class="absolute inset-x-0 bottom-14 mx-auto w-fit rounded bg-black/70 px-3 py-2 text-[12.5px] text-white"
-            role="status"
-          >
+            role="status">
             {{ lecteur.erreur.value }}
           </p>
 
           <!-- Filigrane nominatif : une rediffusion reste attribuable. -->
-          <p
-            v-if="source"
+          <p v-if="source"
             class="pointer-events-none absolute top-4 right-4 rounded bg-black/40 px-2 py-1 text-[11px] text-white/70"
-            aria-hidden="true"
-          >
+            aria-hidden="true">
             {{ auth.utilisateur?.prenom }} {{ auth.utilisateur?.nom }} · {{ auth.utilisateur?.email }}
           </p>
         </div>
@@ -187,10 +166,7 @@ watch(lecteur.erreur, async (message) => {
           </span>
           <label class="flex items-center gap-2">
             Vitesse
-            <select
-              v-model.number="vitesse"
-              class="rounded border border-encre-800 bg-encre-800 px-2 py-1 text-white"
-            >
+            <select v-model.number="vitesse" class="rounded border border-encre-800 bg-encre-800 px-2 py-1 text-white">
               <option v-for="v in vitesses" :key="v" :value="v">{{ v }}×</option>
             </select>
           </label>
@@ -204,31 +180,26 @@ watch(lecteur.erreur, async (message) => {
         </p>
 
         <nav aria-label="Chapitres" class="mt-6 flex flex-wrap gap-2">
-          <button
-            v-for="(c, i) in moduleCourant.chapitres"
-            :key="i"
+          <button v-for="(c, i) in moduleCourant.chapitres" :key="i"
             class="rounded-full border px-3.5 py-2 text-[12.5px]"
             :class="i === index ? 'border-social bg-social text-white' : 'border-encre-800 text-[#b9b4c4]'"
-            @click="index = i"
-          >
+            @click="index = i">
             {{ c.libelle }}
           </button>
         </nav>
       </div>
 
       <aside class="rounded-carte bg-encre-800 p-5">
-        <h2 class="font-title text-[17px] font-light">Script du chapitre</h2>
+        <h2 class="font-title text-[17px] text-social-clair font-light mb-5">Script du chapitre</h2>
+        <hr class="border-encre-700 mb-5">
         <p class="mt-1 text-[12px] text-[#8f8a9c]">
           Synchronisé avec la lecture — cliquez sur un passage pour y déplacer la vidéo.
         </p>
 
         <ul class="mt-4 space-y-3">
           <li v-for="ligne in chapitre?.script ?? []" :key="ligne.temps">
-            <button
-              class="w-full rounded-[10px] p-3 text-left text-[13.5px] transition hover:bg-encre"
-              :class="ligneActive === ligne.temps ? 'bg-encre' : ''"
-              @click="lecteur.allerA(versSecondes(ligne.temps))"
-            >
+            <button class="w-full rounded-[10px] p-3 text-left text-[13.5px] transition hover:bg-encre"
+              :class="ligneActive === ligne.temps ? 'bg-encre' : ''" @click="lecteur.allerA(versSecondes(ligne.temps))">
               <span class="block font-mono text-[11.5px] text-social-clair">{{ ligne.temps }}</span>
               <span class="mt-1 block text-[#b9b4c4]">{{ ligne.texte }}</span>
             </button>

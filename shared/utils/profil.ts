@@ -18,7 +18,7 @@ export const NIVEAUX_EXPERIENCE = [
 ] as const
 
 export interface ChampProfil {
-  cle: keyof Persona | 'prenom' | 'nom' | 'whatsapp'
+  cle: keyof Persona | 'prenom' | 'nom' | 'whatsapp' | 'photo'
   libelle: string
 }
 
@@ -26,6 +26,10 @@ export const CHAMPS_COMMUNS: ChampProfil[] = [
   { cle: 'prenom', libelle: 'Prénom' },
   { cle: 'nom', libelle: 'Nom' },
   { cle: 'whatsapp', libelle: 'Numéro WhatsApp' },
+  // La photo compte comme les autres, sans exception : un compte déjà complet
+  // qui n'en a pas redescend sous les 100 % et reperd l'accès aux coaching
+  // sessions jusqu'à ce qu'il en dépose une. Règle voulue, uniforme.
+  { cle: 'photo', libelle: 'Photo de profil' },
   { cle: 'age', libelle: 'Âge' },
   { cle: 'ville', libelle: 'Ville' },
   { cle: 'secteur', libelle: 'Secteur d’activité' },
@@ -63,7 +67,7 @@ function renseigne(valeur: unknown): boolean {
 }
 
 export function calculerCompletionProfil(
-  utilisateur: Pick<Utilisateur, 'prenom' | 'nom' | 'whatsapp'>,
+  utilisateur: Pick<Utilisateur, 'prenom' | 'nom' | 'whatsapp' | 'photo'>,
   persona: Persona | null | undefined,
   programme: ProgrammeSlug | null,
 ): { pourcentage: number; champsManquants: ChampProfil[] } {

@@ -2,7 +2,8 @@
 /**
  * Chrome de l'espace apprenant (planche B) : en-tête dédié — logo, navigation
  * « Mes modules · Coaching collectif · Coaching privé · Mes certificats »,
- * pastille d'initiales, Déconnexion — et barre d'onglets basse sous 1024 px.
+ * pastille de compte (photo de profil, initiales à défaut), Déconnexion — et
+ * barre d'onglets basse sous 1024 px.
  */
 const auth = useAuthStore()
 
@@ -49,17 +50,25 @@ const menuCompte = ref(false)
         <div class="relative flex items-center gap-3">
           <button
             type="button"
-            class="grid size-9 place-items-center rounded-full bg-social text-[13px] font-bold text-white"
+            class="rounded-full"
             :aria-expanded="menuCompte"
             aria-haspopup="menu"
             :aria-label="`Compte de ${auth.utilisateur?.prenom ?? ''}`"
             @click="menuCompte = !menuCompte"
           >
-            {{ initiales }}
+            <UiAvatar :photo="auth.utilisateur?.photo" :initiales="initiales" />
           </button>
           <span class="hidden text-[14px] text-texte md:inline">{{ auth.utilisateur?.prenom }}</span>
-          <button type="button" class="hidden text-[13px] text-discret hover:text-encre md:inline" @click="seDeconnecter">
-            Déconnexion
+          <!-- Icône seule : le libellé part dans `aria-label` et `title`, sans quoi
+               le bouton n'aurait plus de nom accessible. -->
+          <button
+            type="button"
+            class="hidden size-9 place-items-center rounded-full text-discret hover:bg-fond-clair hover:text-encre md:grid"
+            aria-label="Déconnexion"
+            title="Déconnexion"
+            @click="seDeconnecter"
+          >
+            <Icon name="ph:sign-out" size="20" />
           </button>
           <div
             v-if="menuCompte"
