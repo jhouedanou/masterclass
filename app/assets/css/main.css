@@ -161,6 +161,15 @@
     outline-color: #fff;
   }
 
+  /* La règle de base colore chaque titre en encre, et cette déclaration bat
+     l'héritage : un H1 posé sur le hero d'une page programme ou sur un bloc
+     sombre s'affichait en encre sur violet. Sous `.sur-sombre`, les titres
+     reprennent la couleur du conteneur. Une utilité posée sur le titre
+     lui-même reste prioritaire. */
+  .sur-sombre :where(h1, h2, h3, h4, h5, h6) {
+    color: inherit;
+  }
+
   /* Sur-titre des maquettes : 11,5 px interlettré à .1em. La phase 1 l'avait
      posé à 13 px / .16em, ce qui grossissait chaque surtitre du site. */
   .surtitre {
