@@ -400,10 +400,26 @@
     <p>
       La table des erreurs 404 manquait depuis le début, ce qui laissait une ligne vide dans
       le bloc « État technique » de l’écran 23. Elle est écrite et vérifiée localement, et un
-      greffon compte désormais les 404. Votre base de développement étant hébergée, je n’y
-      applique pas de migration moi-même.
+      greffon compte désormais les 404. Reste à l’appliquer à la base hébergée.
     </p>
-    <pre>psql "$SUPABASE_DB_URL" -f supabase/en-ligne/27-erreurs-404.sql</pre>
+    <p>
+      <b>Le plus court, sans rien installer :</b> ouvrir l’éditeur SQL du projet
+      <code>szzsalitohizkdbrvsud</code> et y coller
+      <code>supabase/en-ligne/27-erreurs-404.sql</code>. Tout y est en
+      <code>if not exists</code> : le rejouer ne casse rien.
+    </p>
+    <p>
+      <b>Ou par la ligne de commande</b>, avec la CLI déjà présente dans les dépendances. Elle
+      applique aussi les autres migrations en attente et tient l’historique à jour côté
+      Supabase. Le premier appel demande le mot de passe de la base.
+    </p>
+    <pre>npx supabase link --project-ref szzsalitohizkdbrvsud
+npm run db:migrer</pre>
+    <p>
+      <code>psql</code> n’est pas installé sur la machine et le projet ne définit aucune
+      variable de connexion directe — d’où ces deux voies plutôt qu’une commande
+      <code>psql</code>.
+    </p>
   </div>
 
   <section>
