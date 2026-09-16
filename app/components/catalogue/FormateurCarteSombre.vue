@@ -8,7 +8,7 @@ defineProps<{ formateur: Formateur & { nbModules?: number } }>()
   <article class="flex flex-col gap-3 rounded-[14px] bg-encre-800 p-6">
     <NuxtImg
       :src="formateur.photo"
-      :alt="`Portrait de ${formateur.nom}`"
+      :alt="formateur.photoAlt || `Portrait de ${formateur.nom}`"
       width="84"
       height="84"
       loading="lazy"

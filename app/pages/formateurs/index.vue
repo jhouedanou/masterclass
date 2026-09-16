@@ -66,7 +66,7 @@ useFilAriane(mailles)
           <div class="flex flex-wrap items-center gap-5 p-6">
             <NuxtImg
               :src="formateur.photo"
-              :alt="`Portrait de ${formateur.nom}`"
+              :alt="formateur.photoAlt || `Portrait de ${formateur.nom}`"
               width="84"
               height="84"
               loading="lazy"

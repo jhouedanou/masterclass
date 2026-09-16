@@ -166,6 +166,9 @@ export interface Formateur {
   bio: string
   programmePrincipal: ProgrammeSlug
   photo: string
+  /** Texte alternatif du portrait, éditable au back-office. Vide, l'affichage
+   *  retombe sur un libellé construit sur le nom. */
+  photoAlt?: string
   /** Une fiche incomplète reste non indexable (spec SEO §1). */
   ficheComplete: boolean
   coachingPriveFcfaHeure: number
@@ -523,4 +526,49 @@ export interface InscriptionSession {
   inscritLe: string
   /** Présence pointée après la séance ; `null` tant qu'elle n'est pas relevée. */
   present?: boolean | null
+}
+
+// --- Blocs du site vitrine (CMS, planche C écran 15) -----------------------
+//
+// Le contenu d'un bloc est stocké en `jsonb` : ces formes le typent des deux
+// côtés, de l'éditeur du back-office jusqu'à la page publique.
+
+/** Un slide de la bannière d'accueil (planche A, écran 01). */
+export interface SlideBanniere {
+  /** Slug du programme : décide la couleur, le lien et l'ordre des thématiques. */
+  programme: string
+  /** Seconde moitié du H1, la première étant commune à tous les slides. */
+  accroche: string
+  /** Texte de description affiché sous le H1. */
+  description?: string
+  cta: string
+  imageFond: string
+  imageVisuel?: string
+  /** Textes alternatifs, éditables : sans eux l'image reste muette. */
+  altFond?: string
+  altVisuel?: string
+}
+
+export interface ContenuBanniere {
+  /** Première moitié du H1, identique sur tous les slides. */
+  accrocheFixe: string
+  /** Durée d'affichage d'un slide, en secondes. */
+  dureeSecondes: number
+  slides: SlideBanniere[]
+}
+
+/** Un des cinq documents légaux (planche A, écran 09). */
+export interface DocumentLegal {
+  /** Segment d'URL : `cgv`, `cgu`, `mentions-legales`… */
+  cle: string
+  titre: string
+  /** Date affichée en tête du document, telle que saisie. */
+  maj?: string
+  /** Corps du document, en HTML assaini. Vide tant que le juriste n'a rien rendu. */
+  corps?: string
+}
+
+export interface ContenuLegales {
+  note?: string
+  documents: DocumentLegal[]
 }

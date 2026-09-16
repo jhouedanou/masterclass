@@ -1,5 +1,11 @@
 <template>
-  <LegalPageLegale titre="Politique de cookies" chemin="/cookies" maj="1er août 2026">
+  <LegalPageLegale
+    cle="cookies"
+    titre="Politique de cookies"
+    chemin="/cookies"
+    maj="1er août 2026"
+    repli-provisoire
+  >
     <h2>Éditeur</h2>
     <p>
       La plateforme E-Masterclass Big Five est éditée par BigFiveAbidjan SARL, RCCM

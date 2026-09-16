@@ -46,7 +46,7 @@ async function basculerCoachingPrive(f: FormateurAdmin) {
 // --- Édition d'une fiche (écran 11) -----------------------------------------
 
 const edition = ref<FormateurAdmin | null>(null)
-const fiche = reactive({ nom: '', expertise: '', bio: '', programmePrincipal: 'social-media', ficheComplete: false })
+const fiche = reactive({ nom: '', expertise: '', bio: '', photoAlt: '', programmePrincipal: 'social-media', ficheComplete: false })
 
 function ouvrirEdition(f: FormateurAdmin) {
   edition.value = f
@@ -54,6 +54,7 @@ function ouvrirEdition(f: FormateurAdmin) {
     nom: f.nom,
     expertise: f.expertise,
     bio: f.bio,
+    photoAlt: f.photoAlt ?? '',
     programmePrincipal: f.programmePrincipal,
     ficheComplete: f.ficheComplete,
   })
@@ -257,6 +258,13 @@ const confirmation = ref('')
           <label class="block">
             <span class="mb-1.5 block text-[13px] font-bold">Biographie</span>
             <textarea v-model="fiche.bio" rows="4" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]" />
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Texte alternatif du portrait</span>
+            <input v-model="fiche.photoAlt" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]" placeholder="Ce que montre la photo, pour qui ne la voit pas">
+            <span class="mt-1 block text-[12px] text-discret">
+              Vide, « Portrait de {{ fiche.nom || 'Nom du formateur' }} » est utilisé.
+            </span>
           </label>
           <label class="block">
             <span class="mb-1.5 block text-[13px] font-bold">Programme de rattachement</span>

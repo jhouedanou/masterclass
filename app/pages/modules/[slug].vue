@@ -219,7 +219,7 @@ function acheter() {
           <div class="mt-4 flex flex-wrap items-start gap-5">
             <NuxtImg
               :src="data.formateur.photo"
-              :alt="`Portrait de ${data.formateur.nom}`"
+              :alt="data.formateur.photoAlt || `Portrait de ${data.formateur.nom}`"
               width="96"
               height="96"
               loading="lazy"

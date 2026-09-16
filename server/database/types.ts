@@ -139,6 +139,7 @@ export type FormateurRow = ColonnesSeo & {
   bio: string
   programme_principal: ProgrammeSlugSql
   photo: string
+  photo_alt: string | null
   fiche_complete: boolean
   coaching_prive_fcfa_heure: number
   position: number
@@ -620,6 +621,7 @@ export type Database = {
         FormateurRow,
         | 'cree_le'
         | 'maj_le'
+        | 'photo_alt'
         | 'coaching_prive_actif'
         | 'email_pro'
         | 'whatsapp'

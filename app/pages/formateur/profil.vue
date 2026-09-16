@@ -17,6 +17,7 @@ const brouillon = reactive({
   emailPro: profil.value?.emailPro ?? '',
   whatsapp: profil.value?.whatsapp ?? '',
   bio: profil.value?.bio ?? '',
+  photoAlt: profil.value?.photoAlt ?? '',
 })
 const enregistre = ref(false)
 const erreur = ref('')
@@ -78,7 +79,7 @@ async function envoyerPhoto(evenement: Event) {
     <div class="mt-6 flex flex-wrap items-center gap-4">
       <NuxtImg
         :src="profil.photo"
-        :alt="`Portrait de ${profil.nom}`"
+        :alt="profil.photoAlt || `Portrait de ${profil.nom}`"
         width="72"
         height="72"
         class="size-[72px] rounded-full bg-fond-voile object-cover"
@@ -122,6 +123,13 @@ async function envoyerPhoto(evenement: Event) {
       <label class="block sm:col-span-2">
         <span class="mb-1.5 block text-[13px] font-bold">Bio publique</span>
         <textarea v-model="brouillon.bio" :disabled="!modification" rows="3" class="min-h-[84px] w-full rounded-[10px] border-[1.5px] border-ligne px-3.5 py-3 text-[14px] leading-relaxed disabled:bg-fond-clair" />
+      </label>
+      <label class="block sm:col-span-2">
+        <span class="mb-1.5 block text-[13px] font-bold">Texte alternatif de votre photo</span>
+        <input v-model="brouillon.photoAlt" :disabled="!modification" placeholder="Ce que montre la photo, pour qui ne la voit pas" class="w-full rounded-[10px] border-[1.5px] border-ligne px-3.5 py-3 text-[14px] disabled:bg-fond-clair">
+        <span class="mt-1 block text-[12px] text-discret">
+          Lu par les lecteurs d’écran. Vide, « Portrait de {{ profil.nom }} » est utilisé.
+        </span>
       </label>
     </div>
 

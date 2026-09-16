@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody<
-    Partial<Pick<Formateur, 'nom' | 'expertise' | 'bio' | 'emailPro' | 'whatsapp'>>
+    Partial<Pick<Formateur, 'nom' | 'expertise' | 'bio' | 'photoAlt' | 'emailPro' | 'whatsapp'>>
   >(event)
 
   const champs: ChampsProfilFormateur = {}
@@ -27,6 +27,7 @@ export default defineEventHandler(async (event) => {
   }
   if (body.expertise !== undefined) champs.expertise = body.expertise.trim()
   if (body.bio !== undefined) champs.bio = body.bio.trim()
+  if (body.photoAlt !== undefined) champs.photoAlt = body.photoAlt.trim()
   if (body.emailPro !== undefined) {
     const email = body.emailPro.trim()
     // Un champ vidé est accepté : il n'est pas obligatoire.

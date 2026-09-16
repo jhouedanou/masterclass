@@ -1,9 +1,17 @@
 <script setup lang="ts">
-import type { Formateur, Module, Programme, Thematique } from '#shared/types'
+import type { ContenuBanniere, Formateur, Module, Programme, Thematique } from '#shared/types'
 
 type ThematiqueGarnie = Thematique & { modules: (Module & { formateur: Formateur | null })[] }
 
 const { data: programmes } = await useFetch<Programme[]>('/api/programmes')
+
+// Bloc CMS de la bannière : facultatif par construction, donc chargé sans bloquer
+// la page. Tant qu'il manque — brouillon, hors fenêtre de publication ou route en
+// échec — le carrousel se rabat sur les programmes.
+const { data: banniere } = useFetch<{ cle: string, contenu: Partial<ContenuBanniere> }>(
+  '/api/vitrine/banniere',
+  { lazy: true },
+)
 const { data: formateurs } = await useFetch<(Formateur & { nbModules: number })[]>('/api/formateurs')
 
 const selection = ref<'social-media' | 'entrepreneurs'>('social-media')
@@ -62,7 +70,11 @@ useJsonLd({
 
 <template>
   <div>
-    <HomeHeroCarousel v-if="programmes?.length" :programmes="programmes" />
+    <HomeHeroCarousel
+      v-if="programmes?.length"
+      :programmes="programmes"
+      :banniere="banniere?.contenu ?? null"
+    />
 
     <!-- bandeau sous le hero -->
     <div class="border-b border-ligne-claire bg-fond-clair">
