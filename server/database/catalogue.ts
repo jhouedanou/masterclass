@@ -245,6 +245,45 @@ export async function reordonnerThematiques(phaseId: string, ids: string[]): Pro
   }
 }
 
+/**
+ * Réordonne les modules d'une thématique (planche C, écran 02 : la poignée
+ * ⋮⋮ des lignes de module).
+ *
+ * `modules.numero` est unique par programme et s'affiche dans le libellé
+ * — « Module 05 ». Réordonner revient donc à permuter les numéros déjà
+ * attribués à ces modules : on reprend leur ensemble, trié, et on le
+ * redistribue dans le nouvel ordre. Les modules des autres thématiques ne
+ * bougent pas, et la numérotation du programme reste sans trou.
+ *
+ * Deux passages, comme pour les thématiques : l'index unique refuserait une
+ * permutation directe, le numéro cible étant occupé le temps du passage.
+ */
+export async function reordonnerModules(ids: string[]): Promise<void> {
+  if (ids.length < 2) return
+  const actuels = verifier(
+    await supabase().from('modules').select('id, numero').in('id', ids),
+    'lecture des numéros de module',
+  )
+  const numeros = actuels.map((m) => m.numero).sort((a, b) => a - b)
+  if (numeros.length !== ids.length) {
+    throw new Error('Réordonnancement des modules : identifiant inconnu.')
+  }
+  // Décalage hors de portée le temps de libérer les numéros visés.
+  const refuge = Math.max(...numeros) + 1000
+  for (const [i, id] of ids.entries()) {
+    verifier(
+      await supabase().from('modules').update({ numero: refuge + i } as never).eq('id', id).select('id'),
+      'réordonnancement des modules',
+    )
+  }
+  for (const [i, id] of ids.entries()) {
+    verifier(
+      await supabase().from('modules').update({ numero: numeros[i] } as never).eq('id', id).select('id'),
+      'réordonnancement des modules',
+    )
+  }
+}
+
 export async function creerThematique(champs: {
   id: string
   nom: string

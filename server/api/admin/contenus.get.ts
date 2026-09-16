@@ -82,6 +82,9 @@ export default defineEventHandler(async (event) => {
                 // Offre : ouverte ou fermée, indépendamment des deux autres.
                 offre: m.statut === 'disponible' ? 'ouverte' : 'fermee',
                 pretLe: m.pretLe,
+                // « 10 000 FCFA · ouverte le 01/09/2026 » : la date de mise en
+                // vente est celle de publication du module (écran 02).
+                offreOuverteLe: m.publieLe ?? null,
                 dateLancement: m.dateLancement,
                 prixFcfa: m.prixFcfa,
               })),

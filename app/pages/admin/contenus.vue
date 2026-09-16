@@ -26,6 +26,7 @@ interface ModuleArbre {
   contenu: string
   offre: string
   pretLe: string | null
+  offreOuverteLe: string | null
   dateLancement: string | null
   prixFcfa: number
 }
@@ -117,7 +118,7 @@ watchEffect(() => {
 
 // --- Création ---------------------------------------------------------------
 
-type Panneau = '' | 'nouveau-programme' | 'programme' | 'phase' | 'thematique' | 'module'
+type Panneau = '' | 'nouveau-programme' | 'phase' | 'thematique' | 'module'
 const panneau = ref<Panneau>('')
 function basculer(cible: Panneau) {
   panneau.value = panneau.value === cible ? '' : cible
@@ -180,21 +181,6 @@ async function creerProgramme() {
   }
 }
 
-const fiche = reactive({ nom: '', couleur: '' })
-watchEffect(() => {
-  if (!programme.value) return
-  fiche.nom = programme.value.nom
-  fiche.couleur = programme.value.couleur
-})
-async function enregistrerProgramme() {
-  const ok = await appeler('/api/admin/programmes', {
-    slug: programmeActif.value,
-    nom: fiche.nom,
-    couleur: fiche.couleur,
-  })
-  if (ok) panneau.value = ''
-}
-
 const creation = reactive({ titre: '', slug: '', numero: 1, thematiqueId: '', formateurId: '' })
 
 // L'URL suit le titre tant qu'elle n'a pas été retouchée à la main.
@@ -248,6 +234,20 @@ function deposer(cible: ThematiqueArbre) {
   appeler('/api/admin/thematiques', { action: 'reordonner', phaseId: phase.value.id, ordre: ids })
 }
 
+/** Modules : la poignée ⋮⋮ de chaque ligne (écran 02). Le nouvel ordre est
+ *  envoyé tel quel ; le serveur permute les numéros déjà attribués. */
+const tireModule = ref<string>('')
+function deposerModule(cible: ModuleArbre, thematique: ThematiqueArbre) {
+  if (!tireModule.value || tireModule.value === cible.id) return
+  const ids = thematique.modules.map((m) => m.id)
+  const depuis = ids.indexOf(tireModule.value)
+  const vers = ids.indexOf(cible.id)
+  tireModule.value = ''
+  if (depuis < 0 || vers < 0) return
+  ids.splice(vers, 0, ...ids.splice(depuis, 1))
+  appeler('/api/admin/modules', { action: 'reordonner', ordre: ids })
+}
+
 // --- Libellés ---------------------------------------------------------------
 
 const LIBELLES: Record<string, string> = {
@@ -267,19 +267,19 @@ const dateCourte = (iso: string | null) =>
 
 const champ =
   'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px] focus:border-social focus:outline-none'
-const pastille = 'rounded-full px-2.5 py-1 text-[11px] font-bold'
+const pastille = 'rounded-full px-2.5 py-[3px] text-[11px] font-bold'
+const pastilleModule = 'rounded-full px-2 py-[3px] text-[10.5px] font-bold'
 </script>
 
 <template>
   <div v-if="arbre">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <h1 class="font-title text-[26px] font-light">Modules pédagogiques &amp; chapitres</h1>
-      <div class="flex flex-wrap gap-2">
-        <UiBaseButton taille="sm" variante="contour" @click="basculer('nouveau-programme')">+ Nouveau programme</UiBaseButton>
-        <UiBaseButton taille="sm" variante="contour" @click="basculer('programme')">Modifier le programme</UiBaseButton>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h1 class="font-title text-[24px] font-light">Modules pédagogiques &amp; chapitres</h1>
+      <div class="flex flex-wrap gap-2.5">
+        <UiBaseButton taille="sm" variante="contour-social" @click="basculer('nouveau-programme')">+ Nouveau programme</UiBaseButton>
         <UiBaseButton taille="sm" variante="contour" @click="basculer('phase')">+ Nouvelle phase</UiBaseButton>
         <UiBaseButton taille="sm" variante="contour" @click="basculer('thematique')">+ Nouvelle thématique</UiBaseButton>
-        <UiBaseButton taille="sm" @click="basculer('module')">+ Nouveau module</UiBaseButton>
+        <UiBaseButton taille="sm" variante="sombre" @click="basculer('module')">+ Nouveau module</UiBaseButton>
       </div>
     </div>
 
@@ -317,30 +317,6 @@ const pastille = 'rounded-full px-2.5 py-1 text-[11px] font-bold'
         </label>
       </div>
       <UiBaseButton type="submit" taille="sm" class="mt-4" :disabled="enCours">Créer le programme</UiBaseButton>
-    </form>
-
-    <!-- Programme : le slug n'est pas modifiable, il est le pivot de six tables -->
-    <form v-if="panneau === 'programme'" class="mt-5 rounded-[14px] border border-ligne-douce bg-white p-5" @submit.prevent="enregistrerProgramme">
-      <h2 class="font-title text-[18px] font-light">Programme {{ programme?.nom }}</h2>
-      <p class="mt-1 text-[12.5px] text-discret">
-        Le nom et la couleur d’accent s’éditent ici. L’URL du programme, elle, est fixée par le
-        modèle de données : elle nomme une valeur de type en base et sert de pivot à six tables.
-        Ajouter un troisième programme demande une migration — la plateforme en compte deux.
-      </p>
-      <div class="mt-4 grid gap-3 sm:grid-cols-2">
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Nom</span>
-          <input v-model="fiche.nom" required :class="champ">
-        </label>
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Couleur d’accent</span>
-          <div class="flex items-center gap-2">
-            <input v-model="fiche.couleur" type="color" class="h-[42px] w-14 rounded-[10px] border border-ligne">
-            <input v-model="fiche.couleur" class="flex-1 rounded-[10px] border border-ligne px-3 py-2.5 font-mono text-[13.5px] focus:border-social focus:outline-none">
-          </div>
-        </label>
-      </div>
-      <UiBaseButton type="submit" taille="sm" class="mt-4" :disabled="enCours">Enregistrer</UiBaseButton>
     </form>
 
     <form v-if="panneau === 'phase'" class="mt-5 rounded-[14px] border border-ligne-douce bg-white p-5" @submit.prevent="creerPhase">
@@ -414,229 +390,217 @@ const pastille = 'rounded-full px-2.5 py-1 text-[11px] font-bold'
       </UiBaseButton>
     </form>
 
-    <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex gap-2 rounded-full bg-white p-1.5 text-[14px] font-bold" role="group">
-        <button
-          v-for="p in arbre"
-          :key="p.id"
-          class="rounded-full px-5 py-2"
-          :class="programmeActif === p.slug ? 'text-white' : 'text-texte'"
-          :style="programmeActif === p.slug ? { backgroundColor: p.couleur } : undefined"
-          :aria-pressed="programmeActif === p.slug"
-          @click="programmeActif = p.slug"
-        >
-          {{ p.nom }}
-        </button>
-      </div>
-      <label class="flex items-center gap-2 text-[13px]">
-        <span class="sr-only">Phase affichée</span>
-        <select v-model="phaseActive" class="rounded-[10px] border border-ligne bg-white px-3 py-2 text-[13.5px] focus:border-social focus:outline-none">
-          <option v-for="ph in programme?.phases ?? []" :key="ph.id" :value="ph.id">{{ ph.nom }}</option>
-        </select>
-      </label>
-    </div>
+    <div class="mt-5 grid items-start gap-5 lg:grid-cols-[1fr_460px]">
+      <!-- L'arbre est une seule carte blanche : pilules de programme, sélecteur
+           de phase, thématiques, modules imbriqués et note de bas de carte y
+           vivent ensemble (écran 02). -->
+      <div class="rounded-[14px] border border-ligne-douce bg-white p-[22px]">
+        <div class="mb-4 flex flex-wrap items-center gap-2 text-[12.5px]">
+          <button
+            v-for="p in arbre"
+            :key="p.id"
+            class="rounded-full px-3.5 py-[7px]"
+            :class="programmeActif === p.slug ? 'font-bold text-white' : 'border-[1.5px] border-ligne font-semibold text-texte'"
+            :style="programmeActif === p.slug ? { backgroundColor: p.couleur } : undefined"
+            :aria-pressed="programmeActif === p.slug"
+            @click="programmeActif = p.slug"
+          >
+            {{ p.nom }}
+          </button>
+          <label class="ml-auto">
+            <span class="sr-only">Phase affichée</span>
+            <select
+              v-model="phaseActive"
+              class="rounded-full border-[1.5px] border-ligne bg-white px-3.5 py-[7px] text-[12.5px] font-semibold text-texte focus:border-social focus:outline-none"
+            >
+              <option v-for="ph in programme?.phases ?? []" :key="ph.id" :value="ph.id">{{ ph.nom }}</option>
+            </select>
+          </label>
+        </div>
 
-    <div class="mt-5 grid gap-6 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr]">
-      <div class="flex flex-col gap-3">
-        <article
-          v-for="thematique in phase?.thematiques"
-          :key="thematique.id"
-          class="overflow-hidden rounded-[14px] border bg-white"
-          :class="tire === thematique.id ? 'border-social' : 'border-ligne-douce'"
-          @dragover.prevent
-          @drop.prevent="deposer(thematique)"
-        >
-          <h2 class="flex items-center gap-1 px-2">
-            <span
-              class="cursor-grab px-2 py-4 text-[13px] text-discret"
+        <div class="flex flex-col gap-2 text-[13.5px]">
+          <template v-for="thematique in phase?.thematiques" :key="thematique.id">
+            <div
+              class="flex items-center gap-2.5 rounded-[10px] bg-fond-clair px-3 py-2.5"
+              :class="tire === thematique.id && 'ring-1 ring-social'"
               draggable="true"
-              :aria-label="`Déplacer ${thematique.nom}`"
               @dragstart="tire = thematique.id"
               @dragend="tire = ''"
-            >⋮⋮</span>
-            <button
-              class="flex flex-1 items-center justify-between gap-4 py-4 pr-3 text-left"
-              :aria-expanded="thematiqueOuverte === thematique.id"
-              @click="thematiqueOuverte = thematiqueOuverte === thematique.id ? '' : thematique.id"
+              @dragover.prevent
+              @drop.prevent="deposer(thematique)"
             >
-              <span class="font-title text-[17px] font-light">
-                Thématique {{ thematique.numero }} · {{ thematique.nom }}
-              </span>
-              <span class="flex items-center gap-3 text-[12px] text-discret">
-                <span
-                  :class="[pastille, thematique.statut === 'publie' ? 'bg-succes-voile text-succes' : 'bg-alerte-voile text-alerte']"
-                >
-                  {{ LIBELLES[thematique.statut] }}
-                </span>
-                {{ thematiqueOuverte === thematique.id ? '▾' : '▸' }}
-              </span>
-            </button>
-          </h2>
-
-          <div v-if="thematiqueOuverte === thematique.id" class="border-t border-ligne-claire">
-            <ul class="divide-y divide-ligne-claire">
-              <li v-for="module in thematique.modules" :key="module.id">
-                <button
-                  class="flex w-full items-center justify-between gap-4 px-5 py-3 text-left hover:bg-fond-clair"
-                  :class="moduleSelectionne?.id === module.id && 'bg-fond-clair'"
-                  @click="moduleSelectionne = module"
-                >
-                  <span class="min-w-0 flex-1 truncate text-[14px]">
-                    Module {{ numeroModule(module.numero) }} · {{ module.titre }}
-                  </span>
-                  <span class="flex shrink-0 gap-2">
-                    <span
-                      :class="[pastille, module.contenu === 'pret' ? 'bg-succes-voile text-succes' : 'bg-alerte-voile text-alerte']"
-                    >
-                      {{ module.contenu === 'pret' ? 'Prêt' : 'En préparation' }}
-                    </span>
-                    <span
-                      :class="[pastille, module.offre === 'ouverte' ? 'bg-social-voile text-social' : 'bg-fond-voile text-discret']"
-                    >
-                      {{ module.offre === 'ouverte' ? 'Vente ouverte' : module.fiche === 'annonce' ? 'Teasing publié' : 'Offre fermée' }}
-                    </span>
-                  </span>
-                </button>
-              </li>
-              <li v-if="!thematique.modules.length" class="px-5 py-4 text-[13px] text-discret">
-                Aucun module dans cette thématique.
-              </li>
-            </ul>
-            <div class="flex flex-wrap gap-3 border-t border-ligne-claire px-5 py-3 text-[12.5px]">
-              <button class="text-social underline" @click="publierThematique(thematique)">
-                {{ thematique.statut === 'publie' ? 'Repasser en brouillon' : 'Publier la thématique' }}
+              <button
+                class="flex flex-1 items-center gap-2.5 text-left"
+                :aria-expanded="thematiqueOuverte === thematique.id"
+                @click="thematiqueOuverte = thematiqueOuverte === thematique.id ? '' : thematique.id"
+              >
+                <span aria-hidden="true" class="text-discret">{{ thematiqueOuverte === thematique.id ? '▾' : '▸' }}</span>
+                <b>Thématique {{ thematique.numero }} · {{ thematique.nom }}</b>
+              </button>
+              <button
+                :class="[pastille, thematique.statut === 'publie' ? 'bg-succes-voile text-succes' : 'bg-alerte-voile text-alerte']"
+                :title="thematique.statut === 'publie' ? 'Repasser en brouillon' : 'Publier la thématique'"
+                @click="publierThematique(thematique)"
+              >
+                {{ LIBELLES[thematique.statut] }}
               </button>
             </div>
-          </div>
-        </article>
 
-        <button class="rounded-[14px] border border-dashed border-ligne bg-white px-5 py-4 text-left text-[13.5px] text-social" @click="basculer('thematique')">
-          ＋ Ajouter une thématique au programme {{ programme?.nom }}
-        </button>
+            <!-- Modules de la thématique ouverte : indentés, bordés un à un,
+                 poignée ⋮⋮ à gauche et deux pastilles à droite. -->
+            <div v-if="thematiqueOuverte === thematique.id" class="ml-[26px] flex flex-col gap-1.5">
+              <div
+                v-for="module in thematique.modules"
+                :key="module.id"
+                class="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5"
+                :class="moduleSelectionne?.id === module.id
+                  ? 'border-[1.5px] border-social bg-social-neige'
+                  : 'border border-ligne-claire'"
+                @dragover.prevent
+                @drop.prevent="deposerModule(module, thematique)"
+              >
+                <span
+                  aria-hidden="true"
+                  class="cursor-grab text-discret"
+                  draggable="true"
+                  @dragstart="tireModule = module.id"
+                  @dragend="tireModule = ''"
+                >⋮⋮</span>
+                <button class="min-w-0 flex-1 truncate text-left" @click="moduleSelectionne = module">
+                  <b v-if="moduleSelectionne?.id === module.id">Module {{ numeroModule(module.numero) }} · {{ module.titre }}</b>
+                  <template v-else>Module {{ numeroModule(module.numero) }} · {{ module.titre }}</template>
+                </button>
+                <span class="flex shrink-0 gap-1.5">
+                  <span :class="[pastilleModule, module.contenu === 'pret' ? 'bg-succes-voile text-succes' : 'bg-alerte-voile text-alerte']">
+                    {{ module.contenu === 'pret' ? 'Prêt' : 'En préparation' }}
+                  </span>
+                  <span :class="[pastilleModule, module.offre === 'ouverte' ? 'bg-succes-voile text-succes' : 'bg-fond-voile text-discret']">
+                    {{ module.offre === 'ouverte' ? 'Vente ouverte' : module.fiche === 'annonce' ? 'Teasing publié' : 'Offre fermée' }}
+                  </span>
+                </span>
+              </div>
+              <p v-if="!thematique.modules.length" class="px-3 py-2 text-[13px] text-discret">
+                Aucun module dans cette thématique.
+              </p>
+            </div>
+          </template>
 
-        <article
-          v-for="ph in phasesSuivantes"
-          :key="ph.id"
-          class="rounded-[14px] border border-dashed border-ligne bg-white px-5 py-4"
-        >
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <p class="font-title text-[16px] font-light text-discret">
+          <button
+            class="flex items-center gap-2.5 rounded-[10px] border-[1.5px] border-dashed border-ligne-pointillee px-3 py-2.5 text-left text-[13px] font-bold text-social"
+            @click="basculer('thematique')"
+          >
+            ＋ Ajouter une thématique au programme {{ programme?.nom }}
+          </button>
+
+          <!-- Les phases suivantes restent dans l'arbre, en ligne repliée. -->
+          <button
+            v-for="ph in phasesSuivantes"
+            :key="ph.id"
+            class="flex items-center gap-2.5 rounded-[10px] border border-dashed border-ligne bg-fond-clair px-3 py-2.5 text-left"
+            @click="phaseActive = ph.id"
+          >
+            <span aria-hidden="true" class="text-discret">▸</span>
+            <span class="flex-1 text-discret">
               {{ ph.nom }} · {{ ph.thematiques.length }} thématique{{ ph.thematiques.length > 1 ? 's' : '' }}
-            </p>
+            </span>
             <span :class="[pastille, 'bg-fond-voile text-discret']">
               {{ ph.dateOuverture ? `Programmée — ${dateCourte(ph.dateOuverture)}` : LIBELLES[ph.statut] }}
             </span>
-          </div>
-          <button class="mt-1.5 text-[12.5px] text-social underline" @click="phaseActive = ph.id">
-            Afficher cette phase
           </button>
-        </article>
+        </div>
 
-        <p class="text-[12.5px] text-discret">
-          Glissez la poignée ⋮⋮ pour réordonner les thématiques. Les brouillons incomplets sont
-          autorisés à tous les niveaux, et publier un parent ne publie jamais ses enfants.
+        <p class="mt-3.5 text-[12px] leading-[1.5] text-discret">
+          Glisser-déposer pour réordonner. Brouillons incomplets autorisés à tous les niveaux.
+          Publier un parent ne publie jamais ses enfants. «&nbsp;+ Nouveau programme&nbsp;» crée un
+          programme vide en brouillon (nom, couleur d’accent, slug) ; les thématiques s’ajoutent à
+          n’importe quel programme existant.
         </p>
       </div>
 
-      <aside v-if="moduleSelectionne" class="h-fit rounded-[14px] border border-ligne-douce bg-white p-6">
-        <UiBaseButton :to="`/admin/module/${moduleSelectionne.id}`" taille="sm" class="mb-4 w-full">
-          Ouvrir l’éditeur
-        </UiBaseButton>
-        <h2 class="font-title text-[19px] font-light">
+      <!-- Panneau droit : les trois objets indépendants du module choisi. -->
+      <aside v-if="moduleSelectionne" class="rounded-[14px] border border-ligne-douce bg-white p-[22px]">
+        <p class="surtitre-menu text-discret">
           Module {{ numeroModule(moduleSelectionne.numero) }} — trois objets indépendants
-        </h2>
+        </p>
 
-        <section class="mt-5 rounded-[12px] border border-ligne-claire p-4">
-          <div class="flex items-center justify-between gap-2">
-            <p class="text-[14px] font-bold">Fiche commerciale</p>
-            <span
-              :class="[pastille, moduleSelectionne.fiche === 'publiee' ? 'bg-succes-voile text-succes' : moduleSelectionne.fiche === 'annonce' ? 'bg-alerte-voile text-alerte' : 'bg-fond-voile text-discret']"
-            >
-              {{ LIBELLES[moduleSelectionne.fiche] }}
-            </span>
-          </div>
-          <p class="mt-2 text-[13px] text-texte">
-            Titre public, accroche, visuel, FAQ, SEO/OG, badge. Publiable en teasing même si le
-            module est en brouillon.
-            <template v-if="moduleSelectionne.dateLancement">
-              Lancement annoncé le {{ dateCourte(moduleSelectionne.dateLancement) }}.
-            </template>
-          </p>
-          <div class="mt-3 flex flex-wrap gap-2 text-[12.5px]">
-            <NuxtLink :to="`/admin/fiche/${moduleSelectionne.id}`" class="rounded-full border border-ligne px-3 py-1.5 text-encre">
-              Modifier
-            </NuxtLink>
-            <NuxtLink :to="`/modules/${moduleSelectionne.slug}`" class="rounded-full border border-ligne px-3 py-1.5 text-encre">
-              Prévisualiser
-            </NuxtLink>
-            <NuxtLink :to="`/admin/module/${moduleSelectionne.id}?onglet=historique`" class="rounded-full border border-ligne px-3 py-1.5 text-encre">
-              Historique
-            </NuxtLink>
-          </div>
-        </section>
+        <div class="mt-1.5 flex flex-col gap-3">
+          <section class="rounded-[12px] border border-ligne-douce p-4">
+            <div class="flex items-center justify-between gap-2">
+              <b class="text-[14px]">Fiche commerciale</b>
+              <span
+                :class="[pastille, moduleSelectionne.fiche === 'publiee' ? 'bg-succes-voile text-succes' : moduleSelectionne.fiche === 'annonce' ? 'bg-alerte-voile text-alerte' : 'bg-fond-voile text-discret']"
+              >
+                {{ LIBELLES[moduleSelectionne.fiche] }}
+              </span>
+            </div>
+            <p class="mt-2 text-[12.5px] leading-[1.6] text-texte">
+              Titre public, accroche, visuel, FAQ, SEO/OG, badge. Publiable en teasing même si le
+              module est en brouillon.
+              <template v-if="moduleSelectionne.dateLancement">
+                Lancement annoncé le {{ dateCourte(moduleSelectionne.dateLancement) }}.
+              </template>
+            </p>
+            <div class="mt-2.5 flex flex-wrap gap-2 text-[12px] font-bold">
+              <NuxtLink :to="`/admin/fiche/${moduleSelectionne.id}`">Modifier</NuxtLink>
+              <NuxtLink :to="`/modules/${moduleSelectionne.slug}`">Prévisualiser</NuxtLink>
+              <NuxtLink :to="`/admin/module/${moduleSelectionne.id}?onglet=historique`" class="text-discret">
+                Historique
+              </NuxtLink>
+            </div>
+          </section>
 
-        <section class="mt-4 rounded-[12px] border border-ligne-claire p-4">
-          <div class="flex items-center justify-between gap-2">
-            <p class="text-[14px] font-bold">Module pédagogique</p>
-            <span
-              :class="[pastille, moduleSelectionne.contenu === 'pret' ? 'bg-succes-voile text-succes' : 'bg-alerte-voile text-alerte']"
-            >
-              {{ LIBELLES[moduleSelectionne.contenu] }}
-            </span>
-          </div>
-          <ul class="mt-3 flex flex-col gap-1.5">
-            <li class="flex items-center justify-between gap-3 text-[13px]">
-              <span class="min-w-0 truncate text-texte">
-                <span class="text-discret">⋮⋮</span> Vidéo de bienvenue
+          <section class="rounded-[12px] border border-ligne-douce p-4">
+            <div class="flex items-center justify-between gap-2">
+              <b class="text-[14px]">Module pédagogique</b>
+              <span
+                :class="[pastille, moduleSelectionne.contenu === 'pret' ? 'bg-succes-voile text-succes' : 'bg-alerte-voile text-alerte']"
+              >
+                {{ LIBELLES[moduleSelectionne.contenu] }}
               </span>
-              <span class="shrink-0 text-[12px]" :class="moduleSelectionne.videoIntro ? 'text-succes' : 'text-alerte'">
-                {{ moduleSelectionne.videoIntro ? '— Uploadée' : '— À téléverser' }}
-              </span>
-            </li>
-            <li
-              v-for="(c, i) in moduleSelectionne.chapitres"
-              :key="i"
-              class="flex items-center justify-between gap-3 text-[13px]"
-            >
-              <span class="min-w-0 truncate text-texte">
-                <span class="text-discret">⋮⋮</span> {{ c.libelle }} · {{ c.titre }}
-              </span>
-              <span class="shrink-0 text-[12px]" :class="c.script ? 'text-succes' : 'text-discret'">
-                {{ c.script ? 'Script ✓' : 'Script à importer' }}
-              </span>
-            </li>
-            <li v-if="!moduleSelectionne.chapitres.length" class="text-[13px] text-discret">
-              Aucun chapitre.
-            </li>
-          </ul>
-          <p class="mt-3 text-[12.5px] text-discret">
-            {{ moduleSelectionne.nbVideos }}/{{ moduleSelectionne.nbChapitres }} vidéos ·
-            {{ moduleSelectionne.nbScripts }}/{{ moduleSelectionne.nbChapitres }} scripts ·
-            formateur {{ moduleSelectionne.formateur }}
-          </p>
-          <NuxtLink :to="`/admin/module/${moduleSelectionne.id}?onglet=chapitres`" class="mt-2 inline-block text-[12.5px] text-social underline">
-            + Ajouter un chapitre (illimité)
-          </NuxtLink>
-        </section>
+            </div>
+            <div class="mt-2 flex flex-col gap-[7px] text-[12.5px] text-texte">
+              <div class="flex justify-between gap-3">
+                <span class="min-w-0 truncate"><span aria-hidden="true">⋮⋮</span> Vidéo de bienvenue</span>
+                <span class="shrink-0" :class="moduleSelectionne.videoIntro ? 'font-bold text-succes' : 'text-alerte'">
+                  {{ moduleSelectionne.videoIntro ? 'Uploadée' : 'À téléverser' }}
+                </span>
+              </div>
+              <div v-for="(c, i) in moduleSelectionne.chapitres" :key="i" class="flex justify-between gap-3">
+                <span class="min-w-0 truncate"><span aria-hidden="true">⋮⋮</span> {{ c.libelle }} · {{ c.titre }}</span>
+                <span class="shrink-0" :class="!c.script && 'text-discret'">
+                  {{ c.script ? 'Script ✓' : 'Script à importer' }}
+                </span>
+              </div>
+              <p v-if="!moduleSelectionne.chapitres.length" class="text-discret">Aucun chapitre.</p>
+              <NuxtLink
+                :to="`/admin/module/${moduleSelectionne.id}?onglet=chapitres`"
+                class="text-[12.5px] font-bold"
+              >
+                + Ajouter un chapitre (illimité)
+              </NuxtLink>
+            </div>
+          </section>
 
-        <section class="mt-4 rounded-[12px] border border-ligne-claire p-4">
-          <div class="flex items-center justify-between gap-2">
-            <p class="text-[14px] font-bold">Offre commerciale</p>
-            <span
-              :class="[pastille, moduleSelectionne.offre === 'ouverte' ? 'bg-social-voile text-social' : 'bg-fond-voile text-discret']"
-            >
-              {{ LIBELLES[moduleSelectionne.offre] }}
-            </span>
-          </div>
-          <p class="mt-2 text-[13px] text-texte">
-            {{ formatFcfa(moduleSelectionne.prixFcfa, true) }}. L’ouverture reste bloquée tant que la
-            fiche n’est pas publiée ou le module non « Prêt ». Fermer l’offre ne retire jamais les
-            accès acquis.
-          </p>
-        </section>
+          <section class="rounded-[12px] border border-ligne-douce p-4">
+            <div class="flex items-center justify-between gap-2">
+              <b class="text-[14px]">Offre commerciale</b>
+              <span
+                :class="[pastille, moduleSelectionne.offre === 'ouverte' ? 'bg-succes-voile text-succes' : 'bg-fond-voile text-discret']"
+              >
+                {{ LIBELLES[moduleSelectionne.offre] }}
+              </span>
+            </div>
+            <p class="mt-2 text-[12.5px] leading-[1.6] text-texte">
+              {{ formatFcfa(moduleSelectionne.prixFcfa) }}<template v-if="moduleSelectionne.offreOuverteLe"> ·
+              ouverte le {{ dateCourte(moduleSelectionne.offreOuverteLe) }}</template>. Ouverture
+              bloquée tant que fiche non publiée ou module non «&nbsp;Prêt&nbsp;». Fermer l’offre ne
+              retire jamais les accès acquis.
+            </p>
+          </section>
+        </div>
       </aside>
 
-      <aside v-else class="h-fit rounded-[14px] border border-dashed border-ligne bg-white p-10 text-center text-[13.5px] text-discret">
+      <aside v-else class="rounded-[14px] border border-dashed border-ligne bg-white p-10 text-center text-[13.5px] text-discret">
         Sélectionnez un module pour voir sa fiche, son contenu et son offre.
       </aside>
     </div>

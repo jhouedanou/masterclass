@@ -2,7 +2,7 @@
 interface Props {
   to?: string
   href?: string
-  variante?: 'social' | 'entrepreneurs' | 'sombre' | 'blanc' | 'whatsapp' | 'contour' | 'danger'
+  variante?: 'social' | 'entrepreneurs' | 'sombre' | 'blanc' | 'whatsapp' | 'contour' | 'contour-social' | 'danger'
   taille?: 'sm' | 'md' | 'lg'
   type?: 'button' | 'submit'
   disabled?: boolean
@@ -37,6 +37,7 @@ const classes = computed(() => {
     blanc: 'bg-white text-encre hover:bg-fond-clair',
     whatsapp: 'bg-whatsapp text-white hover:brightness-95',
     contour: 'border-[1.5px] border-encre text-encre hover:bg-fond-clair',
+    'contour-social': 'border-[1.5px] border-social text-social hover:bg-social-voile',
     danger: 'bg-erreur text-white hover:bg-erreur-fonce',
   }
   return [base, tailles[props.taille], variantes[props.variante]].join(' ')
