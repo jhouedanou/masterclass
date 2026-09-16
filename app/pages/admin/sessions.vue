@@ -39,6 +39,25 @@ const programmeCreation = computed(() => {
   return t ? (t.programme === 'social-media' ? 'Social Média' : 'Entrepreneurs') : '—'
 })
 
+/** « Calendrier des sessions de coaching — Septembre 2026 » : le mois des
+ *  séances affichées, celui d'aujourd'hui si la liste est vide. */
+const moisAffiche = computed(() => {
+  const reference = sessions.value?.[0]?.date
+  const d = reference ? new Date(`${reference}T00:00:00`) : new Date()
+  const mois = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(d)
+  return mois.charAt(0).toUpperCase() + mois.slice(1)
+})
+
+/** « Jeu 10/09 » */
+const jourCourt = (date: string) => {
+  const d = new Date(`${date}T00:00:00`)
+  const jour = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' }).format(d).replace('.', '')
+  return `${jour.charAt(0).toUpperCase()}${jour.slice(1)} ${new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit' }).format(d)}`
+}
+
+const pilule =
+  'rounded-full border-[1.5px] border-ligne bg-white px-3.5 py-[7px] font-semibold text-texte focus:border-social focus:outline-none'
+
 const annulation = ref<SessionAdmin | null>(null)
 const motif = ref('')
 const message = ref('')
@@ -124,7 +143,6 @@ const DEFAUTS = {
   enregistrement: false,
 }
 const creation = reactive({ ...DEFAUTS })
-const formulaireOuvert = ref(false)
 const erreur = ref('')
 
 // --- Modification d'une séance existante ------------------------------------
@@ -216,7 +234,6 @@ async function creer() {
   erreur.value = ''
   try {
     await $fetch('/api/admin/sessions', { method: 'POST', body: creation })
-    formulaireOuvert.value = false
     Object.assign(creation, DEFAUTS)
     message.value = 'Session créée. La réunion Zoom a été générée ; le formateur et les inscrits y entrent depuis la plateforme.'
     await refresh()
@@ -229,16 +246,103 @@ async function creer() {
 <template>
   <div>
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="font-title text-[26px] font-light">Calendrier des sessions de coaching</h1>
-      <UiBaseButton taille="sm" @click="formulaireOuvert = !formulaireOuvert">
-        + Créer une session
-      </UiBaseButton>
+      <h1 class="font-title text-[24px] font-light">
+        Calendrier des sessions de coaching — {{ moisAffiche }}
+      </h1>
+      <UiBaseButton taille="sm" href="#planifier" cible="_self">+ Créer une session</UiBaseButton>
     </div>
 
-    <!-- Règles du calendrier (rappel CDC), écran 03 -->
-    <aside class="mt-4 rounded-[12px] border border-ligne-douce bg-white p-4">
-      <p class="text-[13.5px] font-bold text-encre">Règles du calendrier (rappel CDC)</p>
-      <p class="mt-1 max-w-[900px] text-[12.5px] text-texte">
+    <p v-if="message" class="mt-4 rounded-[10px] border border-succes bg-succes-voile p-3 text-[13.5px] text-succes">
+      {{ message }}
+    </p>
+
+
+    <div class="mt-4 flex flex-wrap items-center gap-2 text-[12.5px]">
+      <select v-model="filtreProgramme" :class="pilule">
+        <option value="">Programme</option>
+        <option value="social-media">Social Média</option>
+        <option value="entrepreneurs">Entrepreneurs</option>
+      </select>
+      <select v-model="filtreThematique" :class="pilule">
+        <option value="">Thématique</option>
+        <option v-for="t in thematiques" :key="t.id" :value="t.id">{{ t.nom }}</option>
+      </select>
+      <select v-model="filtreFormateur" :class="pilule">
+        <option value="">Formateur</option>
+        <option v-for="f in formateurs" :key="f.id" :value="f.id">{{ f.nom }}</option>
+      </select>
+      <select v-model="filtreStatut" :class="pilule">
+        <option value="">Statut</option>
+        <option value="planifiee">Planifiée</option>
+        <option value="annulee">Annulée</option>
+        <option value="terminee">Terminée</option>
+      </select>
+      <span class="text-[11.5px] text-discret">
+        Filtres combinables et dépendants — valeurs mises à jour selon les sélections
+      </span>
+    </div>
+
+    <AdminTableauSimple
+      class="mt-4"
+      :colonnes="['Date · Heure', 'Thématique — modules couverts', 'Formateur', 'Inscrits / Capacité', 'Statut', 'Actions']"
+      :largeurs="['150px', '1fr', '200px', '130px', '110px', '220px']"
+      largeur-min="900px"
+    >
+      <tr v-for="session in sessions" :key="session.id" :class="session.statut === 'annulee' && 'bg-[#fdf6f6]'">
+        <td class="px-5 py-3.5"><b>{{ jourCourt(session.date) }} · {{ session.heure.replace(':', 'h') }}</b></td>
+        <td class="px-5 py-3.5">
+          <!-- Marqueur de programme en gras coloré, sans pastille : la maquette
+               réserve les pastilles aux statuts. -->
+          <b :class="session.programme === 'social-media' ? 'text-social' : 'text-entrepreneurs'">
+            {{ session.programme === 'social-media' ? 'SM' : 'ENT' }}
+          </b>
+          · {{ session.thematique?.nom }} — modules
+          {{ session.modulesCouverts.map(numeroModule).join(', ') }}
+        </td>
+        <td class="px-5 py-3.5">{{ session.formateur?.nom }}</td>
+        <td class="px-5 py-3.5">
+          <b :class="remplissage(session) === 'presque-pleine' && 'text-alerte'">{{ session.inscrits }}</b>
+          / {{ session.places }}
+        </td>
+        <td class="px-5 py-3.5">
+          <span
+            class="rounded-full px-2.5 py-[3px] text-[11px] font-bold"
+            :class="{
+              'bg-succes-voile text-succes': remplissage(session) === 'confirmee',
+              'bg-alerte-voile text-alerte': ['presque-pleine', 'complete'].includes(remplissage(session)),
+              'bg-erreur-voile text-erreur': remplissage(session) === 'annulee',
+              'bg-fond-voile text-discret': remplissage(session) === 'terminee',
+            }"
+          >
+            {{ LIBELLE_REMPLISSAGE[remplissage(session)] }}
+          </span>
+        </td>
+        <td class="px-5 py-3.5 text-[12.5px]">
+          <template v-if="session.statut === 'planifiee'">
+            <button class="font-bold" @click="ouvrirModification(session)">Modifier</button>
+            <button class="ml-3 font-bold" @click="ouvrirReport(session)">Reporter</button>
+            <button class="ml-3 font-bold text-erreur" @click="annulation = session">Annuler</button>
+          </template>
+          <!-- La maquette date la notification ; `sessions_coaching` ne
+               garde pas la date d'annulation, on ne l'invente pas. -->
+          <span v-else-if="session.statut === 'annulee'" class="text-discret">
+            Notifiée — email + WhatsApp ✓
+          </span>
+          <!-- Le relevé de présence n'est pas dans la maquette, mais il
+               conditionne la délivrance des certificats : il reste, rangé dans
+               les actions de la session passée plutôt qu'en colonne propre. -->
+          <button v-else class="font-bold" @click="ouvrirPresence(session)">
+            <template v-if="session.presents === null">Relever la présence</template>
+            <template v-else>{{ session.presents }} présents</template>
+          </button>
+        </td>
+      </tr>
+    </AdminTableauSimple>
+
+    <!-- Règles du calendrier (rappel CDC), sous le tableau comme la maquette. -->
+    <aside class="mt-4 rounded-[12px] border border-ligne-douce bg-white px-[18px] py-3.5">
+      <b class="text-[13px]">Règles du calendrier (rappel CDC)</b>
+      <p class="mt-1 text-[12px] leading-[1.6] text-texte">
         Une session par couple thématique–formateur · 10 sessions mensuelles en Phase 1 (5 SM + 5
         ENT) · 2 h · 25 participants max · jour fixe du mois · visible uniquement des apprenants
         ayant acheté un module couvert · lien Zoom personnel généré à la demande, jamais affiché en
@@ -246,18 +350,26 @@ async function creer() {
       </p>
     </aside>
 
-    <p v-if="message" class="mt-4 rounded-[10px] border border-succes bg-succes-voile p-3 text-[13.5px] text-succes">
-      {{ message }}
-    </p>
-
     <form
-      v-if="formulaireOuvert"
-      class="mt-5 grid gap-4 rounded-[14px] border border-ligne-douce bg-white p-6 sm:grid-cols-2 lg:grid-cols-4"
+      id="planifier"
+      class="mt-4 grid gap-4 rounded-[14px] border-[1.5px] border-social bg-white p-6 sm:grid-cols-2 lg:grid-cols-4"
       @submit.prevent="creer"
     >
-      <div class="sm:col-span-2 xl:col-span-4">
-        <h2 class="font-title text-[19px] font-light">Planifier une session</h2>
-        <p class="mt-1 text-[12.5px] text-discret">Réunion Zoom créée automatiquement à la validation</p>
+      <!-- Toujours visible dans la maquette : planifier est le geste courant
+           de cet écran, pas une option repliée. -->
+      <div class="sm:col-span-2 lg:col-span-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <b class="text-[15px]">Planifier une session</b>
+          <span class="rounded-full bg-social-voile px-3 py-1 text-[11.5px] font-bold text-social">
+            Réunion Zoom créée automatiquement à la validation
+          </span>
+        </div>
+        <p class="mt-2 text-[12px] leading-[1.6] text-discret">
+          Un seul compte Zoom licencié héberge les sessions successives — l’agenda empêche tout
+          chevauchement. Les informations techniques Zoom ne sont jamais montrées aux apprenants :
+          ils rejoignent via le bouton «&nbsp;Rejoindre la session&nbsp;» de leur espace, sans
+          quitter la plateforme.
+        </p>
       </div>
       <label class="block">
         <span class="mb-1.5 block text-[13px] font-bold text-texte">Programme</span>
@@ -333,82 +445,12 @@ async function creer() {
         <p v-if="erreur" class="mb-3 text-[13.5px] text-erreur">{{ erreur }}</p>
         <UiBaseButton type="submit" taille="sm">Valider et créer la réunion Zoom</UiBaseButton>
       </div>
+          <p class="text-[11.5px] leading-[1.6] text-discret sm:col-span-2 lg:col-span-4">
+        Apprenants autorisés : acheteurs des modules couverts, profil à 100 %. À la validation :
+        session visible dans leur calendrier, bouton «&nbsp;Rejoindre&nbsp;» activé à l’ouverture de
+        la salle · notification email + WhatsApp.
+      </p>
     </form>
-
-    <div class="mt-5 flex flex-wrap gap-2 text-[13px]">
-      <select v-model="filtreProgramme" class="rounded-full border border-ligne bg-white px-3.5 py-2">
-        <option value="">Tous programmes</option>
-        <option value="social-media">Social Média</option>
-        <option value="entrepreneurs">Entrepreneurs</option>
-      </select>
-      <select v-model="filtreThematique" class="rounded-full border border-ligne bg-white px-3.5 py-2">
-        <option value="">Toutes thématiques</option>
-        <option v-for="t in thematiques" :key="t.id" :value="t.id">{{ t.nom }}</option>
-      </select>
-      <select v-model="filtreFormateur" class="rounded-full border border-ligne bg-white px-3.5 py-2">
-        <option value="">Tous formateurs</option>
-        <option v-for="f in formateurs" :key="f.id" :value="f.id">{{ f.nom }}</option>
-      </select>
-      <select v-model="filtreStatut" class="rounded-full border border-ligne bg-white px-3.5 py-2">
-        <option value="">Tous statuts</option>
-        <option value="planifiee">Planifiée</option>
-        <option value="annulee">Annulée</option>
-        <option value="terminee">Terminée</option>
-      </select>
-    </div>
-
-    <AdminTableauSimple
-      class="mt-4"
-      :colonnes="['Date · Heure', 'Thématique — modules couverts', 'Formateur', 'Inscrits / Capacité', 'Présence', 'Statut', 'Actions']"
-    >
-      <tr v-for="session in sessions" :key="session.id">
-        <td class="px-4 py-3 font-bold">{{ formatDate(session.date) }} · {{ session.heure }}</td>
-        <td class="px-4 py-3">
-          <span class="mr-1.5 rounded-full px-2 py-0.5 text-[11px] font-bold" :class="session.programme === 'social-media' ? 'bg-social-voile text-social' : 'bg-entrepreneurs-voile text-entrepreneurs'">
-            {{ session.programme === 'social-media' ? 'SM' : 'ENT' }}
-          </span>
-          {{ session.thematique?.nom }} — modules
-          {{ session.modulesCouverts.map(numeroModule).join(', ') }}
-        </td>
-        <td class="px-4 py-3">{{ session.formateur?.nom }}</td>
-        <td class="px-4 py-3">{{ session.inscrits }} / {{ session.places }}</td>
-        <td class="px-4 py-3">
-          <button
-            v-if="session.statut !== 'annulee'"
-            class="text-[12.5px] underline"
-            @click="ouvrirPresence(session)"
-          >
-            <template v-if="session.presents === null">Relever</template>
-            <template v-else>
-              {{ session.presents }} présents ·
-              {{ session.inscrits ? Math.round((session.presents / session.inscrits) * 100) : 0 }} %
-            </template>
-          </button>
-          <span v-else class="text-[12px] text-discret">—</span>
-        </td>
-        <td class="px-4 py-3">
-          <span
-            class="rounded-full px-2.5 py-1 text-[11px] font-bold"
-            :class="{
-              'bg-succes-voile text-succes': remplissage(session) === 'confirmee',
-              'bg-alerte-voile text-alerte': ['presque-pleine', 'complete'].includes(remplissage(session)),
-              'bg-[#fdeeee] text-erreur': remplissage(session) === 'annulee',
-              'bg-fond-voile text-discret': remplissage(session) === 'terminee',
-            }"
-          >
-            {{ LIBELLE_REMPLISSAGE[remplissage(session)] }}
-          </span>
-        </td>
-        <td class="px-4 py-3 whitespace-nowrap">
-          <template v-if="session.statut === 'planifiee'">
-            <button class="text-[12.5px] underline" @click="ouvrirModification(session)">Modifier</button>
-            <button class="ml-3 text-[12.5px] underline" @click="ouvrirReport(session)">Reporter</button>
-            <button class="ml-3 text-[12.5px] text-erreur underline" @click="annulation = session">Annuler</button>
-          </template>
-          <span v-else class="text-[12px] text-discret">Notifiée — email + WhatsApp ✓</span>
-        </td>
-      </tr>
-    </AdminTableauSimple>
 
     <div v-if="modification" class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">
       <form class="w-full max-w-xl rounded-carte bg-white p-6" @submit.prevent="enregistrerModification">
