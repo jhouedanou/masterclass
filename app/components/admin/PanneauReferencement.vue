@@ -102,150 +102,218 @@ async function enregistrer() {
     enregistrement.value = false
   }
 }
+
+/** Habillage de l'écran 24. */
+const champ =
+  'w-full rounded-[10px] border-[1.5px] border-ligne px-3.5 py-2.5 text-[13.5px] focus:border-social focus:outline-none disabled:bg-fond-clair disabled:text-discret'
+const etiquette = 'mb-1.5 block text-[12.5px] font-bold'
+const encadreAlerte =
+  'rounded-[10px] border border-alerte-bordure bg-alerte-pale px-3.5 py-2.5 text-[12px] text-alerte-fonce'
+const encadreErreur =
+  'rounded-[10px] border border-erreur-bordure bg-erreur-voile px-3.5 py-2.5 text-[12px] text-erreur-fonce'
+
+const REGLES = [
+  { etat: 'Brouillon', pastille: 'bg-alerte-voile text-alerte', texte: 'Non accessible publiquement, non indexable, absent du sitemap.' },
+  { etat: 'Publié', pastille: 'bg-succes-voile text-succes', texte: 'Indexable si l’option est activée, présent dans le sitemap, canonical automatique.' },
+  { etat: 'À venir', pastille: 'bg-social-voile text-social', texte: 'Fiche commerciale publiable seule ; indexation désactivée par défaut, activable par un administrateur supérieur si la page comporte un titre, une description, un public et une promesse.' },
+]
 </script>
 
 <template>
-  <div class="space-y-4">
-    <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
-      <div v-if="!integre" class="flex items-start justify-between gap-3">
-        <div>
-          <h2 class="font-title text-lg">{{ libelle }}</h2>
-          <p class="font-mono text-xs text-discret">{{ chemin }}</p>
-        </div>
-        <button class="text-xs text-discret underline" @click="emit('fermer')">Fermer</button>
+  <!--
+    Écran 24 : deux colonnes. À gauche, le titre, le sélecteur de page et une
+    carte de champs unique qui contient l'aperçu Google. À droite, trois cartes
+    distinctes — droits avancés, statut de publication, et les règles globales
+    sur fond sombre.
+  -->
+  <form class="grid items-start gap-5 lg:grid-cols-[1fr_360px]" @submit.prevent="enregistrer">
+    <div>
+      <div class="flex flex-wrap items-center gap-3">
+        <h1 class="font-title text-[22px] font-light">Référencement et partage</h1>
+        <span class="rounded-full border border-ligne bg-white px-3.5 py-[7px] text-[12px] font-semibold">
+          {{ libelle }}
+        </span>
+        <button v-if="!integre" type="button" class="ml-auto text-[12px] text-discret underline" @click="emit('fermer')">
+          Fermer
+        </button>
       </div>
+      <p class="mt-1.5 text-[11.5px] text-discret">Champs éditables par les administrateurs de contenu.</p>
 
-      <form class="space-y-4" :class="integre ? '' : 'mt-5'" @submit.prevent="enregistrer">
+      <div class="mt-3 flex flex-col gap-3.5 rounded-[14px] border border-ligne-douce bg-white p-5">
+        <label class="block">
+          <span :class="etiquette">Mot-clé principal</span>
+          <input :id="`mc-${id}`" v-model="brouillon.motClePrincipal" :class="champ">
+          <span class="mt-1.5 block text-[11.5px] text-discret">
+            Repère interne. Il n’est jamais transmis comme balise de mots-clés.
+          </span>
+        </label>
+
+        <label class="block">
+          <span :class="etiquette">Title Google</span>
+          <input :id="`t-${id}`" v-model="brouillon.title" :class="champ">
+        </label>
+        <p v-if="doublonTitle" :class="encadreAlerte">
+          ⚠ Un Title identique existe sur la fiche «&nbsp;{{ doublonTitle.libelle ?? doublonTitle.title }}&nbsp;».
+          Différenciez les deux pages.
+        </p>
+
+        <label class="block">
+          <span :class="etiquette">Meta description</span>
+          <textarea :id="`md-${id}`" v-model="brouillon.metaDescription" rows="3" :class="champ" />
+        </label>
+        <p v-if="doublonDescription" :class="encadreAlerte">
+          Cette Meta description est déjà utilisée sur une autre page.
+        </p>
+
+        <AdminApercuGoogle
+          :title="brouillon.title || libelle"
+          :description="brouillon.metaDescription || ''"
+          :chemin="chemin"
+        />
+
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="block">
+            <span :class="etiquette">Titre Open Graph</span>
+            <input :id="`ogt-${id}`" v-model="brouillon.ogTitle" :class="champ">
+          </label>
+          <label class="block">
+            <span :class="etiquette">Description Open Graph</span>
+            <input :id="`ogd-${id}`" v-model="brouillon.ogDescription" :class="champ">
+          </label>
+        </div>
+
+        <!-- Image sociale : rangée pointillée, vignette à gauche, champ et
+             bouton à droite (écran 24). -->
+        <div class="flex flex-wrap items-center gap-3 rounded-[12px] border-[1.5px] border-dashed border-ligne-pointillee p-3.5">
+          <span class="h-[54px] w-24 shrink-0 overflow-hidden rounded-[8px] bg-fond-voile">
+            <img v-if="brouillon.ogImage" :src="brouillon.ogImage" alt="" class="size-full object-cover">
+          </span>
+          <span class="min-w-[200px] flex-1 text-[12px] leading-[1.5] text-texte">
+            <b>Image Open Graph</b> — 1200×630. Sans image dédiée, l’image principale de la page est
+            reprise. Aperçu WhatsApp, Facebook et LinkedIn.
+          </span>
+          <label class="w-full sm:w-[220px]">
+            <span class="sr-only">Chemin de l’image Open Graph</span>
+            <input :id="`ogi-${id}`" v-model="brouillon.ogImage" placeholder="/images/og-…" :class="champ">
+          </label>
+        </div>
+
+        <p class="text-[11.5px] leading-[1.6] text-discret">
+          Sans personnalisation : le Title reprend «&nbsp;[Titre de la page] | E-Masterclass Big
+          Five&nbsp;», la Meta description est générée depuis le résumé éditorial puis reste
+          modifiable, l’Open Graph reprend le Title, la description et l’image principale.
+        </p>
+
         <div>
-          <label class="mb-1 block text-xs text-texte" :for="`mc-${id}`">Mot-clé principal</label>
-          <input :id="`mc-${id}`" v-model="brouillon.motClePrincipal" class="w-full rounded-lg border border-ligne px-3 py-2 text-sm">
-          <p class="mt-1 text-xs text-discret">Repère interne. Il n’est jamais transmis comme balise de mots-clés.</p>
+          <UiBaseButton type="submit" taille="sm" :disabled="enregistrement">
+            {{ enregistrement ? 'Enregistrement…' : 'Enregistrer le référencement' }}
+          </UiBaseButton>
+          <p v-if="message" class="mt-2 text-[12.5px] text-succes">{{ message }}</p>
         </div>
-
-        <div>
-          <label class="mb-1 block text-xs text-texte" :for="`t-${id}`">Title Google</label>
-          <input :id="`t-${id}`" v-model="brouillon.title" class="w-full rounded-lg border border-ligne px-3 py-2 text-sm">
-          <p v-if="doublonTitle" class="mt-1 text-xs text-alerte">
-            ⚠ Un Title identique existe sur la fiche « {{ doublonTitle.libelle ?? doublonTitle.title }} ». Différenciez les deux pages.
-          </p>
-        </div>
-
-        <div>
-          <label class="mb-1 block text-xs text-texte" :for="`md-${id}`">Meta description</label>
-          <textarea :id="`md-${id}`" v-model="brouillon.metaDescription" rows="3" class="w-full rounded-lg border border-ligne px-3 py-2 text-sm" />
-          <p v-if="doublonDescription" class="mt-1 text-xs text-amber-600">Cette Meta description est déjà utilisée sur une autre page.</p>
-        </div>
-
-        <fieldset class="rounded-lg border border-ligne-douce p-4">
-          <legend class="px-1 text-xs text-texte">Partage social</legend>
-          <div class="space-y-3">
-            <div>
-              <label class="mb-1 block text-xs text-texte" :for="`ogt-${id}`">Titre Open Graph</label>
-              <input :id="`ogt-${id}`" v-model="brouillon.ogTitle" class="w-full rounded-lg border border-ligne px-3 py-2 text-sm">
-            </div>
-            <div>
-              <label class="mb-1 block text-xs text-texte" :for="`ogd-${id}`">Description Open Graph</label>
-              <textarea :id="`ogd-${id}`" v-model="brouillon.ogDescription" rows="2" class="w-full rounded-lg border border-ligne px-3 py-2 text-sm" />
-            </div>
-            <div>
-              <label class="mb-1 block text-xs text-texte" :for="`ogi-${id}`">Image Open Graph</label>
-              <input :id="`ogi-${id}`" v-model="brouillon.ogImage" placeholder="/images/og-…" class="w-full rounded-lg border border-ligne px-3 py-2 text-sm">
-            </div>
-          </div>
-        </fieldset>
-
-        <!-- Champs réservés à l'administrateur supérieur (spec SEO §3 et §13). -->
-        <fieldset class="rounded-lg border p-4" :class="superieur ? 'border-ligne-douce' : 'border-ligne-douce opacity-60'">
-          <legend class="px-1 text-xs text-texte">Réservé aux administrateurs supérieurs 🔒</legend>
-          <p class="mb-3 text-xs text-discret">Invisible pour les administrateurs de contenu.</p>
-          <div class="space-y-3">
-            <div>
-              <label class="mb-1 block text-xs text-texte" :for="`slug-${id}`">Slug / URL</label>
-              <input
-                :id="`slug-${id}`"
-                v-model="brouillon.slug"
-                :disabled="!superieur || slugVerrouille"
-                class="w-full rounded-lg border border-ligne px-3 py-2 font-mono text-sm disabled:bg-fond-clair"
-              >
-              <p v-if="slugModifie" class="mt-1 text-xs text-alerte">Une redirection permanente sera créée depuis l’ancienne URL.</p>
-              <p v-else-if="!slugVerrouille" class="mt-1 text-xs text-discret">
-                Cette URL est déjà publiée. Toute modification demande une confirmation : une redirection
-                permanente est créée automatiquement et le sitemap, la canonical et les liens internes sont mis à jour.
-              </p>
-            </div>
-            <label class="flex items-center gap-2 text-sm">
-              <input v-model="brouillon.indexable" type="checkbox" :disabled="!superieur">
-              Indexation autorisée
-              <span class="text-xs text-discret">La page entre dans le sitemap.</span>
-            </label>
-            <div>
-              <label class="mb-1 block text-xs text-texte" :for="`canon-${id}`">Canonical personnalisée</label>
-              <input
-                :id="`canon-${id}`"
-                v-model="brouillon.canonical"
-                :disabled="!superieur"
-                placeholder="Laisser vide — canonical automatique"
-                class="w-full rounded-lg border border-ligne px-3 py-2 text-sm disabled:bg-fond-clair"
-              >
-              <p class="mt-1 text-xs text-discret">Par défaut, la canonical reprend l’URL publique finale de la page.</p>
-            </div>
-            <div>
-              <p class="text-xs text-texte">Historique du slug</p>
-              <ul v-if="historiqueSlug.length" class="mt-1 space-y-1 text-xs text-discret">
-                <li v-for="r in historiqueSlug" :key="r.de">
-                  <span class="font-mono">{{ r.de }}</span> → modifié le {{ dateCourte(r.creeeLe) }} — redirection active
-                </li>
-              </ul>
-              <p v-else class="mt-1 text-xs text-discret">Aucun changement d’URL depuis la publication.</p>
-            </div>
-          </div>
-        </fieldset>
-
-        <!-- Statut de publication et indexation (écran 24) -->
-        <div class="rounded-lg border border-ligne-douce bg-fond-clair p-4 text-xs">
-          <p class="text-texte">Statut de publication et indexation</p>
-          <dl class="mt-2 space-y-1.5">
-            <div
-              v-for="regle in [
-                { etat: 'Brouillon', texte: 'Non accessible publiquement, non indexable, absent du sitemap.' },
-                { etat: 'Publié', texte: 'Indexable si l’option est activée, présent dans le sitemap, canonical automatique.' },
-                { etat: 'À venir', texte: 'Fiche commerciale publiable seule ; indexation désactivée par défaut, activable par un administrateur supérieur si la page comporte un titre, une description, un public et une promesse.' },
-              ]"
-              :key="regle.etat"
-              class="flex gap-2"
-              :class="regle.etat === etatPublication ? 'text-encre' : 'text-discret'"
-            >
-              <dt class="w-[64px] shrink-0 font-bold">
-                {{ regle.etat }}<span v-if="regle.etat === etatPublication" class="sr-only"> (état actuel)</span>
-              </dt>
-              <dd>{{ regle.texte }}</dd>
-            </div>
-          </dl>
-          <p class="mt-3 text-texte">Contrôles avant publication</p>
-          <p class="mt-1 text-discret">
-            Title et Meta description exigés sur les pages prioritaires · alerte en cas de doublon · aperçu
-            affiché sans blocage sur un nombre fixe de caractères.
-          </p>
-          <p class="mt-3 text-texte">Règles globales — automatiques</p>
-          <p class="mt-1 text-discret">
-            Sitemap XML généré et mis à jour à chaque publication, dépublication ou changement d’URL · sitemap
-            déclaré dans robots.txt et soumis à la Search Console · données structurées JSON-LD générées depuis
-            le contenu visible · image sociale par défaut au niveau global, surchargeable par page · aucune
-            balise de mots-clés.
-          </p>
-        </div>
-
-        <UiBaseButton type="submit" class="w-full" taille="sm" :disabled="enregistrement">
-          {{ enregistrement ? 'Enregistrement…' : 'Enregistrer le référencement' }}
-        </UiBaseButton>
-        <p v-if="message" class="text-xs text-texte">{{ message }}</p>
-      </form>
+      </div>
     </div>
 
-    <AdminApercuGoogle
-      :title="brouillon.title || libelle"
-      :description="brouillon.metaDescription || ''"
-      :chemin="chemin"
-    />
-  </div>
+    <div class="flex flex-col gap-4">
+      <!-- Droits avancés : carte bordée de violet, jamais fondue dans le reste. -->
+      <section class="rounded-[14px] border-[1.5px] border-social bg-white p-5" :class="!superieur && 'opacity-60'">
+        <div class="flex items-center justify-between gap-2">
+          <b class="text-[14px]">Réservé aux administrateurs supérieurs</b>
+          <span aria-hidden="true">🔒</span>
+        </div>
+        <p class="mt-1 text-[11.5px] text-discret">Invisible pour les administrateurs de contenu.</p>
+
+        <div class="mt-3.5 flex flex-col gap-3.5">
+          <label class="block">
+            <span :class="etiquette">Slug / URL</span>
+            <input
+              :id="`slug-${id}`"
+              v-model="brouillon.slug"
+              :disabled="!superieur || slugVerrouille"
+              :class="[champ, 'font-mono']"
+            >
+          </label>
+          <p v-if="slugModifie" :class="encadreErreur">
+            Une redirection permanente sera créée depuis l’ancienne URL.
+          </p>
+          <p v-else-if="!slugVerrouille" :class="encadreErreur">
+            Cette URL est déjà publiée. Toute modification demande une confirmation : une
+            redirection permanente est créée automatiquement et le sitemap, la canonical et les
+            liens internes sont mis à jour.
+          </p>
+
+          <div class="rounded-[12px] border border-ligne-douce px-4 py-3.5">
+            <!-- `indexable` peut arriver indéfini d'une page jamais réglée ;
+                 l'interrupteur, lui, veut un booléen net. -->
+            <UiInterrupteur
+              :model-value="brouillon.indexable === true"
+              @update:model-value="brouillon.indexable = $event"
+              libelle="Indexation autorisée"
+              description="La page entre dans le sitemap."
+              :disabled="!superieur"
+            />
+          </div>
+
+          <label class="block">
+            <span :class="etiquette">Canonical personnalisée</span>
+            <input
+              :id="`canon-${id}`"
+              v-model="brouillon.canonical"
+              :disabled="!superieur"
+              placeholder="Cas exceptionnel uniquement"
+              :class="champ"
+            >
+            <span class="mt-1.5 block text-[11.5px] text-discret">
+              Par défaut, la canonical reprend l’URL publique finale de la page.
+            </span>
+          </label>
+
+          <div class="rounded-[12px] border border-ligne-douce px-4 py-3.5 text-[12px]">
+            <b class="block">Historique du slug</b>
+            <ul v-if="historiqueSlug.length" class="mt-1 space-y-1 text-discret">
+              <li v-for="r in historiqueSlug" :key="r.de">
+                <span class="font-mono">{{ r.de }}</span> → modifié le {{ dateCourte(r.creeeLe) }}
+                — redirection active
+              </li>
+            </ul>
+            <p v-else class="mt-1 text-discret">Aucun changement d’URL depuis la publication.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="rounded-[14px] border border-ligne-douce bg-white p-5">
+        <b class="text-[14px]">Statut de publication et indexation</b>
+        <div class="mt-3 flex flex-col gap-2.5 text-[12px] leading-[1.5]">
+          <div
+            v-for="regle in REGLES"
+            :key="regle.etat"
+            class="flex gap-2.5"
+            :class="regle.etat === etatPublication ? 'text-texte' : 'text-discret'"
+          >
+            <span class="shrink-0 rounded-full px-2.5 py-[3px] text-[11px] font-bold" :class="regle.pastille">
+              {{ regle.etat }}
+            </span>
+            <span>{{ regle.texte }}</span>
+          </div>
+        </div>
+        <div class="mt-3.5 border-t border-ligne-claire pt-3.5 text-[12px] leading-[1.5]">
+          <b>Contrôles avant publication</b>
+          <p class="mt-1 text-discret">
+            Title et Meta description exigés sur les pages prioritaires · alerte en cas de doublon ·
+            aperçu affiché sans blocage sur un nombre fixe de caractères.
+          </p>
+        </div>
+      </section>
+
+      <!-- Règles globales : carte sombre dans la maquette. -->
+      <section class="sur-sombre rounded-[14px] bg-encre p-5 text-white">
+        <b class="text-[14px]">Règles globales — automatiques</b>
+        <p class="mt-2 text-[12px] leading-[1.6] text-gris-perle">
+          Sitemap XML généré et mis à jour à chaque publication, dépublication ou changement d’URL ·
+          sitemap déclaré dans robots.txt et soumis à la Search Console · données structurées JSON-LD
+          générées depuis le contenu visible · image sociale par défaut au niveau global,
+          surchargeable par page · aucune balise de mots-clés.
+        </p>
+      </section>
+    </div>
+  </form>
 </template>

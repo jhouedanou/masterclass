@@ -127,9 +127,29 @@ const pastille = 'rounded-full px-2.5 py-1 text-[11px] font-bold'
 </script>
 
 <template>
-  <div>
+  <!--
+    Deux écrans dans une même route. Le panneau « Référencement et partage »
+    (écran 24) est une vue à part entière dans la maquette : ouvert depuis la
+    liste, il la remplace, au lieu de se tasser dans son rail de droite.
+  -->
+  <AdminPanneauReferencement
+    v-if="selection"
+    :key="selection.id"
+    :id="selection.id"
+    :libelle="selection.libelle"
+    :chemin="selection.chemin"
+    :seo="selection.seo"
+    :slug-verrouille="selection.slugVerrouille"
+    :statut="selection.statut"
+    :autres="autres"
+    :redirections="data?.redirections ?? []"
+    @fermer="selection = null"
+    @enregistre="refresh()"
+  />
+
+  <div v-else>
     <div class="flex flex-wrap items-start justify-between gap-3">
-      <h1 class="font-title text-[26px] font-light">Référencement (SEO)</h1>
+      <h1 class="font-title text-[22px] font-light">Référencement (SEO)</h1>
       <input
         v-model="recherche"
         type="search"
@@ -168,7 +188,7 @@ const pastille = 'rounded-full px-2.5 py-1 text-[11px] font-bold'
     <div class="mt-5 grid gap-6 md:grid-cols-2 lg:grid-cols-[1fr_460px]">
       <div>
         <AdminTableauSimple :colonnes="['Page', 'Type', 'Title', 'Meta', 'Indexation', 'Action']">
-          <tr v-for="entree in entrees" :key="entree.id" :class="selection?.id === entree.id && 'bg-fond-clair'">
+          <tr v-for="entree in entrees" :key="entree.id">
             <td class="px-4 py-3">
               <p class="font-medium">{{ entree.libelle }}</p>
               <p class="font-mono text-[11.5px] text-discret">
@@ -257,24 +277,6 @@ const pastille = 'rounded-full px-2.5 py-1 text-[11px] font-bold'
       </div>
 
       <div class="flex flex-col gap-4">
-        <AdminPanneauReferencement
-          v-if="selection"
-          :key="selection.id"
-          :id="selection.id"
-          :libelle="selection.libelle"
-          :chemin="selection.chemin"
-          :seo="selection.seo"
-          :slug-verrouille="selection.slugVerrouille"
-          :statut="selection.statut"
-          :autres="autres"
-          :redirections="data?.redirections ?? []"
-          @fermer="selection = null"
-          @enregistre="refresh()"
-        />
-        <aside v-else class="rounded-[14px] border border-dashed border-ligne bg-white p-10 text-center text-[13px] text-discret">
-          Sélectionnez une page pour éditer son référencement.
-        </aside>
-
         <!-- État technique : ce que l'application maîtrise est affirmé, ce qui
              dépend d'un compte tiers est lu dans les réglages. -->
         <section v-if="data" class="rounded-[14px] border border-ligne-douce bg-white p-5 text-[13px]">
