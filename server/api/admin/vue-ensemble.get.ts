@@ -81,6 +81,8 @@ export default defineEventHandler(async (event) => {
       .slice(0, 5)
       .map(([moduleId, ventes]) => ({
         titre: modules.find((m) => m.id === moduleId)?.titre ?? '—',
+        // La barre du top 5 prend la couleur du programme (écran 01).
+        programme: modules.find((m) => m.id === moduleId)?.programme ?? 'social-media',
         ventes,
       })),
     aTraiter: {

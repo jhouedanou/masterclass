@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import type { EntreeJournal } from '#shared/types'
-import type { ColonneCsv } from '~/utils/csv'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Historique — administration')
 
+/**
+ * Écran 16 — « Journal des actions ».
+ *
+ * La maquette n'en fait pas un tableau : une seule carte, une entrée par
+ * ligne, horodatage en chasse fixe à gauche et description sur deux lignes à
+ * droite. Le détail — version restaurable, adresse, notification, motif —
+ * forme la seconde ligne, il ne se déplie pas.
+ */
 const auteur = ref('')
 const type = ref('')
 const objet = ref('')
@@ -22,9 +29,6 @@ const { data } = await useFetch<{
   })),
 })
 
-/** Le détail d'une entrée : diff et adresse, repliés par défaut. */
-const ouverte = ref('')
-
 const LIBELLES_TYPE: Record<string, string> = {
   contenu: 'Contenu',
   acces: 'Accès',
@@ -34,22 +38,10 @@ const LIBELLES_TYPE: Record<string, string> = {
   parametres: 'Paramètres',
 }
 
-function exporter() {
-  exporterCsv(
-    `journal-${new Date().toISOString().slice(0, 10)}`,
-    [
-      { cle: (e) => e.date.slice(0, 19).replace('T', ' '), libelle: 'Date' },
-      { cle: 'auteur', libelle: 'Auteur' },
-      { cle: (e) => (e.type ? (LIBELLES_TYPE[e.type] ?? e.type) : ''), libelle: 'Type' },
-      { cle: 'action', libelle: 'Action' },
-      { cle: 'cible', libelle: 'Cible' },
-      { cle: (e) => e.objet ?? '', libelle: 'Objet' },
-      { cle: (e) => e.ip ?? '', libelle: 'Adresse IP' },
-      { cle: (e) => e.notification ?? '', libelle: 'Notification' },
-    ] satisfies ColonneCsv<EntreeJournal>[],
-    data.value?.entrees ?? [],
-  )
-}
+/** Les trois filtres se replient derrière la pilule « Filtrer : … ▾ » de la
+ *  maquette ; ils restent de vrais menus, seulement rangés. */
+const filtresOuverts = ref(false)
+const nbFiltres = computed(() => [auteur.value, type.value, objet.value].filter(Boolean).length)
 
 /** L'adresse est tronquée à l'affichage, comme dans la maquette : elle sert à
  *  distinguer deux sessions, pas à localiser quelqu'un. */
@@ -58,21 +50,41 @@ function ipCourte(ip?: string) {
   const parties = ip.split('.')
   return parties.length === 4 ? `${parties[0]}.${parties[1]}.•.•` : ip
 }
+
+/** « 05/09 · 14:32 » */
+function horodatage(iso: string) {
+  const d = new Date(iso)
+  const j = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit' }).format(d)
+  const h = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(d)
+  return `${j} · ${h}`
+}
+
+/** Seconde ligne d'une entrée : ce que la maquette y met, dans cet ordre. */
+function detail(e: EntreeJournal) {
+  const bouts: string[] = []
+  if (e.diff) bouts.push('Version précédente restaurable')
+  if (e.notification) bouts.push(e.notification)
+  if (e.objet) bouts.push(e.objet)
+  if (e.ip) bouts.push(`IP ${ipCourte(e.ip)}`)
+  return bouts.join(' · ')
+}
 </script>
 
 <template>
-  <div v-if="data">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <h1 class="font-title text-[26px] font-light">Historique &amp; versions</h1>
-      <UiBaseButton taille="sm" variante="contour" @click="exporter">Exporter en CSV</UiBaseButton>
+  <div v-if="data" class="max-w-[820px]">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h1 class="font-title text-[22px] font-light">Journal des actions</h1>
+      <button
+        class="rounded-full border border-ligne bg-white px-3.5 py-[7px] text-[12px] font-semibold"
+        :aria-expanded="filtresOuverts"
+        @click="filtresOuverts = !filtresOuverts"
+      >
+        Filtrer : admin · type · objet
+        <template v-if="nbFiltres"> ({{ nbFiltres }})</template> ▾
+      </button>
     </div>
-    <p class="mt-2 max-w-[760px] text-[12.5px] text-discret">
-      Toutes les actions sensibles sont journalisées : publication, modification de fiche,
-      attribution ou révocation d’accès, changement de slug, annulation de session, modification des
-      paramètres financiers.
-    </p>
 
-    <div class="mt-5 flex flex-wrap gap-2 text-[13px]">
+    <div v-if="filtresOuverts" class="mt-3 flex flex-wrap gap-2 text-[13px]">
       <select v-model="auteur" class="rounded-full border border-ligne bg-white px-3.5 py-2">
         <option value="">Tous les auteurs</option>
         <option v-for="a in data.auteurs" :key="a" :value="a">{{ a }}</option>
@@ -87,58 +99,32 @@ function ipCourte(ip?: string) {
       </select>
     </div>
 
-    <AdminTableauSimple
-      class="mt-4"
-      :colonnes="['Date', 'Auteur', 'Action', 'Type', 'Objet', 'Adresse IP', 'Notification', '']"
-    >
-      <template v-for="entree in data.entrees" :key="entree.id">
-        <tr>
-          <td class="px-4 py-3 whitespace-nowrap text-[12.5px] text-discret">
-            {{ formatDate(entree.date) }}
-          </td>
-          <td class="px-4 py-3 font-bold">{{ entree.auteur }}</td>
-          <td class="px-4 py-3">
-            {{ entree.action }}
-            <span class="block text-[12px] text-discret">{{ entree.cible }}</span>
-          </td>
-          <td class="px-4 py-3">
-            <span v-if="entree.type" class="rounded-full bg-fond-voile px-2.5 py-1 text-[11px] font-bold text-discret">
-              {{ LIBELLES_TYPE[entree.type] ?? entree.type }}
-            </span>
-            <span v-else class="text-discret">—</span>
-          </td>
-          <td class="px-4 py-3 text-[12.5px]">
-            <span v-if="entree.objet">{{ entree.objet }}</span>
-            <span v-else class="text-discret">—</span>
-          </td>
-          <td class="px-4 py-3 font-mono text-[12px] whitespace-nowrap">
-            <span v-if="entree.ip" class="text-discret">{{ ipCourte(entree.ip) }}</span>
-            <span v-else class="text-discret">—</span>
-          </td>
-          <td class="px-4 py-3 text-[12.5px]">
-            <span v-if="entree.notification" class="text-succes">{{ entree.notification }}</span>
-            <span v-else class="text-discret">—</span>
-          </td>
-          <td class="px-4 py-3 text-right">
-            <button
-              v-if="entree.diff || entree.ip"
-              class="text-[12.5px] underline"
-              @click="ouverte = ouverte === entree.id ? '' : entree.id"
-            >
-              {{ ouverte === entree.id ? 'Masquer' : 'Détail' }}
-            </button>
-          </td>
-        </tr>
-        <tr v-if="ouverte === entree.id">
-          <td colspan="8" class="bg-fond-voile px-4 py-3 text-[12.5px]">
-            <p v-if="entree.ip" class="text-discret">Adresse : {{ ipCourte(entree.ip) }}</p>
-            <pre v-if="entree.diff" class="mt-2 overflow-x-auto font-mono text-[12px] text-texte">{{ JSON.stringify(entree.diff, null, 2) }}</pre>
-          </td>
-        </tr>
-      </template>
-      <tr v-if="!data.entrees.length">
-        <td colspan="8" class="px-4 py-8 text-center text-discret">Aucune entrée dans ce filtre.</td>
-      </tr>
-    </AdminTableauSimple>
+    <div class="mt-4 rounded-[14px] border border-ligne-douce bg-white px-5 py-1.5">
+      <div
+        v-for="(entree, i) in data.entrees"
+        :key="entree.id"
+        class="flex items-start gap-3.5 py-3.5 text-[13px]"
+        :class="i < data.entrees.length - 1 && 'border-b border-fond-voile'"
+      >
+        <span class="min-w-24 shrink-0 font-mono text-[11.5px] text-discret">
+          {{ horodatage(entree.date) }}
+        </span>
+        <span>
+          <b>{{ entree.auteur }}</b> {{ entree.action }}
+          <b v-if="entree.cible">{{ entree.cible }}</b>
+          <span v-if="detail(entree)" class="mt-0.5 block text-[11.5px] text-discret">
+            {{ detail(entree) }}
+          </span>
+        </span>
+      </div>
+      <p v-if="!data.entrees.length" class="py-8 text-center text-[13px] text-discret">
+        Aucune entrée dans ce filtre.
+      </p>
+    </div>
+
+    <p class="mt-3 text-[12px] text-discret">
+      Journal inaltérable, conservé 24 mois. Toute connexion admin, modification, attribution et
+      action de paiement y figure.
+    </p>
   </div>
 </template>
