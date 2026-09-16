@@ -36,6 +36,12 @@ export function useLecteurVideo(options: {
   const progression = ref<number | null>(null)
   /** Niveau de qualité servi par le streaming adaptatif (« 480p »), affiché « Auto 480p ». */
   const qualite = ref<string | null>(null)
+  /** Vitesse de lecture. Un ref, et non un réglage à sens unique : la barre de
+   *  contrôles de la maquette l'affiche autant qu'elle la change. */
+  const vitesse = ref(1)
+  /** Suit l'état réel du plein écran : la touche Échap en sort sans passer par
+   *  notre bouton, et un booléen basculé à la main mentirait alors. */
+  const pleinEcran = ref(false)
 
   let hls: Hls | null = null
   let dernierInstant = 0
@@ -240,13 +246,68 @@ export function useLecteurVideo(options: {
     if (element) charger()
   }
 
+  /**
+   * Déplace le curseur, en restant à l'intérieur du chapitre.
+   *
+   * Le quart de seconde retranché n'est pas décoratif : un clic à l'extrême
+   * droite du rail poserait `currentTime = duration`, ce que le navigateur
+   * traite comme une fin de lecture — le chapitre se serait marqué terminé sur
+   * un simple déplacement.
+   */
   function allerA(secondes: number) {
-    if (video.value) video.value.currentTime = secondes
+    const element = video.value
+    if (!element) return
+    const duree = element.duration || dureeSecondes.value
+    element.currentTime = duree ? Math.min(Math.max(0, secondes), duree - 0.25) : Math.max(0, secondes)
   }
 
-  function vitesse(valeur: number) {
-    if (video.value) video.value.playbackRate = valeur
+  /** Déplacement relatif, pour les flèches du clavier. */
+  function avancerDe(delta: number) {
+    allerA(positionSecondes.value + delta)
   }
+
+  /**
+   * Lecture ou pause. On passe par la balise et rien d'autre : `play()` et
+   * `pause()` émettent les évènements que `gestionnaires` écoute déjà, donc le
+   * relevé de visionnage part sur pause exactement comme avec les contrôles
+   * natifs.
+   */
+  function basculerLecture() {
+    const element = video.value
+    if (!element) return
+    if (element.paused) void element.play().catch(() => undefined)
+    else element.pause()
+  }
+
+  function surPleinEcran() {
+    pleinEcran.value = Boolean(document.fullscreenElement)
+  }
+
+  /**
+   * Plein écran sur la scène entière, pour que la barre de contrôles y suive.
+   * Safari iOS refuse le plein écran sur autre chose que la balise vidéo : il
+   * reprend alors ses propres contrôles, ce qui reste préférable à un bouton
+   * sans effet.
+   */
+  function basculerPleinEcran(conteneur: HTMLElement | null) {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen()
+      return
+    }
+    if (conteneur?.requestFullscreen) {
+      void conteneur.requestFullscreen().catch(() => undefined)
+      return
+    }
+    const element = video.value as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null
+    element?.webkitEnterFullscreen?.()
+  }
+
+  onMounted(() => document.addEventListener('fullscreenchange', surPleinEcran))
+  onBeforeUnmount(() => document.removeEventListener('fullscreenchange', surPleinEcran))
+
+  watch(vitesse, (valeur) => {
+    if (video.value) video.value.playbackRate = valeur
+  })
 
   const gestionnaires = {
     onPlay: () => {
@@ -266,6 +327,10 @@ export function useLecteurVideo(options: {
     onLoadedmetadata: () => {
       chargement.value = false
       dureeSecondes.value = video.value?.duration ?? 0
+      // Poser une nouvelle source remet `playbackRate` à 1 : sans cette ligne,
+      // un renouvellement d'autorisation ramenait la vidéo en 1× alors que la
+      // barre affichait toujours 1.25×.
+      if (video.value) video.value.playbackRate = vitesse.value
       // Renouvellement d'autorisation en cours de lecture : on reprend là où
       // l'apprenant en était, et on ne redémarre que si la vidéo tournait.
       if (repriseApres !== null && video.value) {
@@ -288,6 +353,10 @@ export function useLecteurVideo(options: {
     charger,
     rechargerEnPlace,
     allerA,
+    avancerDe,
+    basculerLecture,
+    basculerPleinEcran,
+    pleinEcran,
     vitesse,
     gestionnaires,
     enLecture,

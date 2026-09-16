@@ -7,8 +7,23 @@ const mois = ref(new Date().toISOString().slice(0, 7))
 const moduleChoisi = ref('')
 
 const { data } = await useFetch<{
-  lignes: { libelle: string; ventes: number; ca: number; marge: number; part: number }[]
-  total: { ca: number; frais: number; marge: number; remuneration: number; margePlateforme: number }
+  lignes: {
+    libelle: string
+    ventes: number
+    ventesLibelle?: string
+    ca: number
+    marge: number
+    part: number
+    coachingHeures?: number
+  }[]
+  total: {
+    ca: number
+    frais: number
+    fraisPourcent: number
+    marge: number
+    remuneration: number
+    margePlateforme: number
+  }
 }>('/api/formateur/revenus', { query: { mois, module: moduleChoisi } })
 
 const { data: mesModules } = await useFetch<{ id: string; titre: string }[]>(
@@ -38,6 +53,27 @@ const partFormateur = computed(() => {
   return marge ? Math.round((remuneration / marge) * 100) : 30
 })
 const partPlateforme = computed(() => 100 - partFormateur.value)
+
+/** Rangées de l'écran mobile (planche D, écran 07) : la maquette y remplace la
+ *  bande de cartes par quatre lignes, dont celle du coaching privé. */
+const ligneCoaching = computed(() => data.value?.lignes.find((l) => l.coachingHeures))
+
+const rangeesMobile = computed(() => {
+  const total = data.value?.total
+  if (!total) return []
+  const rangees = [
+    { libelle: 'CA généré', montant: total.ca },
+    { libelle: `Frais de paiement (${total.fraisPourcent} %)`, montant: total.frais },
+    { libelle: `Marge brute Big Five (${partPlateforme.value} %)`, montant: total.margePlateforme },
+  ]
+  if (ligneCoaching.value) {
+    rangees.push({
+      libelle: `Coaching privé (${ligneCoaching.value.coachingHeures} h)`,
+      montant: ligneCoaching.value.part,
+    })
+  }
+  return rangees
+})
 </script>
 
 <template>
@@ -70,7 +106,20 @@ const partPlateforme = computed(() => 100 - partFormateur.value)
       </p>
     </div>
 
-    <div class="mt-4 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <!-- Le téléphone (écran 07) ne porte pas la bande de cartes : la
+         rémunération en tête, puis quatre rangées de détail. -->
+    <div class="mt-3 flex flex-col gap-2 text-[12.5px] lg:hidden">
+      <div
+        v-for="rangee in rangeesMobile"
+        :key="rangee.libelle"
+        class="flex justify-between gap-3 rounded-[10px] border border-ligne-douce bg-white px-3.5 py-3"
+      >
+        <span>{{ rangee.libelle }}</span>
+        <b>{{ formatFranc(rangee.montant) }}</b>
+      </div>
+    </div>
+
+    <div class="mt-4 hidden gap-3.5 lg:grid lg:grid-cols-3 xl:grid-cols-5">
       <AdminCarteIndicateur
         taille="sm"
         libelle="CA généré"
@@ -83,7 +132,7 @@ const partPlateforme = computed(() => 100 - partFormateur.value)
         libelle="Frais de paiement"
         :valeur="formatNombre(data.total.frais)"
         unite="F"
-        detail="FeexPay"
+        :detail="`FeexPay — ${data.total.fraisPourcent} %`"
       />
       <AdminCarteIndicateur
         taille="sm"
@@ -93,7 +142,6 @@ const partPlateforme = computed(() => 100 - partFormateur.value)
         detail="CA − frais de paiement"
       />
       <AdminCarteIndicateur
-        class="hidden lg:block"
         taille="sm"
         accent
         libelle="Votre rémunération"
@@ -118,7 +166,7 @@ const partPlateforme = computed(() => 100 - partFormateur.value)
     >
       <tr v-for="ligne in data.lignes" :key="ligne.libelle">
         <td class="px-4 py-3 font-bold">{{ ligne.libelle }}</td>
-        <td class="px-4 py-3">{{ ligne.ventes }}</td>
+        <td class="px-4 py-3">{{ ligne.ventesLibelle ?? ligne.ventes }}</td>
         <td class="px-4 py-3">{{ formatFranc(ligne.ca) }}</td>
         <td class="px-4 py-3">{{ formatFranc(ligne.marge) }}</td>
         <td class="px-4 py-3 font-bold">{{ formatFranc(ligne.part) }}</td>

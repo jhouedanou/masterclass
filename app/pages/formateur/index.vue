@@ -38,6 +38,12 @@ const { data } = await useFetch<{
     sujetsALire: number
     nouvellesNotes: number
     prochaineSessionDate: string | null
+    prochaineSeancePrivee: {
+      apprenant: string
+      creneau: string | null
+      heures: number
+      sujetsSoumis: boolean
+    } | null
   }
   dernieresNotes: { note: number; commentaire: string; origine: string; date: string }[]
 }>('/api/formateur/tableau-bord', {
@@ -190,6 +196,32 @@ const optionsModules = computed(() => [
       </div>
 
       <div class="flex flex-col gap-4">
+        <!-- Le téléphone (écran 07) annonce la prochaine séance privée sous la
+             prochaine session collective ; le desktop s'en tient au compteur
+             de « À traiter ». -->
+        <NuxtLink
+          v-if="data.aTraiter.prochaineSeancePrivee"
+          to="/formateur/coaching-prive"
+          class="rounded-[14px] border-[1.5px] border-social bg-white p-3.5 text-inherit lg:hidden"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <b class="text-[13px]">
+              Coaching privé<template v-if="data.aTraiter.prochaineSeancePrivee.creneau">
+                — {{ data.aTraiter.prochaineSeancePrivee.creneau }}</template>
+            </b>
+            <span class="rounded-full bg-succes-voile px-2 py-0.75 text-[10px] font-bold text-succes">
+              Payée ✓
+            </span>
+          </div>
+          <p class="mt-1.25 text-[12px] text-discret">
+            {{ data.aTraiter.prochaineSeancePrivee.apprenant }} ·
+            {{ data.aTraiter.prochaineSeancePrivee.heures }} h
+            <template v-if="data.aTraiter.prochaineSeancePrivee.sujetsSoumis">
+              · sujets soumis à lire
+            </template>
+          </p>
+        </NuxtLink>
+
         <section class="rounded-[14px] border border-ligne-douce bg-white p-5.5">
           <h2 class="font-sans text-[15px] font-bold">À traiter</h2>
           <div class="mt-3 flex flex-col gap-2.5 text-[13.5px]">

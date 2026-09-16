@@ -134,6 +134,22 @@ export async function statistiquesModules(
     })
 }
 
+/** Ligne du tableau « Mes revenus » (planche D, écran 06). */
+interface LigneRevenusFormateur {
+  libelle: string
+  ventes: number
+  /** « 3 séances » : la maquette compte les coachings en séances, non en
+   *  ventes. Absent, la colonne affiche le nombre seul. */
+  ventesLibelle?: string
+  ca: number
+  marge: number
+  part: number
+  /** La ligne de coaching a sa propre rangée sur l'écran mobile (écran 07),
+   *  libellée « Coaching privé (5 h) » : elle s'y retrouve par ce repère
+   *  plutôt qu'en relisant son libellé. */
+  coachingHeures?: number
+}
+
 /**
  * Rémunération du formateur.
  *
@@ -161,7 +177,7 @@ export async function revenusFormateur(formateurId: string, filtre: FiltreFormat
     (t) => t.statut === 'reussie' && dansPeriode(t.date.slice(0, 10), filtre),
   )
 
-  const lignes = siens
+  const lignes: LigneRevenusFormateur[] = siens
     .map((m) => {
       const ventes = reussies.filter((t) => t.moduleId === m.id)
       const ca = ventes.reduce((somme, t) => somme + t.montant, 0)
@@ -194,6 +210,8 @@ export async function revenusFormateur(formateurId: string, filtre: FiltreFormat
     lignes.push({
       libelle: `Coaching privé — ${heures} h à ${new Intl.NumberFormat('fr-FR').format(tarif)} F`,
       ventes: seances.length,
+      ventesLibelle: `${seances.length} séance${seances.length > 1 ? 's' : ''}`,
+      coachingHeures: heures,
       ca: caCoaching,
       marge: margeCoaching,
       part: Math.round(margeCoaching * partFormateur),
@@ -209,6 +227,9 @@ export async function revenusFormateur(formateurId: string, filtre: FiltreFormat
     total: {
       ca,
       frais,
+      // « FeexPay — 4 % » : le taux affiché sous la carte est celui des
+      // réglages financiers, non une valeur écrite dans la vue.
+      fraisPourcent: reglages.fraisPaiementPourcent,
       marge,
       remuneration: Math.round(marge * partFormateur),
       margePlateforme: Math.round(marge * partPlateforme),
@@ -300,6 +321,13 @@ export interface ATraiter {
   nouvellesNotes: number
   /** Session dont les sujets sont à lire, pour « avant le 10/09 ». */
   prochaineSessionDate: string | null
+  /** Carte « Coaching privé — sam 12/09 · 10h00 » du téléphone (écran 07). */
+  prochaineSeancePrivee: {
+    apprenant: string
+    creneau: string | null
+    heures: number
+    sujetsSoumis: boolean
+  } | null
 }
 
 /**
@@ -324,11 +352,25 @@ export async function aTraiterFormateur(formateurId: string): Promise<ATraiter> 
     .toISOString()
     .slice(0, 10)
 
+  // Séances payées, la plus anciennement calée en tête : `creneau` est un
+  // libellé d'affichage, c'est la date de calage qui ordonne.
+  const payees = demandes
+    .filter((d) => d.statut === 'payee')
+    .sort((a, b) => (a.creneauRetenuLe ?? a.recueLe).localeCompare(b.creneauRetenuLe ?? b.recueLe))
+
   return {
-    coachingPrive: demandes.filter((d) => d.statut === 'payee').length,
+    coachingPrive: payees.length,
     sujetsALire: sujets.filter((s) => !s.luLe).length,
     nouvellesNotes: notes.filter((n) => n.date >= depuisUnMois).length,
     prochaineSessionDate: prochaine?.date ?? null,
+    prochaineSeancePrivee: payees[0]
+      ? {
+          apprenant: payees[0].apprenant,
+          creneau: payees[0].creneau ?? null,
+          heures: payees[0].heures,
+          sujetsSoumis: Boolean(payees[0].besoins.trim()),
+        }
+      : null,
   }
 }
 

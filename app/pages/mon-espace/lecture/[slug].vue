@@ -96,8 +96,56 @@ watch(index, () => {
 })
 
 const vitesses = [0.75, 1, 1.25, 1.5, 2]
-const vitesse = ref(1)
-watch(vitesse, (valeur) => lecteur.vitesse(valeur))
+
+/**
+ * Scène du lecteur : c'est elle qui passe en plein écran, et c'est sur elle que
+ * les raccourcis clavier sont posés — jamais sur `document`, qui les imposerait
+ * au reste de la page.
+ */
+const scene = ref<HTMLElement | null>(null)
+
+/**
+ * La barre de contrôles de la maquette suppose une souris : son rail fait cinq
+ * pixels de haut, et le plein écran d'un conteneur n'existe pas sur Safari iOS.
+ * Sous cette combinaison, les contrôles natifs du navigateur restent meilleurs
+ * — la planche mobile de la maquette ne dessine d'ailleurs aucune barre.
+ * Faux au rendu serveur : mieux vaut des contrôles natifs qu'une barre à demi
+ * construite le temps de l'hydratation.
+ */
+const controlesCustom = ref(false)
+onMounted(() => {
+  const requete = window.matchMedia('(min-width: 1024px) and (pointer: fine)')
+  controlesCustom.value = requete.matches
+  requete.addEventListener('change', (evenement) => {
+    controlesCustom.value = evenement.matches
+  })
+})
+
+function surClavierScene(evenement: KeyboardEvent) {
+  // Une touche destinée à un bouton ou au rail qui a le focus leur appartient.
+  const cible = evenement.target as HTMLElement
+  if (cible !== scene.value && cible.closest('button,[role="slider"]')) return
+
+  if (evenement.key === ' ' || evenement.key.toLowerCase() === 'k') {
+    evenement.preventDefault()
+    lecteur.basculerLecture()
+  } else if (evenement.key.toLowerCase() === 'f') {
+    evenement.preventDefault()
+    lecteur.basculerPleinEcran(scene.value)
+  } else if (evenement.key === 'ArrowLeft') {
+    evenement.preventDefault()
+    lecteur.avancerDe(-5)
+  } else if (evenement.key === 'ArrowRight') {
+    evenement.preventDefault()
+    lecteur.avancerDe(5)
+  }
+}
+
+/** La maquette n'affiche plus l'index des chapitres dans le lecteur : un seul
+ *  lien d'enchaînement remplace la rangée de pastilles. */
+const chapitreSuivant = computed(() =>
+  index.value + 1 < moduleCourant.value.chapitres.length ? moduleCourant.value.chapitres[index.value + 1] : null,
+)
 
 function horloge(secondes: number): string {
   const total = Math.max(0, Math.floor(secondes))
@@ -132,10 +180,6 @@ const ligneActive = computed(() => {
   }
   return active
 })
-
-const progressionAffichee = computed(
-  () => lecteur.progression.value ?? data.value?.acces.progression ?? 0,
-)
 
 /**
  * Une autorisation expirée en cours de session se renouvelle sans quitter la
@@ -184,108 +228,124 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
 </script>
 
 <template>
-  <div v-if="data" class="sur-sombre min-h-screen bg-encre text-white">
-    <header class="flex flex-wrap items-center justify-between gap-3 border-b border-encre-800 px-6 py-4">
-      <NuxtLink :to="`/mon-espace/module/${moduleCourant.slug}`" class="text-[13.5px] text-[#b9b4c4] hover:text-white">
+  <div v-if="data" class="sur-sombre min-h-screen bg-nuit text-white">
+    <header class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 lg:px-8 lg:py-[14px]">
+      <NuxtLink :to="`/mon-espace/module/${moduleCourant.slug}`" class="text-[13.5px] text-nuit-clair hover:text-white">
         ← Retour au module
       </NuxtLink>
-      <p class="font-title text-[17px] font-light">
+      <!-- `font-sans` est indispensable : la feuille de base impose Jost 300 à
+           tous les titres, or la maquette écrit celui-ci en Mulish gras. -->
+      <h1 class="font-sans text-[14px] font-bold">
         {{ chapitre?.libelle }} — {{ chapitre?.titre }}
-      </p>
-      <p class="text-[13px] text-[#8f8a9c]">
+      </h1>
+      <p class="text-[12.5px] text-discret">
         <span class="lg:hidden">Ch. {{ index + 1 }} / {{ moduleCourant.chapitres.length }}</span>
         <span class="hidden lg:inline">Chapitre {{ index + 1 }} / {{ moduleCourant.chapitres.length }}</span>
       </p>
     </header>
 
-    <div class="grid gap-6 p-6 xl:grid-cols-[1.6fr_1fr]">
-      <div>
+    <div>
         <!-- Le motif de marque est un fond, pas un voile : la vidéo doit le
              recouvrir. Un élément positionné se peint au-dessus de ceux qui ne
              le sont pas — sans `relative` sur la vidéo, le motif lui passait
              devant et teintait l'image de 14 %. -->
-        <div class="relative aspect-16/9 w-full overflow-hidden rounded-carte bg-[#17151c]">
-          <img src="/images/brand/pattern.png" alt="" aria-hidden="true"
-            class="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-[.14]">
-          <video v-if="source" ref="video" class="relative z-10 h-full w-full" controls controlslist="nodownload" playsinline
-            preload="metadata" @play="lecteur.gestionnaires.onPlay" @pause="lecteur.gestionnaires.onPause"
-            @ended="lecteur.gestionnaires.onEnded" @timeupdate="lecteur.gestionnaires.onTimeupdate"
-            @loadedmetadata="lecteur.gestionnaires.onLoadedmetadata"
-            @error="lecteur.gestionnaires.onError"></video>
+      <div
+        ref="scene"
+        tabindex="-1"
+        class="relative mx-4 aspect-video w-auto overflow-hidden rounded-bloc bg-encre lg:mx-8 lg:aspect-auto lg:h-[560px] [&:fullscreen]:mx-0 [&:fullscreen]:h-full [&:fullscreen]:rounded-none"
+        @keydown="surClavierScene"
+      >
+        <img src="/images/brand/pattern.png" alt="" aria-hidden="true"
+          class="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-[.14]">
+        <!-- `object-contain` : la scène de la maquette est un cadre large, pas
+             un 16/9 — recadrer y amputerait l'image. -->
+        <video v-if="source" ref="video" class="relative z-10 h-full w-full object-contain"
+          :controls="!controlesCustom" :tabindex="controlesCustom ? -1 : undefined" controlslist="nodownload" playsinline
+          preload="metadata" @play="lecteur.gestionnaires.onPlay" @pause="lecteur.gestionnaires.onPause"
+          @ended="lecteur.gestionnaires.onEnded" @timeupdate="lecteur.gestionnaires.onTimeupdate"
+          @loadedmetadata="lecteur.gestionnaires.onLoadedmetadata"
+          @error="lecteur.gestionnaires.onError"></video>
 
-          <p v-else class="relative z-10 grid h-full place-items-center px-6 text-center text-[13.5px] text-[#b9b4c4]">
-            La vidéo de ce chapitre n’est pas encore en ligne. Le script ci-contre en donne le
-            contenu.
-          </p>
-
-          <p v-if="lecteur.erreur.value"
-            class="absolute inset-x-0 bottom-14 z-20 mx-auto w-fit rounded bg-black/70 px-3 py-2 text-[12.5px] text-white"
-            role="status">
-            {{ lecteur.erreur.value }}
-          </p>
-
-          <!-- Filigrane nominatif : une rediffusion reste attribuable. -->
-          <p v-if="source && moduleCourant.filigraneActif"
-            class="pointer-events-none absolute top-4 right-4 z-20 rounded bg-black/40 px-2 py-1 text-[11px] text-white/70"
-            aria-hidden="true">
-            {{ auth.utilisateur?.prenom }} {{ auth.utilisateur?.nom }} · {{ auth.utilisateur?.email }}
-          </p>
-        </div>
-
-        <div class="mt-4 flex flex-wrap items-center gap-4 text-[13px] text-[#b9b4c4]">
-          <span>
-            {{ horloge(lecteur.positionSecondes.value) }} /
-            {{ horloge(lecteur.dureeSecondes.value || (chapitre?.videoDureeSecondes ?? 0)) }}
-          </span>
-          <label class="flex items-center gap-2">
-            Vitesse
-            <select v-model.number="vitesse" class="rounded border border-encre-800 bg-encre-800 px-2 py-1 text-white">
-              <option v-for="v in vitesses" :key="v" :value="v">{{ v }}×</option>
-            </select>
-          </label>
-          <span title="Qualité adaptée automatiquement au débit">Auto {{ lecteur.qualite.value ?? '480p' }}</span>
-          <span class="ml-auto">Progression du module : {{ progressionAffichee }} %</span>
-        </div>
-
-        <p class="mt-3 text-[12px] text-[#8f8a9c]">
-          Temps réellement visionné : {{ horloge(lecteur.secondesVues.value) }} — relevé toutes les
-          dix secondes. L’avance rapide ne valide pas la progression.
+        <p v-else class="relative z-10 grid h-full place-items-center px-6 text-center text-[13.5px] text-nuit-clair">
+          La vidéo de ce chapitre n’est pas encore en ligne. Le script ci-dessous en donne le
+          contenu.
         </p>
 
-        <nav aria-label="Chapitres" class="mt-6 flex flex-wrap gap-2">
-          <button v-for="(c, i) in moduleCourant.chapitres" :key="i"
-            class="rounded-full border px-3.5 py-2 text-[12.5px]"
-            :class="i === index ? 'border-social bg-social text-white' : 'border-encre-800 text-[#b9b4c4]'"
-            @click="index = i">
-            {{ c.libelle }}
-          </button>
-        </nav>
+        <p v-if="lecteur.erreur.value"
+          class="absolute inset-x-0 bottom-24 z-30 mx-auto w-fit rounded bg-black/70 px-3 py-2 text-[12.5px] text-white"
+          role="status">
+          {{ lecteur.erreur.value }}
+        </p>
+
+        <!-- Filigrane nominatif : une rediffusion reste attribuable. -->
+        <p v-if="source && moduleCourant.filigraneActif"
+          class="pointer-events-none absolute top-[22px] right-7 z-20 text-[14px] text-white/20"
+          aria-hidden="true">
+          {{ auth.utilisateur?.prenom }} {{ auth.utilisateur?.nom }} · {{ auth.utilisateur?.email }}
+        </p>
+
+        <EspaceControlesVideo
+          v-if="controlesCustom && source"
+          v-model:vitesse="lecteur.vitesse.value"
+          :position="lecteur.positionSecondes.value"
+          :duree="lecteur.dureeSecondes.value || (chapitre?.videoDureeSecondes ?? 0)"
+          :en-lecture="lecteur.enLecture.value"
+          :qualite="lecteur.qualite.value"
+          :vitesses="vitesses"
+          :plein-ecran="lecteur.pleinEcran.value"
+          @basculer="lecteur.basculerLecture()"
+          @seek="lecteur.allerA($event)"
+          @plein-ecran="lecteur.basculerPleinEcran(scene)"
+        />
       </div>
 
-      <aside class="rounded-carte bg-encre-800 p-5">
-        <h2 class="font-title text-[17px] text-social-clair font-light mb-5">
-          <span class="lg:hidden text-[12px] font-bold tracking-[0.12em] uppercase">Script synchronisé</span>
-          <span class="hidden lg:inline">Script du chapitre — synchronisé avec la lecture</span>
-        </h2>
-        <hr class="border-encre-700 mb-5">
-        <p class="mt-1 text-[12px] text-[#8f8a9c]">
-          Synchronisé avec la lecture — cliquez sur un passage pour y déplacer la vidéo.
-        </p>
+      <div class="flex flex-wrap items-center justify-between gap-2 px-4 pt-3 text-[12px] text-discret-clair lg:px-8">
+        <span :title="`Temps réellement visionné : ${horloge(lecteur.secondesVues.value)}`">
+          Le temps réel de visionnage est enregistré toutes les 10 s — l’avance rapide ne valide pas
+          la progression.
+        </span>
+        <span>Vitesses : {{ vitesses.map((v) => `${v}×`).join(' · ') }}</span>
+      </div>
 
-        <ul class="mt-4 space-y-3">
+      <!-- Le script passe sous la vidéo, sur toute la largeur : c'est la
+           disposition de la maquette, et elle laisse respirer les passages. -->
+      <section class="mx-4 mt-5 mb-8 rounded-bloc bg-encre px-5 py-5 lg:mx-8 lg:px-7 lg:py-6">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 class="font-title text-[17px] font-light text-white">
+            <span class="lg:hidden">Script du chapitre</span>
+            <span class="hidden lg:inline">Script du chapitre — synchronisé avec la lecture</span>
+          </h2>
+          <span class="text-[12px] text-discret-clair">Cliquez sur un passage pour y déplacer la vidéo</span>
+        </div>
+
+        <ul class="flex flex-col gap-3 text-[14.5px]/[1.65]">
           <li v-for="(ligne, i) in chapitre?.script ?? []" :key="i">
-            <button class="w-full rounded-[10px] p-3 text-left text-[13.5px] transition hover:bg-encre"
-              :class="ligneActive === ligne.temps ? 'bg-encre' : ''" @click="lecteur.allerA(versSecondes(ligne.temps))">
-              <span class="block font-mono text-[11.5px] text-social-clair">{{ ligne.temps }}</span>
-              <span class="mt-1 block text-[#b9b4c4]">{{ ligne.texte }}</span>
+            <!-- Les lignes inactives portent la même bordure et le même retrait,
+                 en transparent : sinon le texte sauterait à chaque changement. -->
+            <button
+              class="flex w-full gap-4 rounded-lg border-l-[3px] px-3.5 py-2.5 text-left transition"
+              :class="ligneActive === ligne.temps ? 'border-social bg-social/22 text-white' : 'border-transparent text-discret-clair hover:bg-encre-800'"
+              @click="lecteur.allerA(versSecondes(ligne.temps))"
+            >
+              <span
+                class="min-w-[44px] font-mono text-[12px]"
+                :class="ligneActive === ligne.temps ? 'text-social-clair' : 'text-discret'"
+              >{{ ligne.temps }}</span>
+              <span>{{ ligne.texte }}</span>
             </button>
           </li>
         </ul>
 
-        <p v-if="!chapitre?.script?.length" class="mt-4 text-[13px] text-[#8f8a9c]">
+        <p v-if="!chapitre?.script?.length" class="text-[13px] text-discret-clair">
           Transcription non encore importée pour ce chapitre.
         </p>
-      </aside>
+      </section>
+
+      <p v-if="chapitreSuivant" class="mx-4 mb-10 text-right lg:mx-8">
+        <button type="button" class="text-[13.5px] font-bold text-social-clair hover:text-white" @click="index += 1">
+          {{ chapitreSuivant.libelle }} →
+        </button>
+      </p>
     </div>
   </div>
 </template>

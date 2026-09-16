@@ -31,7 +31,9 @@ const initiales = computed(
 <template>
   <div class="flex min-h-screen flex-col bg-fond-clair">
     <header class="border-b border-ligne-claire bg-white">
-      <div class="conteneur flex items-center justify-between gap-4 py-3.5">
+      <!-- La planche B cadre l'espace apprenant à 48 px, pas aux 64 px du site
+           vitrine : on rabat `.conteneur` sur la gouttière de la maquette. -->
+      <div class="conteneur flex items-center justify-between gap-4 py-3.5 lg:px-12">
         <NuxtLink to="/mon-espace" aria-label="Accueil de mon espace">
           <img src="/images/brand/logo.png" alt="E-Masterclass | Big Five" class="block h-9 w-auto" width="180" height="36">
         </NuxtLink>
@@ -60,7 +62,7 @@ const initiales = computed(
       </div>
     </header>
 
-    <main class="conteneur flex-1 py-8 pb-24 md:pb-8">
+    <main class="conteneur flex-1 pt-9 pb-24 md:pb-12 lg:px-12">
       <slot />
     </main>
 

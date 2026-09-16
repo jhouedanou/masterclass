@@ -2,7 +2,19 @@
 interface Props {
   to?: string
   href?: string
-  variante?: 'social' | 'entrepreneurs' | 'sombre' | 'blanc' | 'whatsapp' | 'contour' | 'contour-social' | 'danger'
+  variante?:
+    | 'social'
+    | 'entrepreneurs'
+    | 'sombre'
+    | 'blanc'
+    | 'whatsapp'
+    | 'contour'
+    | 'contour-social'
+    | 'danger'
+    | 'succes'
+    | 'contour-clair'
+    | 'verrouille'
+    | 'verrouille-sombre'
   taille?: 'sm' | 'md' | 'lg'
   type?: 'button' | 'submit'
   disabled?: boolean
@@ -39,6 +51,16 @@ const classes = computed(() => {
     contour: 'border-[1.5px] border-encre text-encre hover:bg-fond-clair',
     'contour-social': 'border-[1.5px] border-social text-social hover:bg-social-voile',
     danger: 'bg-erreur text-white hover:bg-erreur-fonce',
+    // `succes` : le vert du bouton « Mon certificat » (planche B, écran 01).
+    succes: 'bg-whatsapp text-white hover:brightness-95',
+    // Les deux boutons que la maquette dessine grisés — sur carte blanche et
+    // sur le panneau noir. Ce sont des états pleins, pas un `disabled:opacity-50` :
+    // la maquette leur donne des couleurs propres, l'opacité effaçait le libellé.
+    // Contour clair : un bouton actif posé sur le panneau noir, là où le
+    // contour en encre de `contour` disparaîtrait dans le fond.
+    'contour-clair': 'border-[1.5px] border-nuit-clair text-white hover:bg-white/10',
+    verrouille: 'bg-ligne-claire text-discret-clair disabled:opacity-100',
+    'verrouille-sombre': 'bg-nuit-inactif text-nuit-clair disabled:opacity-100',
   }
   return [base, tailles[props.taille], variantes[props.variante]].join(' ')
 })

@@ -2,6 +2,7 @@ import { listerModules, trouverFormateur } from '../../database/catalogue'
 import {
   listerDemandesCoachingPriveFormateur,
   listerHistoriqueCoachingPrive,
+  listerNotesFormateur,
 } from '../../database/coaching'
 import { exigerFormateur } from '../../utils/session'
 
@@ -26,11 +27,17 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const [demandes, modules] = await Promise.all([
+  const [demandes, modules, notes] = await Promise.all([
     listerDemandesCoachingPriveFormateur(formateur.id),
     listerModules(),
+    listerNotesFormateur(formateur.id),
   ])
   const historique = await listerHistoriqueCoachingPrive(demandes.map((d) => d.id))
+
+  // « réalisée · notée 5 ★ » (planche D, écran 05). La table des notes ne porte
+  // pas la séance : une note privée se rattache à l'apprenant qui l'a déposée,
+  // et la plus récente est celle de sa dernière séance.
+  const notesPrivees = notes.filter((n) => n.origine === 'privee')
 
   return {
     actif: true,
@@ -55,6 +62,10 @@ export default defineEventHandler(async (event) => {
         // « Événement Google Agenda créé — rappels automatiques » : la mention
         // n'apparaît que si l'événement existe réellement.
         agendaCree: Boolean(d.evenementAgendaId),
+        note:
+          d.statut === 'realisee'
+            ? (notesPrivees.filter((n) => n.utilisateurId === d.utilisateurId).at(-1)?.note ?? null)
+            : null,
         historique: historique.filter((h) => h.demandeId === d.id),
       })),
   }

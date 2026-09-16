@@ -80,7 +80,7 @@ useFilAriane(mailles)
     </div>
 
     <div class="conteneur pb-10">
-      <article v-if="une" class="grid overflow-hidden rounded-[18px] border border-ligne-douce lg:grid-cols-[1.15fr_1fr]">
+      <article v-if="une" class="grid overflow-hidden rounded-[18px] border border-ligne-douce lg:grid-cols-[1.15fr_1fr] lg:gap-8">
         <NuxtLink :to="`/blog/${une.slug}`" class="block min-h-[320px] bg-fond-voile" tabindex="-1" aria-hidden="true">
           <NuxtImg
             :src="une.image"

@@ -22,6 +22,8 @@ const { data, refresh } = await useFetch<{
     lienSession: string | null
     sujets: string
     agendaCree: boolean
+    /** Note laissée par l'apprenant, une fois la séance réalisée. */
+    note: number | null
     historique: HistoriqueCoachingPrive[]
   }[]
 }>('/api/formateur/coaching-prive')
@@ -151,6 +153,9 @@ async function demanderActivation() {
               <template v-if="seance.creneau">
                 — {{ seance.creneau }} · {{ seance.heures }} h ·
                 {{ LIBELLES_COACHING_PRIVE[seance.statut].toLowerCase() }}
+                <template v-if="seance.note">
+                  · notée <b class="text-or">{{ seance.note }} ★</b>
+                </template>
               </template>
               <template v-else>
                 — demande en cours de traitement par l’équipe (créneau à confirmer)

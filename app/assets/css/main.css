@@ -63,6 +63,8 @@
   --color-social-pilule: #e0d3e8;         /* bordure des pilules de module */
   --color-social-pastel: #c9a2d4;         /* violet lisible sur fond sombre */
   --color-social-brume: #b9a8d8;          /* surtitre sur fond sombre */
+  --color-social-voile-sombre: #e6d7ec;   /* texte de l'encart de verrouillage
+                                             posé sur le panneau noir */
 
   /* Bleus complémentaires */
   --color-entrepreneurs-nuage: #f0f1f8;
