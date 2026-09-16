@@ -1,5 +1,5 @@
 import { trouverBlocVitrine } from '../../database/backoffice'
-import { assainirHtml } from '../../utils/texteRiche'
+import { assainirContenuCms } from '../../utils/texteRiche'
 
 /**
  * Contenu public d'un bloc du CMS (planche C, écran 15).
@@ -14,22 +14,6 @@ import { assainirHtml } from '../../utils/texteRiche'
  * qu'une erreur : la page publique retombe alors sur ses valeurs par défaut.
  */
 const CLES = ['banniere', 'accueil', 'programmes', 'annonce', 'legales'] as const
-
-/** Champs dont la valeur est du HTML saisi au back-office. */
-const CHAMPS_HTML = ['corps']
-
-function assainirContenu(valeur: unknown): unknown {
-  if (Array.isArray(valeur)) return valeur.map(assainirContenu)
-  if (valeur && typeof valeur === 'object') {
-    return Object.fromEntries(
-      Object.entries(valeur as Record<string, unknown>).map(([cle, v]) => [
-        cle,
-        CHAMPS_HTML.includes(cle) && typeof v === 'string' ? assainirHtml(v) : assainirContenu(v),
-      ]),
-    )
-  }
-  return valeur
-}
 
 export default defineEventHandler(async (event) => {
   const cle = getRouterParam(event, 'cle') ?? ''
@@ -46,5 +30,5 @@ export default defineEventHandler(async (event) => {
   if (bloc.publieDu && aujourdhui < bloc.publieDu) return { cle, contenu: {} }
   if (bloc.publieAu && aujourdhui > bloc.publieAu) return { cle, contenu: {} }
 
-  return { cle, contenu: assainirContenu(bloc.contenu) as Record<string, unknown> }
+  return { cle, contenu: assainirContenuCms(bloc.contenu) as Record<string, unknown> }
 })

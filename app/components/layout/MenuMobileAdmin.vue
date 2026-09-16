@@ -31,7 +31,7 @@ watch(() => route.path, () => (ouvert.value = false))
           class="sur-sombre flex w-72 max-w-[85vw] flex-col gap-5 overflow-y-auto bg-encre p-5 text-[#b9b4c4]"
         >
           <div class="flex items-center justify-between">
-            <img src="/images/brand/logo.png" alt="E-Masterclass Big Five" class="h-8 w-auto brightness-0 invert">
+            <img src="/images/brand/logo.png" alt="E-Masterclass Big Five" class="h-8 w-auto brightness-0 invert" width="117" height="32">
             <button type="button" aria-label="Fermer" class="text-white" @click="ouvert = false">
               <Icon name="ph:x" size="22" />
             </button>

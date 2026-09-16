@@ -1,11 +1,13 @@
 import { creerReinitialisation, trouverUtilisateurParEmail } from '../../database/comptes'
 import { creerJeton } from '../../utils/motDePasse'
+import { limiterDebit } from '../../utils/debit'
 import { notifier } from '../../utils/notifications'
 
 /** Spec §8 : lien de réinitialisation valable 30 minutes. */
 const VALIDITE_MINUTES = 30
 
 export default defineEventHandler(async (event) => {
+  await limiterDebit(event, 'mot-de-passe-oublie')
   const { email } = await readBody<{ email?: string }>(event)
   const adresse = (email ?? '').trim()
 

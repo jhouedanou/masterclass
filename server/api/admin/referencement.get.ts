@@ -1,10 +1,10 @@
 import { lireReglagesSeo, listerRedirections } from '../../database/administration'
 import { CHEMINS_PRIORITAIRES, detecterDoublons, inventaireReferencement } from '../../utils/seo'
-import { exigerAdmin } from '../../utils/session'
+import { exigerUneSection } from '../../utils/session'
 import urlsSitemap from '../__sitemap__/urls.get'
 
 export default defineEventHandler(async (event) => {
-  const utilisateur = await exigerAdmin(event)
+  const utilisateur = await exigerUneSection(event, ['referencement-contenu', 'modules-chapitres', 'blog'])
   const [entrees, redirections, reglagesSeo, sitemap] = await Promise.all([
     inventaireReferencement(),
     listerRedirections(),

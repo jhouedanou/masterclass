@@ -1,10 +1,12 @@
 import { creerUtilisateur } from '../../database/comptes'
 import { hacherMotDePasse, refusMotDePasse } from '../../utils/motDePasse'
+import { limiterDebit } from '../../utils/debit'
 import { ouvrirSession } from '../../utils/session'
 
 /** Création d'un compte apprenant. Le pays est demandé ici et n'est plus
  *  redemandé dans la fiche apprenant (spec §8). */
 export default defineEventHandler(async (event) => {
+  await limiterDebit(event, 'inscription')
   const body = await readBody<{
     prenom?: string
     nom?: string

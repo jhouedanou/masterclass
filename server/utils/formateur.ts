@@ -1,4 +1,4 @@
-import type { SessionCoaching, Thematique } from '#shared/types'
+import type { NoteFormateur, SessionCoaching, SujetSession, Thematique } from '#shared/types'
 import { listerFormateurs, listerModules, listerThematiques, trouverFormateur } from '../database/catalogue'
 import { listerAcces } from '../database/comptes'
 import {
@@ -249,14 +249,20 @@ export interface SessionFormateur extends SessionCoaching {
   nbNotes: number
 }
 
+/**
+ * `notesDejaLues` évite de relire `notes_formateurs` quand l'appelant les a
+ * déjà : la vue d'ensemble du formateur les demandait trois fois pour un seul
+ * écran — ici, dans `aTraiterFormateur`, et pour sa propre moyenne.
+ */
 export async function sessionsFormateur(
   formateurId: string,
   filtre: FiltreFormateur = {},
+  notesDejaLues?: NoteFormateur[],
 ): Promise<SessionFormateur[]> {
   const [sessions, thematiques, notes] = await Promise.all([
     listerSessions(),
     listerThematiques(),
-    listerNotesFormateur(formateurId),
+    notesDejaLues ?? listerNotesFormateur(formateurId),
   ])
 
   // La table des notes ne porte pas de séance : une note collective est
@@ -330,14 +336,30 @@ export interface ATraiter {
   } | null
 }
 
+/** Ce que la vue d'ensemble a déjà chargé, et qu'il serait absurde de relire. */
+export interface DejaLu {
+  sessions?: SessionFormateur[]
+  notes?: NoteFormateur[]
+  sujetsProchaineSession?: SujetSession[]
+}
+
 /**
  * Bloc « À traiter » (planche D, écran 01) et pastille « Coaching privé 2 » de
  * la navigation : trois compteurs qui appellent un geste du formateur.
+ *
+ * La fonction lisait `notes_formateurs` deux fois — une fois pour son propre
+ * compteur, une fois à l'intérieur de `sessionsFormateur`. Et la vue d'ensemble
+ * rejouait l'ensemble alors que le gabarit de l'espace venait de l'appeler en
+ * parallèle : le même écran faisait deux fois les six mêmes requêtes. D'où
+ * `dejaLu`, que la vue d'ensemble remplit avec ce qu'elle a sous la main.
  */
-export async function aTraiterFormateur(formateurId: string): Promise<ATraiter> {
-  const [sessions, notes, demandes] = await Promise.all([
-    sessionsFormateur(formateurId),
-    listerNotesFormateur(formateurId),
+export async function aTraiterFormateur(
+  formateurId: string,
+  dejaLu: DejaLu = {},
+): Promise<ATraiter> {
+  const notes = dejaLu.notes ?? (await listerNotesFormateur(formateurId))
+  const [sessions, demandes] = await Promise.all([
+    dejaLu.sessions ?? sessionsFormateur(formateurId, {}, notes),
     listerDemandesCoachingPriveFormateur(formateurId),
   ])
 
@@ -346,7 +368,8 @@ export async function aTraiterFormateur(formateurId: string): Promise<ATraiter> 
     sessions
       .filter((s) => s.statut === 'planifiee' && s.date >= aujourdhui)
       .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null
-  const sujets = prochaine ? await listerSujetsSessions([prochaine.id]) : []
+  const sujets = dejaLu.sujetsProchaineSession
+    ?? (prochaine ? await listerSujetsSessions([prochaine.id]) : [])
 
   const depuisUnMois = new Date(Date.now() - FENETRE_NOUVELLES_NOTES_JOURS * 86_400_000)
     .toISOString()

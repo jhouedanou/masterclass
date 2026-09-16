@@ -8,7 +8,7 @@ import {
   trouverSession,
 } from '../../database/coaching'
 import { notifierCompte } from '../../utils/notifications'
-import { exigerAdmin } from '../../utils/session'
+import { exigerSection } from '../../utils/session'
 import { debutSession, modifierReunion, supprimerReunion } from '../../utils/zoom'
 
 /**
@@ -19,7 +19,7 @@ import { debutSession, modifierReunion, supprimerReunion } from '../../utils/zoo
  * capacité, ouverture de la salle — et ne dérange personne.
  */
 export default defineEventHandler(async (event) => {
-  const admin = await exigerAdmin(event)
+  const admin = await exigerSection(event, 'calendrier-sessions')
   const body = await readBody<{
     id: string
     action: 'annuler' | 'reporter' | 'modifier'

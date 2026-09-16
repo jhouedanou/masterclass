@@ -2,6 +2,7 @@ import { listerRessources } from '../../database/backoffice'
 import { listerFormateurs, listerThematiques, trouverModuleParSlug } from '../../database/catalogue'
 import { lireSession, sectionsEffectives } from '../../utils/session'
 import { secretVideo, signer } from '../../utils/video'
+import { memeSecret } from '../../utils/secrets'
 
 /**
  * Module vu comme l'apprenant le verra, quel que soit son statut.
@@ -38,7 +39,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 403, statusMessage: 'Lien de prévisualisation expiré' })
     }
     const attendu = await signer(messageApercu(moduleTrouve.id, expiration), secretVideo())
-    if (jeton !== attendu) {
+    if (!memeSecret(jeton, attendu)) {
       throw createError({ statusCode: 403, statusMessage: 'Lien de prévisualisation invalide' })
     }
   }

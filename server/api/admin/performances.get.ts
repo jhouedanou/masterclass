@@ -14,7 +14,7 @@ import {
   surPeriode,
   transactionsReussies,
 } from '../../utils/indicateurs'
-import { exigerAdmin } from '../../utils/session'
+import { exigerSection } from '../../utils/session'
 
 /**
  * Indicateurs de l'écran Performances (planche C, écrans 18 à 18e).
@@ -28,7 +28,7 @@ import { exigerAdmin } from '../../utils/session'
  * inventé.
  */
 export default defineEventHandler(async (event) => {
-  await exigerAdmin(event)
+  await exigerSection(event, 'performances-marketing')
 
   // Filtres de l'écran 18. Le pays vient du compte de l'acheteur, le programme
   // et le module de la transaction, l'appareil du dernier appareil connu de

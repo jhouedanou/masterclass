@@ -15,15 +15,12 @@ async function seDeconnecter() {
   await navigateTo('/')
 }
 
-// Pastille « Coaching privé 2 » : les séances payées restant à animer. Une
-// erreur ici ne doit pas priver le formateur de sa navigation, d'où les zéros
-// par défaut.
-const { data: aTraiter } = await useFetch<{
-  coachingPrive: number
-  sujetsALire: number
-  nouvellesNotes: number
-}>('/api/formateur/a-traiter', {
-  default: () => ({ coachingPrive: 0, sujetsALire: 0, nouvellesNotes: 0 }),
+// Pastille « Coaching privé 2 » : les séances payées restant à animer. La route
+// ne rend plus que ce compteur — elle est appelée sur chaque page de l'espace,
+// elle ne doit peser qu'une requête. Une erreur ici ne doit pas priver le
+// formateur de sa navigation, d'où le zéro par défaut.
+const { data: aTraiter } = await useFetch<{ coachingPrive: number }>('/api/formateur/a-traiter', {
+  default: () => ({ coachingPrive: 0 }),
 })
 
 const compteurPrive = computed(() => aTraiter.value.coachingPrive)

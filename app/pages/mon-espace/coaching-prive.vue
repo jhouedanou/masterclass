@@ -177,7 +177,7 @@ const aujourdHui = new Date().toISOString().slice(0, 10)
       >
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="flex min-w-[260px] flex-1 items-start gap-4">
-            <img v-if="d.formateur" :src="d.formateur.photo" alt="" class="size-12 rounded-full bg-fond-voile object-cover">
+            <img v-if="d.formateur" :src="d.formateur.photo" alt="" class="size-12 rounded-full bg-fond-voile object-cover" width="48" height="48" loading="lazy">
             <div>
               <h2 class="font-title text-[19px] font-light">{{ d.formateur?.nom ?? 'Formateur' }}</h2>
               <p class="mt-0.5 text-[13px] text-discret">{{ d.module }} · {{ d.heures }} h · {{ formatFcfa(d.montantFcfa ?? d.montant) }}</p>

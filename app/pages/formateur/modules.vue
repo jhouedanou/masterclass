@@ -21,12 +21,20 @@ const { data: modules } = await useFetch<
   }[]
 >('/api/formateur/modules', { query: { jours: periode, module: moduleChoisi } })
 
-/** Sans filtre de module, la liste complète alimente le sélecteur — sinon il
- *  ne resterait qu'une option, la sienne. */
-const { data: tousLesModules } = await useFetch<{ id: string; titre: string }[]>(
-  '/api/formateur/modules',
-  { key: 'formateur-modules-liste' },
-)
+/**
+ * Le sélecteur garde la liste complète : filtrée, la réponse ne contiendrait
+ * plus que le module choisi, et on ne pourrait plus en changer.
+ *
+ * Elle se retient du premier chargement non filtré plutôt que de rappeler la
+ * route — cet appel-là refaisait à lui seul cinq requêtes, dont deux tables
+ * entières, pour deux champs que la réponse portait déjà.
+ */
+const catalogue = ref<{ id: string; titre: string }[]>([])
+watchEffect(() => {
+  if (!moduleChoisi.value && modules.value) {
+    catalogue.value = modules.value.map((m) => ({ id: m.id, titre: m.titre }))
+  }
+})
 
 const OPTIONS_PERIODE = [
   { valeur: '30', libelle: '30 derniers jours' },
@@ -36,7 +44,7 @@ const OPTIONS_PERIODE = [
 
 const optionsModules = computed(() => [
   { valeur: '', libelle: 'tous' },
-  ...(tousLesModules.value ?? []).map((m) => ({ valeur: m.id, libelle: m.titre })),
+  ...catalogue.value.map((m) => ({ valeur: m.id, libelle: m.titre })),
 ])
 </script>
 

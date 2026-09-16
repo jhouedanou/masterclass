@@ -82,11 +82,13 @@ function session(event: H3Event, longue = false) {
       path: '/',
       maxAge: longue ? DUREE_LONGUE_SECONDES : DUREE_SECONDES,
       httpOnly: true,
-      // `Secure` dès que la requête arrive en HTTPS — c'est le cas en
-      // production, derrière le proxy comme en direct. En HTTP local, le poser
-      // rendrait la session inutilisable : le navigateur refuserait de la
-      // renvoyer. `getRequestProtocol` tient compte de `x-forwarded-proto`.
-      secure: getRequestProtocol(event) === 'https',
+      // `Secure` partout sauf en développement. Il était auparavant déduit du
+      // protocole vu par h3 : derrière un proxy qui ne pose pas
+      // `x-forwarded-proto`, la requête paraît en clair et le cookie de session
+      // partait sans `Secure`. Le mode de développement, lui, sert en HTTP :
+      // l'y poser rendrait la session inutilisable, le navigateur refusant de
+      // la renvoyer.
+      secure: !import.meta.dev || getRequestProtocol(event) === 'https',
     },
   })
 }
@@ -209,6 +211,29 @@ export async function exigerSection(
   if (utilisateur.role === 'admin-superieur') return utilisateur
 
   if (!utilisateur.sectionsAutorisees?.includes(section)) {
+    throw createError({ statusCode: 403, statusMessage: 'Droits insuffisants' })
+  }
+  return utilisateur
+}
+
+/**
+ * Même chose, pour un écran que le menu range sous plusieurs sections.
+ *
+ * Trois cas dans la planche C : « Coaching privé » et « Statistiques » pointent
+ * la même page ; le panneau de référencement est embarqué dans l'éditeur de
+ * module comme dans celui d'article ; les candidatures se lisent depuis leur
+ * écran et depuis celui des formateurs. Exiger une seule section y fermerait la
+ * porte à un administrateur qui a légitimement l'autre.
+ */
+export async function exigerUneSection(
+  event: H3Event,
+  sections: SectionAdmin[],
+): Promise<Utilisateur> {
+  const utilisateur = await exigerAdmin(event)
+  if (utilisateur.role === 'admin-superieur') return utilisateur
+
+  const siennes = utilisateur.sectionsAutorisees ?? []
+  if (!sections.some((section) => siennes.includes(section))) {
     throw createError({ statusCode: 403, statusMessage: 'Droits insuffisants' })
   }
   return utilisateur

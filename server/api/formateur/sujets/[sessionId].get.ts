@@ -2,7 +2,6 @@ import { listerThematiques } from '../../../database/catalogue'
 import {
   listerInscritsSession,
   listerSujetsSession,
-  marquerSujetsLus,
   trouverSession,
 } from '../../../database/coaching'
 import { exigerFormateur } from '../../../utils/session'
@@ -11,8 +10,12 @@ import { exigerFormateur } from '../../../utils/session'
  * « Les 19 réponses → » et « Cliquer "inscrits" ouvre la liste avec accès aux
  * fiches profils » (planche D, écrans 01 et 04).
  *
- * Ouvrir la liste vaut lecture : le compteur « Sujets à lire » du bloc
- * « À traiter » retombe. Seules les sessions du formateur sont accessibles.
+ * Ouvrir la liste vaut lecture, mais le marquage est passé dans la route POST
+ * voisine : un GET qui écrit se déclenche depuis n'importe quel site tiers par
+ * simple navigation, le cookie de session étant `sameSite: lax`. La page
+ * appelle donc `…/lus` une fois affichée.
+ *
+ * Seules les sessions du formateur sont accessibles.
  */
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerFormateur(event)
@@ -29,8 +32,6 @@ export default defineEventHandler(async (event) => {
     listerInscritsSession(session.id),
     listerThematiques(),
   ])
-
-  await marquerSujetsLus(session.id)
 
   const avecSujet = new Set(sujets.map((s) => s.utilisateurId))
 
@@ -51,7 +52,7 @@ export default defineEventHandler(async (event) => {
       preoccupation: s.preoccupation,
       attente: s.attente,
       soumisLe: s.soumisLe,
-      // État avant l'ouverture : la page signale ce qui vient d'arriver.
+      // État avant le marquage : la page signale ce qui vient d'arriver.
       nouveau: !s.luLe,
     })),
     // Coordonnées masquées : la fiche apprenant est le seul détail accessible.

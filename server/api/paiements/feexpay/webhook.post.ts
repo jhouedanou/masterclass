@@ -1,19 +1,6 @@
-import { createHash, timingSafeEqual } from 'node:crypto'
 import { trouverCommande, trouverTransactionParPrestataire } from '../../../database/commerce'
 import { configFeexPay, lireStatutFeexPay, rapprocherCommande, verifierEtRapprocher } from '../../../utils/feexpay'
-
-/**
- * Comparaison à temps constant : la durée du refus ne révèle pas de combien de
- * caractères la clé présentée s'approche de la bonne. `timingSafeEqual` exige
- * deux tampons de même longueur — l'empreinte SHA-256 les uniformise sans
- * révéler la longueur de la clé attendue.
- */
-function memeCle(presentee: string, attendue: string): boolean {
-  return timingSafeEqual(
-    createHash('sha256').update(presentee).digest(),
-    createHash('sha256').update(attendue).digest(),
-  )
-}
+import { memeSecret } from '../../../utils/secrets'
 
 /**
  * Webhook FeexPay (tableau de bord → Webhook). Requête POST, corps JSON :
@@ -35,7 +22,7 @@ export default defineEventHandler(async (event) => {
   // `FEEXPAY_WEBHOOK_CLE` était renseignée : une configuration incomplète
   // ouvrait donc le rapprochement des commandes à n'importe quel appel, avec
   // une référence de transaction choisie par l'appelant.
-  if (!webhookCle || !memeCle(cle, webhookCle)) {
+  if (!webhookCle || !memeSecret(cle, webhookCle)) {
     throw createError({ statusCode: 401, statusMessage: 'Clé de webhook invalide.' })
   }
 

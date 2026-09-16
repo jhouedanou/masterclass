@@ -1,4 +1,5 @@
 import { listerFormateurs, listerModules, listerThematiques } from '../../database/catalogue'
+import { formateurPublic } from '../../utils/public'
 
 export default defineEventHandler(async () => {
   const [formateurs, modules, thematiques] = await Promise.all([
@@ -10,7 +11,7 @@ export default defineEventHandler(async () => {
   return formateurs.map((f) => {
     const siens = modules.filter((m) => m.formateurId === f.id && m.statut !== 'brouillon')
     return {
-      ...f,
+      ...formateurPublic(f),
       nbModules: siens.length,
       modules: siens.map((m) => ({
         id: m.id,

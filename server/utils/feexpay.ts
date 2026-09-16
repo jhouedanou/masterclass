@@ -6,6 +6,7 @@ import {
   cloreTransactionsCommande,
   transactionsDeCommande,
   trouverCommande,
+  trouverTransactionParPrestataire,
 } from '../database/commerce'
 import type { MoyenTransactionSql } from '../database/types'
 
@@ -76,6 +77,10 @@ export interface TransactionFeexPay {
   montant: number
   /** Notre référence de commande, transmise comme `custom_id`. */
   customId: string | null
+  /** Boutique propriétaire, quand le prestataire la restitue. Le point d'entrée
+   *  de lecture est public et couvre toutes les boutiques : sans ce repère,
+   *  rien ne distingue notre transaction de celle d'un autre marchand. */
+  shop: string | null
   reseau: string | null
   motif: string | null
 }
@@ -115,6 +120,12 @@ function lireTransaction(brut: unknown): TransactionFeexPay | null {
         ? source.custom_id
         : typeof customDepuisInfos === 'string'
           ? customDepuisInfos
+          : null,
+    shop:
+      typeof source.shop === 'string'
+        ? source.shop
+        : typeof source.shop_id === 'string'
+          ? source.shop_id
           : null,
     reseau: typeof source.reseau === 'string' ? source.reseau : null,
     motif: typeof source.reason === 'string' && source.reason ? source.reason : null,
@@ -233,8 +244,41 @@ export async function rapprocherCommande(
 ): Promise<ResultatRapprochement> {
   if (commande.statut === 'confirmee') return { statut: 'confirmee', commande }
 
-  if (transaction.customId && transaction.customId !== commande.reference) {
-    throw createError({ statusCode: 409, statusMessage: 'La transaction FeexPay ne correspond pas à cette commande.' })
+  // La confirmation depuis le navigateur accepte une référence FeexPay fournie
+  // par le client, et `lireStatutFeexPay` interroge un point d'entrée public,
+  // toutes boutiques confondues. Trois contrôles s'imposent donc avant de
+  // croire cette transaction.
+
+  // 1. Elle doit nommer cette commande. Le contrôle ne s'appliquait qu'en
+  //    présence d'un `custom_id` : une transaction qui n'en portait pas passait
+  //    sans que rien ne la rattache à nous. Le tunnel le pose toujours
+  //    (`achat/paiement.vue`, `custom_id` et `callback_info.commande`), son
+  //    absence n'est donc jamais légitime.
+  if (transaction.customId !== commande.reference) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: 'La transaction FeexPay ne correspond pas à cette commande.',
+    })
+  }
+
+  // 2. Elle doit être la nôtre, quand le prestataire dit à qui elle appartient.
+  const { shopId } = configFeexPay()
+  if (transaction.shop && shopId && transaction.shop !== shopId) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: 'La transaction FeexPay appartient à une autre boutique.',
+    })
+  }
+
+  // 3. Elle ne doit pas avoir déjà réglé autre chose. Le webhook faisait cette
+  //    vérification, la confirmation navigateur non : une même référence
+  //    réussie pouvait clore plusieurs commandes.
+  const dejaUtilisee = await trouverTransactionParPrestataire(transaction.reference)
+  if (dejaUtilisee && dejaUtilisee.commandeReference !== commande.reference) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: 'Cette transaction FeexPay a déjà réglé une autre commande.',
+    })
   }
 
   if (transaction.statut === 'PENDING') {
@@ -343,6 +387,7 @@ export async function verifierEtRapprocher(
       statut: 'SUCCESSFUL',
       montant: commande.total,
       customId: commande.reference,
+      shop: null,
       reseau: 'SANDBOX',
       motif: null,
     })

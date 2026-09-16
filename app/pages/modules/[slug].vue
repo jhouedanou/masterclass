@@ -12,7 +12,6 @@ const { data } = await useFetch<{
   thematique: Thematique | null
   programme: Programme | null
   nbModulesThematique: number
-  similaires: Module[]
 }>(() => `/api/modules/${route.params.slug}`)
 
 if (!data.value) {

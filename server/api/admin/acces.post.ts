@@ -1,6 +1,11 @@
 import type { SectionAdmin } from '#shared/types'
 import { enregistrerJournal } from '../../database/administration'
-import { creerCompteAdmin, majSectionsAdmin, revoquerCompteAdmin } from '../../database/comptes'
+import {
+  creerCompteAdmin,
+  majSectionsAdmin,
+  revoquerCompteAdmin,
+  trouverUtilisateur,
+} from '../../database/comptes'
 import { hacherMotDePasse, refusMotDePasse } from '../../utils/motDePasse'
 import { exigerSection } from '../../utils/session'
 
@@ -11,6 +16,16 @@ import { exigerSection } from '../../utils/session'
  * rang d'administrateur supérieur ne peuvent être accordés que par un
  * administrateur supérieur — sans quoi un compte de contenu pourrait
  * s'octroyer à lui-même ce qu'on lui a refusé.
+ *
+ * Deux autres, que l'audit a rendus nécessaires :
+ *
+ * - le refus de se prendre soi-même pour cible ne valait que pour « révoquer ».
+ *   Un administrateur de contenu détenant cette section pouvait donc s'ajouter
+ *   par « droits » toutes les sections non réservées ;
+ * - `revoquerCompteAdmin` accepte un `admin-superieur` comme cible et remet son
+ *   rôle à « apprenant » en effaçant son empreinte de mot de passe. Un
+ *   administrateur de contenu pouvait ainsi mettre un supérieur à la porte de
+ *   son propre compte.
  */
 const RESERVEES: SectionAdmin[] = ['transactions-paiements', 'referencement-avance']
 
@@ -42,22 +57,34 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  if (body.action === 'revoquer') {
+  // Les deux actions qui visent un compte existant partagent leurs garde-fous.
+  if (body.action === 'revoquer' || body.action === 'droits') {
     if (!body.id) throw createError({ statusCode: 422, statusMessage: 'Compte non précisé' })
     if (body.id === admin.id) {
       throw createError({
         statusCode: 409,
-        statusMessage: 'Vous ne pouvez pas révoquer votre propre compte.',
+        statusMessage: 'Vous ne pouvez pas modifier ni révoquer votre propre compte.',
       })
     }
-    await revoquerCompteAdmin(body.id)
-    await enregistrerJournal(auteur, 'a révoqué un compte d’administration', body.id)
+    if (admin.role !== 'admin-superieur') {
+      const cible = await trouverUtilisateur(body.id)
+      if (cible?.role === 'admin-superieur') {
+        throw createError({
+          statusCode: 403,
+          statusMessage: 'Seul un administrateur supérieur peut agir sur un administrateur supérieur.',
+        })
+      }
+    }
+  }
+
+  if (body.action === 'revoquer') {
+    await revoquerCompteAdmin(body.id!)
+    await enregistrerJournal(auteur, 'a révoqué un compte d’administration', body.id!)
     return { ok: true }
   }
 
   if (body.action === 'droits') {
-    if (!body.id) throw createError({ statusCode: 422, statusMessage: 'Compte non précisé' })
-    const compte = await majSectionsAdmin(body.id, sections)
+    const compte = await majSectionsAdmin(body.id!, sections)
     await enregistrerJournal(
       auteur,
       'a modifié les droits de',

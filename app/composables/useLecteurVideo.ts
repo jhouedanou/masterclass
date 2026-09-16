@@ -1,4 +1,8 @@
-import Hls from 'hls.js'
+// `hls.js` pèse 640 ko et ne sert qu'aux chapitres diffusés en HLS. L'import
+// statique le faisait charger avec la page de lecture même quand le chapitre
+// est un MP4 unique, cas que `charger()` traite dix lignes plus haut sans lui.
+// Le type seul est importé ici ; le module vient au moment où il sert.
+import type HlsType from 'hls.js'
 
 /**
  * Lecteur HLS et relevé du temps réellement visionné.
@@ -43,7 +47,7 @@ export function useLecteurVideo(options: {
    *  notre bouton, et un booléen basculé à la main mentirait alors. */
   const pleinEcran = ref(false)
 
-  let hls: Hls | null = null
+  let hls: HlsType | null = null
   let dernierInstant = 0
   let secondesEnvoyees = 0
   /** Position à restaurer après un renouvellement d'autorisation : changer la
@@ -141,10 +145,10 @@ export function useLecteurVideo(options: {
   function rechargerEnPlace() {
     repriseApres = video.value?.currentTime ?? 0
     reprendreLecture = Boolean(video.value && !video.value.paused)
-    charger()
+    void charger()
   }
 
-  function charger() {
+  async function charger() {
     const element = video.value
     const source = options.source()
     detruire()
@@ -164,6 +168,8 @@ export function useLecteurVideo(options: {
       element.src = source
       return
     }
+
+    const { default: Hls } = await import('hls.js')
 
     if (Hls.isSupported()) {
       hls = new Hls({ capLevelToPlayerSize: true, startLevel: -1 })
@@ -243,7 +249,7 @@ export function useLecteurVideo(options: {
 
   function brancher(element: HTMLVideoElement | null) {
     video.value = element
-    if (element) charger()
+    if (element) void charger()
   }
 
   /**

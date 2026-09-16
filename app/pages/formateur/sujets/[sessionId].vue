@@ -16,6 +16,15 @@ if (!data.value) {
 
 usePagePrivee(`Sujets de la session du ${formatJourMois(data.value.session.date)}`)
 
+// Le marquage « lu » est une écriture : elle part du navigateur, une fois la
+// liste affichée, et non plus du GET qui la charge. Un échec ne doit pas gêner
+// la lecture — le compteur retombera à la prochaine ouverture.
+onMounted(() => {
+  $fetch(`/api/formateur/sujets/${route.params.sessionId}/lus`, { method: 'POST' }).catch(
+    () => undefined,
+  )
+})
+
 /** Fiche ouverte dans le panneau latéral (planche D, écran 04). Elle se
  *  charge à la demande : la liste n'a pas à ramener toutes les fiches. */
 const apprenantOuvert = ref('')
