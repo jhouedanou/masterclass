@@ -1,21 +1,30 @@
 import { calculerCompletionProfil } from '#shared/utils/profil'
 import { libellesPaires, libellesReferentiel, separerCles } from '#shared/utils/referentiels'
-import { listerModules } from '../../database/catalogue'
+import { listerFormateurs, listerModules, listerPhases, listerThematiques } from '../../database/catalogue'
 import { listerDemandesCoachingPrive } from '../../database/coaching'
 import { listerCertificats, listerTransactions } from '../../database/commerce'
 import { listerAcces, listerPersonas, listerUtilisateurs } from '../../database/comptes'
 import { listerReferentiels } from '../../database/referentiels'
 import { exigerAdmin } from '../../utils/session'
 
+/**
+ * Liste des apprenants et méga-filtre de l'écran 04.
+ *
+ * La maquette annonce treize dimensions de filtrage. Onze sont servies ici.
+ * Les deux autres ne le sont pas, faute de données dans cette lecture :
+ *   - « Chapitre » demanderait les visionnages, chapitre par chapitre ;
+ *   - « Session » demanderait les inscriptions aux sessions de coaching.
+ * Elles sont annoncées comme indisponibles côté écran plutôt que proposées
+ * en pure forme.
+ */
 export default defineEventHandler(async (event) => {
   await exigerAdmin(event)
-  const { programme, profil, coaching, acces: filtreAcces } = getQuery(event) as Record<
-    string,
-    string | undefined
-  >
+  const f = getQuery(event) as Record<string, string | undefined>
 
-  const [utilisateurs, acces, modules, certificats, personas, transactions, referentiels, demandes] =
-    await Promise.all([
+  const [
+    utilisateurs, acces, modules, certificats, personas, transactions, referentiels, demandes,
+    thematiques, phases, formateurs,
+  ] = await Promise.all([
       listerUtilisateurs(),
       listerAcces(),
       listerModules(),
@@ -24,9 +33,12 @@ export default defineEventHandler(async (event) => {
       listerTransactions(),
       listerReferentiels(),
       listerDemandesCoachingPrive(),
+      listerThematiques(),
+      listerPhases(),
+      listerFormateurs(),
     ])
 
-  return utilisateurs
+  const apprenants = utilisateurs
     .filter((u) => u.role === 'apprenant')
     .map((u) => {
       // Un accès révoqué ne compte plus : ni dans les modules acquis, ni dans
@@ -72,6 +84,10 @@ export default defineEventHandler(async (event) => {
           id: m.id,
           titre: m.titre,
           programme: m.programme,
+          // Thématique, phase et formateur servent le méga-filtre (écran 04).
+          thematiqueId: m.thematiqueId,
+          phaseId: thematiques.find((t) => t.id === m.thematiqueId)?.phaseId ?? null,
+          formateurId: m.formateurId,
           origine: a.origine,
           acheteLe: a.acheteLe,
           progression: a.progression,
@@ -118,15 +134,56 @@ export default defineEventHandler(async (event) => {
         montantPaye: transactions
           .filter((t) => t.utilisateurId === u.id && t.statut === 'reussie')
           .reduce((somme, t) => somme + t.montant, 0),
+        ville: persona?.ville ?? '',
+        secteur: persona?.secteur ?? '',
       }
     })
-    .filter((a) => !programme || a.modulesAcquis.some((m) => m.programme === programme))
-    .filter((a) => !profil || (profil === 'complet' ? a.profilPourcent === 100 : a.profilPourcent < 100))
-    .filter((a) => !coaching || (coaching === 'oui' ? a.coachingPrive.length > 0 : a.coachingPrive.length === 0))
+    .filter((a) => !f.programme || a.modulesAcquis.some((m) => m.programme === f.programme))
+    .filter((a) => !f.module || a.modulesAcquis.some((m) => m.id === f.module))
+    .filter((a) => !f.thematique || a.modulesAcquis.some((m) => m.thematiqueId === f.thematique))
+    .filter((a) => !f.phase || a.modulesAcquis.some((m) => m.phaseId === f.phase))
+    .filter((a) => !f.formateur || a.modulesAcquis.some((m) => m.formateurId === f.formateur))
+    .filter((a) => !f.profil || (f.profil === 'complet' ? a.profilPourcent === 100 : a.profilPourcent < 100))
+    .filter((a) => !f.coaching || (f.coaching === 'oui' ? a.coachingPrive.length > 0 : a.coachingPrive.length === 0))
     .filter((a) =>
-      !filtreAcces ||
-      (filtreAcces === 'attribution'
+      !f.acces ||
+      (f.acces === 'attribution'
         ? a.modulesAcquis.some((m) => m.origine === 'attribution')
         : a.modulesAcquis.some((m) => m.origine === 'achat')),
     )
+    // « Progression » : trois tranches, comme les pastilles de l'écran.
+    .filter((a) =>
+      !f.progression ||
+      (f.progression === 'terminee'
+        ? a.progression === 100
+        : f.progression === 'encours'
+          ? a.progression > 0 && a.progression < 100
+          : a.progression === 0),
+    )
+    .filter((a) => !f.certificat || (f.certificat === 'oui' ? a.certificats.length > 0 : a.certificats.length === 0))
+    .filter((a) => !f.paiement || (f.paiement === 'oui' ? a.montantPaye > 0 : a.montantPaye === 0))
+    .filter((a) => !f.localisation || a.pays === f.localisation || a.ville === f.localisation)
+    .filter((a) => !f.secteur || a.secteur === f.secteur)
+    // « Période » : inscrits depuis N jours.
+    .filter((a) => {
+      const jours = Number(f.periode)
+      if (!jours || !a.inscritLe) return !f.periode
+      return Date.now() - new Date(a.inscritLe).getTime() <= jours * 86_400_000
+    })
+
+  /**
+   * Les listes servent à peupler le méga-filtre : sans elles l'écran ne
+   * saurait pas quelles phases, thématiques, modules ou formateurs proposer.
+   */
+  return {
+    apprenants,
+    choix: {
+      phases: phases.map((p) => ({ id: p.id, nom: `${p.nom} — ${p.programme === 'social-media' ? 'Social Média' : 'Entrepreneurs'}` })),
+      thematiques: thematiques.map((t) => ({ id: t.id, nom: t.nom })),
+      modules: modules.map((m) => ({ id: m.id, nom: m.titre })),
+      formateurs: formateurs.map((x) => ({ id: x.id, nom: x.nom })),
+      localisations: [...new Set(apprenants.flatMap((a) => [a.pays, a.ville].filter(Boolean)))].sort(),
+      secteurs: [...new Set(apprenants.map((a) => a.secteur).filter(Boolean))].sort(),
+    },
+  }
 })

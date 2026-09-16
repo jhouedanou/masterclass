@@ -216,7 +216,19 @@ const lien = 'text-[12.5px] font-bold'
         <ul class="flex flex-col gap-2.5 text-[13px] text-texte">
           <li v-for="entree in data.journal" :key="entree.id" class="flex justify-between gap-3">
             <span><b>{{ entree.auteur }}</b> {{ entree.action }} «&nbsp;{{ entree.cible }}&nbsp;»</span>
-            <span class="shrink-0 whitespace-nowrap text-discret">{{ formatRelatif(entree.date) }}</span>
+            <!--
+              L'horodatage relatif se calcule depuis l'heure courante : rendu
+              sur le serveur puis recalculé à l'hydratation, il produisait un
+              écart (« il y a 12 s » contre « il y a 15 s ») et Vue signalait
+              une incohérence. On le rend côté navigateur, la date courte
+              tenant lieu de repli.
+            -->
+            <span class="shrink-0 whitespace-nowrap text-discret">
+              <ClientOnly>
+                {{ formatRelatif(entree.date) }}
+                <template #fallback>{{ formatDateCourte(entree.date) }}</template>
+              </ClientOnly>
+            </span>
           </li>
         </ul>
       </section>

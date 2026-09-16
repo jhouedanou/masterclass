@@ -17,6 +17,9 @@ interface ModuleAcquis {
   id: string
   titre: string
   programme: string
+  thematiqueId: string
+  phaseId: string | null
+  formateurId: string
   origine: 'achat' | 'attribution'
   acheteLe: string
   progression: number
@@ -40,24 +43,85 @@ interface Apprenant {
   certificats: CertificatApprenant[]
   persona: Persona | null
   montantPaye: number
+  ville: string
+  secteur: string
 }
 
-const filtreProgramme = ref('')
-const filtreProfil = ref('')
-const filtreCoaching = ref('')
-const filtreAcces = ref('')
+interface Choix {
+  phases: { id: string; nom: string }[]
+  thematiques: { id: string; nom: string }[]
+  modules: { id: string; nom: string }[]
+  formateurs: { id: string; nom: string }[]
+  localisations: string[]
+  secteurs: string[]
+}
 
-const { data: apprenants, refresh } = await useFetch<Apprenant[]>('/api/admin/apprenants', {
-  query: computed(() => ({
-    programme: filtreProgramme.value || undefined,
-    profil: filtreProfil.value || undefined,
-    coaching: filtreCoaching.value || undefined,
-    acces: filtreAcces.value || undefined,
-  })),
-})
+/**
+ * Méga-filtre de l'écran 04 : les dimensions actives deviennent des pilules
+ * retirables, les autres se choisissent dans un menu.
+ *
+ * La maquette en annonce treize. Onze sont servies ; « Chapitre » et
+ * « Session » ne le sont pas — la liste des apprenants ne lit ni les
+ * visionnages chapitre par chapitre, ni les inscriptions aux sessions. Elles
+ * sont dites indisponibles sous le menu plutôt que proposées pour rien.
+ */
+const filtres = reactive<Record<string, string>>({})
+
+const { data, refresh } = await useFetch<{ apprenants: Apprenant[]; choix: Choix }>(
+  '/api/admin/apprenants',
+  { query: computed(() => ({ ...filtres })) },
+)
+const apprenants = computed(() => data.value?.apprenants ?? [])
+const choix = computed(() => data.value?.choix)
 const { data: modules } = await useFetch<Module[]>('/api/modules')
 
+const OUI_NON = [{ id: 'oui', nom: 'Oui' }, { id: 'non', nom: 'Non' }]
+
+const DIMENSIONS = computed(() => [
+  { cle: 'programme', libelle: 'Programme', options: [{ id: 'social-media', nom: 'Social Média' }, { id: 'entrepreneurs', nom: 'Entrepreneurs' }] },
+  { cle: 'phase', libelle: 'Phase', options: choix.value?.phases ?? [] },
+  { cle: 'thematique', libelle: 'Thématique', options: choix.value?.thematiques ?? [] },
+  { cle: 'module', libelle: 'Module', options: choix.value?.modules ?? [] },
+  { cle: 'formateur', libelle: 'Formateur', options: choix.value?.formateurs ?? [] },
+  { cle: 'periode', libelle: 'Période', options: [{ id: '7', nom: '7 derniers jours' }, { id: '30', nom: '30 derniers jours' }, { id: '90', nom: '90 derniers jours' }] },
+  { cle: 'localisation', libelle: 'Localisation', options: (choix.value?.localisations ?? []).map((v) => ({ id: v, nom: v })) },
+  { cle: 'secteur', libelle: 'Secteur', options: (choix.value?.secteurs ?? []).map((v) => ({ id: v, nom: v })) },
+  { cle: 'progression', libelle: 'Progression', options: [{ id: 'aucune', nom: 'Pas commencé' }, { id: 'encours', nom: 'En cours' }, { id: 'terminee', nom: 'Terminé' }] },
+  { cle: 'profil', libelle: 'Profil', options: [{ id: 'complet', nom: 'complet (100 %)' }, { id: 'incomplet', nom: 'incomplet' }] },
+  { cle: 'certificat', libelle: 'Certificat', options: OUI_NON },
+  { cle: 'paiement', libelle: 'Paiement', options: OUI_NON },
+  { cle: 'acces', libelle: 'Accès', options: [{ id: 'achat', nom: 'Achat' }, { id: 'attribution', nom: 'Attribution admin' }] },
+  { cle: 'coaching', libelle: 'Coaching', options: OUI_NON },
+])
+
+/** Pilules actives : « Programme : Social Média ✕ ». */
+const pilules = computed(() =>
+  DIMENSIONS.value
+    .filter((d) => filtres[d.cle])
+    .map((d) => ({
+      cle: d.cle,
+      texte: `${d.libelle} : ${d.options.find((o) => o.id === filtres[d.cle])?.nom ?? filtres[d.cle]}`,
+    })),
+)
+const disponibles = computed(() => DIMENSIONS.value.filter((d) => !filtres[d.cle]))
+const menuOuvert = ref(false)
+const dimensionChoisie = ref('')
+const optionsDimension = computed(() => DIMENSIONS.value.find((d) => d.cle === dimensionChoisie.value)?.options ?? [])
+
+function poser(cle: string, valeur: string) {
+  if (valeur) filtres[cle] = valeur
+  dimensionChoisie.value = ''
+  menuOuvert.value = false
+}
+function retirer(cle: string) {
+  delete filtres[cle]
+}
+
 const selection = ref<Apprenant | null>(null)
+/** Le détail — accès, coaching, attestations, attribution — se découvre par le
+ *  bouton « Historique » de la fiche ; la maquette n'en montre que le bouton. */
+const historiqueOuvert = ref(false)
+watch(selection, () => { historiqueOuvert.value = false })
 
 // Arrivée depuis une demande de coaching privé : la fiche s'ouvre directement.
 const route = useRoute()
@@ -65,7 +129,7 @@ watch(
   apprenants,
   (liste) => {
     const cible = typeof route.query.utilisateur === 'string' ? route.query.utilisateur : ''
-    if (cible && !selection.value) selection.value = liste?.find((a) => a.id === cible) ?? null
+    if (cible && !selection.value) selection.value = liste.find((a) => a.id === cible) ?? null
   },
   { immediate: true },
 )
@@ -122,7 +186,7 @@ async function agirSurAcces(moduleId: string, action: 'revoquer' | 'retablir') {
     revocationAcces.moduleId = ''
     revocationAcces.motif = ''
     await refresh()
-    selection.value = apprenants.value?.find((a) => a.id === id) ?? null
+    selection.value = apprenants.value.find((a) => a.id === id) ?? null
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
   }
@@ -196,7 +260,7 @@ function exporter() {
       { cle: (a) => a.certificats.length, libelle: 'Attestations' },
       { cle: 'montantPaye', libelle: 'Montant payé (FCFA)' },
     ] satisfies ColonneCsv<Apprenant>[],
-    apprenants.value ?? [],
+    apprenants.value,
   )
 }
 
@@ -226,7 +290,7 @@ async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir
     revocation.motif = ''
     const id = selection.value!.id
     await refresh()
-    selection.value = apprenants.value?.find((a) => a.id === id) ?? null
+    selection.value = apprenants.value.find((a) => a.id === id) ?? null
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
   }
@@ -235,20 +299,20 @@ async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir
 
 <template>
   <div>
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <h1 class="font-title text-[26px] font-light">
-        Apprenants — {{ apprenants?.length ?? 0 }} comptes actifs
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <h1 class="font-title text-[24px] font-light">
+        Apprenants — {{ apprenants.length }} comptes actifs
       </h1>
-      <div class="flex flex-wrap gap-2">
-        <UiBaseButton taille="sm" variante="contour" @click="exporter">Exporter en CSV</UiBaseButton>
+      <div class="flex flex-wrap gap-2.5">
+        <UiBaseButton taille="sm" variante="contour" @click="exporter">⬇ Exporter la base en CSV</UiBaseButton>
         <UiBaseButton taille="sm" @click="ajout.ouvert = !ajout.ouvert">
           {{ ajout.ouvert ? 'Annuler' : '+ Ajouter un apprenant' }}
         </UiBaseButton>
       </div>
     </div>
-    <p class="mt-2 text-[12.5px] text-discret">
-      L’export reprend exactement ce que les filtres laissent à l’écran — identité, contact,
-      modules, progression, paiements, attestations.
+    <p class="mt-1.5 text-[11.5px] text-discret">
+      L’export respecte les filtres actifs (ici : {{ pilules.length }} filtre{{ pilules.length > 1 ? 's' : '' }})
+      — colonnes : identité, contact, programme, progression, paiements, certificats. Action journalisée.
     </p>
 
     <form
@@ -305,108 +369,185 @@ async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir
       {{ message }}
     </p>
 
-    <div class="mt-5 flex flex-wrap gap-2 text-[13px]">
-      <select v-model="filtreProgramme" class="rounded-full border border-ligne bg-white px-3.5 py-2">
-        <option value="">Tous programmes</option>
-        <option value="social-media">Social Média</option>
-        <option value="entrepreneurs">Entrepreneurs</option>
-      </select>
-      <select v-model="filtreProfil" class="rounded-full border border-ligne bg-white px-3.5 py-2">
-        <option value="">Tous profils</option>
-        <option value="complet">Profil complet (100 %)</option>
-        <option value="incomplet">Profil incomplet</option>
-      </select>
-      <select v-model="filtreAcces" class="rounded-full border border-ligne bg-white px-3.5 py-2">
-        <option value="">Toutes origines d’accès</option>
-        <option value="achat">Achat</option>
-        <option value="attribution">Attribution admin</option>
-      </select>
-      <select v-model="filtreCoaching" class="rounded-full border border-ligne bg-white px-3.5 py-2">
-        <option value="">Coaching privé — tous</option>
-        <option value="oui">A demandé un coaching privé</option>
-        <option value="non">Jamais demandé</option>
-      </select>
+    <div class="mt-4 flex flex-wrap items-center gap-2 text-[12.5px]">
+      <button
+        v-for="p in pilules"
+        :key="p.cle"
+        class="rounded-full bg-social px-3.5 py-[7px] font-bold text-white"
+        @click="retirer(p.cle)"
+      >
+        {{ p.texte }} ✕
+      </button>
+
+      <div class="relative">
+        <button
+          class="rounded-full border-[1.5px] border-ligne bg-white px-3.5 py-[7px] font-semibold text-texte"
+          :aria-expanded="menuOuvert"
+          @click="menuOuvert = !menuOuvert"
+        >
+          + {{ disponibles.map((d) => d.libelle).join(' · ') }} ▾
+        </button>
+
+        <div
+          v-if="menuOuvert"
+          class="absolute z-20 mt-2 flex w-[320px] flex-col gap-2 rounded-[12px] border border-ligne bg-white p-3 shadow-[0_16px_40px_rgba(23,21,28,.12)]"
+        >
+          <label class="block">
+            <span class="mb-1 block text-[11.5px] font-bold text-discret">Dimension</span>
+            <select v-model="dimensionChoisie" class="w-full rounded-[10px] border border-ligne px-3 py-2 text-[13px]">
+              <option value="">Choisir…</option>
+              <option v-for="d in disponibles" :key="d.cle" :value="d.cle">{{ d.libelle }}</option>
+            </select>
+          </label>
+          <label v-if="dimensionChoisie" class="block">
+            <span class="mb-1 block text-[11.5px] font-bold text-discret">Valeur</span>
+            <select
+              class="w-full rounded-[10px] border border-ligne px-3 py-2 text-[13px]"
+              @change="poser(dimensionChoisie, ($event.target as HTMLSelectElement).value)"
+            >
+              <option value="">Choisir…</option>
+              <option v-for="o in optionsDimension" :key="o.id" :value="o.id">{{ o.nom }}</option>
+            </select>
+          </label>
+          <p class="text-[11.5px] leading-[1.5] text-discret">
+            « Chapitre » et « Session » ne sont pas encore filtrables : cette liste ne lit ni les
+            visionnages chapitre par chapitre, ni les inscriptions aux sessions de coaching.
+          </p>
+        </div>
+      </div>
     </div>
 
-    <div class="mt-4 grid gap-6 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr]">
-      <AdminTableauSimple :colonnes="['Apprenant', 'Inscrit le', 'Chapitres', 'Profil', 'Coaching', 'Certificats', '']">
-        <tr v-for="apprenant in apprenants" :key="apprenant.id">
-          <td class="px-4 py-3">
-            <p class="font-bold">{{ apprenant.nom }}</p>
-            <p class="text-[12px] text-discret">{{ apprenant.email }} · {{ apprenant.whatsapp }}</p>
-          </td>
-          <td class="px-4 py-3 whitespace-nowrap text-[13px] text-discret">
-            {{ apprenant.inscritLe ? formatDate(apprenant.inscritLe) : '—' }}
-          </td>
-          <td class="px-4 py-3 whitespace-nowrap">
-            {{ apprenant.chapitresVus }} / {{ apprenant.chapitresTotal }}
-            <span class="block text-[12px] text-discret">{{ apprenant.progression }} %</span>
-          </td>
-          <td class="px-4 py-3">
-            <span
-              class="rounded-full px-2.5 py-1 text-[11px] font-bold"
-              :class="apprenant.profilPourcent === 100 ? 'bg-succes-voile text-succes' : 'bg-alerte-voile text-alerte'"
-            >
-              {{ apprenant.profilPourcent }} %
+    <div class="mt-4 grid items-start gap-5 md:grid-cols-2 lg:grid-cols-[1fr_440px]">
+      <!-- Cinq colonnes à largeurs fixes, comme la maquette : l'identité, une
+           barre de progression, puis trois valeurs en texte coloré. -->
+      <AdminTableauSimple
+        :colonnes="['Apprenant', 'Progression', 'Profil', 'Certificat', 'Coaching']"
+        :largeurs="['1.4fr', '1fr', '110px', '110px', '110px']"
+        largeur-min="560px"
+      >
+        <tr
+          v-for="apprenant in apprenants"
+          :key="apprenant.id"
+          class="cursor-pointer align-middle"
+          :class="selection?.id === apprenant.id && 'bg-social-neige'"
+          @click="selection = apprenant"
+        >
+          <td class="px-5 py-3.5" :class="selection?.id === apprenant.id && 'border-l-[3px] border-social'">
+            <b>{{ apprenant.nom }}</b>
+            <span class="block truncate text-[12px] text-discret">
+              {{ apprenant.email }}<template v-if="apprenant.whatsapp"> · {{ apprenant.whatsapp }}</template>
             </span>
           </td>
-          <td class="px-4 py-3">
-            <span v-if="apprenant.coachingPrive.length" class="rounded-full bg-social-voile px-2.5 py-1 text-[11px] font-bold text-social">
-              {{ apprenant.coachingPrive.length }}
+          <td class="px-5 py-3.5">
+            <span class="flex items-center gap-2">
+              <span class="h-1.5 flex-1 rounded-full bg-piste">
+                <span
+                  class="block h-full rounded-full"
+                  :class="apprenant.progression === 100 ? 'bg-whatsapp' : 'bg-social'"
+                  :style="{ width: `${apprenant.progression}%` }"
+                />
+              </span>
+              {{ apprenant.chapitresVus }}/{{ apprenant.chapitresTotal }}
             </span>
-            <span v-else class="text-discret">—</span>
           </td>
-          <td class="px-4 py-3">{{ apprenant.certificats.length || '—' }}</td>
-          <td class="px-4 py-3 text-right">
-            <button class="text-[12.5px] underline" @click="selection = apprenant">Fiche</button>
+          <td class="px-5 py-3.5 font-bold" :class="apprenant.profilPourcent === 100 ? 'text-succes' : 'text-alerte'">
+            {{ apprenant.profilPourcent }} %
           </td>
+          <td class="px-5 py-3.5" :class="apprenant.certificats.length ? 'font-bold text-succes' : 'text-discret'">
+            {{ apprenant.certificats.length ? 'Générée' : '—' }}
+          </td>
+          <td
+            class="px-5 py-3.5"
+            :class="apprenant.profilPourcent === 100 ? 'font-bold text-succes' : 'text-discret'"
+          >
+            {{ apprenant.coachingPrive.length ? 'Présent' : apprenant.profilPourcent === 100 ? 'Éligible' : 'Inscrit' }}
+          </td>
+        </tr>
+        <tr v-if="!apprenants.length">
+          <td colspan="5" class="px-5 py-8 text-center text-discret">Aucun apprenant dans ce filtre.</td>
         </tr>
       </AdminTableauSimple>
 
       <aside v-if="selection" class="h-fit rounded-[14px] border border-ligne-douce bg-white p-6">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <h2 class="font-title text-[21px] font-light">{{ selection.nom }}</h2>
-            <p class="text-[12.5px] text-discret">{{ selection.pays }}</p>
-          </div>
-          <button class="text-[12px] text-discret underline" @click="selection = null">Fermer</button>
+        <div class="mb-4 flex items-center gap-3.5">
+          <span class="grid size-[52px] shrink-0 place-items-center rounded-full bg-social text-[17px] font-extrabold text-white">
+            {{ selection.nom.split(' ').map((m) => m[0]).slice(0, 2).join('') }}
+          </span>
+          <span class="min-w-0">
+            <b class="block text-[17px]">{{ selection.nom }}</b>
+            <span class="block truncate text-[12.5px] text-discret">
+              Inscrit le {{ selection.inscritLe ? formatDate(selection.inscritLe) : '—' }}<template
+                v-if="selection.ville || selection.pays"
+              > · {{ [selection.ville, selection.pays].filter(Boolean).join(', ') }}</template>
+            </span>
+          </span>
         </div>
 
-        <section v-if="selection.persona" class="mt-5 rounded-[12px] border border-ligne-claire p-4">
-          <p class="surtitre text-discret">Fiche persona — contexte pour le coach</p>
-          <dl class="mt-3 grid gap-2 text-[13.5px] sm:grid-cols-2">
-            <div><dt class="text-discret">Âge</dt><dd>{{ selection.persona.age }} ans</dd></div>
-            <div><dt class="text-discret">Secteur</dt><dd>{{ selection.persona.secteur }}</dd></div>
-            <div><dt class="text-discret">Expérience</dt><dd>{{ selection.persona.experience }}</dd></div>
-            <div><dt class="text-discret">Réseaux gérés</dt><dd>{{ selection.persona.reseaux }}</dd></div>
-            <div class="sm:col-span-2"><dt class="text-discret">Objectif</dt><dd>{{ selection.persona.objectif }}</dd></div>
-          </dl>
+        <section v-if="selection.persona" class="mb-3.5 rounded-[12px] border border-social-bordure-tendre bg-social-nuage p-4">
+          <p class="surtitre-menu mb-2.5 text-social">Fiche persona — contexte pour le coach</p>
+          <div class="flex flex-col gap-[7px] text-[13px]">
+            <div class="flex justify-between gap-3"><span class="text-discret">Âge</span><b>{{ selection.persona.age }} ans</b></div>
+            <div class="flex justify-between gap-3"><span class="text-discret">Secteur</span><b>{{ selection.persona.secteur }}</b></div>
+            <div class="flex justify-between gap-3"><span class="text-discret">Expérience</span><b>{{ selection.persona.experience }}</b></div>
+            <div class="flex justify-between gap-3"><span class="text-discret">Réseaux gérés</span><b>{{ selection.persona.reseaux }}</b></div>
+            <div class="flex justify-between gap-4"><span class="text-discret">Objectif</span><b class="text-right">{{ selection.persona.objectif }}</b></div>
+          </div>
+          <p v-if="selection.profilPourcent < 100" class="mt-3 rounded-[8px] bg-alerte-voile px-3 py-2.5 text-[12px] text-alerte">
+            Profil à {{ selection.profilPourcent }} % — participation aux sessions de coaching
+            bloquée tant que non complété.
+          </p>
         </section>
 
-        <p
-          v-if="selection.profilPourcent < 100"
-          class="mt-4 rounded-[10px] border border-alerte bg-alerte-voile p-3 text-[13px] text-alerte"
-        >
-          Profil à {{ selection.profilPourcent }} % — participation aux sessions de coaching bloquée
-          tant qu’il n’est pas complété.
+        <div class="flex flex-col gap-2 text-[13px]">
+          <div class="flex justify-between gap-3">
+            <span class="text-discret">Modules achetés</span>
+            <b>{{ selection.modulesAcquis.length }} · {{ formatFcfa(selection.montantPaye) }}</b>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-discret">Origine des accès</span>
+            <b>
+              <template v-if="selection.modulesAcquis.filter((m) => m.origine === 'achat').length">
+                Achat ({{ selection.modulesAcquis.filter((m) => m.origine === 'achat').length }})
+              </template>
+              <template v-if="selection.modulesAcquis.filter((m) => m.origine === 'attribution').length">
+                Attribution ({{ selection.modulesAcquis.filter((m) => m.origine === 'attribution').length }})
+              </template>
+              <template v-if="!selection.modulesAcquis.length">—</template>
+            </b>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-discret">Certificats</span>
+            <b>{{ selection.certificats.length }} générée{{ selection.certificats.length > 1 ? 's' : '' }}</b>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-discret">Coaching privé</span>
+            <b :class="selection.coachingPrive.some((d) => d.statut === 'en-attente') && 'text-alerte'">
+              {{ selection.coachingPrive.length }} demande{{ selection.coachingPrive.length > 1 ? 's' : '' }}
+              <template v-if="selection.coachingPrive.some((d) => d.statut === 'en-attente')">en attente</template>
+            </b>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-2 text-[12.5px] font-bold">
+          <button
+            class="rounded-full border-[1.5px] border-encre px-4 py-2.5 text-encre"
+            @click="attribution.moduleId = attribution.moduleId || (modules?.[0]?.id ?? ''); historiqueOuvert = true"
+          >
+            Attribuer un accès à un module
+          </button>
+          <button
+            class="rounded-full border-[1.5px] border-ligne px-4 py-2.5 text-texte"
+            @click="historiqueOuvert = !historiqueOuvert"
+          >
+            Historique
+          </button>
+        </div>
+        <p class="mt-2.5 text-[11.5px] leading-[1.5] text-discret">
+          «&nbsp;Attribuer un accès&nbsp;» offre gratuitement une formation à cet apprenant — il est
+          notifié par email + WhatsApp dès l’attribution.
         </p>
 
-        <dl class="mt-4 grid gap-2 text-[13.5px] sm:grid-cols-2">
-          <div>
-            <dt class="text-discret">Inscrit le</dt>
-            <dd>{{ selection.inscritLe ? formatDate(selection.inscritLe) : '—' }}</dd>
-          </div>
-          <div>
-            <dt class="text-discret">Modules</dt>
-            <dd>{{ selection.modulesAcquis.length }} · {{ formatFcfa(selection.montantPaye) }}</dd>
-          </div>
-          <div>
-            <dt class="text-discret">Chapitres vus</dt>
-            <dd>{{ selection.chapitresVus }} / {{ selection.chapitresTotal }}</dd>
-          </div>
-          <div><dt class="text-discret">Certificats</dt><dd>{{ selection.certificats.length }}</dd></div>
-        </dl>
-
+        <div v-if="historiqueOuvert">
         <!-- Origine des accès : un achat et une attribution de l'équipe ne
              pèsent pas la même chose dans les revenus. -->
         <section class="mt-5 rounded-[12px] border border-ligne-claire p-4">
@@ -588,6 +729,7 @@ async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir
             <UiBaseButton type="submit" taille="sm">Attribuer et notifier</UiBaseButton>
           </form>
         </section>
+        </div>
       </aside>
 
       <aside v-else class="h-fit rounded-[14px] border border-dashed border-ligne bg-white p-10 text-center text-[13.5px] text-discret">
