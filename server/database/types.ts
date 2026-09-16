@@ -591,6 +591,13 @@ export type RedirectionRow = {
   creee_le: string
 }
 
+export type Erreur404Row = {
+  chemin: string
+  vues: number
+  premiere_le: string
+  derniere_le: string
+}
+
 export type ReferentielRow = {
   id: string
   categorie: CategorieReferentielSql
@@ -767,6 +774,7 @@ export type Database = {
       reglages_financiers: Table<ReglagesFinanciersRow, 'id' | 'maj_le'>
       reglages_seo: Table<ReglagesSeoRow, 'id' | 'maj_le'>
       redirections: Table<RedirectionRow, 'id' | 'creee_le'>
+      erreurs_404: Table<Erreur404Row, 'vues' | 'premiere_le' | 'derniere_le'>
       blocs_vitrine: Table<BlocVitrineRow, 'statut' | 'contenu' | 'publie_du' | 'publie_au' | 'maj_le' | 'maj_par'>
       temoignages: Table<TemoignageRow, 'id' | 'cree_le' | 'position' | 'publie'>
       reglages_tracking: Table<ReglagesTrackingRow, 'id' | 'maj_le' | 'maj_par'>
@@ -780,6 +788,10 @@ export type Database = {
     // et fait retomber toutes les tables sur `never`.
     Views: { [_ in never]: never }
     Functions: {
+      enregistrer_erreur_404: {
+        Args: { p_chemin: string }
+        Returns: undefined
+      }
       enregistrer_visionnage: {
         Args: { p_utilisateur_id: string; p_chapitre_id: string; p_secondes_vues: number }
         Returns: number

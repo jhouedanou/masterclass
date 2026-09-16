@@ -1,17 +1,18 @@
-import { lireReglagesSeo, listerRedirections } from '../../database/administration'
+import { compterErreurs404, lireReglagesSeo, listerRedirections } from '../../database/administration'
 import { CHEMINS_PRIORITAIRES, detecterDoublons, inventaireReferencement } from '../../utils/seo'
 import { exigerAdmin } from '../../utils/session'
 import urlsSitemap from '../__sitemap__/urls.get'
 
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerAdmin(event)
-  const [entrees, redirections, reglagesSeo, sitemap] = await Promise.all([
+  const [entrees, redirections, reglagesSeo, sitemap, erreurs404] = await Promise.all([
     inventaireReferencement(),
     listerRedirections(),
     lireReglagesSeo(),
     // Le même inventaire que celui servi à /sitemap.xml : le compte affiché
     // est celui que Google reçoit.
     urlsSitemap(event),
+    compterErreurs404(30),
   ])
 
   return {
@@ -39,9 +40,9 @@ export default defineEventHandler(async (event) => {
       redirections: redirections.length,
       // « Connectée » dès qu'un jeton de vérification est renseigné.
       searchConsole: reglagesSeo.googleSearchConsole.trim() ? 'Connectée' : 'À connecter',
-      // Aucune table ne journalise les 404 : l'écran affiche « — » plutôt
-      // qu'un zéro qui ferait croire à une absence d'erreurs.
-      erreurs404: null as number | null,
+      // Chemins distincts ayant répondu 404 sur trente jours, relevés par le
+      // greffon `server/plugins/erreurs404.ts`.
+      erreurs404,
     },
 
     // Le front masque les champs réservés en fonction de ce rôle (spec §13).

@@ -208,6 +208,35 @@ export async function listerRedirections() {
   return rows.map((row) => ({ de: row.de, vers: row.vers, creeeLe: row.creee_le }))
 }
 
+/**
+ * Compte les chemins publics ayant répondu 404 sur une fenêtre glissante
+ * (écran 23, « Erreurs 404 (30 j) »). On compte les chemins distincts, pas les
+ * visites : ce qui intéresse l'équipe, c'est quelle URL casse.
+ */
+export async function compterErreurs404(jours = 30): Promise<number | null> {
+  const depuis = new Date(Date.now() - jours * 86_400_000).toISOString()
+  const { data, error } = await supabase()
+    .from('erreurs_404')
+    .select('chemin')
+    .gte('derniere_le', depuis)
+  // Base pas encore migrée : l'écran affiche « — » plutôt que de tomber.
+  if (error) return null
+  return data.length
+}
+
+/**
+ * Enregistre une 404. L'incrément passe par une fonction SQL : deux visiteurs
+ * simultanés sur la même URL cassée ne doivent pas s'écraser l'un l'autre.
+ * Ne lève jamais — journaliser une erreur ne doit pas en provoquer une autre.
+ */
+export async function enregistrerErreur404(chemin: string): Promise<void> {
+  try {
+    await supabase().rpc('enregistrer_erreur_404', { p_chemin: chemin })
+  } catch {
+    // Silence volontaire : la page d'erreur doit partir quoi qu'il arrive.
+  }
+}
+
 /** Redirection permanente posée lors d'un changement de slug publié
  *  (spec SEO §5). Une même origine ne peut être redirigée deux fois. */
 export async function creerRedirection(de: string, vers: string): Promise<void> {
