@@ -179,6 +179,16 @@
   .surtitre-menu {
     @apply text-[10.5px] font-bold tracking-[0.08em] uppercase;
   }
+  /* Le site vitrine compose ses surtitres plus grands et plus interlettrés que
+     le back-office : 13 px sur l'accueil et les pages programme, 12,5 px sur
+     les autres pages publiques. La valeur de base, 11,5 px / .1em, est celle
+     des écrans d'administration. */
+  .surtitre-page {
+    @apply text-[13px] tracking-[0.16em];
+  }
+  .surtitre-section {
+    @apply text-[12.5px] tracking-[0.16em];
+  }
 
   .rayures-social {
     background: repeating-linear-gradient(45deg, #fdfcfe, #fdfcfe 18px, #f6f3fa 18px, #f6f3fa 36px);

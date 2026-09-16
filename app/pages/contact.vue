@@ -158,7 +158,7 @@ useJsonLd({
   <!-- Planche A, écran 08 : présentation et FAQ à gauche, formulaire encadré à droite. -->
   <div class="conteneur grid items-start gap-14 py-14 lg:grid-cols-2">
     <div>
-      <UiSurtitre ton="discret">Contact et assistance</UiSurtitre>
+      <UiSurtitre ton="discret" taille="section">Contact et assistance</UiSurtitre>
       <h1 class="mt-2.5 mb-2.5 font-title text-[38px] font-light">Une question ? Parlons-en.</h1>
       <p class="mb-6 text-[15.5px] leading-[1.65] text-texte">
         Consultez les réponses aux questions fréquentes ou contactez notre équipe. Pour une

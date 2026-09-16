@@ -32,7 +32,7 @@ useFilAriane(mailles)
     <section class="rayures-social border-b border-ligne-claire">
       <div class="conteneur py-12">
         <FilAriane :mailles="mailles" class="mb-6" />
-        <UiSurtitre ton="social">Nos programmes</UiSurtitre>
+        <UiSurtitre ton="social" taille="page">Nos programmes</UiSurtitre>
         <h1 class="mt-3 max-w-[900px] text-[40px] font-medium lg:text-[46px]">
           Deux programmes pour renforcer les compétences qui font la différence
         </h1>
@@ -75,6 +75,7 @@ useFilAriane(mailles)
     <section class="border-t border-ligne-claire bg-fond-clair py-14">
       <div class="conteneur">
         <UiEnTeteSection
+          taille-surtitre="page"
           surtitre="Les thématiques"
           titre="Explorez les modules thématique par thématique"
           intro="Sélectionnez une thématique pour n’afficher que ses modules. Chaque module peut être choisi et acheté indépendamment."

@@ -27,7 +27,7 @@ useFilAriane(mailles)
     <section class="rayures-social border-b border-ligne-claire">
       <div class="conteneur py-12">
         <FilAriane :mailles="mailles" class="mb-6" />
-        <UiSurtitre ton="social">Le catalogue</UiSurtitre>
+        <UiSurtitre ton="social" taille="section">Le catalogue</UiSurtitre>
         <h1 class="mt-3 text-[42px] font-medium">Tous les modules</h1>
         <p class="mt-4 max-w-[720px] text-[17px] leading-relaxed text-texte">
           Chaque module dure 60 minutes, coûte 10 000 FCFA TTC et reste accessible à vie.

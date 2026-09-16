@@ -46,7 +46,7 @@ useFilAriane(mailles)
 
 <template>
   <div class="conteneur py-10">
-    <UiSurtitre ton="discret">Les experts E-Masterclass Big Five</UiSurtitre>
+    <UiSurtitre ton="discret" taille="section">Les experts E-Masterclass Big Five</UiSurtitre>
     <h1 class="mt-2.5 mb-2.5 font-title text-[36px] font-light">Les formateurs</h1>
     <p class="mb-5 max-w-[640px] text-[15px] leading-relaxed text-texte">
       Découvrez les professionnels qui conçoivent les modules et partagent des méthodes issues

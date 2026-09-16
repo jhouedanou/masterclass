@@ -49,7 +49,7 @@ useFilAriane(mailles)
 <template>
   <div>
     <div class="conteneur pt-12 pb-8">
-      <UiSurtitre ton="discret">Ressources et conseils</UiSurtitre>
+      <UiSurtitre ton="discret" taille="section">Ressources et conseils</UiSurtitre>
       <h1 class="mt-2.5 mb-3 font-title text-[40px] font-light">Le blog E-Masterclass Big Five</h1>
       <p class="mb-6.5 max-w-[760px] text-[16px] leading-relaxed text-texte">
         Des conseils, méthodes et analyses pour aider les professionnels du Social Media et les

@@ -208,7 +208,7 @@ function acheter() {
         <template v-if="moduleCourant.pointsForts.length">
           <h2 :class="TITRE_SECTION">Points forts</h2>
           <div class="mb-8 rounded-bloc border border-ligne-douce px-6 py-5 text-[14.5px] leading-[1.7] text-texte">
-            <p v-for="(point, i) in moduleCourant.pointsForts" :key="point" :class="i && 'mt-3'">
+            <p v-for="(point, i) in moduleCourant.pointsForts" :key="point" :class="i > 0 && 'mt-3'">
               {{ point }}
             </p>
           </div>

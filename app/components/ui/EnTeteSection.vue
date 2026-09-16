@@ -14,6 +14,8 @@ const props = withDefaults(
     ton?: 'discret' | 'social' | 'entrepreneurs' | 'clair'
     clair?: boolean
     taille?: 'xl' | 'lg' | 'md' | 'sm' | 'xs'
+    /** Taille du surtitre, indépendante de celle du titre. */
+    tailleSurtitre?: 'page' | 'section'
   }>(),
   { taille: 'xl' },
 )
@@ -39,7 +41,7 @@ const classeIntro = computed(() => INTROS[props.taille])
 
 <template>
   <div>
-    <UiSurtitre :ton="ton">{{ surtitre }}</UiSurtitre>
+    <UiSurtitre :ton="ton" :taille="tailleSurtitre">{{ surtitre }}</UiSurtitre>
     <h2 class="mt-2.5 font-light" :class="[classeTitre, clair && 'text-white']">{{ titre }}</h2>
     <p
       v-if="intro"

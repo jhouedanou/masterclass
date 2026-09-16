@@ -169,6 +169,7 @@ useJsonLd(() => ({
     <section class="py-14">
       <div class="conteneur">
         <UiEnTeteSection
+          taille-surtitre="page"
           surtitre="Les modules du programme"
           titre="Choisissez la compétence que vous souhaitez renforcer"
           :intro="
@@ -231,6 +232,7 @@ useJsonLd(() => ({
     <section class="pb-12">
       <div class="conteneur">
         <UiEnTeteSection
+          taille-surtitre="page"
           taille="sm"
           surtitre="FAQ du programme"
           :titre="`Vos questions sur le programme ${programme.nom}`"

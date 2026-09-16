@@ -21,7 +21,7 @@ useFilAriane(mailles)
     <section class="rayures-social border-b border-ligne-claire">
       <div class="conteneur py-12">
         <FilAriane :mailles="mailles" class="mb-6" />
-        <UiSurtitre ton="social">Coaching collectif</UiSurtitre>
+        <UiSurtitre ton="social" taille="section">Coaching collectif</UiSurtitre>
         <h1 class="mt-3 text-[42px] font-medium">Calendrier des sessions</h1>
         <p class="mt-4 max-w-[760px] text-[17px] leading-relaxed text-texte">
           Les sessions sont organisées par thématique, durent 2 heures et accueillent 25 apprenants.

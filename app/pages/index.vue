@@ -108,6 +108,7 @@ useJsonLd({
     <section class="border-t border-ligne-claire bg-fond-clair py-14">
       <div class="conteneur">
         <UiEnTeteSection
+          taille-surtitre="page"
           surtitre="Nos programmes"
           titre="Deux programmes pour renforcer les compétences qui font la différence"
           intro="Choisissez votre univers, puis le module qui répond à votre besoin du moment."
@@ -161,7 +162,7 @@ useJsonLd({
     <!-- thématiques -->
     <section class="py-14">
       <div class="conteneur">
-        <UiSurtitre>Les thématiques</UiSurtitre>
+        <UiSurtitre taille="page">Les thématiques</UiSurtitre>
         <div class="flex flex-wrap items-end justify-between gap-6">
           <h2 class="mt-2.5 max-w-[720px] text-[34px] font-light">
             Explorez les thématiques de chaque programme
@@ -204,6 +205,7 @@ useJsonLd({
     <section class="sur-sombre bg-encre py-14 text-white">
       <div class="conteneur">
         <UiEnTeteSection
+          taille-surtitre="page"
           surtitre="Nos formateurs"
           titre="Des professionnels de terrain pour transmettre ce qu’ils pratiquent"
           intro="Chaque module est conçu et animé par un professionnel expérimenté, qui prolonge l’apprentissage lors des sessions de coaching collectif."
@@ -228,6 +230,7 @@ useJsonLd({
       <div class="conteneur grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
         <div>
           <UiEnTeteSection
+          taille-surtitre="page"
             surtitre="Questions fréquentes"
             titre="Avant de commencer, voici l’essentiel"
             intro="Retrouvez les réponses aux principales questions concernant l’achat, l’accès aux modules et les sessions de coaching."

@@ -56,7 +56,7 @@ async function soumettre() {
       height="1090"
       class="mb-5.5 h-[72px] w-full rounded-[12px] object-cover"
     >
-    <UiSurtitre ton="discret">Rejoindre E-Masterclass Big Five</UiSurtitre>
+    <UiSurtitre ton="discret" taille="section">Rejoindre E-Masterclass Big Five</UiSurtitre>
     <h1 class="mt-2.5 mb-2 font-title text-[30px] font-light">
       Devenir formateur E-Masterclass Big Five
     </h1>
