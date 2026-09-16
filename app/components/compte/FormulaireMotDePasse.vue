@@ -59,39 +59,48 @@ async function envoyer() {
 </script>
 
 <template>
-  <form class="grid gap-4 sm:grid-cols-3" @submit.prevent="envoyer">
-    <label class="block sm:col-span-3">
-      <span class="mb-1.5 block text-[13px] font-bold text-texte">Mot de passe actuel</span>
-      <input v-model="actuel" type="password" autocomplete="current-password" required class="w-full max-w-sm rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+  <!--
+    Colonne unique : la maquette de l'écran 20 empile les trois champs et pose
+    le bouton dessous. La grille à trois colonnes de la phase 1 se retrouvait
+    à l'étroit dès que le formulaire vivait dans une demi-carte, les paliers
+    Tailwind mesurant la fenêtre et non le conteneur.
+  -->
+  <form class="flex flex-col gap-3.5" @submit.prevent="envoyer">
+    <label class="block">
+      <span class="mb-1.5 block text-[12.5px] font-bold text-texte">Mot de passe actuel</span>
+      <input v-model="actuel" type="password" autocomplete="current-password" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
     </label>
     <label class="block">
-      <span class="mb-1.5 block text-[13px] font-bold text-texte">Nouveau mot de passe</span>
+      <span class="mb-1.5 block text-[12.5px] font-bold text-texte">Nouveau mot de passe</span>
       <input v-model="nouveau" type="password" autocomplete="new-password" :minlength="MINIMUM" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
     </label>
     <label class="block">
-      <span class="mb-1.5 block text-[13px] font-bold text-texte">
+      <span class="mb-1.5 block text-[12.5px] font-bold text-texte">
         {{ props.robustesse ? 'Confirmer le nouveau mot de passe' : 'Confirmation' }}
       </span>
       <input v-model="confirmation" type="password" autocomplete="new-password" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
     </label>
-    <div class="flex items-end">
-      <UiBaseButton type="submit" taille="sm" variante="sombre" :disabled="envoi">
-        {{ props.libelleBouton ?? 'Modifier' }}
-      </UiBaseButton>
-    </div>
 
     <!-- Checklist de robustesse (écran 20) : ✓ / ✗ selon la saisie -->
-    <ul v-if="props.robustesse" class="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] sm:col-span-3" aria-live="polite">
+    <ul v-if="props.robustesse" class="flex flex-wrap gap-x-3 gap-y-1.5 text-[12px]" aria-live="polite">
       <li
         v-for="c in criteres"
         :key="c.libelle"
-        :class="c.ok ? 'text-succes' : 'text-discret'"
+        class="rounded-full px-2.5 py-1 font-bold"
+        :class="c.ok ? 'bg-succes-voile text-succes' : 'bg-erreur-voile text-erreur-fonce'"
       >
         {{ c.ok ? '✓' : '✗' }} {{ c.libelle }}
       </li>
     </ul>
-    <p v-else class="text-[12.5px] text-discret sm:col-span-3">{{ MINIMUM }} caractères minimum.</p>
-    <p v-if="message" class="text-[14px] text-succes sm:col-span-3">{{ message }}</p>
-    <p v-if="erreur" class="text-[14px] text-erreur sm:col-span-3">{{ erreur }}</p>
+    <p v-else class="text-[12.5px] text-discret">{{ MINIMUM }} caractères minimum.</p>
+
+    <div>
+      <UiBaseButton type="submit" taille="sm" :disabled="envoi">
+        {{ props.libelleBouton ?? 'Modifier' }}
+      </UiBaseButton>
+    </div>
+
+    <p v-if="message" class="text-[13.5px] text-succes">{{ message }}</p>
+    <p v-if="erreur" class="text-[13.5px] text-erreur">{{ erreur }}</p>
   </form>
 </template>

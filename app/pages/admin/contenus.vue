@@ -390,7 +390,7 @@ const pastilleModule = 'rounded-full px-2 py-[3px] text-[10.5px] font-bold'
       </UiBaseButton>
     </form>
 
-    <div class="mt-5 grid items-start gap-5 lg:grid-cols-[1fr_460px]">
+    <div class="mt-5 grid items-start gap-5 md:grid-cols-2 lg:grid-cols-[1fr_460px]">
       <!-- L'arbre est une seule carte blanche : pilules de programme, sélecteur
            de phase, thématiques, modules imbriqués et note de bas de carte y
            vivent ensemble (écran 02). -->
