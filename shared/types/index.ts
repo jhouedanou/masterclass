@@ -389,11 +389,18 @@ export type StatutCoachingPrive =
   | 'annulee'
 
 /** Créneau proposé par l'apprenant dans sa demande. */
+/** Créneau proposé par l'apprenant : jour de la semaine + tranche horaire
+ *  (planche B, écran 04). Les demandes antérieures portent une date. */
 export interface CreneauCoaching {
-  date: string
+  /** « lundi » … « dimanche ». */
+  jour?: string
+  /** « AAAA-MM-JJ » — ancienne forme, conservée pour les demandes existantes. */
+  date?: string
   debut: string
   fin: string
 }
+
+export const JOURS_SEMAINE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'] as const
 
 export interface DemandeCoachingPrive {
   id: string

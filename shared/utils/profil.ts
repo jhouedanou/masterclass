@@ -11,10 +11,12 @@ import type { Persona, ProgrammeSlug, Utilisateur } from '#shared/types'
  * Sans module encore acheté, seuls les champs communs comptent.
  */
 
+/** Niveau d'expérience en ancienneté, comme la maquette (« 1 à 3 ans », « 3 à 5 ans »). */
 export const NIVEAUX_EXPERIENCE = [
-  { valeur: 'debutant', libelle: 'Débutant — je commence' },
-  { valeur: 'intermediaire', libelle: 'Intermédiaire — je pratique déjà' },
-  { valeur: 'confirme', libelle: 'Confirmé — je veux aller plus loin' },
+  { valeur: 'moins-1-an', libelle: 'Moins d’un an' },
+  { valeur: '1-3-ans', libelle: '1 à 3 ans' },
+  { valeur: '3-5-ans', libelle: '3 à 5 ans' },
+  { valeur: 'plus-5-ans', libelle: 'Plus de 5 ans' },
 ] as const
 
 export interface ChampProfil {
@@ -48,7 +50,7 @@ export const CHAMPS_ENTREPRENEUR: ChampProfil[] = [
 ]
 
 export const CHAMPS_SOCIAL_MEDIA: ChampProfil[] = [
-  { cle: 'reseaux', libelle: 'Réseaux gérés' },
+  { cle: 'reseaux', libelle: 'Réseaux gérés actuellement' },
   { cle: 'audience', libelle: 'Taille d’audience' },
   { cle: 'outils', libelle: 'Outils utilisés' },
   { cle: 'clients', libelle: 'Clients / marques accompagnés' },

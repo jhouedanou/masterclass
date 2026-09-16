@@ -16,7 +16,15 @@ interface Carte {
   chapitresTotal: number
   termineLe: string | null
   certificat: string | null
-  prochaineSession: { id: string; date: string; heure: string; inscrit: boolean } | null
+  prochaineSession: {
+    id: string
+    date: string
+    heure: string
+    inscrit: boolean
+    places: number
+    inscrits: number
+    joursAvant: number
+  } | null
 }
 
 interface TableauDeBord {
@@ -115,6 +123,14 @@ const lienCommunaute = lienWhatsApp('Bonjour, je souhaite rejoindre la Communaut
               </span>
             </div>
             <h2 class="mt-2 font-title text-[20px] leading-[1.25] font-light">{{ carte.titre }}</h2>
+            <!-- 4 · Session imminente (planche B, écran 07) -->
+            <p
+              v-if="carte.progression < 100 && carte.prochaineSession && carte.prochaineSession.joursAvant <= 1"
+              class="mt-2 rounded-[10px] bg-alerte-voile px-3 py-2 text-[13px] text-alerte"
+            >
+              🗓 Session de coaching {{ carte.prochaineSession.joursAvant === 0 ? 'aujourd’hui' : 'demain' }}
+              {{ carte.prochaineSession.heure.replace(':', 'h') }} — {{ Math.max(0, carte.prochaineSession.places - carte.prochaineSession.inscrits) }} places restantes
+            </p>
             <p class="mt-1.5 text-[13px] text-discret">
               {{ carte.formateur }} ·
               <template v-if="carte.progression === 100 && carte.termineLe">Terminé le {{ formatDate(carte.termineLe) }}</template>
@@ -125,10 +141,19 @@ const lienCommunaute = lienWhatsApp('Bonjour, je souhaite rejoindre la Communaut
             </p>
             <div class="mt-auto flex items-center justify-between gap-3 pt-4">
               <span class="text-[13.5px] font-bold text-encre">
-                {{ carte.chapitresVus }} / {{ carte.chapitresTotal }} chapitres<span v-if="carte.progression === 100"> ✓</span>
+                <span class="lg:hidden">{{ carte.chapitresVus }}/{{ carte.chapitresTotal }}</span>
+                <span class="hidden lg:inline">{{ carte.chapitresVus }} / {{ carte.chapitresTotal }} chapitres</span><span v-if="carte.progression === 100"> ✓</span>
               </span>
               <UiBaseButton
-                v-if="carte.progression === 100"
+                v-if="carte.progression < 100 && carte.prochaineSession && carte.prochaineSession.joursAvant <= 1"
+                to="/mon-espace/sessions"
+                taille="sm"
+                variante="contour"
+              >
+                Voir la session
+              </UiBaseButton>
+              <UiBaseButton
+                v-else-if="carte.progression === 100"
                 :to="carte.certificat ? `/certificats/${carte.certificat}` : '/mon-espace/certificats'"
                 taille="sm"
                 variante="sombre"
@@ -183,7 +208,8 @@ const lienCommunaute = lienWhatsApp('Bonjour, je souhaite rejoindre la Communaut
       <aside>
         <section class="rounded-[14px] border border-ligne-douce bg-white p-5">
           <h2 class="font-title text-[19px] font-light">
-            <span class="lg:hidden">Prochaine coaching session</span>
+            <span class="md:hidden">Prochaine coaching session</span>
+            <span class="hidden md:inline lg:hidden">Prochaine session</span>
             <span class="hidden lg:inline">Vos prochaines sessions de coaching</span>
           </h2>
           <p class="mt-1 hidden text-[12.5px] text-discret lg:block">
@@ -202,7 +228,9 @@ const lienCommunaute = lienWhatsApp('Bonjour, je souhaite rejoindre la Communaut
                   {{ session.joursAvant === 0 ? 'Aujourd’hui' : `J-${session.joursAvant}` }}
                 </span>
               </div>
-              <p class="mt-1 text-[13.5px] text-texte">{{ session.thematique }} — {{ session.formateur }}</p>
+              <p class="mt-1 text-[13.5px] text-texte">
+                <span class="hidden lg:inline">{{ session.thematique }} — </span>{{ session.formateur }}<span class="lg:hidden"> · Zoom</span>
+              </p>
               <UiBaseButton
                 :to="session.inscrit && session.joursAvant === 0 ? `/mon-espace/session/${session.id}` : '/mon-espace/sessions'"
                 taille="sm"

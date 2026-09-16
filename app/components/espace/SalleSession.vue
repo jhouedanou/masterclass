@@ -118,8 +118,26 @@ const libelleRetour = computed(() => {
   return privee.value || !data.value?.modulesCouverts.length ? '← Retour à l’espace' : '← Retour au module'
 })
 
+/** « Proposée à la fermeture de la salle » (planche B, écran 08b) : la note avant de repartir. */
+const notation = ref(false)
 async function quitter() {
   await zoom.quitter()
+  if (props.espace === 'apprenant' && data.value?.formateur && zoom.etat.value !== 'inactif') {
+    notation.value = true
+    return
+  }
+  await navigateTo(retour.value)
+}
+async function noter(valeurs: { note: number; commentaire: string }) {
+  await $fetch('/api/mon-espace/notes', {
+    method: 'POST',
+    body: { formateurId: data.value!.formateur!.id, origine: privee.value ? 'privee' : 'collective', ...valeurs },
+  }).catch(() => undefined)
+  notation.value = false
+  await navigateTo(retour.value)
+}
+async function plusTard() {
+  notation.value = false
   await navigateTo(retour.value)
 }
 
@@ -215,7 +233,7 @@ function envoyerChat() {
         <div v-if="autorisation?.mode === 'simulation'" class="mt-3 flex flex-wrap items-center justify-center gap-2 text-[13px]">
           <button type="button" class="rounded-full bg-encre-800 px-3.5 py-2" :class="!micro && 'text-[#ff6b6b]'" @click="micro = !micro">🎙 Micro</button>
           <button type="button" class="rounded-full bg-encre-800 px-3.5 py-2" :class="!camera && 'text-[#8f8a9c]'" @click="camera = !camera">🎥 Caméra</button>
-          <button v-if="data.role === 'hote'" type="button" class="rounded-full bg-encre-800 px-3.5 py-2">🖥 Partager</button>
+          <button v-if="data.role === 'hote'" type="button" class="rounded-full bg-encre-800 px-3.5 py-2">🖥 Partager (formateur)</button>
           <button type="button" class="rounded-full bg-encre-800 px-3.5 py-2" :class="main && 'bg-social'" @click="main = !main">✋ Main levée</button>
           <button type="button" class="rounded-full bg-encre-800 px-3.5 py-2">😀 Réactions</button>
           <span class="rounded-full bg-encre-800 px-3.5 py-2">👥 {{ data.participants.length + 1 }}</span>
@@ -263,5 +281,12 @@ function envoyerChat() {
         </p>
       </aside>
     </div>
+    <EspaceModaleNotation
+      v-if="notation"
+      titre="Notez votre formateur"
+      :sous-titre="`${privee ? 'Coaching privé' : 'Coaching collectif'} — ${data.formateur?.nom ?? ''}${data.thematique ? ` · ${data.thematique.nom}` : ''}`"
+      @fermer="plusTard"
+      @envoyer="noter"
+    />
   </div>
 </template>

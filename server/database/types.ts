@@ -460,7 +460,7 @@ export type DemandeCoachingPriveRow = {
   heures: number
   statut: StatutCoachingPriveSql
   creneau: string | null
-  creneaux: { date: string; debut: string; fin: string }[]
+  creneaux: { jour?: string; date?: string; debut: string; fin: string }[]
   creneau_retenu_le: string | null
   lien_session: string | null
   motif_refus: string | null

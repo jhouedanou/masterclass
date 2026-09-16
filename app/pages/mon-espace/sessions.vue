@@ -34,6 +34,8 @@ const erreur = ref('')
 const MOIS = (date: string) =>
   new Intl.DateTimeFormat('fr-FR', { month: 'short' }).format(new Date(`${date}T00:00:00`)).replace('.', '').toUpperCase()
 const JOUR = (date: string) => new Date(`${date}T00:00:00`).getDate()
+const JOUR_COURT = (date: string) =>
+  new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(`${date}T00:00:00`)).replace(/\./g, '')
 const MOIS_LONG = (date: string) =>
   new Intl.DateTimeFormat('fr-FR', { month: 'long' }).format(new Date(`${date}T00:00:00`))
 
@@ -176,7 +178,7 @@ async function noter(valeurs: { note: number; commentaire: string }) {
     <EspaceModaleSujets
       v-if="reservation"
       titre="Avant de réserver : vos sujets à traiter"
-      :sous-titre="`${reservation.thematique?.nom} — ${formatDate(reservation.date)} · ${reservation.heure} · ${reservation.formateur?.nom}`"
+      :sous-titre="`${reservation.thematique?.nom} — ${JOUR_COURT(reservation.date)} · ${reservation.heure.replace(':', 'h')} · ${reservation.formateur?.nom}`"
       contexte="Votre principale préoccupation sur ce thème"
       @fermer="reservation = null"
       @envoyer="reserver"

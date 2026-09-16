@@ -17,6 +17,12 @@ if (!data.value) {
 }
 
 const article = computed(() => data.value!.article)
+const { data: formateurs } = await useFetch<{ id: string; nom: string }[]>('/api/formateurs')
+/** « Coury Othniel · 10 000 FCFA TTC » sous chaque module lié (planche A, écran 13). */
+const formateurDe = (m: { formateurId: string }) => {
+  const nom = formateurs.value?.find((f) => f.id === m.formateurId)?.nom
+  return nom ? `${nom} · ` : ''
+}
 const url = computed(() => `${config.public.siteUrl}/blog/${article.value.slug}`)
 
 usePageSeo({
@@ -69,7 +75,7 @@ const html = computed(() => rendreTexteRiche(article.value.contenu))
       <p class="mt-4 text-[19px] leading-relaxed text-texte">{{ article.chapo }}</p>
 
       <p class="mt-5 text-[13px] text-discret">
-        <span v-if="data.auteur">Par {{ data.auteur.nom }} · </span>
+        <span v-if="data.auteur">{{ data.auteur.nom }} · </span>
         <time :datetime="article.publieLe ?? undefined">{{ formatDate(article.publieLe) }}</time>
         · {{ article.tempsLectureMinutes }} min de lecture
       </p>
@@ -94,7 +100,7 @@ const html = computed(() => rendreTexteRiche(article.value.contenu))
                 Module {{ numeroModule(m.numero) }}
               </p>
               <NuxtLink :to="`/modules/${m.slug}`" class="font-title text-[19px] font-light text-encre hover:underline">{{ m.titre }}</NuxtLink>
-              <p class="text-[13px] text-discret">{{ formatFcfa(m.prixFcfa) }} TTC</p>
+              <p class="text-[13px] text-discret">{{ formateurDe(m) }}{{ formatFcfa(m.prixFcfa) }} TTC</p>
             </div>
             <UiBaseButton :to="`/modules/${m.slug}`" taille="sm" variante="contour">Voir le module</UiBaseButton>
           </li>

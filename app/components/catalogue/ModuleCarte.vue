@@ -8,6 +8,8 @@ const props = defineProps<{
   /** Marque un module auquel l'apprenant a déjà accès (espace privé). Faux
    *  partout ailleurs : sur le site public, personne n'est identifié. */
   possede?: boolean
+  /** Flèche « → » après « Découvrir le module » : présente sur l'accueil, absente sur les pages programme (planche A). */
+  fleche?: boolean
 }>()
 
 const social = computed(() => props.module.programme === 'social-media')
@@ -54,7 +56,7 @@ const teinte = computed(() => (social.value ? 'text-social' : 'text-entrepreneur
     </p>
 
     <NuxtLink :to="`/modules/${module.slug}`" class="mt-auto pt-1 text-[14px] font-bold" :class="teinte">
-      Découvrir le module →
+      Découvrir le module<template v-if="fleche"> →</template>
     </NuxtLink>
   </article>
 </template>

@@ -8,7 +8,15 @@ type FormateurListe = Formateur & {
 
 const { data: formateurs } = await useFetch<FormateurListe[]>('/api/formateurs')
 const visibles = computed(() => (formateurs.value ?? []).filter((f) => f.ficheComplete))
-const deplie = ref<string>(visibles.value[0]?.id ?? '')
+const route = useRoute()
+/** Carte détaillée au clic ou par ancre (`/formateurs#coury-othniel`), annexe technique de la planche A. */
+const depuisAncre = computed(() => visibles.value.find((f) => `#${f.slug}` === route.hash)?.id)
+const deplie = ref<string>(depuisAncre.value ?? visibles.value[0]?.id ?? '')
+watch(depuisAncre, (id) => id && (deplie.value = id))
+watch(deplie, (id) => {
+  const f = visibles.value.find((x) => x.id === id)
+  if (import.meta.client && f) history.replaceState(history.state, '', `#${f.slug}`)
+})
 
 usePageSeo({
   titreAuto: 'Les formateurs | E-Masterclass Big Five',

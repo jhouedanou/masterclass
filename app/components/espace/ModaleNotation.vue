@@ -46,7 +46,7 @@ const libelles = ['', 'Très insatisfait(e)', 'Insatisfait(e)', 'Correct', 'Sati
       </div>
 
       <p class="mt-4 text-[12px] text-discret">
-        La note moyenne est visible de l’administration et du formateur — jamais publiée sur le site.
+        Proposée à la fermeture de la salle, puis rappelée depuis l’historique. La note moyenne est visible par l’admin et par le formateur — jamais publiée sur le site.
       </p>
     </div>
   </div>

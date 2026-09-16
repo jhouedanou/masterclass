@@ -34,6 +34,8 @@ export function useLecteurVideo(options: {
   const dureeSecondes = ref(0)
   const secondesVues = ref(0)
   const progression = ref<number | null>(null)
+  /** Niveau de qualité servi par le streaming adaptatif (« 480p »), affiché « Auto 480p ». */
+  const qualite = ref<string | null>(null)
 
   let hls: Hls | null = null
   let dernierInstant = 0
@@ -161,6 +163,10 @@ export function useLecteurVideo(options: {
       hls = new Hls({ capLevelToPlayerSize: true, startLevel: -1 })
       hls.loadSource(source)
       hls.attachMedia(element)
+      hls.on(Hls.Events.LEVEL_SWITCHED, (_, donnees) => {
+        const niveau = hls?.levels[donnees.level]
+        if (niveau?.height) qualite.value = `${niveau.height}p`
+      })
       hls.on(Hls.Events.ERROR, (_, donnees) => {
         if (!donnees.fatal) return
 
@@ -292,5 +298,6 @@ export function useLecteurVideo(options: {
     dureeSecondes,
     secondesVues,
     progression,
+    qualite,
   }
 }

@@ -29,19 +29,19 @@ async function annuler() {
             <th scope="row" class="w-40 px-6 py-3.5 text-left font-normal text-discret">Module</th>
             <td class="px-6 py-3.5 font-title text-[19px] font-light text-encre">{{ achat.module.titre }}</td>
           </tr>
-          <tr>
+          <tr class="hidden lg:table-row">
             <th scope="row" class="px-6 py-3.5 text-left font-normal text-discret">Programme</th>
             <td class="px-6 py-3.5">{{ achat.module.programme }}</td>
           </tr>
-          <tr>
+          <tr class="hidden lg:table-row">
             <th scope="row" class="px-6 py-3.5 text-left font-normal text-discret">Thématique</th>
             <td class="px-6 py-3.5">{{ achat.module.thematique }}</td>
           </tr>
-          <tr>
+          <tr class="hidden lg:table-row">
             <th scope="row" class="px-6 py-3.5 text-left font-normal text-discret">Formateur</th>
             <td class="px-6 py-3.5">{{ achat.module.formateur }}</td>
           </tr>
-          <tr>
+          <tr class="hidden lg:table-row">
             <th scope="row" class="px-6 py-3.5 text-left font-normal text-discret">Durée</th>
             <td class="px-6 py-3.5">{{ formatDuree(achat.module.dureeMinutes) }}</td>
           </tr>
@@ -49,7 +49,7 @@ async function annuler() {
             <th scope="row" class="px-6 py-3.5 text-left font-normal text-discret">Durée d’accès</th>
             <td class="px-6 py-3.5">À vie</td>
           </tr>
-          <tr>
+          <tr class="hidden lg:table-row">
             <th scope="row" class="px-6 py-3.5 text-left font-normal text-discret">Coaching</th>
             <td class="px-6 py-3.5">Collectif, lié à la thématique</td>
           </tr>

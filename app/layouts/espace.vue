@@ -12,10 +12,10 @@ async function seDeconnecter() {
   await navigateTo('/')
 }
 const liens = [
-  { libelle: 'Mes modules', chemin: '/mon-espace/modules', icone: 'ph:play-circle' },
-  { libelle: 'Coaching collectif', chemin: '/mon-espace/sessions', icone: 'ph:calendar-dots' },
-  { libelle: 'Coaching privé', chemin: '/mon-espace/coaching-prive', icone: 'ph:target' },
-  { libelle: 'Mes certificats', chemin: '/mon-espace/certificats', icone: 'ph:certificate' },
+  { libelle: 'Mes modules', court: 'Modules', chemin: '/mon-espace/modules', icone: 'ph:play-circle' },
+  { libelle: 'Coaching collectif', court: 'Sessions', chemin: '/mon-espace/sessions', icone: 'ph:calendar-dots' },
+  { libelle: 'Coaching privé', court: 'Privé', chemin: '/mon-espace/coaching-prive', icone: 'ph:target' },
+  { libelle: 'Mes certificats', court: 'Certificats', chemin: '/mon-espace/certificats', icone: 'ph:certificate' },
 ]
 const ongletsMobile = [
   { libelle: 'Modules', chemin: '/mon-espace/modules', icone: 'ph:squares-four' },
@@ -36,7 +36,7 @@ const menuCompte = ref(false)
         <NuxtLink to="/mon-espace" aria-label="Accueil de mon espace">
           <img src="/images/brand/logo.png" alt="E-Masterclass | Big Five" class="block h-9 w-auto" width="180" height="36">
         </NuxtLink>
-        <nav aria-label="Navigation de l’espace apprenant" class="hidden items-center gap-7 text-[14.5px] font-semibold lg:flex">
+        <nav aria-label="Navigation de l’espace apprenant" class="hidden items-center gap-7 text-[14.5px] font-semibold md:flex">
           <NuxtLink
             v-for="lien in liens"
             :key="lien.chemin"
@@ -44,7 +44,9 @@ const menuCompte = ref(false)
             class="text-texte hover:text-encre"
             active-class="text-social"
           >
-            {{ lien.libelle }}
+            <!-- Tablette (planche B, écran 14) : « Modules · Sessions · Certificats » -->
+            <span class="lg:hidden">{{ lien.court }}</span>
+            <span class="hidden lg:inline">{{ lien.libelle }}</span>
           </NuxtLink>
         </nav>
         <div class="relative flex items-center gap-3">
@@ -87,11 +89,11 @@ const menuCompte = ref(false)
       </div>
     </header>
 
-    <main class="conteneur flex-1 py-8 pb-24 lg:pb-8">
+    <main class="conteneur flex-1 py-8 pb-24 md:pb-8">
       <slot />
     </main>
 
-    <LayoutBarreOngletsMobile :liens="ongletsMobile" />
+    <LayoutBarreOngletsMobile :liens="ongletsMobile" jusqua="md" />
     <LayoutTheFooter class="hidden lg:block" />
   </div>
 </template>

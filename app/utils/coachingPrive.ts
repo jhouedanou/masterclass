@@ -34,12 +34,17 @@ export const STATUTS_COACHING_PRIVE: { statut: StatutCoachingPrive; numero: numb
   { statut: 'refusee', numero: 6, libelle: 'Refusée / expirée' },
 ]
 
-/** « lundi 6 octobre, 18:30 – 20:30 » depuis un créneau structuré. */
-export function formatCreneau(c: { date: string; debut: string; fin: string }): string {
-  const date = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(
-    new Date(`${c.date}T00:00:00`),
-  )
-  return `${date}, ${c.debut} – ${c.fin}`
+/** « Mardi 18h – 20h » (jour de semaine) ou « lundi 6 octobre, 18:30 – 20:30 » (ancienne forme datée). */
+export function formatCreneau(c: { jour?: string; date?: string; debut: string; fin: string }): string {
+  const heure = (h: string) => (h.endsWith(':00') ? `${Number(h.slice(0, 2))}h` : h.replace(':', 'h'))
+  if (c.jour) return `${c.jour.charAt(0).toUpperCase()}${c.jour.slice(1)} ${heure(c.debut)} – ${heure(c.fin)}`
+  if (c.date) {
+    const date = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(
+      new Date(`${c.date}T00:00:00`),
+    )
+    return `${date}, ${c.debut} – ${c.fin}`
+  }
+  return `${c.debut} – ${c.fin}`
 }
 
 export function formatDateHeure(iso: string): string {

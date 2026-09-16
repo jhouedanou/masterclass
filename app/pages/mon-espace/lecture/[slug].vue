@@ -193,7 +193,8 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
         {{ chapitre?.libelle }} — {{ chapitre?.titre }}
       </p>
       <p class="text-[13px] text-[#8f8a9c]">
-        Chapitre {{ index + 1 }} / {{ moduleCourant.chapitres.length }}
+        <span class="lg:hidden">Ch. {{ index + 1 }} / {{ moduleCourant.chapitres.length }}</span>
+        <span class="hidden lg:inline">Chapitre {{ index + 1 }} / {{ moduleCourant.chapitres.length }}</span>
       </p>
     </header>
 
@@ -242,7 +243,7 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
               <option v-for="v in vitesses" :key="v" :value="v">{{ v }}×</option>
             </select>
           </label>
-          <span>Qualité adaptée automatiquement</span>
+          <span title="Qualité adaptée automatiquement au débit">Auto {{ lecteur.qualite.value ?? '480p' }}</span>
           <span class="ml-auto">Progression du module : {{ progressionAffichee }} %</span>
         </div>
 
@@ -262,7 +263,10 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
       </div>
 
       <aside class="rounded-carte bg-encre-800 p-5">
-        <h2 class="font-title text-[17px] text-social-clair font-light mb-5">Script du chapitre</h2>
+        <h2 class="font-title text-[17px] text-social-clair font-light mb-5">
+          <span class="lg:hidden text-[12px] font-bold tracking-[0.12em] uppercase">Script synchronisé</span>
+          <span class="hidden lg:inline">Script du chapitre — synchronisé avec la lecture</span>
+        </h2>
         <hr class="border-encre-700 mb-5">
         <p class="mt-1 text-[12px] text-[#8f8a9c]">
           Synchronisé avec la lecture — cliquez sur un passage pour y déplacer la vidéo.

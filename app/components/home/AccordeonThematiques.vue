@@ -51,6 +51,7 @@ watch(
         :class="couleur === 'social' ? 'bg-fond-blanc-casse' : 'bg-[#fcfcfe]'"
       >
         <CatalogueModuleCarte
+          fleche
           v-for="module in thematique.modules"
           :key="module.id"
           :module="module"

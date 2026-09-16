@@ -41,8 +41,10 @@ const LIBELLES: Record<Action, string> = {
 }
 
 function libelleCreneau(c: CreneauCoaching): string {
+  const heure = (h: string) => (h.endsWith(':00') ? `${Number(h.slice(0, 2))}h` : h.replace(':', 'h'))
+  if (c.jour) return `${c.jour.charAt(0).toUpperCase()}${c.jour.slice(1)} ${heure(c.debut)} – ${heure(c.fin)}`
   const date = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(
-    new Date(`${c.date}T00:00:00`),
+    new Date(`${c.date ?? ''}T00:00:00`),
   )
   return `${date}, ${c.debut} – ${c.fin}`
 }
@@ -81,7 +83,7 @@ export default defineEventHandler(async (event) => {
   const creneau =
     typeof body.creneau === 'string'
       ? body.creneau.trim()
-      : body.creneau?.date
+      : body.creneau?.date || body.creneau?.jour
         ? libelleCreneau(body.creneau)
         : ''
   const lienSession = (body.lienSession ?? '').trim()

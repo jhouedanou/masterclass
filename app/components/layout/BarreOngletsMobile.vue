@@ -8,13 +8,16 @@ defineProps<{
   liens: { libelle: string; chemin: string; icone: string; compteur?: number }[]
   /** Couleur d'accent de l'espace : violet apprenant, violet formateur. */
   accent?: 'social' | 'entrepreneurs'
+  /** Palier au-delà duquel la barre disparaît : `md` (apprenant, la tablette a une nav haute) ou `lg`. */
+  jusqua?: 'md' | 'lg'
 }>()
 </script>
 
 <template>
   <nav
     aria-label="Navigation principale"
-    class="fixed inset-x-0 bottom-0 z-40 grid border-t border-ligne-claire bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
+    class="fixed inset-x-0 bottom-0 z-40 grid border-t border-ligne-claire bg-white pb-[env(safe-area-inset-bottom)]"
+    :class="jusqua === 'md' ? 'md:hidden' : 'lg:hidden'"
     :style="{ gridTemplateColumns: `repeat(${liens.length}, minmax(0, 1fr))` }"
   >
     <NuxtLink

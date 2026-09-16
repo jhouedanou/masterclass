@@ -4,7 +4,10 @@ import type { CodeEchecPaiement } from '#shared/types'
 definePageMeta({ middleware: 'auth' })
 
 const achat = useAchatStore()
+const auth = useAuthStore()
 const config = useRuntimeConfig()
+/** Numéro Mobile Money saisi sur mobile (planche A, 04c), transmis à la fenêtre FeexPay. */
+const numeroMobileMoney = ref(auth.utilisateur?.whatsapp ?? '')
 
 const moyens = [
   { valeur: 'mobile-money', libelle: 'Mobile Money', detail: 'Orange, MTN, Moov' },
@@ -111,6 +114,7 @@ async function ouvrirFeexPay(parametres: ParametresFeexPay) {
     email: parametres.email,
     first_name: parametres.prenom,
     last_name: parametres.nom,
+    phone: numeroMobileMoney.value || undefined,
     callback_info: { commande: parametres.customId },
     callback: (reponse: unknown) => {
       void confirmer(referenceDepuisRappel(reponse))
@@ -226,7 +230,10 @@ function changerDeMoyen() {
   <div class="conteneur max-w-[840px] py-12">
     <UiEtapesAchat v-if="!seance" :etape="3" />
 
-    <h1 class="mt-8 text-[36px] font-medium">Choisissez votre moyen de paiement</h1>
+    <h1 class="mt-8 text-[30px] font-medium lg:text-[36px]">
+      <span class="lg:hidden">Moyen de paiement</span>
+      <span class="hidden lg:inline">Choisissez votre moyen de paiement</span>
+    </h1>
     <div v-if="seance" class="mt-4 rounded-[14px] border border-ligne-douce bg-fond-clair p-5 text-[14px]">
       <p class="text-discret">Séance de coaching privé</p>
       <p class="mt-1 font-title text-[19px] font-light">{{ seance.formateur }} · {{ seance.heures }} h</p>
@@ -289,6 +296,13 @@ function changerDeMoyen() {
           </span>
         </label>
       </div>
+
+      <!-- Mobile / PWA (planche A, écran 04c) : le numéro Mobile Money est saisi avant de payer ;
+           il pré-remplit la fenêtre FeexPay. -->
+      <label v-if="achat.moyen === 'mobile-money'" class="mt-5 block lg:hidden">
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Numéro Mobile Money</span>
+        <UiChampTelephone v-model="numeroMobileMoney" :pays="auth.utilisateur?.pays" />
+      </label>
 
       <UiBaseButton class="mt-7 w-full" taille="lg" @click="payer">
         {{ etat === 'echec' ? 'Réessayer le paiement' : `Payer ${formatFcfa(montant, true)}` }}

@@ -60,7 +60,15 @@ export default defineEventHandler(async (event) => {
         termineLe: a.termineLe,
         certificat: certificats.find((c) => c.moduleId === module.id)?.numero ?? null,
         prochaineSession: prochaine
-          ? { id: prochaine.id, date: prochaine.date, heure: prochaine.heure, inscrit: inscrit.has(prochaine.id) }
+          ? {
+              id: prochaine.id,
+              date: prochaine.date,
+              heure: prochaine.heure,
+              inscrit: inscrit.has(prochaine.id),
+              places: prochaine.places,
+              inscrits: prochaine.inscrits,
+              joursAvant: joursAvant(prochaine.date),
+            }
           : null,
       }
     })
