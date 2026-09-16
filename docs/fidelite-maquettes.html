@@ -1,0 +1,598 @@
+<title>Fidélité maquettes Big Five</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500&family=Mulish:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  /* Palette reprise des jetons du projet : le chantier consiste précisément à
+     les rétablir, la page est donc composée dedans. */
+  :root {
+    --encre: #17151c;
+    --encre-800: #221f2b;
+    --social: #80368d;
+    --social-voile: #f4ecf7;
+    --entrepreneurs: #29358b;
+    --entrepreneurs-voile: #eff0f8;
+    --texte: #4b4855;
+    --discret: #6d6a75;
+    --ligne: #dcd7e6;
+    --ligne-claire: #eeebf3;
+    --cadre: #f5f3f8;
+    --surface: #ffffff;
+    --succes: #1a8747;
+    --succes-voile: #e7f7ee;
+    --alerte: #a06a12;
+    --alerte-voile: #fff4e2;
+    --ombre: 0 1px 2px rgba(23, 21, 28, .05);
+
+    --titre: "Jost", "Century Gothic", ui-sans-serif, system-ui, sans-serif;
+    --corps: "Mulish", ui-sans-serif, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --encre: #f3f0f8;
+      --encre-800: #e6e1ef;
+      --social: #cfa6de;
+      --social-voile: #2a1f30;
+      --entrepreneurs: #9aa4e0;
+      --entrepreneurs-voile: #1e2140;
+      --texte: #c9c4d4;
+      --discret: #8f8a9c;
+      --ligne: #38343f;
+      --ligne-claire: #2a2735;
+      --cadre: #121016;
+      --surface: #1b1921;
+      --succes: #7fd6a4;
+      --succes-voile: #16301f;
+      --alerte: #f0b46a;
+      --alerte-voile: #322414;
+      --ombre: 0 1px 2px rgba(0, 0, 0, .4);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --encre: #f3f0f8;
+    --encre-800: #e6e1ef;
+    --social: #cfa6de;
+    --social-voile: #2a1f30;
+    --entrepreneurs: #9aa4e0;
+    --entrepreneurs-voile: #1e2140;
+    --texte: #c9c4d4;
+    --discret: #8f8a9c;
+    --ligne: #38343f;
+    --ligne-claire: #2a2735;
+    --cadre: #121016;
+    --surface: #1b1921;
+    --succes: #7fd6a4;
+    --succes-voile: #16301f;
+    --alerte: #f0b46a;
+    --alerte-voile: #322414;
+    --ombre: 0 1px 2px rgba(0, 0, 0, .4);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--cadre);
+    color: var(--encre);
+    font-family: var(--corps);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding-block: 40px 72px;
+    padding-left: 20px;
+    padding-right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  /* Étiquette de planche : les maquettes titrent chaque écran en chasse fixe
+     interlettrée. On reprend cette convention comme signal de structure. */
+  .planche {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--discret);
+    margin: 0;
+  }
+
+  h1 {
+    font-family: var(--titre);
+    font-weight: 300;
+    font-size: clamp(30px, 6vw, 42px);
+    line-height: 1.1;
+    margin: 10px 0 0;
+    text-wrap: balance;
+  }
+
+  h2 {
+    font-family: var(--titre);
+    font-weight: 300;
+    font-size: 23px;
+    line-height: 1.2;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--corps);
+    font-weight: 800;
+    font-size: 14px;
+    margin: 0;
+  }
+
+  p { margin: 0; max-width: 68ch; }
+
+  a { color: var(--social); }
+
+  code {
+    font-family: var(--mono);
+    font-size: .88em;
+    background: var(--ligne-claire);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+
+  .chapeau {
+    font-size: 17px;
+    color: var(--texte);
+    margin-top: 14px;
+  }
+
+  section { display: flex; flex-direction: column; gap: 18px; }
+
+  .entete-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-top: 1px solid var(--ligne);
+    padding-top: 22px;
+  }
+
+  /* --- Relevé chiffré ---------------------------------------------------- */
+  .releve {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1px;
+    background: var(--ligne);
+    border: 1px solid var(--ligne);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .releve div {
+    background: var(--surface);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .releve dt {
+    font-size: 11.5px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--discret);
+    font-weight: 700;
+  }
+  .releve dd {
+    margin: 0;
+    font-family: var(--titre);
+    font-weight: 300;
+    font-size: 29px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .releve dd small {
+    font-family: var(--corps);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--discret);
+  }
+
+  /* --- Action en attente -------------------------------------------------- */
+  .action {
+    border: 1.5px solid var(--alerte);
+    background: var(--alerte-voile);
+    border-radius: 14px;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .action h3 { color: var(--alerte); }
+  .action p { color: var(--texte); font-size: 14px; }
+  .action pre {
+    margin: 0;
+    background: var(--encre);
+    color: #f3f0f8;
+    border-radius: 10px;
+    padding: 13px 15px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    overflow-x: auto;
+  }
+
+  /* --- Planche de contrôle ------------------------------------------------ */
+  .grille-ecrans {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    gap: 8px;
+  }
+  .ecran {
+    border-radius: 10px;
+    padding: 11px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    border: 1px solid var(--ligne);
+    background: var(--surface);
+    min-width: 0;
+  }
+  .ecran .num {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    color: var(--discret);
+  }
+  .ecran .nom {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--texte);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .ecran.fait {
+    background: var(--social);
+    border-color: var(--social);
+  }
+  .ecran.fait .num { color: rgba(255, 255, 255, .72); }
+  .ecran.fait .nom { color: #fff; font-weight: 700; }
+  :root[data-theme="dark"] .ecran.fait .num,
+  :root[data-theme="dark"] .ecran.fait .nom { color: var(--cadre); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .ecran.fait .num,
+    :root:not([data-theme="light"]) .ecran.fait .nom { color: var(--cadre); }
+    :root:not([data-theme="light"]) .ecran.fait .num { opacity: .7; }
+  }
+
+  .legende {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 12.5px;
+    color: var(--discret);
+    align-items: center;
+  }
+  .legende span { display: inline-flex; align-items: center; gap: 7px; }
+  .puce {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+    border: 1px solid var(--ligne);
+    background: var(--surface);
+    flex: none;
+  }
+  .puce.fait { background: var(--social); border-color: var(--social); }
+
+  /* --- Planches restantes ------------------------------------------------- */
+  .planches {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .carte {
+    border: 1px solid var(--ligne);
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: var(--ombre);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .carte .titre-ligne {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .carte .compte {
+    font-family: var(--titre);
+    font-weight: 300;
+    font-size: 24px;
+    font-variant-numeric: tabular-nums;
+    color: var(--social);
+  }
+  .carte.bleu .compte { color: var(--entrepreneurs); }
+  .carte p { font-size: 13px; color: var(--discret); }
+
+  /* --- Listes ------------------------------------------------------------- */
+  ul.liste {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  ul.liste > li {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    border-left: 2px solid var(--ligne-claire);
+    padding-left: 14px;
+  }
+  ul.liste > li b { font-size: 14px; }
+  ul.liste > li span { font-size: 13.5px; color: var(--texte); }
+
+  .etiquette {
+    align-self: flex-start;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-radius: 999px;
+    padding: 3px 9px;
+  }
+  .etiquette.corrige { background: var(--succes-voile); color: var(--succes); }
+  .etiquette.dit { background: var(--social-voile); color: var(--social); }
+
+  footer {
+    border-top: 1px solid var(--ligne);
+    padding-top: 22px;
+    font-size: 13px;
+    color: var(--discret);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  footer code { background: transparent; padding: 0; color: var(--texte); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    a { transition: opacity .15s ease; }
+    a:hover { opacity: .75; }
+  }
+  :focus-visible { outline: 2px solid var(--social); outline-offset: 2px; }
+</style>
+
+<div class="page">
+
+  <header>
+    <p class="planche">Chantier · phase 2 · fidélité structurelle</p>
+    <h1>Où en est la reprise 1:1</h1>
+    <p class="chapeau">
+      Le socle partagé et huit écrans du back-office sont refaits et vérifiés à l’écran,
+      chacun comparé à sa planche à 1440&nbsp;px. L’arbre est propre, rien n’attend d’être
+      commité.
+    </p>
+  </header>
+
+  <dl class="releve">
+    <div>
+      <dt>Commits</dt>
+      <dd>9</dd>
+    </div>
+    <div>
+      <dt>Écrans refaits</dt>
+      <dd>8 <small>/ 21 au back-office</small></dd>
+    </div>
+    <div>
+      <dt>Écarts recensés</dt>
+      <dd>~900 <small>sur 64 écrans</small></dd>
+    </div>
+    <div>
+      <dt>Contrôles base</dt>
+      <dd>150 <small>assertions</small></dd>
+    </div>
+  </dl>
+
+  <div class="action">
+    <h3>Une action vous revient</h3>
+    <p>
+      La table des erreurs 404 manquait depuis le début, ce qui laissait une ligne vide dans
+      le bloc « État technique » de l’écran 23. Elle est écrite et vérifiée localement, et un
+      greffon compte désormais les 404. Votre base de développement étant hébergée, je n’y
+      applique pas de migration moi-même.
+    </p>
+    <pre>psql "$SUPABASE_DB_URL" -f supabase/en-ligne/27-erreurs-404.sql</pre>
+  </div>
+
+  <section>
+    <div class="entete-section">
+      <h2>Back-office, écran par écran</h2>
+      <p>
+        La numérotation est celle des planches : c’est ainsi que la maquette désigne ses
+        écrans, et c’est la seule façon de pointer sans ambiguïté.
+      </p>
+    </div>
+
+    <div class="legende">
+      <span><i class="puce fait"></i> refait et vérifié</span>
+      <span><i class="puce"></i> à faire</span>
+    </div>
+
+    <div class="grille-ecrans">
+      <div class="ecran fait"><span class="num">01</span><span class="nom">Vue d’ensemble</span></div>
+      <div class="ecran fait"><span class="num">02</span><span class="nom">Modules &amp; chapitres</span></div>
+      <div class="ecran"><span class="num">02B</span><span class="nom">Fiches commerciales</span></div>
+      <div class="ecran fait"><span class="num">03</span><span class="nom">Calendrier sessions</span></div>
+      <div class="ecran fait"><span class="num">04</span><span class="nom">Apprenants</span></div>
+      <div class="ecran"><span class="num">05 · 06</span><span class="nom">Coaching privé + stats</span></div>
+      <div class="ecran"><span class="num">07b</span><span class="nom">Rôles &amp; accès</span></div>
+      <div class="ecran fait"><span class="num">08</span><span class="nom">Connexion admin</span></div>
+      <div class="ecran"><span class="num">09 · 10</span><span class="nom">Éditeur de module</span></div>
+      <div class="ecran"><span class="num">11 · 12</span><span class="nom">Formateurs, candidatures</span></div>
+      <div class="ecran"><span class="num">13 · 14</span><span class="nom">Attribution, transactions</span></div>
+      <div class="ecran"><span class="num">15</span><span class="nom">CMS site vitrine</span></div>
+      <div class="ecran fait"><span class="num">16</span><span class="nom">Journal des actions</span></div>
+      <div class="ecran"><span class="num">17</span><span class="nom">Tablette</span></div>
+      <div class="ecran"><span class="num">18 → 18f</span><span class="nom">Performances</span></div>
+      <div class="ecran fait"><span class="num">19</span><span class="nom">Tracking &amp; pixels</span></div>
+      <div class="ecran fait"><span class="num">20</span><span class="nom">Paramètres</span></div>
+      <div class="ecran"><span class="num">21</span><span class="nom">Revenus</span></div>
+      <div class="ecran"><span class="num">22</span><span class="nom">Blog</span></div>
+      <div class="ecran"><span class="num">23</span><span class="nom">Référencement, liste</span></div>
+      <div class="ecran fait"><span class="num">24</span><span class="nom">Référencement, panneau</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="entete-section">
+      <h2>Les trois autres planches</h2>
+      <p>
+        Non commencées. Le socle partagé les a déjà touchées : palette, surtitres, hiérarchie
+        des titres, variantes de boutons et composants partagés valent pour elles aussi.
+      </p>
+    </div>
+
+    <div class="planches">
+      <div class="carte">
+        <div class="titre-ligne">
+          <h3>A · Site vitrine</h3>
+          <span class="compte">231</span>
+        </div>
+        <p>
+          Cinq corrections portent l’essentiel : trois composants partagés figés, quatre cartes
+          manquantes sur la fiche module, le tunnel d’achat dans le mauvais gabarit, le bandeau
+          cookies inversé, et huit boutons noirs devenus violets.
+        </p>
+      </div>
+      <div class="carte bleu">
+        <div class="titre-ligne">
+          <h3>B · Espace apprenant</h3>
+          <span class="compte">251</span>
+        </div>
+        <p>
+          Deux fonds à inverser sur l’accueil, des frontières de cartes à recomposer, et la
+          palette des boutons et pastilles à restaurer.
+        </p>
+      </div>
+      <div class="carte bleu">
+        <div class="titre-ligne">
+          <h3>D · Espace formateur</h3>
+          <span class="compte">85</span>
+        </div>
+        <p>
+          La moins abîmée. Titres trop grands de deux à quatre pixels, unité monétaire écrite
+          en long, et une pastille de coaching qui se répète.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="entete-section">
+      <h2>Ce que la vérification à l’écran a trouvé</h2>
+      <p>Trois défauts qu’un contrôle sur le seul code n’aurait pas vus.</p>
+    </div>
+
+    <ul class="liste">
+      <li>
+        <span class="etiquette corrige">Corrigé</span>
+        <b>Deux volets de Paramètres s’affichaient vides.</b>
+        <span>
+          Un composant dont la mise en place est asynchrone, monté par une condition après le
+          premier rendu, reste en suspens indéfiniment sans rien afficher ni rien signaler. Il
+          lui faut sa propre frontière d’attente.
+        </span>
+      </li>
+      <li>
+        <span class="etiquette corrige">Corrigé</span>
+        <b>La vue d’ensemble signalait une incohérence à chaque chargement.</b>
+        <span>
+          Un horodatage relatif calculé des deux côtés du rendu, à quelques secondes d’écart.
+          Il se rend maintenant côté navigateur, la date courte servant de repli.
+        </span>
+      </li>
+      <li>
+        <span class="etiquette corrige">Corrigé</span>
+        <b>Une référence de transaction anormalement longue enflait sa ligne.</b>
+        <span>Cinq hauteurs de texte dans une colonne de 110&nbsp;px. Elle se coupe désormais.</span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="entete-section">
+      <h2>Ce que je n’ai pas fait passer pour fait</h2>
+      <p>Trois endroits où la maquette demande une donnée que l’application n’a pas.</p>
+    </div>
+
+    <ul class="liste">
+      <li>
+        <span class="etiquette dit">Annoncé dans l’écran</span>
+        <b>Méga-filtre des apprenants : onze dimensions sur treize.</b>
+        <span>
+          « Chapitre » et « Session » ne sont pas servies, et le menu le dit : cette liste ne
+          lit ni les visionnages chapitre par chapitre, ni les inscriptions aux sessions.
+        </span>
+      </li>
+      <li>
+        <span class="etiquette dit">Affiché en tiret</span>
+        <b>Les trois mesures d’audience de la vue d’ensemble.</b>
+        <span>Elles viennent de Google Analytics, qui n’est pas relié.</span>
+      </li>
+      <li>
+        <span class="etiquette dit">Omis</span>
+        <b>La date de notification d’une session annulée.</b>
+        <span>
+          La maquette écrit « Notifiée le 03/09 ». La table des sessions ne garde pas cette
+          date : la mention reste sans date plutôt qu’avec une date inventée.
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="entete-section">
+      <h2>Pour reprendre</h2>
+    </div>
+    <ul class="liste">
+      <li>
+        <b>Le plan porte le détail écran par écran.</b>
+        <span>
+          <code>~/.claude/plans/ok-refaisons-un-tour-snazzy-hoare.md</code> — la section
+          « Phase 2 » contient la méthode, la table de correspondance des couleurs et les
+          relevés des trois audits.
+        </span>
+      </li>
+      <li>
+        <b>La mémoire du projet suit l’avancement.</b>
+        <span>
+          Elle liste les écrans faits avec leur commit, ceux qui restent, et rappelle deux
+          contraintes : vérifier à la largeur du cadre de la maquette, et ne pas saisir de mot
+          de passe dans un formulaire.
+        </span>
+      </li>
+      <li>
+        <b>L’ordre de vérification compte.</b>
+        <span>
+          Grille et frontières de cartes d’abord, puis l’ordre des blocs, puis les couleurs,
+          les textes en dernier. Une divergence de grille invalide tout ce qui suit.
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>
+      Dernier commit : <code>abf7f41</code> — « Écran 03 : le calendrier des sessions reprend
+      l’ordre de la maquette ».
+    </p>
+    <p>
+      Garde-fous à chaque étape : <code>npm run typecheck</code> à zéro erreur,
+      <code>npm run db:verifier</code>, et une comparaison à l’écran avec la planche ouverte
+      en <code>file://</code>.
+    </p>
+  </footer>
+
+</div>
