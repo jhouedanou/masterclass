@@ -1,5 +1,4 @@
 <script setup lang="ts">
-const achat = useAchatStore()
 const auth = useAuthStore()
 
 /** Pays proposés par la maquette (planche A, écran 04) ; « Autre pays… » ouvre une saisie libre. */
@@ -18,7 +17,9 @@ const formulaire = reactive({
 
 /** Même seuil que le serveur (`server/utils/motDePasse.ts`). */
 const LONGUEUR_MINIMALE = 10
-const CHAMP = 'w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none'
+const CHAMP = 'w-full rounded-[10px] border-[1.5px] border-ligne px-3.5 py-[13px] text-[14px] focus:border-social focus:outline-none'
+const ETIQUETTE = 'mb-1.5 block text-[13px] font-bold text-encre'
+const AIDE = 'mt-1.5 block text-[12px] text-discret'
 const erreur = ref('')
 const enCours = ref(false)
 
@@ -57,54 +58,58 @@ async function soumettre() {
 </script>
 
 <template>
-  <div class="conteneur max-w-[840px] py-12">
+  <!-- Colonne étroite et centrée : le tunnel n'affiche rien d'autre que l'étape en cours. -->
+  <div class="mx-auto w-full max-w-[440px] px-5 py-9">
     <UiEtapesAchat :etape="1" />
 
-    <h1 class="mt-8 text-[36px] font-medium">Créez votre compte</h1>
-    <p class="mt-3 max-w-[620px] text-[16px] leading-relaxed text-texte">
+    <h1 class="mt-2.5 mb-1.5 text-center font-title text-[24px] font-light">Créez votre compte</h1>
+    <p class="mb-6 text-center text-[13.5px] leading-[1.5] text-discret">
       Votre compte vous permettra de finaliser votre achat, d’accéder à vos modules et de suivre vos
       prochaines sessions.
     </p>
 
-    <div v-if="achat.module" class="mt-6 rounded-[14px] border border-ligne-douce bg-fond-clair p-5 text-[14px]">
-      <p class="text-discret">Module sélectionné</p>
-      <p class="mt-1 font-title text-[19px] font-light">{{ achat.module.titre }}</p>
-    </div>
-
-    <form class="mt-8 grid gap-5 sm:grid-cols-2" @submit.prevent="soumettre">
+    <form class="flex flex-col gap-3.5" @submit.prevent="soumettre">
+      <div class="grid grid-cols-2 gap-2.5">
+        <label class="block">
+          <span :class="ETIQUETTE">Nom *</span>
+          <input v-model="formulaire.nom" required autocomplete="family-name" placeholder="Votre nom" :class="CHAMP">
+        </label>
+        <label class="block">
+          <span :class="ETIQUETTE">Prénom *</span>
+          <input v-model="formulaire.prenom" required autocomplete="given-name" placeholder="Votre prénom" :class="CHAMP">
+        </label>
+      </div>
       <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Nom *</span>
-        <input v-model="formulaire.nom" required autocomplete="family-name" :class="CHAMP">
+        <span :class="ETIQUETTE">Adresse email *</span>
+        <input
+          v-model="formulaire.email"
+          required
+          type="email"
+          autocomplete="email"
+          placeholder="Votre identifiant de connexion"
+          :class="CHAMP"
+        >
       </label>
       <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Prénom *</span>
-        <input v-model="formulaire.prenom" required autocomplete="given-name" :class="CHAMP">
-      </label>
-      <label class="block sm:col-span-2">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Adresse email *</span>
-        <input v-model="formulaire.email" required type="email" autocomplete="email" :class="CHAMP">
-      </label>
-      <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Numéro WhatsApp *</span>
-        <span class="flex overflow-hidden rounded-[10px] border border-ligne focus-within:border-social">
-          <span class="flex items-center border-r border-ligne bg-fond-clair px-3 text-[14px] text-discret">+225</span>
+        <span :class="ETIQUETTE">Numéro WhatsApp *</span>
+        <span class="flex gap-2">
+          <span class="rounded-[10px] border-[1.5px] border-ligne px-3 py-[13px] text-[14px] text-texte">+225</span>
           <input
             v-model="formulaire.whatsapp"
             required
             type="tel"
             inputmode="tel"
             autocomplete="tel-national"
-            class="w-full px-4 py-2.5 text-[15px] focus:outline-none"
+            placeholder="07 00 00 00 00"
+            :class="CHAMP"
           >
         </span>
-        <span class="mt-1.5 block text-[12.5px] text-discret">
-          Pour vos rappels de session et l’accès à la Communauté.
-        </span>
+        <span :class="AIDE">Pour vos rappels de session et l’accès à la Communauté.</span>
       </label>
       <label class="block">
         <!-- Le pays est saisi ici et n'est plus redemandé dans la fiche apprenant. -->
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Pays *</span>
-        <select v-model="formulaire.pays" required :class="[CHAMP, 'bg-white']">
+        <span :class="ETIQUETTE">Pays *</span>
+        <select v-model="formulaire.pays" required :class="[CHAMP, 'bg-white text-texte']">
           <option v-for="pays in PAYS" :key="pays" :value="pays">{{ pays }}</option>
         </select>
         <input
@@ -114,46 +119,43 @@ async function soumettre() {
           placeholder="Précisez le pays"
           :class="[CHAMP, 'mt-2']"
         >
-        <span class="mt-1.5 block text-[12.5px] text-discret">
-          Renseigné une seule fois, il n’est plus demandé ensuite.
-        </span>
+        <span :class="AIDE">Renseigné une seule fois, il n’est plus demandé ensuite.</span>
       </label>
       <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Mot de passe *</span>
+        <span :class="ETIQUETTE">Mot de passe *</span>
         <input
           v-model="formulaire.motDePasse"
           type="password"
           autocomplete="new-password"
           required
           :minlength="LONGUEUR_MINIMALE"
+          :placeholder="`${LONGUEUR_MINIMALE} caractères minimum`"
           :class="CHAMP"
         >
-        <span class="mt-1.5 block text-[12.5px] text-discret">
-          {{ LONGUEUR_MINIMALE }} caractères minimum — il vous servira à retrouver vos modules.
-        </span>
       </label>
       <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Confirmez le mot de passe *</span>
+        <span :class="ETIQUETTE">Confirmez le mot de passe *</span>
         <input
           v-model="formulaire.confirmation"
           type="password"
           autocomplete="new-password"
           required
           :minlength="LONGUEUR_MINIMALE"
+          placeholder="Identique au mot de passe"
           :class="CHAMP"
         >
       </label>
 
-      <div class="sm:col-span-2">
-        <p v-if="erreur" class="mb-3 text-[14px] text-erreur" role="alert">{{ erreur }}</p>
-        <UiBaseButton type="submit" class="w-full" taille="lg" :disabled="enCours">
-          {{ enCours ? 'Création…' : 'Créer mon compte et continuer' }}
-        </UiBaseButton>
-        <p class="mt-4 text-center text-[14px] text-texte">
-          Déjà inscrit ?
-          <NuxtLink to="/connexion?suite=/achat/recapitulatif" class="font-bold">Connectez-vous</NuxtLink>
-        </p>
-      </div>
+      <p v-if="erreur" class="rounded-[12px] border border-erreur-bordure bg-erreur-voile px-4 py-3.5 text-[13px] leading-[1.5] text-erreur-fonce" role="alert">
+        {{ erreur }}
+      </p>
+      <UiBaseButton type="submit" class="w-full" variante="sombre" taille="lg" :disabled="enCours">
+        {{ enCours ? 'Création…' : 'Créer mon compte et continuer' }}
+      </UiBaseButton>
+      <p class="text-center text-[13px] text-discret">
+        Déjà inscrit ?
+        <NuxtLink to="/connexion?suite=/achat/recapitulatif" class="font-bold">Connectez-vous</NuxtLink>
+      </p>
     </form>
   </div>
 </template>

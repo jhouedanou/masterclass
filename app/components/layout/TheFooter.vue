@@ -23,14 +23,14 @@ const { reinitialiser } = useConsentement()
         </p>
       </div>
 
-      <nav aria-label="Programmes" class="flex flex-col gap-2.5 text-[14px]">
+      <nav aria-label="Programmes" class="flex flex-col gap-[9px] text-[14px]">
         <p class="mb-1 font-title text-[15px] font-light text-encre">Programmes</p>
         <NuxtLink to="/programmes/social-media">Social Média</NuxtLink>
         <NuxtLink to="/programmes/entrepreneurs">Entrepreneurs</NuxtLink>
         <NuxtLink to="/sessions">Calendrier des sessions</NuxtLink>
       </nav>
 
-      <nav aria-label="Plateforme" class="flex flex-col gap-2.5 text-[14px]">
+      <nav aria-label="Plateforme" class="flex flex-col gap-[9px] text-[14px]">
         <p class="mb-1 font-title text-[15px] font-light text-encre">Plateforme</p>
         <NuxtLink to="/formateurs">Formateurs</NuxtLink>
         <NuxtLink to="/devenir-formateur">Devenir formateur</NuxtLink>
@@ -39,7 +39,7 @@ const { reinitialiser } = useConsentement()
         <NuxtLink to="/mon-espace">Mon espace</NuxtLink>
       </nav>
 
-      <nav aria-label="Informations légales" class="flex flex-col gap-2.5 text-[14px]">
+      <nav aria-label="Informations légales" class="flex flex-col gap-[9px] text-[14px]">
         <p class="mb-1 font-title text-[15px] font-light text-encre">Légal</p>
         <NuxtLink to="/mentions-legales">Mentions légales</NuxtLink>
         <NuxtLink to="/cgu">CGU</NuxtLink>

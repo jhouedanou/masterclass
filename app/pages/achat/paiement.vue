@@ -227,14 +227,14 @@ function changerDeMoyen() {
 </script>
 
 <template>
-  <div class="conteneur max-w-[840px] py-12">
+  <div class="mx-auto w-full max-w-[420px] px-5 py-9">
     <UiEtapesAchat v-if="!seance" :etape="3" />
 
-    <h1 class="mt-8 text-[30px] font-medium lg:text-[36px]">
+    <h1 class="mt-2.5 mb-5 text-center font-title text-[22px] font-light">
       <span class="lg:hidden">Moyen de paiement</span>
       <span class="hidden lg:inline">Choisissez votre moyen de paiement</span>
     </h1>
-    <div v-if="seance" class="mt-4 rounded-[14px] border border-ligne-douce bg-fond-clair p-5 text-[14px]">
+    <div v-if="seance" class="mb-4.5 rounded-bloc border border-ligne-douce bg-fond-clair p-5 text-[14px]">
       <p class="text-discret">Séance de coaching privé</p>
       <p class="mt-1 font-title text-[19px] font-light">{{ seance.formateur }} · {{ seance.heures }} h</p>
       <p class="text-[13.5px] text-texte">{{ seance.creneau }} · {{ formatFcfa(seance.prixFcfa, true) }}</p>
@@ -243,8 +243,8 @@ function changerDeMoyen() {
     <template v-if="etat === 'choix' || etat === 'echec'">
       <div
         v-if="etat === 'echec' && echec"
-        class="mt-6 rounded-[14px] border p-5"
-        :class="echec.action === 'acceder' ? 'border-succes bg-succes-voile' : echec.action === 'attendre' ? 'border-alerte bg-alerte-voile' : 'border-erreur bg-[#fdeeee]'"
+        class="mb-4.5 rounded-bloc border p-4.5"
+        :class="echec.action === 'acceder' ? 'border-succes-bordure bg-succes-voile' : echec.action === 'attendre' ? 'border-alerte-bordure bg-alerte-pale' : 'border-erreur-bordure bg-erreur-voile'"
         role="alert"
       >
         <p class="flex items-center gap-2 font-title text-[21px] font-light" :class="echec.action === 'acceder' ? 'text-succes' : echec.action === 'attendre' ? 'text-alerte' : 'text-erreur-fonce'">
@@ -282,36 +282,35 @@ function changerDeMoyen() {
         </div>
       </div>
 
-      <div class="mt-8 grid gap-3 sm:grid-cols-2">
+      <!-- Quatre pavés égaux, le moyen retenu cerné d'un trait de 2 px : la
+           maquette ne montre ni bouton radio ni sous-titre. -->
+      <div class="mb-4.5 grid grid-cols-2 gap-3">
         <label
           v-for="moyen in moyens"
           :key="moyen.valeur"
-          class="flex cursor-pointer items-start gap-3 rounded-[14px] border p-5"
-          :class="achat.moyen === moyen.valeur ? 'border-social' : 'border-ligne'"
+          class="cursor-pointer rounded-[12px] p-4 text-center text-[14px] font-bold"
+          :class="achat.moyen === moyen.valeur ? 'border-2 border-social text-encre' : 'border-[1.5px] border-ligne text-texte'"
         >
-          <input v-model="achat.moyen" type="radio" :value="moyen.valeur" class="mt-1">
-          <span>
-            <span class="block font-title text-[19px] font-light">{{ moyen.libelle }}</span>
-            <span class="block text-[13.5px] text-discret">{{ moyen.detail }}</span>
-          </span>
+          <input v-model="achat.moyen" type="radio" :value="moyen.valeur" class="sr-only">
+          <span :title="moyen.detail">{{ moyen.libelle }}</span>
         </label>
       </div>
 
       <!-- Mobile / PWA (planche A, écran 04c) : le numéro Mobile Money est saisi avant de payer ;
            il pré-remplit la fenêtre FeexPay. -->
-      <label v-if="achat.moyen === 'mobile-money'" class="mt-5 block lg:hidden">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Numéro Mobile Money</span>
+      <label v-if="achat.moyen === 'mobile-money'" class="mb-3.5 block lg:hidden">
+        <span class="mb-1.5 block text-[13px] font-bold text-encre">Numéro Mobile Money</span>
         <UiChampTelephone v-model="numeroMobileMoney" :pays="auth.utilisateur?.pays" />
       </label>
 
-      <UiBaseButton class="mt-7 w-full" taille="lg" @click="payer">
+      <UiBaseButton class="mb-3 w-full" variante="sombre" taille="lg" @click="payer">
         {{ etat === 'echec' ? 'Réessayer le paiement' : `Payer ${formatFcfa(montant, true)}` }}
       </UiBaseButton>
-      <p class="mt-4 rounded-[10px] border border-alerte bg-alerte-voile px-4 py-3 text-[13.5px] text-alerte">
+      <p class="rounded-[12px] border border-alerte-bordure bg-alerte-pale p-3.5 text-[13px] leading-[1.55] text-alerte-fonce">
         ⚠ <b>Ne fermez pas cette page</b> avant la confirmation du paiement. Les paiements Mobile Money
         peuvent nécessiter une validation sur votre téléphone.
       </p>
-      <p class="mt-3 text-center text-[13px] text-discret">
+      <p class="mt-3 text-center text-[12.5px] text-discret">
         Le règlement est traité par FeexPay. L’interface de paiement est fournie par le prestataire.
       </p>
 
@@ -324,7 +323,7 @@ function changerDeMoyen() {
       </label>
     </template>
 
-    <div v-else-if="etat === 'attente' || etat === 'verification'" class="mt-10 rounded-carte border border-ligne-douce p-10 text-center">
+    <div v-else-if="etat === 'attente' || etat === 'verification'" class="rounded-carte border border-ligne-douce p-7 text-center">
       <p class="font-title text-[24px] font-light">
         {{ etat === 'attente' ? 'En attente de validation' : 'Vérification du paiement' }}
       </p>
@@ -334,7 +333,7 @@ function changerDeMoyen() {
       </p>
     </div>
 
-    <div v-else-if="etat === 'feexpay'" class="mt-10 rounded-carte border border-ligne-douce p-10 text-center">
+    <div v-else-if="etat === 'feexpay'" class="rounded-carte border border-ligne-douce p-7 text-center">
       <p class="font-title text-[24px] font-light">Paiement sécurisé FeexPay</p>
       <p class="mt-3 text-[15px] text-texte">
         Suivez les instructions dans la fenêtre FeexPay. Si elle ne s’est pas ouverte, cliquez sur le bouton ci-dessous.
@@ -348,9 +347,10 @@ function changerDeMoyen() {
       </button>
     </div>
 
-    <div v-else class="mt-10 rounded-carte border border-succes bg-succes-voile p-10 text-center">
-      <p class="font-title text-[27px] font-light text-succes">Paiement confirmé</p>
-      <p class="mt-3 text-[15px] text-texte">
+    <div v-else class="text-center">
+      <p class="mx-auto mb-4 grid size-16 place-items-center rounded-full bg-succes-voile text-[28px] text-whatsapp" aria-hidden="true">✓</p>
+      <p class="mb-2 font-title text-[23px] font-light">Paiement confirmé</p>
+      <p class="text-[14px] leading-relaxed text-texte">
         <template v-if="seance">Votre séance de coaching privé est confirmée. Le lien de la salle apparaît dans votre espace le jour J.</template>
         <template v-else>Votre module est maintenant accessible à vie depuis votre espace apprenant.</template>
       </p>
@@ -359,7 +359,8 @@ function changerDeMoyen() {
       </p>
       <UiBaseButton
         :to="seance ? '/mon-espace/coaching-prive' : `/mon-espace/module/${achat.module?.slug}`"
-        class="mt-6"
+        class="mt-5 w-full"
+        variante="sombre"
         taille="lg"
         @click="achat.vider()"
       >

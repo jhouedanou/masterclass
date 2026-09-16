@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import type { ContenuBanniere, Formateur, Module, Programme, Thematique } from '#shared/types'
+import type {
+  ContenuBanniere,
+  Formateur,
+  Module,
+  Programme,
+  ProgrammeSlug,
+  Thematique,
+} from '#shared/types'
 
 type ThematiqueGarnie = Thematique & { modules: (Module & { formateur: Formateur | null })[] }
 
@@ -13,6 +20,18 @@ const { data: banniere } = useFetch<{ cle: string, contenu: Partial<ContenuBanni
   { lazy: true },
 )
 const { data: formateurs } = await useFetch<(Formateur & { nbModules: number })[]>('/api/formateurs')
+
+// Les repères chiffrés de la maquette — « 18 modules », « 9 modules », « 3
+// thématiques » — étaient écrits en dur et mentaient dès qu'un module
+// changeait de statut. Le catalogue publié les donne.
+const { data: catalogue } = await useFetch<{ programme: ProgrammeSlug, thematiqueId: string }[]>(
+  '/api/modules',
+)
+const nbModulesTotal = computed(() => catalogue.value?.length ?? 0)
+function reperes(slug: ProgrammeSlug) {
+  const siens = (catalogue.value ?? []).filter((m) => m.programme === slug)
+  return { modules: siens.length, thematiques: new Set(siens.map((m) => m.thematiqueId)).size }
+}
 
 const selection = ref<'social-media' | 'entrepreneurs'>('social-media')
 const { data: programmeSelectionne } = await useFetch<{
@@ -79,7 +98,7 @@ useJsonLd({
     <!-- bandeau sous le hero -->
     <div class="border-b border-ligne-claire bg-fond-clair">
       <div class="conteneur flex flex-wrap gap-x-7 gap-y-2 py-4.5 text-[14px] text-texte">
-        <span><b class="text-encre">18 modules</b><span class="hidden lg:inline"> disponibles</span></span>
+        <span><b class="text-encre">{{ nbModulesTotal }} modules</b><span class="hidden lg:inline"> disponibles</span></span>
         <span><b class="text-encre">10 000 FCFA TTC</b><span class="hidden lg:inline"> par module</span></span>
         <span><b class="text-encre">Accès à vie</b><span class="hidden lg:inline"> après l’achat</span></span>
       </div>
@@ -112,11 +131,12 @@ useJsonLd({
             </p>
             <!-- Tablette (planche A, écran 11) : carte courte, une ligne de repères et un lien. -->
             <p class="mb-5.5 flex flex-wrap gap-5 text-[14px] text-texte lg:hidden">
-              9 modules · 3 thématiques · sessions de coaching collectif
+              {{ reperes(programme.slug).modules }} modules ·
+              {{ reperes(programme.slug).thematiques }} thématiques · sessions de coaching collectif
             </p>
             <p class="mb-5.5 hidden flex-wrap gap-5 text-[14px] text-texte lg:flex">
-              <span><b class="text-encre">9 modules</b></span>
-              <span><b class="text-encre">3 thématiques</b></span>
+              <span><b class="text-encre">{{ reperes(programme.slug).modules }} modules</b></span>
+              <span><b class="text-encre">{{ reperes(programme.slug).thematiques }} thématiques</b></span>
               <span><b class="text-encre">Sessions</b> de coaching collectif</span>
             </p>
             <NuxtLink

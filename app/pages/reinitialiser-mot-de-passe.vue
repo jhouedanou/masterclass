@@ -16,6 +16,9 @@ const termine = ref(false)
 /** Même seuil que le serveur (`server/utils/motDePasse.ts`). */
 const LONGUEUR_MINIMALE = 10
 
+const CHAMP = 'w-full rounded-[10px] border-[1.5px] border-ligne px-3.5 py-[13px] text-[14px] focus:border-social focus:outline-none'
+const ETIQUETTE = 'mb-1.5 block text-[13px] font-bold text-encre'
+
 usePagePrivee('Nouveau mot de passe')
 
 async function soumettre() {
@@ -48,61 +51,62 @@ async function soumettre() {
 
 <template>
   <div>
-    <h1 class="text-[34px] font-medium">Nouveau mot de passe</h1>
+    <h1 class="mb-1.5 text-center font-title text-[24px] font-light">Nouveau mot de passe</h1>
 
-    <div v-if="!jeton" class="mt-6 rounded-[10px] border border-erreur bg-[#fdeeee] p-5">
-      <p class="text-[14px] text-erreur">
-        Ce lien est incomplet. Demandez un nouveau lien depuis
-        <NuxtLink to="/mot-de-passe-oublie" class="underline">mot de passe oublié</NuxtLink>.
-      </p>
-    </div>
+    <p v-if="!jeton" class="rounded-[12px] border border-erreur-bordure bg-erreur-voile px-4 py-3.5 text-[13px] leading-[1.5] text-erreur-fonce">
+      Ce lien est incomplet. Demandez un nouveau lien depuis
+      <NuxtLink to="/mot-de-passe-oublie" class="font-bold underline">mot de passe oublié</NuxtLink>.
+    </p>
 
     <template v-else>
-      <p class="mt-2 text-[15px] text-texte">
+      <p class="mb-5.5 text-center text-[13.5px] text-discret">
         Choisissez un mot de passe de {{ LONGUEUR_MINIMALE }} caractères minimum.
       </p>
 
-      <p v-if="termine" class="mt-8 rounded-[12px] border border-succes bg-succes-voile p-4 text-[14.5px] text-succes" role="status">
-        ✓ Mot de passe mis à jour. Vous êtes maintenant connecté sur cet appareil.
-      </p>
+      <form class="flex flex-col gap-3.5" @submit.prevent="soumettre">
+        <template v-if="!termine">
+          <label class="block">
+            <span :class="ETIQUETTE">Nouveau mot de passe</span>
+            <input
+              v-model="motDePasse"
+              type="password"
+              autocomplete="new-password"
+              required
+              :minlength="LONGUEUR_MINIMALE"
+              :placeholder="`${LONGUEUR_MINIMALE} caractères minimum`"
+              :class="CHAMP"
+            >
+          </label>
 
-      <form v-else class="mt-8 space-y-4" @submit.prevent="soumettre">
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold text-texte">Nouveau mot de passe</span>
-          <input
-            v-model="motDePasse"
-            type="password"
-            autocomplete="new-password"
-            required
-            :minlength="LONGUEUR_MINIMALE"
-            class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none"
-          >
-          <span class="mt-1.5 block text-[12.5px] text-discret">
-            {{ LONGUEUR_MINIMALE }} caractères minimum.
-          </span>
-        </label>
+          <label class="block">
+            <span :class="ETIQUETTE">Confirmez le mot de passe</span>
+            <input
+              v-model="confirmation"
+              type="password"
+              autocomplete="new-password"
+              required
+              placeholder="Identique au précédent"
+              :class="CHAMP"
+            >
+          </label>
 
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold text-texte">Confirmez le mot de passe</span>
-          <input
-            v-model="confirmation"
-            type="password"
-            autocomplete="new-password"
-            required
-            class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none"
-          >
-        </label>
+          <p v-if="erreur" class="rounded-[12px] border border-erreur-bordure bg-erreur-voile px-4 py-3.5 text-[13px] leading-[1.5] text-erreur-fonce">
+            {{ erreur }}
+          </p>
 
-        <p v-if="erreur" class="text-[14px] text-erreur">{{ erreur }}</p>
+          <UiBaseButton type="submit" class="w-full" variante="sombre" taille="lg" :disabled="enCours">
+            {{ enCours ? 'Enregistrement…' : 'Enregistrer et me connecter' }}
+          </UiBaseButton>
+        </template>
 
-        <UiBaseButton type="submit" class="w-full" taille="lg" :disabled="enCours">
-          {{ enCours ? 'Enregistrement…' : 'Enregistrer et me connecter' }}
-        </UiBaseButton>
+        <p v-else class="rounded-[12px] border border-succes-bordure bg-succes-voile px-4 py-3.5 text-[13px] leading-[1.5] text-succes-fonce" role="status">
+          ✓ Mot de passe mis à jour. Vous êtes maintenant connecté sur cet appareil.
+        </p>
       </form>
     </template>
 
-    <p class="mt-6 text-[14px]">
-      <NuxtLink to="/connexion" class="font-bold">Retour à la connexion</NuxtLink>
+    <p class="mt-3.5 text-center text-[13px] text-discret">
+      <NuxtLink to="/connexion" class="font-bold">← Retour à la connexion</NuxtLink>
     </p>
   </div>
 </template>
