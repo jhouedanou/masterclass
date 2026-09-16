@@ -61,11 +61,12 @@ if (!data.value) {
 
 usePagePrivee(`${data.value.module.titre} — édition`)
 
-type Onglet = 'informations' | 'chapitres' | 'ressources' | 'offre' | 'referencement' | 'historique'
+type Onglet = 'informations' | 'chapitres' | 'ressources' | 'fiche' | 'offre' | 'referencement' | 'historique'
 const ONGLETS_VALIDES: Onglet[] = [
   'informations',
   'chapitres',
   'ressources',
+  'fiche',
   'offre',
   'referencement',
   'historique',
@@ -248,7 +249,8 @@ async function reglagesModule(champs: Record<string, unknown>) {
  * centaines d'entrées dans l'onglet Historique, où plus personne ne
  * retrouverait la modification qui compte.
  */
-const DELAI_AUTOSAVE = 1500
+// Trois secondes après la dernière frappe (planche C, écran 09).
+const DELAI_AUTOSAVE = 3000
 let minuteurAutosave: ReturnType<typeof setTimeout> | undefined
 const enregistreLe = ref<number | null>(null)
 const maintenantMs = ref(Date.now())
@@ -287,7 +289,7 @@ watch(
 
 let horloge: ReturnType<typeof setInterval> | undefined
 onMounted(() => {
-  horloge = setInterval(() => (maintenantMs.value = Date.now()), 5000)
+  horloge = setInterval(() => (maintenantMs.value = Date.now()), 1000)
 })
 onBeforeUnmount(() => {
   if (minuteurAutosave) clearTimeout(minuteurAutosave)
@@ -312,14 +314,17 @@ const LIBELLE_STATUT: Record<string, string> = {
 const poids = (octets: number | null) =>
   octets ? `${Math.round(octets / 1024 / 1024)} Mo` : ''
 
-const ONGLETS = [
+/** Onglets de l'écran 09 : « Chapitres (3) », « Ressources (2) », « Fiche
+ *  commerciale », « Offre & prix ». */
+const ONGLETS = computed(() => [
   { cle: 'informations', libelle: 'Informations' },
-  { cle: 'chapitres', libelle: 'Chapitres' },
-  { cle: 'ressources', libelle: 'Ressources' },
-  { cle: 'offre', libelle: 'Offre' },
+  { cle: 'chapitres', libelle: 'Chapitres', compteur: data.value?.chapitres.length ?? 0 },
+  { cle: 'ressources', libelle: 'Ressources', compteur: data.value?.ressources.length ?? 0 },
+  { cle: 'fiche', libelle: 'Fiche commerciale' },
+  { cle: 'offre', libelle: 'Offre & prix' },
   { cle: 'referencement', libelle: 'Référencement et partage' },
   { cle: 'historique', libelle: 'Historique' },
-] as const
+])
 
 const nomThematique = computed(
   () => data.value?.thematiques.find((t) => t.id === data.value?.module.thematiqueId)?.nom ?? '',
@@ -387,21 +392,12 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
     <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-[#fdeeee] px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>
     <p v-if="succes" class="mt-4 rounded-[10px] border border-succes bg-succes-voile px-4 py-3 text-[14px] text-succes">{{ succes }}</p>
 
-    <div class="mt-5 flex flex-wrap gap-2 border-b border-ligne-douce" role="tablist">
-      <button
-        v-for="o in ONGLETS"
-        :key="o.cle"
-        role="tab"
-        :aria-selected="onglet === o.cle"
-        class="-mb-px border-b-2 px-3.5 py-2.5 text-[13.5px] font-bold"
-        :class="onglet === o.cle ? 'border-social text-social' : 'border-transparent text-discret hover:text-encre'"
-        @click="onglet = o.cle"
-      >
-        {{ o.libelle }}
-        <span v-if="o.cle === 'chapitres'" class="font-normal">({{ data.chapitres.length }})</span>
-        <span v-if="o.cle === 'ressources'" class="font-normal">({{ data.ressources.length }})</span>
-      </button>
-    </div>
+    <UiOnglets
+      class="mt-5"
+      :onglets="ONGLETS"
+      :model-value="onglet"
+      @update:model-value="onglet = $event as Onglet"
+    />
 
     <!-- Informations -->
     <section v-if="onglet === 'informations'" class="mt-6 max-w-[760px]">
@@ -454,7 +450,7 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
     </section>
 
     <!-- Chapitres -->
-    <section v-if="onglet === 'chapitres'" class="mt-6 grid gap-6 xl:grid-cols-[1fr_380px]">
+    <section v-if="onglet === 'chapitres'" class="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-[1fr_380px]">
       <div>
         <AdminChecklistPret :checklist="data.checklist" />
 
@@ -575,7 +571,12 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
       </form>
     </section>
 
-    <!-- Offre -->
+    <!-- Fiche commerciale (écran 02B), même éditeur que /admin/fiche/[id] -->
+    <section v-if="onglet === 'fiche'" class="mt-6">
+      <AdminFicheCommerciale :id="data.module.id" integre @enregistre="refresh" />
+    </section>
+
+    <!-- Offre & prix -->
     <section v-if="onglet === 'offre'" class="mt-6 max-w-[620px]">
       <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
         <label class="block">

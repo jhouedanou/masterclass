@@ -44,7 +44,7 @@ function reessayer() {
 <template>
   <div class="conteneur flex min-h-[60vh] flex-col items-center justify-center py-16 text-center">
     <div class="grid size-16 place-items-center rounded-full bg-fond-voile text-[28px]" aria-hidden="true">📡</div>
-    <h1 class="mt-5 text-[30px] font-medium">Vous êtes hors ligne</h1>
+    <h1 class="mt-5 text-[30px] font-light">Vous êtes hors ligne</h1>
     <p class="mt-3 max-w-[460px] text-[15px] text-texte">
       Vos vidéos nécessitent une connexion. Votre progression déjà enregistrée est en sécurité.
     </p>

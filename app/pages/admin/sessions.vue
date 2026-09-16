@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Formateur, SessionCoaching, Thematique } from '#shared/types'
+import type { Formateur, Module, SessionCoaching, Thematique } from '#shared/types'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Calendrier des sessions — administration')
@@ -25,6 +25,19 @@ const { data: sessions, refresh } = await useFetch<SessionAdmin[]>('/api/admin/s
 })
 const { data: thematiques } = await useFetch<Thematique[]>('/api/thematiques')
 const { data: formateurs } = await useFetch<Formateur[]>('/api/formateurs')
+const { data: modules } = await useFetch<Module[]>('/api/modules')
+
+/** « Modules éligibles — 04, 05, 06 (auto) » : déduits de la thématique choisie. */
+const modulesEligibles = computed(() =>
+  (modules.value ?? [])
+    .filter((m) => m.thematiqueId === creation.thematiqueId)
+    .sort((a, b) => a.numero - b.numero)
+    .map((m) => numeroModule(m.numero)),
+)
+const programmeCreation = computed(() => {
+  const t = thematiques.value?.find((x) => x.id === creation.thematiqueId)
+  return t ? (t.programme === 'social-media' ? 'Social Média' : 'Entrepreneurs') : '—'
+})
 
 const annulation = ref<SessionAdmin | null>(null)
 const motif = ref('')
@@ -58,6 +71,34 @@ async function enregistrerPresence(valeur: number | null) {
   }
 }
 
+// --- Report (écran 03 : action « Reporter ») --------------------------------
+
+const report = ref<SessionAdmin | null>(null)
+const nouvelleDate = reactive({ date: '', heure: '' })
+const erreurReport = ref('')
+
+function ouvrirReport(session: SessionAdmin) {
+  report.value = session
+  erreurReport.value = ''
+  Object.assign(nouvelleDate, { date: session.date, heure: session.heure })
+}
+
+async function reporter() {
+  if (!report.value) return
+  erreurReport.value = ''
+  try {
+    const r = await $fetch<{ notifies: number }>('/api/admin/sessions', {
+      method: 'PATCH',
+      body: { id: report.value.id, action: 'reporter', date: nouvelleDate.date, heure: nouvelleDate.heure },
+    })
+    message.value = `Séance reportée — ${r.notifies} apprenant(s) notifié(s) par email et WhatsApp.`
+    report.value = null
+    await refresh()
+  } catch (e) {
+    erreurReport.value = (e as { statusMessage?: string }).statusMessage ?? 'Le report a échoué.'
+  }
+}
+
 async function annuler() {
   if (!annulation.value) return
   const r = await $fetch<{ notifies: number }>('/api/admin/sessions', {
@@ -75,6 +116,7 @@ const DEFAUTS = {
   formateurId: '',
   date: '',
   heure: '19:00',
+  fuseau: 'GMT (Abidjan)',
   titre: '',
   dureeMinutes: 120,
   places: 25,
@@ -193,11 +235,16 @@ async function creer() {
       </UiBaseButton>
     </div>
 
-    <p class="mt-2 max-w-[900px] text-[12.5px] text-discret">
-      Une session par couple thématique–formateur · 2 h · 25 participants maximum · visible
-      uniquement des apprenants ayant acheté un module couvert · lien Zoom généré à la demande,
-      jamais affiché en clair · rappel automatique 24 h avant par e-mail et WhatsApp.
-    </p>
+    <!-- Règles du calendrier (rappel CDC), écran 03 -->
+    <aside class="mt-4 rounded-[12px] border border-ligne-douce bg-white p-4">
+      <p class="text-[13.5px] font-bold text-encre">Règles du calendrier (rappel CDC)</p>
+      <p class="mt-1 max-w-[900px] text-[12.5px] text-texte">
+        Une session par couple thématique–formateur · 10 sessions mensuelles en Phase 1 (5 SM + 5
+        ENT) · 2 h · 25 participants max · jour fixe du mois · visible uniquement des apprenants
+        ayant acheté un module couvert · lien Zoom personnel généré à la demande, jamais affiché en
+        clair · rappel automatique 24 h avant par email + WhatsApp.
+      </p>
+    </aside>
 
     <p v-if="message" class="mt-4 rounded-[10px] border border-succes bg-succes-voile p-3 text-[13.5px] text-succes">
       {{ message }}
@@ -205,9 +252,17 @@ async function creer() {
 
     <form
       v-if="formulaireOuvert"
-      class="mt-5 grid gap-4 rounded-[14px] border border-ligne-douce bg-white p-6 sm:grid-cols-2 xl:grid-cols-4"
+      class="mt-5 grid gap-4 rounded-[14px] border border-ligne-douce bg-white p-6 sm:grid-cols-2 lg:grid-cols-4"
       @submit.prevent="creer"
     >
+      <div class="sm:col-span-2 xl:col-span-4">
+        <h2 class="font-title text-[19px] font-light">Planifier une session</h2>
+        <p class="mt-1 text-[12.5px] text-discret">Réunion Zoom créée automatiquement à la validation</p>
+      </div>
+      <label class="block">
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Programme</span>
+        <input :value="programmeCreation" disabled class="w-full rounded-[10px] border border-ligne bg-fond-voile px-3 py-2.5 text-[14px] text-discret">
+      </label>
       <label class="block">
         <span class="mb-1.5 block text-[13px] font-bold text-texte">Thématique</span>
         <select v-model="creation.thematiqueId" required class="w-full rounded-[10px] border border-ligne bg-white px-3 py-2.5 text-[14px]">
@@ -217,6 +272,12 @@ async function creer() {
           </option>
         </select>
       </label>
+      <div class="block">
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Modules éligibles</span>
+        <p class="rounded-[10px] border border-ligne bg-fond-voile px-3 py-2.5 text-[14px]" :class="modulesEligibles.length ? 'text-texte' : 'text-discret'">
+          {{ modulesEligibles.length ? `${modulesEligibles.join(', ')} (auto)` : '— (auto)' }}
+        </p>
+      </div>
       <label class="block">
         <span class="mb-1.5 block text-[13px] font-bold text-texte">Formateur</span>
         <select v-model="creation.formateurId" required class="w-full rounded-[10px] border border-ligne bg-white px-3 py-2.5 text-[14px]">
@@ -229,12 +290,18 @@ async function creer() {
         <input v-model="creation.date" type="date" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
       </label>
       <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Heure (GMT Abidjan)</span>
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Heure de début</span>
         <input v-model="creation.heure" type="time" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+      </label>
+      <label class="block">
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Fuseau</span>
+        <select v-model="creation.fuseau" class="w-full rounded-[10px] border border-ligne bg-white px-3 py-2.5 text-[14px]">
+          <option value="GMT (Abidjan)">GMT (Abidjan)</option>
+        </select>
       </label>
       <label class="block sm:col-span-2">
         <span class="mb-1.5 block text-[13px] font-bold text-texte">
-          Titre <span class="font-normal text-discret">(facultatif)</span>
+          Titre du coaching <span class="font-normal text-discret">(facultatif)</span>
         </span>
         <input
           v-model="creation.titre"
@@ -243,7 +310,7 @@ async function creer() {
         >
       </label>
       <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Durée (minutes)</span>
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Durée</span>
         <input v-model.number="creation.dureeMinutes" type="number" min="30" step="15" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
       </label>
       <label class="block">
@@ -253,14 +320,14 @@ async function creer() {
       <label class="block">
         <span class="mb-1.5 block text-[13px] font-bold text-texte">Ouverture de la salle</span>
         <select v-model.number="creation.ouvertureSalleMinutes" class="w-full rounded-[10px] border border-ligne bg-white px-3 py-2.5 text-[14px]">
-          <option :value="15">15 minutes avant</option>
-          <option :value="10">10 minutes avant</option>
-          <option :value="5">5 minutes avant</option>
+          <option :value="15">15 min avant</option>
+          <option :value="10">10 min avant</option>
+          <option :value="5">5 min avant</option>
         </select>
       </label>
       <label class="flex items-center gap-2.5 self-end pb-2.5 text-[13.5px]">
         <input v-model="creation.enregistrement" type="checkbox">
-        Enregistrer la séance
+        Activer l’enregistrement de la session
       </label>
       <div class="sm:col-span-2 xl:col-span-4">
         <p v-if="erreur" class="mb-3 text-[13.5px] text-erreur">{{ erreur }}</p>
@@ -292,7 +359,7 @@ async function creer() {
 
     <AdminTableauSimple
       class="mt-4"
-      :colonnes="['Date · Heure', 'Thématique — modules couverts', 'Formateur', 'Inscrits', 'Présence', 'Statut', 'Actions']"
+      :colonnes="['Date · Heure', 'Thématique — modules couverts', 'Formateur', 'Inscrits / Capacité', 'Présence', 'Statut', 'Actions']"
     >
       <tr v-for="session in sessions" :key="session.id">
         <td class="px-4 py-3 font-bold">{{ formatDate(session.date) }} · {{ session.heure }}</td>
@@ -335,9 +402,10 @@ async function creer() {
         <td class="px-4 py-3 whitespace-nowrap">
           <template v-if="session.statut === 'planifiee'">
             <button class="text-[12.5px] underline" @click="ouvrirModification(session)">Modifier</button>
+            <button class="ml-3 text-[12.5px] underline" @click="ouvrirReport(session)">Reporter</button>
             <button class="ml-3 text-[12.5px] text-erreur underline" @click="annulation = session">Annuler</button>
           </template>
-          <span v-else class="text-[12px] text-discret">Notifiée — e-mail + WhatsApp ✓</span>
+          <span v-else class="text-[12px] text-discret">Notifiée — email + WhatsApp ✓</span>
         </td>
       </tr>
     </AdminTableauSimple>
@@ -410,6 +478,34 @@ async function creer() {
       </form>
     </div>
 
+    <!-- Report : date et heure seulement, les inscrits sont prévenus -->
+    <div v-if="report" class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">
+      <form class="w-full max-w-md rounded-carte bg-white p-6" @submit.prevent="reporter">
+        <h2 class="font-title text-[21px] font-light">
+          Reporter la session du {{ formatDate(report.date) }} ?
+        </h2>
+        <p class="mt-2 text-[13.5px] text-texte">
+          Les <b>{{ report.inscrits }} apprenants inscrits</b> seront prévenus de la nouvelle date par
+          <b>email ET WhatsApp</b>. La réunion Zoom est déplacée avec la séance.
+        </p>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Nouvelle date</span>
+            <input v-model="nouvelleDate.date" type="date" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Heure de début</span>
+            <input v-model="nouvelleDate.heure" type="time" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+          </label>
+        </div>
+        <p v-if="erreurReport" class="mt-3 text-[13.5px] text-erreur">{{ erreurReport }}</p>
+        <div class="mt-5 flex flex-wrap gap-2">
+          <UiBaseButton type="submit" taille="sm">Reporter et notifier</UiBaseButton>
+          <UiBaseButton taille="sm" variante="contour" @click="report = null">Retour</UiBaseButton>
+        </div>
+      </form>
+    </div>
+
     <div v-if="presence" class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">
       <div class="w-full max-w-md rounded-carte bg-white p-6">
         <h2 class="font-title text-[21px] font-light">
@@ -455,7 +551,7 @@ async function creer() {
         </h2>
         <p class="mt-3 text-[14px] text-texte">
           Les <b>{{ annulation.inscrits }} apprenants inscrits</b> seront prévenus immédiatement par
-          <b>e-mail ET WhatsApp</b>. Cette action est journalisée dans l’historique.
+          <b>email ET WhatsApp</b>. Cette action est journalisée dans l’historique.
         </p>
         <label class="mt-4 block">
           <span class="mb-1.5 block text-[13px] font-bold text-texte">

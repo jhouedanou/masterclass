@@ -1,6 +1,18 @@
 <script setup lang="ts">
 /** Changement de mot de passe d'un compte connecté — partagé par l'apprenant,
  *  le formateur et l'administrateur. */
+const props = defineProps<{
+  /**
+   * Checklist de robustesse en direct (planche C, écran 20) : les comptes
+   * d'administration voient les quatre critères se cocher à la saisie. La règle
+   * qui fait foi reste celle du serveur (`server/utils/motDePasse.ts`) : la
+   * checklist guide, elle ne bloque pas.
+   */
+  robustesse?: boolean
+  /** Libellé du bouton d'envoi ; « Modifier » par défaut. */
+  libelleBouton?: string
+}>()
+
 const actuel = ref('')
 const nouveau = ref('')
 const confirmation = ref('')
@@ -9,6 +21,15 @@ const erreur = ref('')
 const envoi = ref(false)
 
 const MINIMUM = 10
+
+/** Critères de l'écran 20, évalués à chaque frappe. */
+const CRITERES = [
+  { libelle: '12 caractères min.', test: (v: string) => v.length >= 12 },
+  { libelle: '1 majuscule', test: (v: string) => /\p{Lu}/u.test(v) },
+  { libelle: '1 chiffre', test: (v: string) => /\d/.test(v) },
+  { libelle: '1 caractère spécial', test: (v: string) => /[^\p{L}\p{N}\s]/u.test(v) },
+]
+const criteres = computed(() => CRITERES.map((c) => ({ libelle: c.libelle, ok: c.test(nouveau.value) })))
 
 async function envoyer() {
   erreur.value = ''
@@ -48,13 +69,28 @@ async function envoyer() {
       <input v-model="nouveau" type="password" autocomplete="new-password" :minlength="MINIMUM" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
     </label>
     <label class="block">
-      <span class="mb-1.5 block text-[13px] font-bold text-texte">Confirmation</span>
+      <span class="mb-1.5 block text-[13px] font-bold text-texte">
+        {{ props.robustesse ? 'Confirmer le nouveau mot de passe' : 'Confirmation' }}
+      </span>
       <input v-model="confirmation" type="password" autocomplete="new-password" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
     </label>
     <div class="flex items-end">
-      <UiBaseButton type="submit" taille="sm" variante="sombre" :disabled="envoi">Modifier</UiBaseButton>
+      <UiBaseButton type="submit" taille="sm" variante="sombre" :disabled="envoi">
+        {{ props.libelleBouton ?? 'Modifier' }}
+      </UiBaseButton>
     </div>
-    <p class="text-[12.5px] text-discret sm:col-span-3">{{ MINIMUM }} caractères minimum.</p>
+
+    <!-- Checklist de robustesse (écran 20) : ✓ / ✗ selon la saisie -->
+    <ul v-if="props.robustesse" class="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] sm:col-span-3" aria-live="polite">
+      <li
+        v-for="c in criteres"
+        :key="c.libelle"
+        :class="c.ok ? 'text-succes' : 'text-discret'"
+      >
+        {{ c.ok ? '✓' : '✗' }} {{ c.libelle }}
+      </li>
+    </ul>
+    <p v-else class="text-[12.5px] text-discret sm:col-span-3">{{ MINIMUM }} caractères minimum.</p>
     <p v-if="message" class="text-[14px] text-succes sm:col-span-3">{{ message }}</p>
     <p v-if="erreur" class="text-[14px] text-erreur sm:col-span-3">{{ erreur }}</p>
   </form>

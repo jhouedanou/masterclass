@@ -47,7 +47,6 @@ const ongletsMobile = computed(() => [
 const initiales = computed(
   () => `${auth.utilisateur?.prenom?.[0] ?? ''}${auth.utilisateur?.nom?.[0] ?? ''}`.toUpperCase(),
 )
-const menuCompte = ref(false)
 </script>
 
 <template>
@@ -58,7 +57,7 @@ const menuCompte = ref(false)
           <NuxtLink to="/formateur" aria-label="Accueil de l’espace formateur">
             <img src="/images/brand/logo.png" alt="E-Masterclass | Big Five" class="block h-9 w-auto" width="180" height="36">
           </NuxtLink>
-          <span class="surtitre hidden border-l border-ligne-claire pl-3.5 text-discret sm:inline">
+          <span class="surtitre-menu hidden border-l border-ligne-claire pl-3.5 tracking-[0.14em] text-discret-clair sm:inline">
             Espace formateur
           </span>
         </div>
@@ -68,8 +67,8 @@ const menuCompte = ref(false)
             v-for="lien in liens"
             :key="lien.chemin"
             :to="lien.chemin"
-            class="flex items-center gap-1.5 text-texte hover:text-encre"
-            active-class="text-social"
+            class="flex items-center gap-1.5 border-b-2 border-transparent pb-[3px] text-texte hover:text-encre"
+            active-class="border-encre text-encre"
           >
             {{ lien.libelle }}
             <span
@@ -81,33 +80,20 @@ const menuCompte = ref(false)
           </NuxtLink>
         </nav>
 
-        <div class="relative flex items-center gap-3">
-          <button
-            type="button"
+        <div class="flex items-center gap-3">
+          <!-- La maquette n'ouvre pas de menu sur l'avatar ; il reste le seul
+               chemin vers le profil, la barre latérale ne le listant plus. -->
+          <NuxtLink
+            to="/formateur/profil"
             class="grid size-9 place-items-center rounded-full bg-social text-[13px] font-bold text-white"
-            :aria-expanded="menuCompte"
-            aria-haspopup="menu"
-            :aria-label="`Compte de ${auth.utilisateur?.prenom ?? ''}`"
-            @click="menuCompte = !menuCompte"
+            :aria-label="`Profil de ${auth.utilisateur?.prenom ?? ''}`"
           >
             {{ initiales }}
-          </button>
+          </NuxtLink>
           <span class="hidden text-[14px] text-texte md:inline">{{ auth.utilisateur?.prenom }}</span>
-          <button type="button" class="hidden text-[13px] text-discret hover:text-encre md:inline" @click="seDeconnecter">
+          <button type="button" class="text-[13px] text-discret hover:text-encre" @click="seDeconnecter">
             Déconnexion
           </button>
-          <div
-            v-if="menuCompte"
-            role="menu"
-            class="absolute top-11 right-0 z-30 w-56 rounded-[12px] border border-ligne bg-white p-1.5 text-[14px] shadow-[0_12px_32px_rgba(23,21,28,.12)]"
-            @click="menuCompte = false"
-          >
-            <NuxtLink to="/formateur" role="menuitem" class="block rounded-[8px] px-3 py-2 hover:bg-fond-clair">Vue d’ensemble</NuxtLink>
-            <NuxtLink to="/formateur/profil" role="menuitem" class="block rounded-[8px] px-3 py-2 hover:bg-fond-clair">Mon profil</NuxtLink>
-            <button type="button" role="menuitem" class="block w-full rounded-[8px] px-3 py-2 text-left hover:bg-fond-clair md:hidden" @click="seDeconnecter">
-              Déconnexion
-            </button>
-          </div>
         </div>
       </div>
     </header>

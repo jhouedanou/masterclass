@@ -196,7 +196,7 @@ const TITRES: Record<Action, string> = {
 
     <div class="mt-10 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="font-title text-[19px] font-light">Statistiques par formateur</h2>
+        <h2 id="statistiques" class="scroll-mt-6 font-title text-[19px] font-light">Statistiques par formateur</h2>
         <p class="mt-1 text-[12.5px] text-discret">
           Vue consolidée : chaque formateur ne voit que ses propres chiffres dans son espace.
         </p>

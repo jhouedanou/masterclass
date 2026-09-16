@@ -69,7 +69,7 @@ const suppression = ref(false)
 
 <template>
   <div class="max-w-[760px]">
-    <h1 class="text-[30px] font-medium">Paramètres du compte</h1>
+    <h1 class="text-[30px] font-light">Paramètres du compte</h1>
 
     <section class="mt-8 divide-y divide-ligne-claire rounded-[14px] border border-ligne-douce bg-white">
       <!-- Email de connexion -->

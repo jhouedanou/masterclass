@@ -142,7 +142,7 @@ const champ =
           :checked="filigraneActif"
           @change="emit('reglages', { filigraneActif: ($event.target as HTMLInputElement).checked })"
         >
-        Filigrane nominatif dynamique activé
+        Watermark nominatif dynamique activé
       </label>
       <label class="mt-2.5 flex items-start gap-2.5 text-[13.5px]">
         <input

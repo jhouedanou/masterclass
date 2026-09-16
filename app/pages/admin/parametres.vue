@@ -95,7 +95,7 @@ const carte = 'rounded-[14px] border border-ligne-douce bg-white p-6'
   <div v-if="data" class="max-w-[860px]">
     <h1 class="font-title text-[26px] font-light">Paramètres</h1>
 
-    <UiOnglets v-model="onglet" class="mt-5" :onglets="ONGLETS" />
+    <UiOnglets v-model="onglet" class="mt-5" accent="social" :onglets="ONGLETS" />
 
     <p v-if="message" class="mt-4 rounded-[10px] border border-succes bg-succes-voile px-4 py-3 text-[14px] text-succes">{{ message }}</p>
     <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-[#fdeeee] px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>

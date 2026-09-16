@@ -50,3 +50,23 @@ export function formatMois(mois: string): string {
   )
   return libelle.charAt(0).toUpperCase() + libelle.slice(1)
 }
+
+/**
+ * Horodatage relatif de l'activité récente (planche C, écran 01) : « à
+ * l'instant », « il y a 12 s », « il y a 1 h », « hier », « il y a 2 j ».
+ * Au-delà d'une semaine, la date courte reprend ses droits.
+ */
+export function formatRelatif(iso: string | null | undefined, maintenant = Date.now()): string {
+  if (!iso) return ''
+  const ecart = Math.max(0, Math.round((maintenant - new Date(iso).getTime()) / 1000))
+  if (ecart < 5) return 'à l’instant'
+  if (ecart < 60) return `il y a ${ecart} s`
+  const minutes = Math.floor(ecart / 60)
+  if (minutes < 60) return `il y a ${minutes} min`
+  const heures = Math.floor(minutes / 60)
+  if (heures < 24) return `il y a ${heures} h`
+  const jours = Math.floor(heures / 24)
+  if (jours === 1) return 'hier'
+  if (jours < 7) return `il y a ${jours} j`
+  return formatDateCourte(iso)
+}

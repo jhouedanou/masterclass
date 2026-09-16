@@ -1,12 +1,17 @@
-import { listerRedirections } from '../../database/administration'
+import { lireReglagesSeo, listerRedirections } from '../../database/administration'
 import { CHEMINS_PRIORITAIRES, detecterDoublons, inventaireReferencement } from '../../utils/seo'
 import { exigerAdmin } from '../../utils/session'
+import urlsSitemap from '../__sitemap__/urls.get'
 
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerAdmin(event)
-  const [entrees, redirections] = await Promise.all([
+  const [entrees, redirections, reglagesSeo, sitemap] = await Promise.all([
     inventaireReferencement(),
     listerRedirections(),
+    lireReglagesSeo(),
+    // Le même inventaire que celui servi à /sitemap.xml : le compte affiché
+    // est celui que Google reçoit.
+    urlsSitemap(event),
   ])
 
   return {
@@ -23,18 +28,20 @@ export default defineEventHandler(async (event) => {
      * État technique (écran 23).
      *
      * Ce que l'application maîtrise est affirmé ; ce qui dépend d'un compte
-     * chez Google est laissé à vérifier, sans faire comme si c'était réglé.
+     * chez Google est lu dans les réglages, sans faire comme si c'était réglé.
      */
     technique: {
-      sitemap: { chemin: '/sitemap.xml', automatique: true },
-      robots: { chemin: '/robots.txt', automatique: true },
+      sitemap: { chemin: '/sitemap.xml', urls: sitemap.length },
+      robots: { chemin: '/robots.txt', sitemapDeclare: true },
       // Les pages privées ne sont ni dans le plan de site ni indexables : la
       // règle est portée par la configuration, pas par une case à cocher.
       pagesExclues: entrees.filter((e) => e.seo.indexable === false).length,
       redirections: redirections.length,
-      // Le compte Search Console ne se vérifie pas d'ici : on rappelle où il
-      // se renseigne plutôt que d'annoncer un état qu'on ignore.
-      searchConsole: null,
+      // « Connectée » dès qu'un jeton de vérification est renseigné.
+      searchConsole: reglagesSeo.googleSearchConsole.trim() ? 'Connectée' : 'À connecter',
+      // Aucune table ne journalise les 404 : l'écran affiche « — » plutôt
+      // qu'un zéro qui ferait croire à une absence d'erreurs.
+      erreurs404: null as number | null,
     },
 
     // Le front masque les champs réservés en fonction de ce rôle (spec §13).

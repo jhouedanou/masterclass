@@ -140,7 +140,7 @@ const confirmation = ref('')
 
     <AdminTableauSimple
       class="mt-5"
-      :colonnes="['Formateur', 'Accès', 'Modules', 'Coaching privé', 'Ordre public', 'Actions']"
+      :colonnes="['Formateur', 'Modules', 'Accès', 'Tarif coaching', 'Ordre public', 'Actions']"
     >
       <tr
         v-for="f in formateurs"
@@ -153,17 +153,10 @@ const confirmation = ref('')
           <p class="font-bold">{{ f.nom }}</p>
           <p class="text-[12px] text-discret">{{ f.expertise }}</p>
         </td>
-        <td class="px-4 py-3 text-[13px]">
-          <template v-if="f.compte">
-            <span class="text-succes">Compte actif</span>
-            <span class="block text-[12px] text-discret">{{ f.compte.email }}</span>
-          </template>
-          <span v-else class="text-alerte">Aucun compte rattaché</span>
-        </td>
         <td class="px-4 py-3">
-          {{ f.nbModules }} module{{ f.nbModules > 1 ? 's' : '' }}
-          <span class="block text-[12px] text-discret">
-            {{ formatFcfa(f.coachingPriveFcfaHeure) }}/h (fixe)
+          {{ f.nbModules }} module{{ f.nbModules > 1 ? 's' : '' }} · {{ f.nbProgrammes }} programme{{ f.nbProgrammes > 1 ? 's' : '' }}
+          <span class="block text-[12px]" :class="f.compte ? 'text-discret' : 'text-alerte'">
+            {{ f.compte ? f.compte.email : 'Aucun compte rattaché' }}
           </span>
         </td>
         <td class="px-4 py-3">
@@ -171,17 +164,18 @@ const confirmation = ref('')
             class="rounded-full px-2.5 py-1 text-[11px] font-bold"
             :class="f.coachingPriveActif ? 'bg-social-voile text-social' : 'bg-fond-voile text-discret'"
           >
-            {{ f.coachingPriveActif ? 'Avec coaching privé' : 'Formateur simple' }}
+            {{ f.coachingPriveActif ? 'Formateur + coaching privé' : 'Formateur simple' }}
           </span>
-          <button
-            v-if="f.coachingPriveActif"
-            class="mt-1 block text-[12.5px] underline"
-            @click="basculerCoachingPrive(f)"
-          >
-            Repasser simple
-          </button>
-          <button v-else class="mt-1 block text-[12.5px] text-social underline" @click="activation = f">
-            Activer le coaching privé →
+        </td>
+        <td class="px-4 py-3 text-[13px]">
+          <template v-if="f.coachingPriveActif">
+            {{ formatFcfa(f.coachingPriveFcfaHeure) }}/h (fixe)
+            <button class="mt-1 block text-[12.5px] underline" @click="basculerCoachingPrive(f)">
+              Repasser simple
+            </button>
+          </template>
+          <button v-else class="text-[12.5px] text-social underline" @click="activation = f">
+            Activer le coaching privé
           </button>
         </td>
         <td class="px-4 py-3">
@@ -217,39 +211,14 @@ const confirmation = ref('')
       </div>
     </section>
 
-    <!-- Activation du coaching privé : elle engage un tarif et ouvre une
-         section entière de l'espace formateur. Le retour en arrière, lui, ne
-         demande pas de confirmation — il ne retire rien de déjà payé. -->
-    <div v-if="activation" class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">
-      <div class="w-full max-w-lg rounded-carte bg-white p-6">
-        <h2 class="font-title text-[21px] font-light">
-          Activer le coaching privé pour {{ activation.nom }} ?
-        </h2>
-        <ul class="mt-4 ml-4 list-disc text-[13.5px] text-texte">
-          <li class="mt-1.5">
-            La section « Coaching privé » s’ouvre dans son espace formateur : il y voit les
-            demandes qui le concernent et leurs créneaux.
-          </li>
-          <li class="mt-1.5">
-            Il devient sélectionnable par les apprenants au moment de leur demande.
-          </li>
-          <li class="mt-1.5">
-            Le tarif est fixe à {{ formatFcfa(activation.coachingPriveFcfaHeure) }} de l’heure,
-            identique pour tous les formateurs.
-          </li>
-          <li class="mt-1.5">
-            Sa rémunération suit la même répartition que les modules : part du formateur sur la
-            marge, après frais de paiement.
-          </li>
-        </ul>
-        <div class="mt-5 flex flex-wrap gap-2">
-          <UiBaseButton taille="sm" @click="basculerCoachingPrive(activation)">
-            Activer le coaching privé
-          </UiBaseButton>
-          <UiBaseButton taille="sm" variante="contour" @click="activation = null">Annuler</UiBaseButton>
-        </div>
-      </div>
-    </div>
+    <!-- Activation du coaching privé (écran 07b), modale partagée avec
+         l'administration des accès. -->
+    <AdminModaleCoachingPrive
+      v-if="activation"
+      :formateur="activation"
+      @confirmer="basculerCoachingPrive(activation)"
+      @annuler="activation = null"
+    />
 
     <!-- Édition de la fiche publique -->
     <div v-if="edition" class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">

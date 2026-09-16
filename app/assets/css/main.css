@@ -47,6 +47,62 @@
   --color-erreur: #c03434;
   --color-erreur-fonce: #a3242f;
 
+  /*
+    Palette complémentaire relevée dans les quatre planches. Les maquettes
+    emploient 101 couleurs ; celles-ci revenaient au moins trois fois sans
+    avoir de jeton. Plusieurs frôlent un jeton existant sans l'égaler —
+    `piste` n'est pas `fond-voile`, `social-nuage` n'est pas `social-voile` —
+    et le décalage se voit : ne pas les rabattre l'une sur l'autre.
+  */
+
+  /* Violets complémentaires */
+  --color-social-nuage: #faf7fc;          /* fond des blocs teintés */
+  --color-social-neige: #fdfbfe;          /* ligne ou carte sélectionnée */
+  --color-social-bordure-tendre: #ecdff2;
+  --color-social-bordure-vive: #e3c9ec;   /* bordure du bandeau de profil */
+  --color-social-pilule: #e0d3e8;         /* bordure des pilules de module */
+  --color-social-pastel: #c9a2d4;         /* violet lisible sur fond sombre */
+  --color-social-brume: #b9a8d8;          /* surtitre sur fond sombre */
+
+  /* Bleus complémentaires */
+  --color-entrepreneurs-nuage: #f0f1f8;
+  --color-entrepreneurs-pilule: #e2e4f0;
+
+  /* Neutres complémentaires */
+  --color-piste: #f0ecf5;                 /* fond des barres de progression */
+  --color-fond-cadre: #f5f3f8;            /* fond de page du back-office */
+  --color-ligne-pointillee: #cfc8dd;
+  --color-ligne-grise: #d8d4e0;
+  --color-ligne-brume: #e6e2ee;
+  --color-inactif: #a9a4b5;               /* libellé d'élément désactivé */
+
+  /* Fonds sombres : lecteur vidéo, salle de session, barre latérale admin.
+     La maquette écrit son gris clair tantôt #c9c4d4, tantôt #c9c4d3 ;
+     l'écart d'un point est invisible, `gris-perle` couvre les deux. */
+  --color-nuit: #0f0e13;
+  --color-nuit-panneau: #2a2735;
+  --color-nuit-bordure: #3a3745;
+  --color-nuit-filet: #2c2937;
+  --color-nuit-pastille: #3a2d45;
+  --color-nuit-inactif: #4b4653;
+  --color-gris-perle: #c9c4d4;            /* texte sur fond sombre, et piste
+                                             d'interrupteur éteint */
+  --color-nuit-clair: #b9b4c4;
+  --color-nuit-discret: #8f8a9c;
+
+  /* Signalétique complémentaire */
+  --color-or: #f2b01e;                    /* étoiles de notation */
+  --color-succes-pale: #eaf7ef;
+  --color-succes-bordure: #bfe6cf;
+  --color-succes-fonce: #166e3d;
+  --color-succes-vif: #7fd6a4;            /* vert lisible sur fond sombre */
+  --color-alerte-pale: #fff8ec;
+  --color-alerte-neige: #fffaf0;
+  --color-alerte-bordure: #f0dcae;
+  --color-alerte-fonce: #7a5c17;
+  --color-erreur-voile: #fdedee;
+  --color-erreur-bordure: #f2c4c9;
+
   --radius-carte: 16px;
   --radius-bloc: 14px;
   --radius-champ: 12px;
@@ -105,8 +161,14 @@
     outline-color: #fff;
   }
 
+  /* Sur-titre des maquettes : 11,5 px interlettré à .1em. La phase 1 l'avait
+     posé à 13 px / .16em, ce qui grossissait chaque surtitre du site. */
   .surtitre {
-    @apply text-[13px] font-bold tracking-[0.16em] uppercase;
+    @apply text-[11.5px] font-bold tracking-[0.1em] uppercase;
+  }
+  /* Micro-libellé : coiffe des colonnes et des encarts (10,5 px / .08em). */
+  .surtitre-menu {
+    @apply text-[10.5px] font-bold tracking-[0.08em] uppercase;
   }
 
   .rayures-social {
@@ -133,17 +195,34 @@
     background: repeating-linear-gradient(45deg, #39324a, #39324a 8px, #2d2839 8px, #2d2839 16px);
   }
 
+  /* Corps d'article de blog (planche A, écran 13) : h2 26 px, h3 20 px,
+     paragraphes 15,5 px interlignés à 1,8. */
   .editorial :where(p) {
-    @apply my-4 text-[15.5px] leading-relaxed text-texte;
+    @apply mt-0 mb-6 text-[15.5px] leading-[1.8] text-texte;
   }
   .editorial :where(h2) {
-    @apply mt-10 mb-3 font-title text-[27px] font-light;
+    @apply mt-9 mb-3 font-title text-[26px] font-light;
   }
   .editorial :where(h3) {
-    @apply mt-8 mb-2 font-title text-[21px] font-light;
+    @apply mt-7 mb-2 font-title text-[20px] font-light;
   }
   .editorial :where(ul) {
-    @apply my-4 list-disc space-y-1.5 pl-6 text-[15.5px] text-texte;
+    @apply mt-0 mb-6 list-disc space-y-1.5 pl-6 text-[15.5px] leading-[1.8] text-texte;
+  }
+
+  /* Pages légales (planche A, écran 09) : la même matière, composée plus
+     serré — h2 19 px, paragraphes 14,5 px interlignés à 1,75. */
+  .editorial-legal :where(p) {
+    @apply mt-0 mb-5 text-[14.5px] leading-[1.75];
+  }
+  .editorial-legal :where(h2) {
+    @apply mt-7 mb-2.5 text-[19px];
+  }
+  .editorial-legal :where(h3) {
+    @apply mt-6 mb-2 text-[16px];
+  }
+  .editorial-legal :where(ul) {
+    @apply mt-0 mb-5 text-[14.5px] leading-[1.75];
   }
 }
 
@@ -155,4 +234,16 @@
     size: A4 landscape;
     margin: 0;
   }
+}
+
+/*
+  Lien de navigation de la page courante : filet inférieur de 2 px, dans la
+  couleur du lien lui-même — violet sur /programmes/social-media, bleu sur
+  Entrepreneurs, encre ailleurs (planche A, en-têtes des écrans 02, 05, 08, 12).
+  Posé hors de tout `@layer` : la règle doit battre l'utilitaire
+  `border-transparent` que le lien porte au repos pour réserver la place du
+  filet, et une classe placée dans `components` perdrait contre les utilitaires.
+*/
+.lien-actif {
+  border-bottom-color: currentColor;
 }

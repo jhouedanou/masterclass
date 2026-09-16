@@ -13,6 +13,7 @@ const { data: sessions } = await useFetch<
     statut: string
     participation: number | null
     note: number | null
+    nbNotes: number
     thematique: { nom: string } | null
   }[]
 >('/api/formateur/sessions')
@@ -28,9 +29,8 @@ const aujourdhui = new Date().toISOString().slice(0, 10)
   <div>
     <h1 class="font-title text-[26px] font-light">Mes sessions de coaching</h1>
     <p class="mt-2 max-w-[760px] text-[13.5px] text-discret">
-      Le planning est fixé par l’équipe Big Five. La présence Zoom est pointée automatiquement ; les
-      notes proviennent de l’évaluation post-session des apprenants. Le nom d’une session ouvre sa
-      salle : elle accepte l’entrée à partir de 15 minutes avant le début.
+      Le nom d’une session ouvre sa salle : elle accepte l’entrée à partir de 15 minutes avant le
+      début.
     </p>
 
     <AdminTableauSimple
@@ -67,6 +67,7 @@ const aujourdhui = new Date().toISOString().slice(0, 10)
         <td class="px-4 py-3">
           <span v-if="session.note" class="font-bold text-alerte">
             {{ session.note.toString().replace('.', ',') }} ★
+            <span class="font-normal text-discret">({{ session.nbNotes }})</span>
           </span>
           <NuxtLink
             v-else
@@ -80,8 +81,9 @@ const aujourdhui = new Date().toISOString().slice(0, 10)
     </AdminTableauSimple>
 
     <p class="mt-3 text-[12px] leading-relaxed text-discret">
-      Cliquer « inscrits » ouvre la liste des participants avec accès à leurs fiches profils, en
-      lecture seule.
+      Le planning est fixé par l’équipe Big Five. La présence Zoom est pointée automatiquement ; les
+      notes proviennent de l’évaluation post-session des apprenants. Cliquer « inscrits » ouvre la
+      liste avec accès aux fiches profils.
     </p>
   </div>
 </template>

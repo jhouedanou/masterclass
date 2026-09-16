@@ -3,6 +3,12 @@
  * Barre d'onglets basse des espaces installés (planche B, écran 06 ; planche
  * D, écran 07). Visible sous le palier `lg`, remplacée par la barre latérale
  * au-delà.
+ *
+ * La maquette écrit ses icônes en caractères (`▣ 🗓 🎓 👤`) faute de jeu
+ * d'icônes ; on garde ici des icônes vectorielles, qui se rendent de la même
+ * façon sur Android, iOS et bureau — un glyphe se serait affiché différemment
+ * sur chaque plateforme, ce qui est une régression dans une application
+ * installable. Tailles et couleurs suivent la maquette.
  */
 defineProps<{
   liens: { libelle: string; chemin: string; icone: string; compteur?: number }[]
@@ -24,7 +30,7 @@ defineProps<{
       v-for="lien in liens"
       :key="lien.chemin"
       :to="lien.chemin"
-      class="relative flex flex-col items-center gap-0.5 py-2 text-[11px] font-semibold text-discret"
+      class="relative flex flex-col items-center gap-0.5 py-2 text-[10.5px] font-semibold text-discret-clair"
       :class="accent === 'entrepreneurs' ? 'aria-[current=page]:text-entrepreneurs' : 'aria-[current=page]:text-social'"
       active-class="est-actif"
     >

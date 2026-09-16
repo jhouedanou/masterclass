@@ -328,7 +328,7 @@ async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir
       </select>
     </div>
 
-    <div class="mt-4 grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+    <div class="mt-4 grid gap-6 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr]">
       <AdminTableauSimple :colonnes="['Apprenant', 'Inscrit le', 'Chapitres', 'Profil', 'Coaching', 'Certificats', '']">
         <tr v-for="apprenant in apprenants" :key="apprenant.id">
           <td class="px-4 py-3">

@@ -233,7 +233,7 @@ async function enregistrer() {
   <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
     <div id="profilenregistrement" class="min-w-0">
       <div class="flex flex-wrap items-start justify-between gap-4">
-        <h1 class="text-[30px] font-medium">Votre profil apprenant</h1>
+        <h1 class="text-[30px] font-light">Votre profil apprenant</h1>
         <p class="font-title text-[34px] leading-none font-light"
           :class="completion === 100 ? 'text-succes' : 'text-alerte'">{{ completion }} %</p>
       </div>

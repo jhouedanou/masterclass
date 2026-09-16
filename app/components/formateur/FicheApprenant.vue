@@ -8,12 +8,20 @@ import type { FicheApprenant } from '~/utils/formateur'
  * dédiée — d'où le composant. Contact et paiements restent masqués : la
  * relation passe par la plateforme.
  */
-defineProps<{ fiche: FicheApprenant }>()
+const props = defineProps<{ fiche: FicheApprenant }>()
+
+/** « inscrite » pour un prénom se terminant par a ou e, « inscrit » sinon —
+ *  la base ne porte pas le genre de l'apprenant. */
+const accordInscrit = computed(() =>
+  /[ae]$/i.test(props.fiche.prenom.trim()) ? 'inscrite' : 'inscrit',
+)
 </script>
 
 <template>
   <div class="rounded-[14px] border border-ligne bg-white p-6">
-    <p class="surtitre text-discret">Fiche apprenant — lecture seule</p>
+    <p class="surtitre text-discret uppercase">
+      Fiche apprenant — lecture seule (inscrits à vos modules / sessions)
+    </p>
 
     <div class="mt-3 flex items-center gap-3.5">
       <span class="grid size-12 shrink-0 place-items-center rounded-full bg-social text-[15px] font-extrabold text-white">
@@ -25,7 +33,7 @@ defineProps<{ fiche: FicheApprenant }>()
           <template v-if="fiche.ville || fiche.pays">
             {{ [fiche.ville, fiche.pays].filter(Boolean).join(', ') }} ·
           </template>
-          inscrit à {{ fiche.nbModules }} de vos modules
+          {{ accordInscrit }} à {{ fiche.nbModules }} de vos modules
         </p>
       </div>
     </div>

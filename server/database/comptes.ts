@@ -1038,3 +1038,30 @@ export async function confirmerIdentiteCertificat(utilisateurId: string, moduleI
     'confirmation du certificat',
   )
 }
+
+// --- Journal des connexions -------------------------------------------------
+
+export interface ConnexionReussie {
+  utilisateurId: string
+  appareil: string | null
+  creeLe: string
+}
+
+/**
+ * Connexions réussies depuis une date. C'est la seule trace d'appareil que la
+ * base possède tant que la collecte d'audience n'est pas branchée : l'écran
+ * Performances s'en sert pour répartir mobile / desktop.
+ */
+export async function listerConnexionsReussies(depuis: string): Promise<ConnexionReussie[]> {
+  const rows = verifier(
+    await supabase()
+      .from('connexions')
+      .select('utilisateur_id, appareil, cree_le')
+      .eq('reussie', true)
+      .not('utilisateur_id', 'is', null)
+      .gte('cree_le', depuis)
+      .order('cree_le', { ascending: false }),
+    'journal des connexions',
+  )
+  return rows.map((r) => ({ utilisateurId: r.utilisateur_id as string, appareil: r.appareil, creeLe: r.cree_le }))
+}

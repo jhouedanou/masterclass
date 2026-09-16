@@ -48,7 +48,7 @@ function imminente(carte?: Carte) {
 
 <template>
   <div>
-    <h1 class="text-[30px] font-medium">Mes modules</h1>
+    <h1 class="text-[30px] font-light">Mes modules</h1>
 
     <div v-if="acces?.length" class="mt-8 grid gap-6 sm:grid-cols-2">
       <article v-for="ligne in acces" :key="ligne.moduleId" class="flex flex-col rounded-[14px] border border-ligne-douce bg-white p-5">

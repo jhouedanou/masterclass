@@ -16,7 +16,7 @@ const liens = [
 </script>
 
 <template>
-  <header class="sticky top-0 z-40 border-b border-ligne-claire bg-white">
+  <header class="border-b border-ligne-claire bg-white">
     <div class="conteneur flex items-center justify-between gap-6 py-[18px]">
       <NuxtLink to="/" aria-label="E-Masterclass Big Five — accueil">
         <img
@@ -33,8 +33,9 @@ const liens = [
           v-for="lien in liens"
           :key="lien.chemin"
           :to="lien.chemin"
-          class="hidden hover:opacity-70 lg:inline"
+          class="hidden border-b-2 border-transparent pb-[3px] hover:opacity-70 lg:inline"
           :class="lien.couleur || 'text-encre'"
+          active-class="lien-actif"
         >
           {{ lien.libelle }}
         </NuxtLink>

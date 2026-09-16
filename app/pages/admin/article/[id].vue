@@ -26,7 +26,16 @@ usePagePrivee(nouveau.value ? 'Nouvel article' : `${data.value.article?.titre} �
 
 const CATEGORIES: CategorieArticle[] = ['Social Média', 'Entrepreneuriat', 'Actualités E-Masterclass Big Five']
 
-const onglet = ref<'contenu' | 'referencement'>('contenu')
+const onglet = ref<'contenu' | 'referencement' | 'publication'>('contenu')
+const ONGLETS = computed(() => [
+  { cle: 'contenu', libelle: 'Contenu' },
+  { cle: 'referencement', libelle: 'Référencement et partage' },
+  { cle: 'publication', libelle: 'Publication' },
+])
+
+/** Le texte alternatif est obligatoire avant publication (écran 22) : une
+ *  image sans description n'a rien à faire sur une page publique. */
+const altManquant = computed(() => Boolean(fiche.image) && !fiche.imageAlt.trim())
 const erreur = ref('')
 const succes = ref('')
 const enCours = ref(false)
@@ -42,6 +51,7 @@ const fiche = reactive({
   imageAlt: '',
   aLaUne: false,
   modulesLies: [] as string[],
+  publieLe: '',
 })
 
 watchEffect(() => {
@@ -61,6 +71,7 @@ watchEffect(() => {
     imageAlt: a.imageAlt,
     aLaUne: a.aLaUne,
     modulesLies: [...a.modulesLies],
+    publieLe: a.publieLe?.slice(0, 10) ?? '',
   })
 })
 
@@ -77,6 +88,11 @@ function slugDepuisTitre() {
 async function enregistrer(statut?: 'brouillon' | 'publie') {
   erreur.value = ''
   succes.value = ''
+  if (statut === 'publie' && altManquant.value) {
+    erreur.value = 'Texte alternatif obligatoire avant publication : décrivez l’image principale.'
+    onglet.value = 'contenu'
+    return
+  }
   enCours.value = true
   try {
     if (nouveau.value) {
@@ -119,6 +135,9 @@ async function enregistrer(statut?: 'brouillon' | 'publie') {
         imageAlt: fiche.imageAlt,
         aLaUne: fiche.aLaUne,
         modulesLies: fiche.modulesLies,
+        // La date de publication se corrige depuis l'onglet Publication ;
+        // vide, elle est laissée au serveur (posée à la première publication).
+        ...(fiche.publieLe ? { publieLe: new Date(`${fiche.publieLe}T09:00:00`).toISOString() } : {}),
         ...(statut ? { statut } : {}),
       },
     })
@@ -157,7 +176,7 @@ async function enregistrer(statut?: 'brouillon' | 'publie') {
       <div class="flex flex-wrap gap-2">
         <UiBaseButton v-if="data.article?.statut === 'publie'" taille="sm" variante="contour" :to="`/blog/${data.article.slug}`">Voir</UiBaseButton>
         <UiBaseButton taille="sm" variante="contour" :disabled="enCours" @click="enregistrer()">Enregistrer</UiBaseButton>
-        <UiBaseButton v-if="data.article?.statut !== 'publie'" taille="sm" :disabled="enCours || !fiche.titre" @click="enregistrer('publie')">Publier</UiBaseButton>
+        <UiBaseButton v-if="data.article?.statut !== 'publie'" taille="sm" :disabled="enCours || !fiche.titre || altManquant" @click="enregistrer('publie')">Publier</UiBaseButton>
         <UiBaseButton v-else taille="sm" variante="sombre" :disabled="enCours" @click="enregistrer('brouillon')">Dépublier</UiBaseButton>
       </div>
     </div>
@@ -165,22 +184,15 @@ async function enregistrer(statut?: 'brouillon' | 'publie') {
     <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-[#fdeeee] px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>
     <p v-if="succes" class="mt-4 rounded-[10px] border border-succes bg-succes-voile px-4 py-3 text-[14px] text-succes">{{ succes }}</p>
 
-    <div class="mt-5 flex flex-wrap gap-2 border-b border-ligne-douce" role="tablist">
-      <button
-        v-for="o in [{ cle: 'contenu', libelle: 'Contenu' }, { cle: 'referencement', libelle: 'Référencement et partage' }]"
-        :key="o.cle"
-        role="tab"
-        :aria-selected="onglet === o.cle"
-        :disabled="o.cle === 'referencement' && nouveau"
-        class="-mb-px border-b-2 px-3.5 py-2.5 text-[13.5px] font-bold disabled:opacity-40"
-        :class="onglet === o.cle ? 'border-social text-social' : 'border-transparent text-discret hover:text-encre'"
-        @click="onglet = o.cle as typeof onglet"
-      >
-        {{ o.libelle }}
-      </button>
-    </div>
+    <UiOnglets
+      class="mt-5"
+      accent="social"
+      :onglets="ONGLETS"
+      :model-value="onglet"
+      @update:model-value="onglet = ($event === 'referencement' && nouveau ? 'contenu' : $event) as typeof onglet"
+    />
 
-    <section v-if="onglet === 'contenu'" class="mt-6 grid gap-6 xl:grid-cols-[1fr_320px]">
+    <section v-if="onglet === 'contenu'" class="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-[1fr_320px]">
       <div class="space-y-4">
         <label class="block">
           <span class="mb-1.5 block text-[13px] font-bold text-texte">Titre *</span>
@@ -224,19 +236,24 @@ async function enregistrer(statut?: 'brouillon' | 'publie') {
               <option v-for="a in data.auteurs" :key="a.id" :value="a.id">{{ a.nom }}</option>
             </select>
           </label>
-          <label class="mt-4 flex items-center gap-2 text-[14px]">
-            <input v-model="fiche.aLaUne" type="checkbox" class="accent-social"> Article à la une
-          </label>
         </div>
 
         <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
           <label class="block">
-            <span class="mb-1.5 block text-[13px] font-bold text-texte">Image principale</span>
+            <span class="mb-1.5 block text-[13px] font-bold text-texte">⬆ Image principale (WebP 1200×675)</span>
             <input v-model="fiche.image" placeholder="/images/blog/…" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[13px]">
+            <span class="mt-1 block text-[12px]" :class="altManquant ? 'text-alerte' : 'text-discret'">
+              Texte alternatif obligatoire avant publication
+            </span>
           </label>
           <label class="mt-3 block">
-            <span class="mb-1.5 block text-[13px] font-bold text-texte">Texte alternatif</span>
-            <input v-model="fiche.imageAlt" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[13px]">
+            <span class="mb-1.5 block text-[13px] font-bold text-texte">Texte alternatif de l’image</span>
+            <input
+              v-model="fiche.imageAlt"
+              :required="Boolean(fiche.image)"
+              class="w-full rounded-[10px] border px-3 py-2.5 text-[13px]"
+              :class="altManquant ? 'border-alerte' : 'border-ligne'"
+            >
           </label>
         </div>
 
@@ -250,6 +267,54 @@ async function enregistrer(statut?: 'brouillon' | 'publie') {
           </div>
         </fieldset>
       </aside>
+    </section>
+
+    <!-- Publication (écran 22) : statut, date, à la une, catégorie -->
+    <section v-else-if="onglet === 'publication'" class="mt-6 max-w-[620px]">
+      <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
+        <dl class="grid gap-3 text-[13.5px] sm:grid-cols-2">
+          <div>
+            <dt class="text-discret">Statut</dt>
+            <dd>
+              <span
+                class="rounded-full px-2.5 py-1 text-[11px] font-bold"
+                :class="data.article?.statut === 'publie' ? 'bg-succes-voile text-succes' : 'bg-alerte-voile text-alerte'"
+              >
+                {{ data.article?.statut === 'publie' ? 'Publié' : 'Brouillon' }}
+              </span>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-discret">URL</dt>
+            <dd class="font-mono text-[12.5px]">{{ fiche.slug ? `/blog/${fiche.slug}` : 'slug à définir' }}</dd>
+          </div>
+        </dl>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold text-texte">Date de publication</span>
+            <input v-model="fiche.publieLe" type="date" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+            <span class="mt-1 block text-[12px] text-discret">Posée à la première publication si laissée vide.</span>
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold text-texte">Catégorie</span>
+            <select v-model="fiche.categorie" class="w-full rounded-[10px] border border-ligne bg-white px-3 py-2.5 text-[14px]">
+              <option v-for="c in CATEGORIES" :key="c" :value="c">{{ c }}</option>
+            </select>
+          </label>
+          <label class="flex items-center gap-2 text-[14px] sm:col-span-2">
+            <input v-model="fiche.aLaUne" type="checkbox" class="accent-social"> Article à la une
+          </label>
+        </div>
+        <p v-if="altManquant" class="mt-4 rounded-[10px] border border-alerte bg-alerte-voile p-3 text-[13px] text-alerte">
+          Texte alternatif obligatoire avant publication — à renseigner dans l’onglet Contenu.
+        </p>
+        <div class="mt-5 flex flex-wrap gap-2">
+          <UiBaseButton v-if="data.article?.statut !== 'publie'" taille="sm" :disabled="enCours || !fiche.titre || altManquant" @click="enregistrer('publie')">Publier</UiBaseButton>
+          <UiBaseButton v-else taille="sm" variante="sombre" :disabled="enCours" @click="enregistrer('brouillon')">Dépublier</UiBaseButton>
+          <UiBaseButton taille="sm" variante="contour" :disabled="enCours" @click="enregistrer()">Enregistrer le brouillon</UiBaseButton>
+          <UiBaseButton v-if="data.article?.statut === 'publie'" taille="sm" variante="contour" :to="`/blog/${data.article.slug}`">Prévisualiser</UiBaseButton>
+        </div>
+      </div>
     </section>
 
     <section v-else-if="data.article" class="mt-6 max-w-[620px]">

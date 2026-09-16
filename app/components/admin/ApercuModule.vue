@@ -50,7 +50,14 @@ async function engendrerLien() {
       </div>
     </div>
 
-    <div class="mt-3 flex justify-center rounded-[14px] border border-ligne-douce bg-fond-voile p-4">
+    <!-- Bandeau « PRÉVISUALISATION — non publié » affiché en permanence (écran 10) -->
+    <p
+      class="mt-3 rounded-t-[14px] bg-alerte px-4 py-2 text-center text-[12px] font-bold tracking-[0.08em] text-white uppercase"
+      role="status"
+    >
+      PRÉVISUALISATION — non publié
+    </p>
+    <div class="flex justify-center rounded-b-[14px] border border-t-0 border-ligne-douce bg-fond-voile p-4">
       <iframe
         :src="`/apercu/${slug}`"
         title="Prévisualisation du module"

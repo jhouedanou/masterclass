@@ -149,7 +149,7 @@ async function demanderActivation() {
 
       <p class="mt-4 rounded-[12px] border border-ligne-douce bg-white px-4.5 py-3.5 text-[12.5px] leading-relaxed text-discret">
         L’apprenant soumet obligatoirement ses préoccupations avant d’entrer en session — vous les
-        recevez ici et par e-mail. Votre rémunération coaching apparaît dans l’onglet Revenus.
+        recevez ici et par email. Votre rémunération coaching apparaît dans l’onglet Revenus.
       </p>
     </template>
   </div>

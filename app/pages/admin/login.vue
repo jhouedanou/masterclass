@@ -239,10 +239,10 @@ async function renvoyer() {
 
 <template>
   <div>
-    <p class="surtitre text-discret">Espace administration</p>
+    <p class="surtitre text-discret uppercase">ESPACE ADMINISTRATION</p>
     <h1 class="mt-2 text-[34px] font-medium">Connexion sécurisée</h1>
     <p v-if="etape !== 'identifiants'" class="mt-1 text-[12.5px] font-bold tracking-[0.08em] text-discret uppercase">
-      Étape 2 / 2
+      ÉTAPE 2 / 2
     </p>
 
     <form v-if="etape === 'identifiants'" class="mt-8 space-y-4" @submit.prevent="soumettreIdentifiants">
@@ -250,7 +250,7 @@ async function renvoyer() {
         Accès réservé à l’équipe E-Masterclass Big Five. Une double vérification suit le mot de passe.
       </p>
       <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Adresse e-mail</span>
+        <span class="mb-1.5 block text-[13px] font-bold text-texte">Email professionnel</span>
         <input v-model="email" type="email" autocomplete="username" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
       </label>
       <label class="block">

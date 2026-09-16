@@ -63,7 +63,7 @@ const LIBELLE_SESSION = (date: string) =>
     <p class="surtitre mt-4" :class="social ? 'text-social' : 'text-entrepreneurs'">
       {{ social ? 'Social Média' : 'Entrepreneurs' }} · {{ data.thematique?.nom }} · Module {{ numeroModule(moduleCourant.numero) }}
     </p>
-    <h1 class="mt-2 text-[30px] font-medium">{{ moduleCourant.titre }}</h1>
+    <h1 class="mt-2 text-[30px] font-light">{{ moduleCourant.titre }}</h1>
 
     <div class="mt-3 flex items-center gap-3">
       <div class="h-1.5 w-full max-w-[320px] rounded-full bg-fond-voile">

@@ -63,7 +63,7 @@ const nomDuMois = (valeur: string) =>
         <label>
           <span class="sr-only">Programme</span>
           <select v-model="programme" class="rounded-[10px] border border-ligne bg-white px-3 py-2 text-[13.5px] focus:border-social focus:outline-none">
-            <option value="">Tous les programmes</option>
+            <option value="">Tous programmes</option>
             <option value="social-media">Social Média</option>
             <option value="entrepreneurs">Entrepreneurs</option>
           </select>
@@ -76,15 +76,15 @@ const nomDuMois = (valeur: string) =>
          chiffre inventé. -->
     <div class="mt-4 flex flex-wrap items-center gap-x-8 gap-y-2 rounded-[12px] border border-ligne-claire bg-white px-5 py-3 text-[13px]">
       <p class="font-bold text-encre">Trafic du jour</p>
-      <p class="text-discret">Visites <span class="font-bold text-encre">—</span></p>
       <p class="text-discret">Visiteurs <span class="font-bold text-encre">—</span></p>
-      <p class="text-discret">Pages vues <span class="font-bold text-encre">—</span></p>
+      <p class="text-discret">Taux de conversion : <span class="font-bold text-encre">—</span></p>
+      <p class="text-discret"><span class="font-bold text-encre">—</span> % mobile</p>
       <NuxtLink to="/admin/tracking" class="text-social underline">
         Reliez Google Analytics pour renseigner ces mesures →
       </NuxtLink>
     </div>
 
-    <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
       <AdminCarteIndicateur
         libelle="Inscriptions payantes"
         :valeur="String(data.inscriptions)"
@@ -106,13 +106,13 @@ const nomDuMois = (valeur: string) =>
         detail="Recalculé toutes les heures"
       />
       <AdminCarteIndicateur
-        libelle="Certificats générés"
+        libelle="Certificats générées"
         :valeur="String(data.certificatsGeneres)"
         detail="Temps réel"
       />
     </div>
 
-    <div class="mt-6 grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+    <div class="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr]">
       <section class="rounded-[14px] border border-ligne-douce bg-white p-6">
         <div class="flex items-center justify-between">
           <h2 class="font-title text-[19px] font-light">Ventes par module — top 5</h2>
@@ -163,7 +163,7 @@ const nomDuMois = (valeur: string) =>
           </li>
         </ul>
 
-        <h2 class="mt-6 font-title text-[19px] font-light">Prochaines sessions</h2>
+        <h2 class="mt-6 font-title text-[19px] font-light">Prochaines sessions de coaching</h2>
         <ul class="mt-3 space-y-2 text-[13.5px]">
           <li
             v-for="session in data.prochainesSessions"
@@ -179,7 +179,7 @@ const nomDuMois = (valeur: string) =>
       </section>
     </div>
 
-    <div class="mt-6 grid gap-6 xl:grid-cols-2">
+    <div class="mt-6 grid gap-6 md:grid-cols-2">
       <section>
         <div class="flex items-center justify-between">
           <h2 class="font-title text-[19px] font-light">Dernières transactions</h2>
@@ -215,7 +215,7 @@ const nomDuMois = (valeur: string) =>
           <li v-for="entree in data.journal" :key="entree.id">
             <span class="font-bold">{{ entree.auteur }}</span>
             <span class="text-texte"> {{ entree.action }} « {{ entree.cible }} »</span>
-            <span class="block text-[12px] text-discret">{{ formatDate(entree.date) }}</span>
+            <span class="block text-[12px] text-discret">{{ formatRelatif(entree.date) }}</span>
           </li>
         </ul>
       </section>

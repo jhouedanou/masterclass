@@ -1,10 +1,10 @@
-import { listerFormateurs } from '../../database/catalogue'
+import { listerFormateurs, listerModules } from '../../database/catalogue'
 import { listerComptesAdmin, listerUtilisateurs } from '../../database/comptes'
 import { exigerSection, sectionsEffectives } from '../../utils/session'
 
 /** Sections proposées à la création d'un compte, dans l'ordre de la maquette. */
 const SECTIONS = [
-  { cle: 'administration-acces', libelle: 'Administration des accès', note: 'Permet de créer, modifier et révoquer d’autres comptes admin. À réserver aux personnes de confiance ; toute action est journalisée.' },
+  { cle: 'administration-acces', libelle: 'Administration des accès', note: '— permet de créer, modifier et révoquer d’autres comptes admin. À réserver aux admins de confiance ; toute action est journalisée.' },
   { cle: 'cms-site-vitrine', libelle: 'CMS Site vitrine' },
   { cle: 'fiches-commerciales', libelle: 'Fiches commerciales' },
   { cle: 'modules-chapitres', libelle: 'Modules & chapitres' },
@@ -20,15 +20,16 @@ const SECTIONS = [
   { cle: 'historique-versions', libelle: 'Historique & versions' },
   { cle: 'statistiques-performance', libelle: 'Statistiques de performance' },
   { cle: 'performances-marketing', libelle: 'Performances (marketing)', note: 'CA agrégé visible — droit distinct de « Transactions ».' },
-  { cle: 'transactions-paiements', libelle: 'Transactions & paiements', note: 'Décoché par défaut — validation explicite d’un administrateur supérieur requise.' },
+  { cle: 'transactions-paiements', libelle: 'Transactions & paiements', note: 'Décoché par défaut — validation explicite d’un admin de niveau supérieur requise' },
 ] as const
 
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerSection(event, 'administration-acces')
-  const [comptes, formateurs, utilisateurs] = await Promise.all([
+  const [comptes, formateurs, utilisateurs, modules] = await Promise.all([
     listerComptesAdmin(),
     listerFormateurs(),
     listerUtilisateurs(),
+    listerModules(),
   ])
 
   return {
@@ -42,6 +43,8 @@ export default defineEventHandler(async (event) => {
         nom: f.nom,
         email: compte?.email ?? '',
         coachingPriveActif: f.coachingPriveActif,
+        coachingPriveFcfaHeure: f.coachingPriveFcfaHeure,
+        nbModules: modules.filter((m) => m.formateurId === f.id).length,
         aUnCompte: Boolean(compte),
       }
     }),

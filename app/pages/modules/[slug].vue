@@ -246,7 +246,7 @@ function acheter() {
 
         <section class="mt-10">
           <h2 class="font-title text-[27px] font-light">FAQ du module</h2>
-          <UiAccordeonFaq class="mt-4" :questions="moduleCourant.faq" />
+          <UiAccordeonFaq class="mt-4" taille="sm" :questions="moduleCourant.faq" />
         </section>
       </article>
 

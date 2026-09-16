@@ -89,7 +89,7 @@ function ipCourte(ip?: string) {
 
     <AdminTableauSimple
       class="mt-4"
-      :colonnes="['Date', 'Auteur', 'Action', 'Type', 'Notification', '']"
+      :colonnes="['Date', 'Auteur', 'Action', 'Type', 'Objet', 'Adresse IP', 'Notification', '']"
     >
       <template v-for="entree in data.entrees" :key="entree.id">
         <tr>
@@ -108,6 +108,14 @@ function ipCourte(ip?: string) {
             <span v-else class="text-discret">—</span>
           </td>
           <td class="px-4 py-3 text-[12.5px]">
+            <span v-if="entree.objet">{{ entree.objet }}</span>
+            <span v-else class="text-discret">—</span>
+          </td>
+          <td class="px-4 py-3 font-mono text-[12px] whitespace-nowrap">
+            <span v-if="entree.ip" class="text-discret">{{ ipCourte(entree.ip) }}</span>
+            <span v-else class="text-discret">—</span>
+          </td>
+          <td class="px-4 py-3 text-[12.5px]">
             <span v-if="entree.notification" class="text-succes">{{ entree.notification }}</span>
             <span v-else class="text-discret">—</span>
           </td>
@@ -122,14 +130,14 @@ function ipCourte(ip?: string) {
           </td>
         </tr>
         <tr v-if="ouverte === entree.id">
-          <td colspan="6" class="bg-fond-voile px-4 py-3 text-[12.5px]">
+          <td colspan="8" class="bg-fond-voile px-4 py-3 text-[12.5px]">
             <p v-if="entree.ip" class="text-discret">Adresse : {{ ipCourte(entree.ip) }}</p>
             <pre v-if="entree.diff" class="mt-2 overflow-x-auto font-mono text-[12px] text-texte">{{ JSON.stringify(entree.diff, null, 2) }}</pre>
           </td>
         </tr>
       </template>
       <tr v-if="!data.entrees.length">
-        <td colspan="6" class="px-4 py-8 text-center text-discret">Aucune entrée dans ce filtre.</td>
+        <td colspan="8" class="px-4 py-8 text-center text-discret">Aucune entrée dans ce filtre.</td>
       </tr>
     </AdminTableauSimple>
   </div>

@@ -23,7 +23,6 @@ const documents = [
 <template>
   <div>
     <div class="conteneur pt-6">
-      <FilAriane :mailles="mailles" />
     </div>
     <div class="conteneur grid gap-10 pt-6 pb-16 md:grid-cols-[240px_1fr]">
       <aside class="md:sticky md:top-24 md:self-start">
@@ -46,7 +45,7 @@ const documents = [
         <p v-if="maj" class="text-[13px] text-discret">Dernière mise à jour : {{ maj }}</p>
         <h1 class="mt-2 text-[38px] font-medium">{{ titre }}</h1>
 
-        <div class="editorial mt-8">
+        <div class="editorial editorial-legal mt-8">
           <slot />
         </div>
 

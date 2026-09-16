@@ -7,7 +7,7 @@
     dériveraient l'une de l'autre — et c'est un document contractuel, que
     l'acheteur reconnaît avoir lu en cochant la case.
   -->
-  <div class="editorial">
+  <div class="editorial editorial-legal">
     <h2>Article 1 — Objet</h2>
     <p>
       Les présentes conditions régissent la vente des modules de formation en ligne E-Masterclass

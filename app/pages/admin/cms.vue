@@ -33,7 +33,10 @@ const { data, refresh } = await useFetch<{
   blocs: Bloc[]
   temoignages: Temoignage[]
   versions: Version[]
+  blog: { articles: number; categories: number }
 }>('/api/admin/cms')
+
+const temoignagesPublies = computed(() => (data.value?.temoignages ?? []).filter((t) => t.publie).length)
 
 const erreur = ref('')
 const enCours = ref(false)
@@ -198,10 +201,41 @@ function resume(bloc: Bloc): string {
           Mis à jour {{ formatDate(bloc.majLe) }}<span v-if="bloc.majPar"> par {{ bloc.majPar }}</span>.
         </p>
       </article>
+
+      <!-- Deux renvois de l'écran 15 : le blog a sa section (écran 22), les
+           témoignages se gèrent plus bas sur cette page. -->
+      <article class="rounded-[14px] border border-ligne-douce bg-white p-5">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 class="font-title text-[18px] font-light">
+              Blog — {{ data.blog.articles }} article{{ data.blog.articles > 1 ? 's' : '' }},
+              {{ data.blog.categories }} catégorie{{ data.blog.categories > 1 ? 's' : '' }}
+            </h2>
+            <p class="mt-1 text-[13px] text-discret">(section dédiée, écran 22)</p>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <span class="rounded-full bg-succes-voile px-2.5 py-1 text-[11px] font-bold text-succes">Publié</span>
+            <UiBaseButton to="/admin/blog" taille="sm" variante="contour">Gérer</UiBaseButton>
+          </div>
+        </div>
+      </article>
+      <article class="rounded-[14px] border border-ligne-douce bg-white p-5">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 class="font-title text-[18px] font-light">
+              Témoignages — {{ temoignagesPublies }} publié{{ temoignagesPublies > 1 ? 's' : '' }}, ordre manuel
+            </h2>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <span class="rounded-full bg-succes-voile px-2.5 py-1 text-[11px] font-bold text-succes">Publié</span>
+            <UiBaseButton to="#temoignages" taille="sm" variante="contour">Gérer</UiBaseButton>
+          </div>
+        </div>
+      </article>
     </div>
 
     <!-- Éditeur -->
-    <div v-if="edition" class="mt-6 grid gap-6 xl:grid-cols-[1fr_300px]">
+    <div v-if="edition" class="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-[1fr_300px]">
       <div class="rounded-[14px] border border-social bg-white p-6">
         <h2 class="font-title text-[19px] font-light">{{ edition.libelle }}</h2>
 
@@ -223,21 +257,21 @@ function resume(bloc: Bloc): string {
           <span class="text-[13.5px]">Publier ce bloc sur le site</span>
         </label>
 
-        <!-- Programmation : un bandeau qui s'éteint tout seul évite d'avoir à
-             penser à revenir l'éteindre. -->
-        <div class="mt-4 grid gap-3 border-t border-ligne-claire pt-4 sm:grid-cols-2">
-          <label class="block">
-            <span class="mb-1.5 block text-[13px] font-bold">
-              Visible à partir du <span class="font-normal text-discret">(facultatif)</span>
-            </span>
-            <input v-model="edition.publieDu" type="date" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+        <!-- Programmation (écran 15 : « Programmer : du 15/10 au 01/11 ») : un
+             bandeau qui s'éteint tout seul évite d'avoir à penser à revenir
+             l'éteindre. Les deux dates alimentent `publie_du` / `publie_au`. -->
+        <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-ligne-claire pt-4 text-[13px]">
+          <span class="font-bold">Programmer : du</span>
+          <label>
+            <span class="sr-only">Visible à partir du (facultatif)</span>
+            <input v-model="edition.publieDu" type="date" class="rounded-[10px] border border-ligne px-3 py-2 text-[14px]">
           </label>
-          <label class="block">
-            <span class="mb-1.5 block text-[13px] font-bold">
-              Jusqu’au <span class="font-normal text-discret">(facultatif)</span>
-            </span>
-            <input v-model="edition.publieAu" type="date" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
+          <span class="font-bold">au</span>
+          <label>
+            <span class="sr-only">Jusqu’au (facultatif)</span>
+            <input v-model="edition.publieAu" type="date" class="rounded-[10px] border border-ligne px-3 py-2 text-[14px]">
           </label>
+          <span class="text-[12px] text-discret">(facultatif)</span>
         </div>
 
         <div class="mt-5 flex flex-wrap gap-2">
@@ -277,7 +311,7 @@ function resume(bloc: Bloc): string {
     </div>
 
     <!-- Témoignages -->
-    <section class="mt-10">
+    <section id="temoignages" class="mt-10 scroll-mt-6">
       <h2 class="font-title text-[21px] font-light">Témoignages</h2>
       <p class="mt-1 text-[13px] text-discret">
         {{ data.temoignages.filter((t) => t.publie).length }} publié(s) sur

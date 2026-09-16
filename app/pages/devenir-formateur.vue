@@ -47,7 +47,6 @@ async function soumettre() {
       <!-- Motif de marque en fond du hero (planche A, écran 06). -->
       <img src="/images/brand/pattern.png" alt="" aria-hidden="true" class="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[340px] object-cover opacity-[.22] md:block">
       <div class="conteneur relative py-12">
-        <FilAriane :mailles="mailles" class="mb-6" />
         <UiSurtitre ton="social">Rejoindre E-Masterclass Big Five</UiSurtitre>
         <h1 class="mt-3 max-w-[900px] text-[40px] font-medium lg:text-[46px]">
           Devenir formateur E-Masterclass Big Five

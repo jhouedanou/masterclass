@@ -42,7 +42,6 @@ useFilAriane(mailles)
   <div>
     <section class="rayures-social border-b border-ligne-claire">
       <div class="conteneur py-12">
-        <FilAriane :mailles="mailles" class="mb-6" />
         <UiSurtitre ton="social">Ressources et conseils</UiSurtitre>
         <h1 class="mt-3 text-[42px] font-medium">Le blog E-Masterclass Big Five</h1>
         <p class="mt-4 max-w-[760px] text-[17px] leading-relaxed text-texte">

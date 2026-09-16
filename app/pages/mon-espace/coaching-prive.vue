@@ -120,7 +120,7 @@ const aujourdHui = new Date().toISOString().slice(0, 10)
   <div v-if="data">
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div>
-        <h1 class="text-[30px] font-medium">Mes demandes de coaching privé</h1>
+        <h1 class="text-[30px] font-light">Mes demandes de coaching privé</h1>
         <p class="mt-2 max-w-[720px] text-[15px] text-texte">
           Traitées par l’équipe sous 48 h ouvrées. Tarif fixe : 50 000 FCFA / heure. Le paiement
           n’intervient qu’après votre accord sur le créneau proposé.

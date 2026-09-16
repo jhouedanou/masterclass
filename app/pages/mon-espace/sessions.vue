@@ -79,7 +79,7 @@ async function noter(valeurs: { note: number; commentaire: string }) {
 
 <template>
   <div>
-    <h1 class="text-[30px] font-medium">Vos sessions de coaching</h1>
+    <h1 class="text-[30px] font-light">Vos sessions de coaching</h1>
     <p class="mt-2 max-w-[720px] text-[15px] text-texte">
       Une session de coaching collectif de 2 h par module et par mois, animée par le formateur du
       module. 25 places par session.

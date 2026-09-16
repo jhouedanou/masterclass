@@ -78,7 +78,7 @@ async function generer() {
 
 <template>
   <div>
-    <h1 class="text-[30px] font-medium">Mes certificats</h1>
+    <h1 class="text-[30px] font-light">Mes certificats</h1>
     <p class="mt-2 max-w-[680px] text-[15px] text-texte">
       PDF nominatifs, numérotés et vérifiables. Re-téléchargeables à tout moment.
     </p>

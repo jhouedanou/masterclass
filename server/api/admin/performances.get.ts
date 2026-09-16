@@ -1,62 +1,82 @@
 import { lireReglagesFinanciers } from '../../database/administration'
 import { listerModules } from '../../database/catalogue'
 import { listerTransactions } from '../../database/commerce'
-import { listerAcces, listerUtilisateurs } from '../../database/comptes'
+import { listerAcces, listerConnexionsReussies, listerUtilisateurs } from '../../database/comptes'
 import {
   chiffreAffaires,
   chiffreAffairesQuotidien,
   DEBUT_PERIODE,
   DEBUT_PERIODE_PRECEDENTE,
   evolution,
+  familleAppareil,
+  navigateurDepuisUserAgent,
+  part,
   surPeriode,
   transactionsReussies,
 } from '../../utils/indicateurs'
 import { exigerAdmin } from '../../utils/session'
 
 /**
- * Indicateurs de l'écran Performances.
+ * Indicateurs de l'écran Performances (planche C, écrans 18 à 18e).
  *
  * Tout ce que la base sait est calculé ici : ventes, chiffre d'affaires,
- * acheteurs, répartition par programme, pays. Les mesures d'audience — visites,
- * taux de conversion, appareils, sources, page la plus vue — n'ont aucune
- * source : leur collecte passe par Google Tag Manager (Meta Pixel + API
- * Conversions, GA4, TikTok, LinkedIn), qui n'est pas branché. Elles valent
- * `null`, et l'écran affiche « — » plutôt qu'un chiffre inventé.
+ * acheteurs, répartition par programme, pays, appareil (déduit du journal des
+ * connexions). Les mesures d'audience — visites, pages vues, durée, sources,
+ * clics — n'ont aucune source : leur collecte passe par Google Tag Manager
+ * (Meta Pixel + API Conversions, GA4, TikTok, LinkedIn), qui n'est pas
+ * branché. Elles valent `null`, et l'écran affiche « — » plutôt qu'un chiffre
+ * inventé.
  */
 export default defineEventHandler(async (event) => {
   await exigerAdmin(event)
 
   // Filtres de l'écran 18. Le pays vient du compte de l'acheteur, le programme
-  // et le module de la transaction ; l'appareil et la source demanderont la
-  // collecte, ils ne sont pas proposés tant qu'elle n'existe pas.
+  // et le module de la transaction, l'appareil du dernier appareil connu de
+  // l'acheteur. La source demanderait la collecte : le filtre est accepté mais
+  // ne retient rien tant qu'elle n'existe pas.
   const requete = getQuery(event)
   const lire = (cle: string) => (typeof requete[cle] === 'string' ? (requete[cle] as string) : '')
   const filtreProgramme = lire('programme')
   const filtreModule = lire('module')
   const filtrePays = lire('pays')
+  const filtreAppareil = lire('appareil')
   const mois = lire('mois')
 
-  const [toutesTransactions, utilisateurs, modules, acces, reglages] = await Promise.all([
+  const debut = DEBUT_PERIODE()
+  const debutMois = mois ? `${mois}-01` : debut
+
+  const [toutesTransactions, utilisateurs, modules, acces, reglages, connexions] = await Promise.all([
     listerTransactions(),
     listerUtilisateurs(),
     listerModules(),
     listerAcces(),
     lireReglagesFinanciers(),
+    listerConnexionsReussies(`${debutMois < DEBUT_PERIODE_PRECEDENTE() ? debutMois : DEBUT_PERIODE_PRECEDENTE()}T00:00:00Z`),
   ])
 
+  const moduleDe = (id: string) => modules.find((m) => m.id === id)
   const modulesRetenus = new Set(
     modules
       .filter((m) => !filtreProgramme || m.programme === filtreProgramme)
       .filter((m) => !filtreModule || m.id === filtreModule)
       .map((m) => m.id),
   )
-  const paysDe = (utilisateurId: string) => utilisateurs.find((u) => u.id === utilisateurId)?.pays ?? ''
+  const utilisateurDe = (id: string) => utilisateurs.find((u) => u.id === id)
+  const paysDe = (utilisateurId: string) => utilisateurDe(utilisateurId)?.pays ?? ''
+
+  // Dernier appareil connu par apprenant (les connexions sont triées de la
+  // plus récente à la plus ancienne).
+  const appareilDe = new Map<string, 'Mobile' | 'Desktop'>()
+  for (const c of connexions) {
+    const famille = familleAppareil(c.appareil)
+    if (famille && !appareilDe.has(c.utilisateurId)) appareilDe.set(c.utilisateurId, famille)
+  }
 
   const transactions = toutesTransactions
     .filter((t) => modulesRetenus.has(t.moduleId))
     .filter((t) => !filtrePays || paysDe(t.utilisateurId) === filtrePays)
+    .filter((t) => !filtreAppareil || appareilDe.get(t.utilisateurId) === filtreAppareil)
 
-  const debut = DEBUT_PERIODE()
   // Un mois choisi remplace la fenêtre glissante ; la comparaison à la période
   // précédente n'a alors plus de sens et se tait.
   const periode = mois
@@ -64,8 +84,12 @@ export default defineEventHandler(async (event) => {
     : surPeriode(transactions, debut)
   const precedente = mois ? [] : surPeriode(transactions, DEBUT_PERIODE_PRECEDENTE(), debut)
   const reussies = transactionsReussies(transactions)
+  const reussiesPeriode = transactionsReussies(periode)
+  const tentativesPeriode = mois
+    ? transactions.filter((t) => t.date.slice(0, 7) === mois)
+    : transactions.filter((t) => t.date >= debut)
 
-  const acheteursPeriode = new Set(periode.map((t) => t.utilisateurId))
+  const acheteursPeriode = new Set(reussiesPeriode.map((t) => t.utilisateurId))
   const acheteurs = new Set(reussies.map((t) => t.utilisateurId))
 
   // Un acheteur est « nouveau » si son premier paiement réussi tombe dans la
@@ -74,17 +98,21 @@ export default defineEventHandler(async (event) => {
   for (const t of [...reussies].sort((a, b) => a.date.localeCompare(b.date))) {
     if (!premierAchat.has(t.utilisateurId)) premierAchat.set(t.utilisateurId, t.date)
   }
-  const nouveaux = [...premierAchat.values()].filter((date) => date >= debut).length
+  const dansPeriode = (date: string) => (mois ? date.slice(0, 7) === mois : date >= debut)
+  const nouveauxIds = [...premierAchat.entries()].filter(([, date]) => dansPeriode(date)).map(([id]) => id)
 
-  const modulesParUtilisateur = new Map<string, number>()
+  const modulesParUtilisateur = new Map<string, Set<string>>()
   for (const a of acces) {
-    modulesParUtilisateur.set(a.utilisateurId, (modulesParUtilisateur.get(a.utilisateurId) ?? 0) + 1)
+    if (!acheteurs.has(a.utilisateurId)) continue
+    const s = modulesParUtilisateur.get(a.utilisateurId) ?? new Set<string>()
+    s.add(a.moduleId)
+    modulesParUtilisateur.set(a.utilisateurId, s)
   }
-  const recurrents = [...modulesParUtilisateur.values()].filter((n) => n >= 2).length
+  const recurrentsIds = [...modulesParUtilisateur.entries()].filter(([, s]) => s.size >= 2).map(([id]) => id)
 
   const parProgramme = { socialMedia: 0, entrepreneurs: 0 }
-  for (const t of reussies) {
-    const programme = modules.find((m) => m.id === t.moduleId)?.programme
+  for (const t of reussiesPeriode) {
+    const programme = moduleDe(t.moduleId)?.programme
     if (programme === 'social-media') parProgramme.socialMedia += 1
     else if (programme === 'entrepreneurs') parProgramme.entrepreneurs += 1
   }
@@ -93,115 +121,210 @@ export default defineEventHandler(async (event) => {
   // Pays le plus représenté parmi les acheteurs, avec sa part.
   const parPays = new Map<string, number>()
   for (const id of acheteurs) {
-    const pays = utilisateurs.find((u) => u.id === id)?.pays
+    const pays = paysDe(id)
     if (pays) parPays.set(pays, (parPays.get(pays) ?? 0) + 1)
   }
   const meilleurPays = [...parPays.entries()].sort((a, b) => b[1] - a[1])[0]
 
-  const caPeriode = chiffreAffaires(periode)
+  const caPeriode = chiffreAffaires(reussiesPeriode)
   const caTotal = chiffreAffaires(reussies)
+
+  // --- Regroupements réutilisés par plusieurs onglets ------------------------
+  const ventesParModule = [...modulesRetenus]
+    .map((id) => {
+      const lignes = reussiesPeriode.filter((t) => t.moduleId === id)
+      const m = moduleDe(id)
+      return {
+        id,
+        titre: m?.titre ?? '—',
+        programme: m?.programme === 'social-media' ? 'SM' : 'ENT',
+        ventes: lignes.length,
+        ca: chiffreAffaires(lignes),
+      }
+    })
+    .filter((l) => l.ventes > 0)
+    .sort((a, b) => b.ca - a.ca)
+
+  const ventesParPays = (() => {
+    const carte = new Map<string, { ventes: number; ca: number }>()
+    for (const t of reussiesPeriode) {
+      const pays = paysDe(t.utilisateurId) || 'Non renseigné'
+      const ligne = carte.get(pays) ?? { ventes: 0, ca: 0 }
+      carte.set(pays, { ventes: ligne.ventes + 1, ca: ligne.ca + t.montant })
+    }
+    return [...carte.entries()]
+      .map(([pays, v]) => ({ pays, ...v, part: part(v.ventes, reussiesPeriode.length) ?? 0 }))
+      .sort((a, b) => b.ca - a.ca)
+  })()
+
+  const parClient = new Map<string, { ca: number; achats: number }>()
+  for (const t of reussiesPeriode) {
+    const ligne = parClient.get(t.utilisateurId) ?? { ca: 0, achats: 0 }
+    parClient.set(t.utilisateurId, { ca: ligne.ca + t.montant, achats: ligne.achats + 1 })
+  }
+  const clients = [...parClient.entries()]
+    .map(([id, v]) => {
+      const u = utilisateurDe(id)
+      return {
+        id,
+        nom: u ? `${u.prenom} ${u.nom}` : '—',
+        pays: u?.pays ?? '',
+        nouveau: nouveauxIds.includes(id),
+        recurrent: recurrentsIds.includes(id),
+        ...v,
+      }
+    })
+    .sort((a, b) => b.ca - a.ca)
+  const meilleurAcheteur = clients[0] ?? null
+
+  // Appareils : connexions réussies de la période, une par apprenant et par
+  // famille. Sans collecte d'audience, c'est la seule répartition mesurable.
+  const connexionsPeriode = connexions.filter((c) => dansPeriode(c.creeLe.slice(0, 10)))
+  const parAppareil = { Mobile: 0, Desktop: 0 }
+  const parNavigateur = new Map<string, number>()
+  for (const c of connexionsPeriode) {
+    const famille = familleAppareil(c.appareil)
+    if (famille) parAppareil[famille] += 1
+    const nav = navigateurDepuisUserAgent(c.appareil)
+    if (nav) parNavigateur.set(nav, (parNavigateur.get(nav) ?? 0) + 1)
+  }
+  const totalAppareils = parAppareil.Mobile + parAppareil.Desktop
+  const navigateurs = [...parNavigateur.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
+  const ventesParAppareil = (famille: 'Mobile' | 'Desktop') =>
+    reussiesPeriode.filter((t) => appareilDe.get(t.utilisateurId) === famille).length
+
+  // Clients par programme : un acheteur est « bi-programmes » s'il possède au
+  // moins un module de chaque.
+  const clientsParProgramme = { socialMediaSeul: 0, entrepreneursSeul: 0, lesDeux: 0 }
+  let caBiProgrammes = 0
+  for (const id of acheteurs) {
+    const programmes = new Set(
+      [...(modulesParUtilisateur.get(id) ?? [])].map((m) => moduleDe(m)?.programme).filter(Boolean),
+    )
+    if (programmes.size >= 2) {
+      clientsParProgramme.lesDeux += 1
+      caBiProgrammes += chiffreAffaires(reussies.filter((t) => t.utilisateurId === id))
+    } else if (programmes.has('social-media')) clientsParProgramme.socialMediaSeul += 1
+    else if (programmes.has('entrepreneurs')) clientsParProgramme.entrepreneursSeul += 1
+  }
+
+  // Nouveaux acheteurs par semaine de la période (S1 = première semaine).
+  const debutSemaines = new Date(`${debutMois}T00:00:00Z`).getTime()
+  const nouveauxParSemaine = [0, 0, 0, 0, 0]
+  for (const id of nouveauxIds) {
+    const date = premierAchat.get(id)!
+    const index = Math.min(4, Math.floor((new Date(`${date}T00:00:00Z`).getTime() - debutSemaines) / (7 * 86_400_000)))
+    nouveauxParSemaine[Math.max(0, index)]! += 1
+  }
+
+  const comptesValides = tentativesPeriode.length
+  const paiements = reussiesPeriode.length
 
   return {
     ca: caPeriode,
     evolutionCa: evolution(caPeriode, chiffreAffaires(precedente)),
-    ventes: periode.length,
-    modulesParAcheteur: acheteursPeriode.size
-      ? Math.round((periode.length / acheteursPeriode.size) * 10) / 10
-      : 0,
+    ventes: paiements,
+    modulesParAcheteur: acheteursPeriode.size ? Math.round((paiements / acheteursPeriode.size) * 10) / 10 : 0,
     repartitionProgramme: {
-      socialMedia: totalProgramme ? Math.round((parProgramme.socialMedia / totalProgramme) * 100) : 0,
-      entrepreneurs: totalProgramme
-        ? Math.round((parProgramme.entrepreneurs / totalProgramme) * 100)
-        : 0,
+      socialMedia: part(parProgramme.socialMedia, totalProgramme) ?? 0,
+      entrepreneurs: part(parProgramme.entrepreneurs, totalProgramme) ?? 0,
+      ventesSocialMedia: parProgramme.socialMedia,
+      ventesEntrepreneurs: parProgramme.entrepreneurs,
     },
-    topPays: meilleurPays
-      ? `${meilleurPays[0]} (${Math.round((meilleurPays[1] / acheteurs.size) * 100)} %)`
-      : null,
+    topModule: ventesParModule[0] ? { titre: ventesParModule[0].titre, ventes: ventesParModule[0].ventes } : null,
+    topPays: meilleurPays ? `${meilleurPays[0]} (${part(meilleurPays[1], acheteurs.size)} %)` : null,
     ltv: acheteurs.size ? Math.round(caTotal / acheteurs.size) : 0,
+    meilleurAcheteur: meilleurAcheteur ? { nom: meilleurAcheteur.nom, ca: meilleurAcheteur.ca } : null,
     acheteurs: acheteurs.size,
-    nouveaux,
-    recurrents,
+    nouveaux: nouveauxIds.length,
+    recurrents: recurrentsIds.length,
     objectifCa: reglages.objectifCaMensuel,
     caQuotidien: chiffreAffairesQuotidien(transactions),
 
     // --- Ce que propose chaque filtre, tiré des données réelles ------------
     moisDisponibles: [...new Set(toutesTransactions.map((t) => t.date.slice(0, 7)))].sort().reverse(),
     paysDisponibles: [...new Set(utilisateurs.map((u) => u.pays).filter(Boolean))].sort(),
+    appareilsDisponibles: [...new Set(appareilDe.values())].sort(),
+    // Aucune source n'est mesurée : le filtre n'a qu'un « — » à proposer.
+    sourcesDisponibles: [] as string[],
     modulesDisponibles: modules
       .filter((m) => !filtreProgramme || m.programme === filtreProgramme)
       .map((m) => ({ id: m.id, titre: m.titre, programme: m.programme })),
 
     // --- Onglet Ventes (18c) ------------------------------------------------
-    ventesParModule: [...modulesRetenus]
-      .map((id) => {
-        const lignes = periode.filter((t) => t.moduleId === id && t.statut === 'reussie')
-        return {
-          titre: modules.find((m) => m.id === id)?.titre ?? '—',
-          ventes: lignes.length,
-          ca: chiffreAffaires(lignes),
-        }
-      })
-      .filter((l) => l.ventes > 0)
-      .sort((a, b) => b.ca - a.ca),
-    ventesParPays: (() => {
-      const parPaysVentes = new Map<string, { ventes: number; ca: number }>()
-      for (const t of periode.filter((x) => x.statut === 'reussie')) {
-        const pays = paysDe(t.utilisateurId) || 'Non renseigné'
-        const ligne = parPaysVentes.get(pays) ?? { ventes: 0, ca: 0 }
-        parPaysVentes.set(pays, { ventes: ligne.ventes + 1, ca: ligne.ca + t.montant })
-      }
-      return [...parPaysVentes.entries()]
-        .map(([pays, v]) => ({ pays, ...v }))
-        .sort((a, b) => b.ca - a.ca)
-    })(),
+    modulesDistincts: { vendus: ventesParModule.length, total: modules.length },
+    ventesParModule,
+    ventesParPays,
     moyensPaiement: (() => {
       const parMoyen = new Map<string, number>()
-      for (const t of periode.filter((x) => x.statut === 'reussie')) {
-        parMoyen.set(t.moyen, (parMoyen.get(t.moyen) ?? 0) + 1)
-      }
-      const total = [...parMoyen.values()].reduce((s, n) => s + n, 0)
+      for (const t of reussiesPeriode) parMoyen.set(t.moyen, (parMoyen.get(t.moyen) ?? 0) + 1)
       return [...parMoyen.entries()]
-        .map(([moyen, n]) => ({ moyen, ventes: n, part: total ? Math.round((n / total) * 100) : 0 }))
+        .map(([moyen, n]) => ({ moyen, ventes: n, part: part(n, paiements) ?? 0 }))
         .sort((a, b) => b.ventes - a.ventes)
     })(),
 
+    // --- Onglet Visites (18d) -----------------------------------------------
+    appareils: totalAppareils
+      ? {
+          mobile: parAppareil.Mobile,
+          desktop: parAppareil.Desktop,
+          partMobile: part(parAppareil.Mobile, totalAppareils) ?? 0,
+          partDesktop: part(parAppareil.Desktop, totalAppareils) ?? 0,
+          navigateurs: navigateurs.map(([nom]) => nom).join(' · '),
+          partNavigateurs: part(
+            navigateurs.reduce((s, [, n]) => s + n, 0),
+            connexionsPeriode.length,
+          ),
+        }
+      : null,
+
     // --- Onglet Clients (18e) ----------------------------------------------
-    meilleursClients: (() => {
-      const parClient = new Map<string, { ca: number; modules: number }>()
-      for (const t of periode.filter((x) => x.statut === 'reussie')) {
-        const ligne = parClient.get(t.utilisateurId) ?? { ca: 0, modules: 0 }
-        parClient.set(t.utilisateurId, { ca: ligne.ca + t.montant, modules: ligne.modules + 1 })
-      }
-      return [...parClient.entries()]
-        .map(([id, v]) => {
-          const u = utilisateurs.find((x) => x.id === id)
-          return { nom: u ? `${u.prenom} ${u.nom}` : '—', pays: u?.pays ?? '', ...v }
-        })
-        .sort((a, b) => b.ca - a.ca)
-        .slice(0, 10)
-    })(),
+    clients,
+    nouveauxParSemaine: nouveauxParSemaine.map((n, i) => ({ semaine: `S${i + 1}`, nouveaux: n })),
+    clientsParPays: [...parPays.entries()]
+      .map(([pays, n]) => ({ pays, clients: n }))
+      .sort((a, b) => b.clients - a.clients),
+    clientsParProgramme,
+    ltvBiProgrammes: clientsParProgramme.lesDeux ? Math.round(caBiProgrammes / clientsParProgramme.lesDeux) : null,
     // Part des acheteurs revenus prendre un second module : la seule mesure de
     // rétention que la base sait produire sans collecte d'audience.
-    retention: acheteurs.size ? Math.round((recurrents / acheteurs.size) * 100) : null,
+    retention: part(recurrentsIds.length, acheteurs.size),
 
     // --- Onglet Funnel (18b) ------------------------------------------------
     // Les deux premières étapes viennent de la collecte, qui n'existe pas :
     // elles restent nulles plutôt que d'être devinées à partir des commandes.
     funnel: {
-      visites: null,
-      fichesVues: null,
-      commandes: periode.length,
-      paiements: periode.filter((t) => t.statut === 'reussie').length,
-      echecs: periode.filter((t) => t.statut === 'echouee').length,
+      visites: null as number | null,
+      clics: null as number | null,
+      comptes: comptesValides,
+      paiements,
+      echecs: tentativesPeriode.filter((t) => t.statut === 'echouee').length,
     },
+    conversionParAppareil: (['Mobile', 'Desktop'] as const).map((appareil) => ({
+      appareil,
+      visites: null as number | null,
+      ventes: ventesParAppareil(appareil),
+      taux: null as number | null,
+    })),
+    conversionParPays: ventesParPays.map((l) => ({
+      pays: l.pays,
+      visites: null as number | null,
+      ventes: l.ventes,
+      taux: null as number | null,
+    })),
+    conversionParSource: [] as { source: string; visites: number | null; ventes: number; taux: number | null }[],
 
     // --- En attente du branchement de la collecte (spec §11–12) -------------
-    visites: null,
-    visiteursUniques: null,
-    tauxConversion: null,
-    appareils: null,
-    topSource: null,
-    directReferents: null,
-    pageLaPlusVue: null,
+    visites: null as number | null,
+    visiteursUniques: null as number | null,
+    pagesVues: null as number | null,
+    dureeMoyenne: null as string | null,
+    tauxConversion: null as number | null,
+    topSource: null as string | null,
+    directReferents: null as number | null,
+    pageLaPlusVue: null as string | null,
+    visitesQuotidiennes: null as number[] | null,
+    visitesParPays: null as { pays: string; visites: number }[] | null,
+    sources: null as { source: string; medium: string; visites: number }[] | null,
   }
 })

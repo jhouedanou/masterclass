@@ -52,3 +52,42 @@ export function evolution(actuel: number, precedent: number): number | null {
   if (precedent === 0) return null
   return Math.round(((actuel - precedent) / precedent) * 100)
 }
+
+/** Famille d'appareil déduite du user-agent journalisé à la connexion. */
+export function familleAppareil(userAgent: string | null | undefined): 'Mobile' | 'Desktop' | null {
+  if (!userAgent) return null
+  return /Mobi|Android|iPhone|iPad|Opera Mini/i.test(userAgent) ? 'Mobile' : 'Desktop'
+}
+
+/** Navigateur lisible depuis le user-agent (« Chrome Android », « Safari iOS »…). */
+export function navigateurDepuisUserAgent(userAgent: string | null | undefined): string | null {
+  if (!userAgent) return null
+  const os = /Android/i.test(userAgent)
+    ? 'Android'
+    : /iPhone|iPad/i.test(userAgent)
+      ? 'iOS'
+      : /Windows/i.test(userAgent)
+        ? 'Windows'
+        : /Mac OS/i.test(userAgent)
+          ? 'macOS'
+          : ''
+  const nav = /Opera Mini/i.test(userAgent)
+    ? 'Opera Mini'
+    : /Edg\//i.test(userAgent)
+      ? 'Edge'
+      : /OPR\//i.test(userAgent)
+        ? 'Opera'
+        : /Firefox\//i.test(userAgent)
+          ? 'Firefox'
+          : /Chrome\//i.test(userAgent)
+            ? 'Chrome'
+            : /Safari\//i.test(userAgent)
+              ? 'Safari'
+              : 'Autre'
+  return os ? `${nav} ${os}` : nav
+}
+
+/** Part en pourcentage, arrondie ; `null` quand le total est vide. */
+export function part(n: number, total: number): number | null {
+  return total ? Math.round((n / total) * 100) : null
+}

@@ -10,7 +10,14 @@ const { data: articles } = await useFetch<ArticleAdmin[]>('/api/admin/articles')
 
 const onglet = ref<'tous' | 'publie' | 'brouillon'>('tous')
 const categorie = ref('')
+const auteur = ref('')
 const recherche = ref('')
+
+const auteurs = computed(() =>
+  [...new Map((articles.value ?? []).filter((a) => a.auteur).map((a) => [a.auteur!.id, a.auteur!.nom])).entries()]
+    .map(([id, nom]) => ({ id, nom }))
+    .sort((a, b) => a.nom.localeCompare(b.nom, 'fr')),
+)
 
 const categories = computed(() =>
   [...new Set((articles.value ?? []).map((a) => a.categorie))].sort(),
@@ -20,6 +27,7 @@ const visibles = computed(() =>
   (articles.value ?? [])
     .filter((a) => onglet.value === 'tous' || a.statut === onglet.value)
     .filter((a) => !categorie.value || a.categorie === categorie.value)
+    .filter((a) => !auteur.value || a.auteurId === auteur.value)
     .filter((a) => {
       const q = recherche.value.trim().toLowerCase()
       return !q || a.titre.toLowerCase().includes(q) || a.slug.includes(q)
@@ -28,11 +36,13 @@ const visibles = computed(() =>
 
 const compte = (statut: string) => (articles.value ?? []).filter((a) => a.statut === statut).length
 
-const ONGLETS = [
-  { cle: 'tous', libelle: 'Tous' },
-  { cle: 'publie', libelle: 'Publiés' },
-  { cle: 'brouillon', libelle: 'Brouillons' },
-] as const
+/** « Tous (14) · Publiés (11) · Brouillons (3) » — compteurs sur l'ensemble,
+ *  pas sur le filtre courant. */
+const ONGLETS = computed(() => [
+  { cle: 'tous', libelle: 'Tous', compteur: (articles.value ?? []).length },
+  { cle: 'publie', libelle: 'Publiés', compteur: compte('publie') },
+  { cle: 'brouillon', libelle: 'Brouillons', compteur: compte('brouillon') },
+])
 
 /**
  * Un article publié mais non indexable ne remontera jamais dans une recherche.
@@ -50,7 +60,7 @@ function indexation(a: ArticleAdmin) {
 <template>
   <div>
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="font-title text-[26px] font-light">Blog — {{ articles?.length ?? 0 }} articles</h1>
+      <h1 class="font-title text-[26px] font-light">Blog — articles</h1>
       <UiBaseButton taille="sm" to="/admin/article/nouveau">+ Nouvel article</UiBaseButton>
     </div>
     <p class="mt-2 max-w-[760px] text-[13.5px] text-discret">
@@ -58,26 +68,22 @@ function indexation(a: ArticleAdmin) {
       site. Le référencement de chaque article se règle depuis son éditeur ou depuis la liste SEO.
     </p>
 
-    <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex flex-wrap gap-2" role="group">
-        <button
-          v-for="o in ONGLETS"
-          :key="o.cle"
-          class="rounded-full border px-4 py-2 text-[13px] font-bold"
-          :class="onglet === o.cle ? 'border-social bg-social text-white' : 'border-ligne bg-white text-texte'"
-          :aria-pressed="onglet === o.cle"
-          @click="onglet = o.cle"
-        >
-          {{ o.libelle }}
-          <span class="font-normal">
-            ({{ o.cle === 'tous' ? (articles ?? []).length : compte(o.cle) }})
-          </span>
-        </button>
-      </div>
+    <UiOnglets
+      class="mt-5"
+      :onglets="ONGLETS"
+      :model-value="onglet"
+      @update:model-value="onglet = $event as typeof onglet"
+    />
+
+    <div class="mt-4 flex flex-wrap items-center justify-end gap-3">
       <div class="flex flex-wrap gap-2 text-[13px]">
         <select v-model="categorie" class="rounded-full border border-ligne bg-white px-3.5 py-2">
-          <option value="">Toutes catégories</option>
+          <option value="">Catégorie : toutes</option>
           <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
+        </select>
+        <select v-model="auteur" class="rounded-full border border-ligne bg-white px-3.5 py-2">
+          <option value="">Auteur : tous</option>
+          <option v-for="a in auteurs" :key="a.id" :value="a.id">{{ a.nom }}</option>
         </select>
         <input
           v-model="recherche"
@@ -90,13 +96,15 @@ function indexation(a: ArticleAdmin) {
 
     <AdminTableauSimple
       class="mt-4"
-      :colonnes="['Titre', 'Catégorie', 'Auteur', 'Publié le', 'Statut', 'Indexation', 'Actions']"
+      :colonnes="['Article', 'Catégorie', 'Auteur', 'Publié le', 'Statut', 'Indexation', 'Actions']"
     >
       <tr v-for="article in visibles" :key="article.id">
         <td class="px-4 py-3">
           <p class="font-bold">{{ article.titre }}</p>
           <p class="font-mono text-[11.5px] text-discret">
-            /blog/{{ article.slug }}<span v-if="article.aLaUne"> · à la une</span>
+            <template v-if="article.slug">/blog/{{ article.slug }}</template>
+            <template v-else>slug à définir</template>
+            <span v-if="article.aLaUne"> · à la une</span>
           </p>
         </td>
         <td class="px-4 py-3">{{ article.categorie }}</td>

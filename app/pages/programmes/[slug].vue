@@ -112,7 +112,6 @@ useJsonLd(() => ({
         :class="social ? 'opacity-[.28]' : 'opacity-[.24]'"
       >
       <div class="conteneur relative py-12">
-        <FilAriane :mailles="mailles" clair class="mb-6" />
         <p class="surtitre text-white/80">Programme</p>
         <h1 class="mt-3 font-title text-[44px] font-light lg:text-[56px]">
           {{ programme.nom }}
@@ -179,6 +178,7 @@ useJsonLd(() => ({
           <CatalogueModuleCarte
             v-for="entree in modulesAffiches"
             :key="entree.module.id"
+            variante="programme"
             :module="entree.module"
             :thematique-nom="entree.thematique.nom"
             statut-visible
@@ -194,7 +194,7 @@ useJsonLd(() => ({
           surtitre="FAQ du programme"
           :titre="`Vos questions sur le programme ${programme.nom}`"
         />
-        <UiAccordeonFaq :questions="faq" />
+        <UiAccordeonFaq taille="sm" :questions="faq" />
       </div>
     </section>
   </div>

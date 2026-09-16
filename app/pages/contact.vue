@@ -157,7 +157,6 @@ useJsonLd({
   <div>
     <section class="rayures-social border-b border-ligne-claire">
       <div class="conteneur py-12">
-        <FilAriane :mailles="mailles" class="mb-6" />
         <UiSurtitre ton="social">Contact et assistance</UiSurtitre>
         <h1 class="mt-3 text-[42px] font-medium">Une question ? Parlons-en.</h1>
         <p class="mt-4 max-w-[760px] text-[17px] leading-relaxed text-texte">
@@ -185,7 +184,7 @@ useJsonLd({
           <div class="mt-6 flex flex-col gap-8">
             <div v-for="groupe in groupesFaq" :key="groupe.titre">
               <h3 class="surtitre text-discret">{{ groupe.titre }}</h3>
-              <UiAccordeonFaq class="mt-3" :questions="groupe.questions" :ouvert-par-defaut="-1" />
+              <UiAccordeonFaq class="mt-3" taille="sm" :questions="groupe.questions" :ouvert-par-defaut="-1" />
             </div>
           </div>
         </div>

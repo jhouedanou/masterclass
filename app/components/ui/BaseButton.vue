@@ -2,7 +2,7 @@
 interface Props {
   to?: string
   href?: string
-  variante?: 'social' | 'entrepreneurs' | 'sombre' | 'blanc' | 'whatsapp' | 'contour'
+  variante?: 'social' | 'entrepreneurs' | 'sombre' | 'blanc' | 'whatsapp' | 'contour' | 'danger'
   taille?: 'sm' | 'md' | 'lg'
   type?: 'button' | 'submit'
   disabled?: boolean
@@ -15,13 +15,19 @@ const props = withDefaults(defineProps<Props>(), {
   type: 'button',
 })
 
-/** Boutons en pilule pleine, conformément à la maquette. */
+/**
+ * Boutons en pilule, conformément aux maquettes : graisse 800, et un contour
+ * tracé à 1,5 px en encre — la phase 1 le tirait à 1 px en gris de filet, ce
+ * qui effaçait le bouton. `danger` sert les actions destructrices que les
+ * maquettes peignent en rouge (annuler une session, supprimer un formateur) ;
+ * elles étaient rendues en noir faute de variante.
+ */
 const classes = computed(() => {
   const base =
-    'inline-flex items-center justify-center gap-2.5 rounded-full font-bold transition disabled:cursor-not-allowed disabled:opacity-50'
+    'inline-flex items-center justify-center gap-2.5 rounded-full font-extrabold transition disabled:cursor-not-allowed disabled:opacity-50'
   const tailles = {
-    sm: 'px-5 py-2.5 text-[14px]',
-    md: 'px-6 py-3.5 text-[15px]',
+    sm: 'px-5 py-[11px] text-[13.5px]',
+    md: 'px-[26px] py-3.5 text-[15px]',
     lg: 'px-[30px] py-4 text-[16px]',
   }
   const variantes = {
@@ -30,7 +36,8 @@ const classes = computed(() => {
     sombre: 'bg-encre text-white hover:bg-encre-800',
     blanc: 'bg-white text-encre hover:bg-fond-clair',
     whatsapp: 'bg-whatsapp text-white hover:brightness-95',
-    contour: 'border border-ligne text-encre hover:bg-fond-clair',
+    contour: 'border-[1.5px] border-encre text-encre hover:bg-fond-clair',
+    danger: 'bg-erreur text-white hover:bg-erreur-fonce',
   }
   return [base, tailles[props.taille], variantes[props.variante]].join(' ')
 })

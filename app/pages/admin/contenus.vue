@@ -20,6 +20,7 @@ interface ModuleArbre {
   nbScripts: number
   nbVideos: number
   chapitres: ChapitreArbre[]
+  videoIntro: boolean
   formateur: string
   fiche: string
   contenu: string
@@ -116,7 +117,7 @@ watchEffect(() => {
 
 // --- Création ---------------------------------------------------------------
 
-type Panneau = '' | 'programme' | 'phase' | 'thematique' | 'module'
+type Panneau = '' | 'nouveau-programme' | 'programme' | 'phase' | 'thematique' | 'module'
 const panneau = ref<Panneau>('')
 function basculer(cible: Panneau) {
   panneau.value = panneau.value === cible ? '' : cible
@@ -148,6 +149,33 @@ async function creerThematique() {
   })
   if (ok) {
     nouvelleThematique.nom = ''
+    panneau.value = ''
+  }
+}
+
+/**
+ * « + Nouveau programme » (écran 02) : un programme vide en brouillon — nom,
+ * couleur d'accent, slug. Le slug se déduit du nom tant qu'il n'a pas été
+ * touché à la main.
+ */
+const nouveauProgramme = reactive({ nom: '', couleur: '#6d28d9', slug: '' })
+const slugProgrammeManuel = ref(false)
+watch(() => nouveauProgramme.nom, (nom) => {
+  if (slugProgrammeManuel.value) return
+  nouveauProgramme.slug = nom
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+})
+async function creerProgramme() {
+  if (!nouveauProgramme.nom.trim() || !nouveauProgramme.slug) return
+  const ok = await appeler('/api/admin/programmes', { action: 'creer', ...nouveauProgramme })
+  if (ok) {
+    programmeActif.value = nouveauProgramme.slug
+    Object.assign(nouveauProgramme, { nom: '', couleur: '#6d28d9', slug: '' })
+    slugProgrammeManuel.value = false
     panneau.value = ''
   }
 }
@@ -247,6 +275,7 @@ const pastille = 'rounded-full px-2.5 py-1 text-[11px] font-bold'
     <div class="flex flex-wrap items-start justify-between gap-3">
       <h1 class="font-title text-[26px] font-light">Modules pédagogiques &amp; chapitres</h1>
       <div class="flex flex-wrap gap-2">
+        <UiBaseButton taille="sm" variante="contour" @click="basculer('nouveau-programme')">+ Nouveau programme</UiBaseButton>
         <UiBaseButton taille="sm" variante="contour" @click="basculer('programme')">Modifier le programme</UiBaseButton>
         <UiBaseButton taille="sm" variante="contour" @click="basculer('phase')">+ Nouvelle phase</UiBaseButton>
         <UiBaseButton taille="sm" variante="contour" @click="basculer('thematique')">+ Nouvelle thématique</UiBaseButton>
@@ -255,6 +284,40 @@ const pastille = 'rounded-full px-2.5 py-1 text-[11px] font-bold'
     </div>
 
     <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-[#fdeeee] px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>
+
+    <!-- Nouveau programme : vide, en brouillon (écran 02) -->
+    <form v-if="panneau === 'nouveau-programme'" class="mt-5 rounded-[14px] border border-ligne-douce bg-white p-5" @submit.prevent="creerProgramme">
+      <h2 class="font-title text-[18px] font-light">Nouveau programme</h2>
+      <p class="mt-1 text-[12.5px] text-discret">
+        Crée un programme vide en brouillon (nom, couleur d’accent, slug) ; les thématiques
+        s’ajoutent ensuite à n’importe quel programme existant.
+      </p>
+      <div class="mt-4 grid gap-3 sm:grid-cols-3">
+        <label class="block">
+          <span class="mb-1.5 block text-[13px] font-bold">Nom</span>
+          <input v-model="nouveauProgramme.nom" required :class="champ">
+        </label>
+        <label class="block">
+          <span class="mb-1.5 block text-[13px] font-bold">Couleur d’accent</span>
+          <div class="flex items-center gap-2">
+            <input v-model="nouveauProgramme.couleur" type="color" class="h-[42px] w-14 rounded-[10px] border border-ligne">
+            <input v-model="nouveauProgramme.couleur" class="flex-1 rounded-[10px] border border-ligne px-3 py-2.5 font-mono text-[13.5px] focus:border-social focus:outline-none">
+          </div>
+        </label>
+        <label class="block">
+          <span class="mb-1.5 block text-[13px] font-bold">Slug</span>
+          <input
+            v-model="nouveauProgramme.slug"
+            required
+            pattern="[a-z0-9-]+"
+            class="w-full rounded-[10px] border border-ligne px-3 py-2.5 font-mono text-[13.5px] focus:border-social focus:outline-none"
+            @input="slugProgrammeManuel = true"
+          >
+          <span class="mt-1 block text-[12px] text-discret">/programmes/{{ nouveauProgramme.slug || '…' }}</span>
+        </label>
+      </div>
+      <UiBaseButton type="submit" taille="sm" class="mt-4" :disabled="enCours">Créer le programme</UiBaseButton>
+    </form>
 
     <!-- Programme : le slug n'est pas modifiable, il est le pivot de six tables -->
     <form v-if="panneau === 'programme'" class="mt-5 rounded-[14px] border border-ligne-douce bg-white p-5" @submit.prevent="enregistrerProgramme">
@@ -373,7 +436,7 @@ const pastille = 'rounded-full px-2.5 py-1 text-[11px] font-bold'
       </label>
     </div>
 
-    <div class="mt-5 grid gap-6 xl:grid-cols-[1.3fr_1fr]">
+    <div class="mt-5 grid gap-6 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr]">
       <div class="flex flex-col gap-3">
         <article
           v-for="thematique in phase?.thematiques"
@@ -522,6 +585,14 @@ const pastille = 'rounded-full px-2.5 py-1 text-[11px] font-bold'
             </span>
           </div>
           <ul class="mt-3 flex flex-col gap-1.5">
+            <li class="flex items-center justify-between gap-3 text-[13px]">
+              <span class="min-w-0 truncate text-texte">
+                <span class="text-discret">⋮⋮</span> Vidéo de bienvenue
+              </span>
+              <span class="shrink-0 text-[12px]" :class="moduleSelectionne.videoIntro ? 'text-succes' : 'text-alerte'">
+                {{ moduleSelectionne.videoIntro ? '— Uploadée' : '— À téléverser' }}
+              </span>
+            </li>
             <li
               v-for="(c, i) in moduleSelectionne.chapitres"
               :key="i"

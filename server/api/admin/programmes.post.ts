@@ -1,5 +1,5 @@
 import { enregistrerJournal } from '../../database/administration'
-import { listerProgrammes, majProgramme } from '../../database/catalogue'
+import { creerProgramme, listerProgrammes, majProgramme } from '../../database/catalogue'
 import { exigerSection } from '../../utils/session'
 
 /**
@@ -14,6 +14,7 @@ import { exigerSection } from '../../utils/session'
 export default defineEventHandler(async (event) => {
   const admin = await exigerSection(event, 'modules-chapitres')
   const body = await readBody<{
+    action?: 'creer'
     slug: string
     nom?: string
     couleur?: string
@@ -23,6 +24,29 @@ export default defineEventHandler(async (event) => {
   }>(event)
 
   if (!body.slug) throw createError({ statusCode: 422, statusMessage: 'Programme non précisé' })
+
+  // « + Nouveau programme » (écran 02) : un programme vide, en brouillon.
+  if (body.action === 'creer') {
+    if (!/^[a-z0-9-]+$/.test(body.slug)) {
+      throw createError({ statusCode: 422, statusMessage: 'Le slug n’admet que des minuscules, chiffres et tirets' })
+    }
+    if (!body.nom?.trim()) throw createError({ statusCode: 422, statusMessage: 'Le nom du programme est requis' })
+    if (body.couleur !== undefined && !/^#[0-9a-fA-F]{6}$/.test(body.couleur)) {
+      throw createError({ statusCode: 422, statusMessage: 'La couleur attendue est au format #RRGGBB' })
+    }
+    const programme = await creerProgramme({
+      slug: body.slug,
+      nom: body.nom.trim(),
+      couleur: body.couleur ?? '#6d28d9',
+    })
+    await enregistrerJournal(
+      `${admin.prenom} ${admin.nom}`,
+      'a créé le programme',
+      programme.nom,
+      { type: 'contenu', objet: programme.id },
+    )
+    return { programmes: await listerProgrammes() }
+  }
   if (body.nom !== undefined && !body.nom.trim()) {
     throw createError({ statusCode: 422, statusMessage: 'Le nom du programme est requis' })
   }

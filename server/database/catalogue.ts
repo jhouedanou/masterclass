@@ -53,6 +53,49 @@ export async function trouverProgramme(slug: string): Promise<Programme | null> 
   return row ? versProgramme(row) : null
 }
 
+/**
+ * « + Nouveau programme » (planche C, écran 02) : un programme vide, en
+ * brouillon, avec son nom, sa couleur d'accent et son slug.
+ *
+ * Le slug est un type énuméré en base (`programme_slug`) : tant que la
+ * migration qui l'ouvre n'est pas passée, Postgres refuse toute valeur hors
+ * des deux existantes — l'erreur est traduite en clair plutôt que laissée
+ * brute.
+ */
+export async function creerProgramme(champs: {
+  slug: string
+  nom: string
+  couleur: string
+}): Promise<Programme> {
+  if (await trouverProgramme(champs.slug)) {
+    throw createError({ statusCode: 409, statusMessage: 'Un programme porte déjà ce slug' })
+  }
+  const reponse = await supabase()
+    .from('programmes')
+    .insert({
+      slug: champs.slug as ProgrammeSlugSql,
+      nom: champs.nom,
+      couleur: champs.couleur,
+      surtitre_hero: '',
+      h1_variable: champs.nom,
+      description_hero: '',
+      cta_hero: '',
+      description_programme: '',
+      description_carte: '',
+    } as never)
+    .select('*')
+    .maybeSingle()
+  if (reponse.error && /enum|invalid input value/i.test(reponse.error.message)) {
+    throw createError({
+      statusCode: 422,
+      statusMessage:
+        'Le catalogue ne connaît que deux programmes : en ajouter un demande une migration du type « programme_slug ».',
+    })
+  }
+  const row = verifierUn(reponse, 'création du programme', 'Programme non créé')
+  return versProgramme(row)
+}
+
 /** Le nom, la couleur d'accent et la publication d'un programme s'éditent ;
  *  son slug, lui, est un type énuméré en base et le pivot de six tables. */
 export async function majProgramme(

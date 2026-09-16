@@ -220,27 +220,54 @@ export interface SessionFormateur extends SessionCoaching {
   thematique: Thematique | null
   /** Taux de présence, `null` tant que le relevé n'a pas été saisi. */
   participation: number | null
-  /** Aucune note n'est rattachée à une séance : le champ reste vide et la vue
-   *  affiche le nombre de sujets soumis à la place. */
+  /** Moyenne des notes d'origine collective reçues sur la période de la
+   *  séance — de son jour jusqu'à la veille de la séance suivante du
+   *  formateur. `null` sans note ; la vue affiche alors les sujets soumis. */
   note: number | null
+  /** Nombre d'évaluations derrière cette moyenne — « 4,9 ★ (17) ». */
+  nbNotes: number
 }
 
 export async function sessionsFormateur(
   formateurId: string,
   filtre: FiltreFormateur = {},
 ): Promise<SessionFormateur[]> {
-  const [sessions, thematiques] = await Promise.all([listerSessions(), listerThematiques()])
+  const [sessions, thematiques, notes] = await Promise.all([
+    listerSessions(),
+    listerThematiques(),
+    listerNotesFormateur(formateurId),
+  ])
+
+  // La table des notes ne porte pas de séance : une note collective est
+  // rattachée à la dernière séance non annulée du formateur qui la précède.
+  const siennes = sessions
+    .filter((s) => s.formateurId === formateurId && s.statut !== 'annulee')
+    .sort((a, b) => a.date.localeCompare(b.date))
+  const collectives = notes.filter((n) => n.origine === 'collective')
+  const notesParSession = new Map<string, number[]>()
+  for (const n of collectives) {
+    const jour = n.date.slice(0, 10)
+    const seance = [...siennes].reverse().find((s) => s.date <= jour)
+    if (!seance) continue
+    notesParSession.set(seance.id, [...(notesParSession.get(seance.id) ?? []), n.note])
+  }
 
   return sessions
     .filter((s) => s.formateurId === formateurId)
     .filter((s) => dansPeriode(s.date, filtre))
-    .map((s) => ({
-      ...s,
-      thematique: thematiques.find((t) => t.id === s.thematiqueId) ?? null,
-      participation:
-        s.presents !== null && s.inscrits > 0 ? Math.round((s.presents / s.inscrits) * 100) : null,
-      note: null,
-    }))
+    .map((s) => {
+      const recues = notesParSession.get(s.id) ?? []
+      return {
+        ...s,
+        thematique: thematiques.find((t) => t.id === s.thematiqueId) ?? null,
+        participation:
+          s.presents !== null && s.inscrits > 0 ? Math.round((s.presents / s.inscrits) * 100) : null,
+        note: recues.length
+          ? Math.round((recues.reduce((somme, v) => somme + v, 0) / recues.length) * 10) / 10
+          : null,
+        nbNotes: recues.length,
+      }
+    })
 }
 
 export async function ficheFormateur(formateurId: string) {
@@ -248,12 +275,13 @@ export async function ficheFormateur(formateurId: string) {
 }
 
 /**
- * Moyenne des présences relevées sur les `combien` dernières séances —
+ * Moyenne des présences relevées sur les `combien` dernières séances terminées —
  * « moyenne des 6 dernières » sous la carte « Présence en session » (planche D,
- * écran 01). Les séances sans relevé ne comptent pas.
+ * écran 01). Les séances annulées, à venir ou sans relevé ne comptent pas.
  */
 export function presenceMoyenne(sessions: SessionFormateur[], combien = 6): number | null {
   const releves = [...sessions]
+    .filter((s) => s.statut === 'terminee')
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((s) => s.participation)
     .filter((valeur): valeur is number => valeur !== null)

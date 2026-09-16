@@ -95,7 +95,7 @@ const lienCommunaute = lienWhatsApp('Bonjour, je souhaite rejoindre la Communaut
     <EspaceBandeauProfil :completion="data.completionProfil" class="hidden lg:block" />
     <EspaceBandeauProfil :completion="data.completionProfil" compact class="lg:hidden" />
 
-    <h1 class="mt-6 text-[28px] font-medium lg:text-[30px]">
+    <h1 class="mt-6 text-[28px] font-light lg:text-[30px]">
       <span class="lg:hidden">Bonjour {{ prenom }}</span>
       <span class="hidden lg:inline">
         Bonjour {{ prenom }}, reprenez où vous vous étiez {{ feminin ? 'arrêtée' : 'arrêté' }}

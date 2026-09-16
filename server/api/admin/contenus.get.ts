@@ -63,6 +63,9 @@ export default defineEventHandler(async (event) => {
                 // ce qui reste à faire avant de pouvoir marquer « Prêt ».
                 nbScripts: m.chapitres.filter((c) => (c.script?.length ?? 0) > 0).length,
                 nbVideos: m.chapitres.filter((c) => c.videoCle).length,
+                // « Vidéo de bienvenue — Uploadée / À téléverser » en tête du
+                // panneau module (écran 02).
+                videoIntro: Boolean(m.videoIntroCle),
                 chapitres: m.chapitres.map((c) => ({
                   libelle: c.libelle,
                   titre: c.titre,
