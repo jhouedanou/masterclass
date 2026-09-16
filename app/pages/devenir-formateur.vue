@@ -45,7 +45,7 @@ async function soumettre() {
   <div>
     <section class="relative overflow-hidden border-b border-ligne-claire bg-fond-clair">
       <!-- Motif de marque en fond du hero (planche A, écran 06). -->
-      <img src="/images/brand/pattern.png" alt="" aria-hidden="true" class="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[340px] object-cover opacity-[.22] md:block">
+      <img src="/images/brand/pattern.png" alt="" aria-hidden="true" width="1144" height="1090" class="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[340px] object-cover opacity-[.22] md:block">
       <div class="conteneur relative py-12">
         <UiSurtitre ton="social">Rejoindre E-Masterclass Big Five</UiSurtitre>
         <h1 class="mt-3 max-w-[900px] text-[40px] font-medium lg:text-[46px]">

@@ -8,6 +8,8 @@ interface OptionsSeo {
   seo?: SeoFields
   /** Chemin canonique de la page ; par défaut la route courante. */
   chemin?: string
+  /** `article` sur une page de blog, `website` partout ailleurs. */
+  type?: 'website' | 'article'
 }
 
 /**
@@ -21,7 +23,9 @@ export function usePageSeo(options: OptionsSeo) {
 
   const title = options.seo?.title?.trim() || options.titreAuto
   const description = options.seo?.metaDescription?.trim() || options.descriptionAuto
-  const image = options.seo?.ogImage || options.imageAuto || '/images/og-default.svg'
+  // WhatsApp, Facebook et LinkedIn ne lisent pas le SVG en `og:image` : une
+  // page sans image propre se partageait sans vignette.
+  const image = options.seo?.ogImage || options.imageAuto || '/images/og-default.png'
   const chemin = options.chemin ?? route.path
   const canonical = options.seo?.canonical?.trim() || `${base}${chemin === '/' ? '' : chemin}`
   const indexable = options.seo?.indexable !== false
@@ -32,7 +36,13 @@ export function usePageSeo(options: OptionsSeo) {
     ogTitle: options.seo?.ogTitle?.trim() || title,
     ogDescription: options.seo?.ogDescription?.trim() || description,
     ogImage: image.startsWith('http') ? image : `${base}${image}`,
-    ogType: 'website',
+    // Le back-office réclame du 1200 × 630 (planche C, écran 24) : l'annoncer
+    // décide WhatsApp et LinkedIn entre grande vignette et miniature.
+    ogImageWidth: 1200,
+    ogImageHeight: 630,
+    ogImageAlt: title,
+    ogUrl: canonical,
+    ogType: options.type ?? 'website',
     ogLocale: 'fr_FR',
     ogSiteName: 'E-Masterclass Big Five',
     twitterCard: 'summary_large_image',

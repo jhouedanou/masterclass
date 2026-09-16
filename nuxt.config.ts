@@ -175,6 +175,9 @@ export default defineNuxtConfig({
       '/apercu/**',
     ],
     sources: ['/api/__sitemap__/urls'],
+    // Le module met le sitemap en cache dix minutes en production. La spec
+    // demande une mise à jour à chaque publication : pas de cache.
+    cacheMaxAgeSeconds: 0,
   },
 
   // Spec SEO §9 : Organization global, le reste est posé page par page.

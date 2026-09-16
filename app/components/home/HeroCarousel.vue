@@ -43,6 +43,7 @@ function finToucher(e: TouchEvent) {
 <template>
   <section
     class="relative border-b border-ligne-claire"
+    tabindex="0"
     aria-roledescription="carrousel"
     aria-label="Programmes E-Masterclass Big Five"
     @mouseenter="enPause = true"

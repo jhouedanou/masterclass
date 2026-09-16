@@ -84,6 +84,8 @@ const mailles = computed(() => [
 ])
 useFilAriane(mailles)
 
+const config = useRuntimeConfig()
+
 useJsonLd(() => ({
   '@type': 'ItemList',
   name: `Modules du programme ${programme.value.nom}`,
@@ -91,7 +93,7 @@ useJsonLd(() => ({
     '@type': 'ListItem',
     position: i + 1,
     name: entree.module.titre,
-    url: `/modules/${entree.module.slug}`,
+    url: `${config.public.siteUrl}/modules/${entree.module.slug}`,
   })),
 }))
 </script>
@@ -108,6 +110,8 @@ useJsonLd(() => ({
         src="/images/brand/pattern.png"
         alt=""
         aria-hidden="true"
+        width="1144"
+        height="1090"
         class="pointer-events-none absolute top-0 right-0 hidden h-full w-[340px] object-cover md:block"
         :class="social ? 'opacity-[.28]' : 'opacity-[.24]'"
       >

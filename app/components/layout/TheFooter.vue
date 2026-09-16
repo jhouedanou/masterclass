@@ -11,6 +11,7 @@ const { reinitialiser } = useConsentement()
         <img
           src="/images/brand/logo.png"
           alt="E-Masterclass | Big Five"
+          loading="lazy"
           class="mb-3.5 block h-9 w-auto"
           width="160"
           height="36"

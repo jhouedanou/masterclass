@@ -30,6 +30,7 @@ usePageSeo({
   descriptionAuto: article.value.chapo,
   imageAuto: article.value.image,
   seo: article.value.seo,
+  type: 'article',
 })
 
 const mailles = computed(() => [

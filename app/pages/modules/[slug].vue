@@ -222,6 +222,7 @@ function acheter() {
               :alt="`Portrait de ${data.formateur.nom}`"
               width="96"
               height="96"
+              loading="lazy"
               class="size-24 rounded-full bg-fond-voile object-cover"
             />
             <div class="min-w-[240px] flex-1">
