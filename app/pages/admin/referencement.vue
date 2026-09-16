@@ -160,7 +160,10 @@ const LARGEURS = [
     </p>
 
     <div class="mt-4 grid items-start gap-4 lg:grid-cols-[1fr_420px]">
-      <div>
+      <!-- `min-w-0` : sans lui, la piste `1fr` se dimensionne sur la largeur
+           minimale du tableau (860 px) et pousse la colonne de droite hors de
+           l'écran. Le défilement doit rester dans le tableau. -->
+      <div class="min-w-0">
         <UiOnglets
           v-model="filtre"
           :onglets="FILTRES.map((f) => ({ cle: f.valeur, libelle: f.libelle, compteur: compte(f.valeur), alerte: f.valeur === 'a-completer' && compte(f.valeur) > 0 }))"

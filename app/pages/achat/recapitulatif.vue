@@ -3,6 +3,12 @@ definePageMeta({ middleware: 'auth' })
 
 const achat = useAchatStore()
 const conditions = ref(false)
+
+/** Le clic ne mène au paiement qu'une fois les CGV acceptées. */
+function allerAuPaiement() {
+  if (!conditions.value) return
+  return navigateTo('/achat/paiement')
+}
 /** Les CGV s'ouvrent en surimpression : quitter la page ferait perdre sa place à l'acheteur. */
 const cgvOuvertes = ref(false)
 
@@ -74,12 +80,15 @@ async function annuler() {
       </span>
     </label>
 
+    <!-- Un vrai `button` désactivé, et non un lien neutralisé par
+         `pointer-events-none` : cette règle n'arrête que la souris, et l'on
+         atteignait le paiement en tabulant jusqu'au lien puis en pressant
+         Entrée — donc sans avoir accepté les CGV, que la vente exige. -->
     <UiBaseButton
-      to="/achat/paiement"
       class="mt-6 w-full"
       taille="lg"
-      :class="!conditions && 'pointer-events-none opacity-50'"
-      :aria-disabled="!conditions"
+      :disabled="!conditions"
+      @click="allerAuPaiement"
     >
       Confirmer et passer au paiement
     </UiBaseButton>
