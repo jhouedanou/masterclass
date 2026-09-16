@@ -8,7 +8,9 @@
  * ni compte à rebours ni bouton de renvoi. Un compte qui n'est pas encore
  * enrôlé passe d'abord par l'écran du QR code.
  */
-definePageMeta({ layout: 'auth' })
+// La maquette pose une carte sombre isolée : ni en-tête, ni pied, ni panneau
+// décoratif — le gabarit `auth` du site public n'a rien à faire ici.
+definePageMeta({ layout: false })
 usePagePrivee('Connexion à l’administration')
 
 const auth = useAuthStore()
@@ -18,9 +20,6 @@ const etape = ref<'identifiants' | 'code' | 'enrolement' | 'secours'>('identifia
 const email = ref('')
 const motDePasse = ref('')
 const code = ref('')
-/** Affichage en clair du mot de passe, sur demande. Toujours masqué au
- *  chargement : l'écran peut être ouvert devant quelqu'un. */
-const motDePasseVisible = ref(false)
 const masque = ref('')
 const whatsapp = ref(false)
 const fournisseur = ref<'interne' | 'supabase-auth' | 'totp'>('interne')
@@ -235,202 +234,187 @@ async function renvoyer() {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Renvoi impossible.'
   }
 }
+
+/** Habillage de la carte sombre de l'écran 08. */
+const champ =
+  'rounded-[10px] border-[1.5px] border-nuit-bordure bg-encre-800 px-3.5 py-3.5 text-[14px] text-white focus:border-social focus:outline-none'
+const etiquette = 'text-[12.5px] font-bold text-gris-perle'
+const bouton =
+  'w-full rounded-full bg-social py-[15px] text-center text-[15px] font-extrabold text-white transition hover:bg-social-fonce disabled:cursor-not-allowed disabled:opacity-50'
+const lienSombre = 'text-center text-[12.5px] text-discret-clair hover:text-white'
+const note = 'text-[12px] leading-[1.6] text-discret-clair'
+const chapo = 'text-[13px] leading-[1.6] text-gris-perle'
+const alerte = 'rounded-[10px] border border-erreur-fonce bg-erreur-fonce/20 px-3 py-2.5 text-[13px] text-[#f2c4c9]'
 </script>
 
 <template>
-  <div>
-    <p class="surtitre text-discret uppercase">ESPACE ADMINISTRATION</p>
-    <h1 class="mt-2 text-[34px] font-medium">Connexion sécurisée</h1>
-    <p v-if="etape !== 'identifiants'" class="mt-1 text-[12.5px] font-bold tracking-[0.08em] text-discret uppercase">
-      ÉTAPE 2 / 2
-    </p>
+  <div class="flex min-h-screen items-start justify-center bg-fond-cadre px-4 py-12">
+    <div class="sur-sombre w-full max-w-[420px] rounded-[16px] bg-encre p-8 text-white sm:p-10">
+      <div class="mb-5 inline-block rounded-[10px] bg-white px-3.5 py-2.5">
+        <img src="/images/brand/logo.png" alt="E-Masterclass Big Five" class="block h-[30px] w-auto">
+      </div>
 
-    <form v-if="etape === 'identifiants'" class="mt-8 space-y-4" @submit.prevent="soumettreIdentifiants">
-      <p class="text-[15px] text-texte">
-        Accès réservé à l’équipe E-Masterclass Big Five. Une double vérification suit le mot de passe.
-      </p>
-      <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Email professionnel</span>
-        <input v-model="email" type="email" autocomplete="username" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
-      </label>
-      <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Mot de passe</span>
-        <div class="relative">
-          <!-- `type` lié plutôt que deux champs alternés : un seul champ garde
-               la valeur, le curseur et le remplissage du gestionnaire. -->
-          <input
-            v-model="motDePasse"
-            :type="motDePasseVisible ? 'text' : 'password'"
-            autocomplete="current-password"
-            required
-            class="w-full rounded-[10px] border border-ligne py-2.5 pr-12 pl-4 text-[15px] focus:border-social focus:outline-none"
-          >
-          <button
-            type="button"
-            class="absolute inset-y-0 right-0 grid w-12 place-items-center text-discret transition hover:text-encre"
-            :aria-label="motDePasseVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
-            :aria-pressed="motDePasseVisible"
-            @click="motDePasseVisible = !motDePasseVisible"
-          >
-            <Icon :name="motDePasseVisible ? 'ph:eye-slash' : 'ph:eye'" size="20" />
-          </button>
-        </div>
-      </label>
-      <p v-if="erreur" class="text-[14px] text-erreur">{{ erreur }}</p>
-      <UiBaseButton type="submit" class="w-full" taille="lg" variante="sombre" :disabled="enCours">
-        {{ enCours ? 'Vérification…' : 'Continuer' }}
-      </UiBaseButton>
-      <p class="text-[13px] text-discret">
-        Chaque tentative est journalisée (adresse IP, appareil, horodatage). Cinq échecs bloquent le compte 30 minutes.
-      </p>
-      <NuxtLink to="/mot-de-passe-oublie" class="block text-[14px] text-discret hover:underline">Mot de passe oublié ?</NuxtLink>
-      <!--
-        Renvoi permanent, affiché à tout le monde et en toute circonstance.
-        Cet écran refuse les comptes apprenant et formateur derrière le message
-        d'un identifiant inconnu, pour ne pas révéler qu'un compte existe : un
-        formateur qui s'y trompe croit son mot de passe faux. Le dire d'emblée
-        lève la confusion sans rien divulguer — n'afficher ce renvoi qu'après
-        une tentative, lui, trahirait le compte saisi.
-      -->
-      <p class="border-t border-ligne-claire pt-4 text-[13.5px] text-discret">
-        Cet accès est réservé à l’administration. Apprenants et formateurs se connectent depuis
-        <NuxtLink to="/connexion" class="font-bold hover:underline">la page de connexion habituelle</NuxtLink>.
-      </p>
-    </form>
+      <template v-if="etape === 'identifiants'">
+        <p class="text-[11px] font-bold tracking-[0.14em] text-discret-clair uppercase">Espace administration</p>
+        <h1 class="mt-1.5 font-title text-[23px] font-light text-white">Connexion sécurisée</h1>
+      </template>
+      <template v-else>
+        <p class="text-[11px] font-bold tracking-[0.14em] text-discret-clair uppercase">Étape 2 / 2</p>
+        <h1 class="mt-1.5 font-title text-[23px] font-light text-white">
+          {{ etape === 'enrolement' ? 'Application d’authentification' : etape === 'secours' ? 'Codes de secours' : 'Code de vérification' }}
+        </h1>
+      </template>
 
-    <!-- Enrôlement : première connexion avec une application d'authentification. -->
-    <form v-else-if="etape === 'enrolement'" class="mt-8 space-y-4" @submit.prevent="activerEnrolement">
-      <p class="text-[15px] text-texte">
-        Scannez ce QR code avec votre application d’authentification — Google Authenticator,
-        Authy, le gestionnaire de mots de passe de votre téléphone —, puis saisissez le code
-        qu’elle affiche pour confirmer.
-      </p>
-      <div class="flex flex-col items-center gap-3 rounded-[12px] border border-ligne p-5">
-        <img v-if="qr" :src="qr" alt="QR code d’enrôlement" width="240" height="240" class="rounded-[6px]">
-        <p class="text-center text-[12.5px] text-discret">
-          Impossible de scanner ? Saisissez cette clé à la main :<br>
-          <code class="font-mono text-[13px] tracking-wider text-encre">{{ secret }}</code>
+      <form v-if="etape === 'identifiants'" class="mt-5 flex flex-col gap-3.5" @submit.prevent="soumettreIdentifiants">
+        <label class="flex flex-col gap-1.5">
+          <span :class="etiquette">Email professionnel</span>
+          <input v-model="email" type="email" autocomplete="username" required :class="champ">
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span :class="etiquette">Mot de passe</span>
+          <input v-model="motDePasse" type="password" autocomplete="current-password" required :class="champ">
+        </label>
+        <p v-if="erreur" :class="alerte">{{ erreur }}</p>
+        <button type="submit" :class="bouton" :disabled="enCours">
+          {{ enCours ? 'Vérification…' : 'Continuer' }}
+        </button>
+        <p :class="note">
+          Connexion journalisée (IP, appareil, horodatage). 5 échecs = verrouillage 30 min + alerte
+          à l’admin principal.
         </p>
-      </div>
-      <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Code affiché par l’application</span>
-        <input
-          v-model="code"
-          inputmode="numeric"
-          pattern="[0-9]{6}"
-          maxlength="6"
-          autocomplete="one-time-code"
-          required
-          autofocus
-          class="w-full rounded-[10px] border border-ligne px-4 py-3 text-center font-mono text-[28px] tracking-[.5em] focus:border-social focus:outline-none"
-        >
-      </label>
-      <p v-if="erreur" class="text-[14px] text-erreur">{{ erreur }}</p>
-      <UiBaseButton type="submit" class="w-full" taille="lg" variante="sombre" :disabled="enCours || code.length !== 6">
-        {{ enCours ? 'Vérification…' : 'Activer' }}
-      </UiBaseButton>
-      <button type="button" class="text-[14px] text-discret hover:underline" @click="etape = 'identifiants'; erreur = ''">
-        Changer de compte
-      </button>
-    </form>
+        <!--
+          Renvoi permanent : cet écran refuse les comptes apprenant et formateur
+          derrière le message d'un identifiant inconnu, pour ne pas révéler
+          qu'un compte existe. Le dire d'emblée lève la confusion sans rien
+          divulguer ; ne l'afficher qu'après une tentative trahirait le compte.
+        -->
+        <p :class="[note, 'border-t border-nuit-bordure pt-3.5']">
+          Cet accès est réservé à l’administration. Apprenants et formateurs se connectent depuis
+          <NuxtLink to="/connexion" class="font-bold">la page de connexion habituelle</NuxtLink>.
+        </p>
+      </form>
 
-    <!-- Codes de secours : affichés une seule fois, jamais relisibles ensuite. -->
-    <div v-else-if="etape === 'secours'" class="mt-8 space-y-4">
-      <p class="text-[15px] text-texte">
-        Double authentification activée. Conservez ces <b>codes de secours</b> hors de votre
-        téléphone : ils sont le seul moyen d’entrer si vous le perdez. Chacun ne sert qu’une fois,
-        et ils ne seront plus affichés.
-      </p>
-      <ul class="grid grid-cols-2 gap-2 rounded-[12px] border border-ligne p-5 font-mono text-[15px]">
-        <li v-for="c in codesSecours" :key="c" class="text-center tracking-wider">{{ c }}</li>
-      </ul>
-      <p v-if="info" class="text-[14px] text-succes">{{ info }}</p>
-      <div class="flex gap-3">
-        <UiBaseButton type="button" variante="contour" @click="copierCodesSecours">Copier</UiBaseButton>
-        <UiBaseButton type="button" class="flex-1" variante="sombre" @click="etape = 'code'; erreur = ''">
-          J’ai noté ces codes
-        </UiBaseButton>
-      </div>
-    </div>
-
-    <form v-else class="mt-8 space-y-4" @submit.prevent="soumettreCode">
-      <p v-if="totp" class="text-[15px] text-texte">
-        Saisissez le code à six chiffres affiché par votre application d’authentification.
-      </p>
-      <p v-else class="text-[15px] text-texte">
-        Un code à six chiffres a été envoyé à <b>{{ masque }}</b><span v-if="whatsapp"> et sur votre WhatsApp</span>.
-        Il reste valable <b>{{ compteARebours }}</b>.
-      </p>
-      <fieldset v-if="!codeDeSecours">
-        <legend class="mb-1.5 text-[13px] font-bold text-texte">Code de vérification</legend>
-        <div class="flex gap-2">
+      <!-- Enrôlement : première connexion avec une application d'authentification. -->
+      <form v-else-if="etape === 'enrolement'" class="mt-4 flex flex-col gap-3.5" @submit.prevent="activerEnrolement">
+        <p :class="chapo">
+          Scannez ce QR code avec votre application d’authentification, puis saisissez le code
+          qu’elle affiche pour confirmer.
+        </p>
+        <div class="flex flex-col items-center gap-3 rounded-[12px] border border-nuit-bordure bg-encre-800 p-4">
+          <img v-if="qr" :src="qr" alt="QR code d’enrôlement" width="200" height="200" class="rounded-[6px] bg-white p-2">
+          <p class="text-center text-[12px] text-discret-clair">
+            Impossible de scanner ? Saisissez cette clé à la main :<br>
+            <code class="font-mono text-[13px] tracking-wider text-white">{{ secret }}</code>
+          </p>
+        </div>
+        <label class="flex flex-col gap-1.5">
+          <span :class="etiquette">Code affiché par l’application</span>
           <input
-            v-for="(_, i) in 6"
-            :key="i"
-            ref="cases"
+            v-model="code"
             inputmode="numeric"
+            pattern="[0-9]{6}"
             maxlength="6"
             autocomplete="one-time-code"
-            :aria-label="`Chiffre ${i + 1} sur 6`"
-            :autofocus="i === 0"
-            class="h-14 w-full min-w-0 rounded-[10px] border border-ligne text-center font-mono text-[24px] focus:border-social focus:outline-none"
-            @input="saisirCase(i, $event)"
-            @keydown="effacerCase(i, $event)"
+            required
+            :class="[champ, 'text-center font-mono text-[24px] tracking-[.4em]']"
           >
-        </div>
-      </fieldset>
-
-      <label v-else class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Code de secours</span>
-        <input
-          v-model="code"
-          inputmode="text"
-          maxlength="11"
-          required
-          autofocus
-          class="w-full rounded-[10px] border border-ligne px-4 py-3 text-center font-mono text-[22px] tracking-[.25em] uppercase focus:border-social focus:outline-none"
-        >
-      </label>
-      <p v-if="erreur" class="text-[14px] text-erreur">{{ erreur }}</p>
-      <p v-if="info" class="text-[14px] text-succes">{{ info }}</p>
-      <UiBaseButton
-        type="submit"
-        class="w-full"
-        taille="lg"
-        variante="sombre"
-        :disabled="enCours || (codeDeSecours ? code.trim().length < 6 : code.length !== 6)"
-      >
-        {{ enCours ? 'Vérification…' : 'Vérifier et entrer' }}
-      </UiBaseButton>
-      <div class="flex flex-wrap items-center justify-between gap-2 text-[14px]">
-        <button
-          v-if="!totp"
-          type="button"
-          class="text-discret hover:underline disabled:cursor-not-allowed disabled:no-underline disabled:opacity-60"
-          :disabled="avantRenvoi > 0"
-          @click="renvoyer"
-        >
-          Renvoyer le code<span v-if="avantRenvoi > 0"> ({{ delaiRenvoi }})</span>
+        </label>
+        <p v-if="erreur" :class="alerte">{{ erreur }}</p>
+        <button type="submit" :class="bouton" :disabled="enCours || code.length !== 6">
+          {{ enCours ? 'Vérification…' : 'Activer' }}
         </button>
+        <button type="button" :class="lienSombre" @click="etape = 'identifiants'; erreur = ''">
+          Changer de compte
+        </button>
+      </form>
+
+      <!-- Codes de secours : affichés une seule fois, jamais relisibles ensuite. -->
+      <div v-else-if="etape === 'secours'" class="mt-4 flex flex-col gap-3.5">
+        <p :class="chapo">
+          Double authentification activée. Conservez ces <b class="text-white">codes de secours</b>
+          hors de votre téléphone : ils sont le seul moyen d’entrer si vous le perdez. Chacun ne
+          sert qu’une fois, et ils ne seront plus affichés.
+        </p>
+        <ul class="grid grid-cols-2 gap-2 rounded-[12px] border border-nuit-bordure bg-encre-800 p-4 font-mono text-[14px]">
+          <li v-for="c in codesSecours" :key="c" class="text-center tracking-wider">{{ c }}</li>
+        </ul>
+        <p v-if="info" class="text-[13px] text-succes-vif">{{ info }}</p>
+        <button type="button" :class="bouton" @click="etape = 'code'; erreur = ''">J’ai noté ces codes</button>
+        <button type="button" :class="lienSombre" @click="copierCodesSecours">Copier</button>
+      </div>
+
+      <form v-else class="mt-4 flex flex-col gap-3.5" @submit.prevent="soumettreCode">
+        <p v-if="totp" :class="chapo">
+          Saisissez le code à six chiffres affiché par votre application d’authentification.
+        </p>
+        <p v-else :class="chapo">
+          Un code à 6 chiffres a été envoyé par email<span v-if="whatsapp"> et WhatsApp</span> au
+          <b class="text-white">{{ masque }}</b>. Valable {{ compteARebours }}.
+        </p>
+
+        <fieldset v-if="!codeDeSecours">
+          <legend class="sr-only">Code de vérification</legend>
+          <div class="grid grid-cols-6 gap-2">
+            <input
+              v-for="(_, i) in 6"
+              :key="i"
+              ref="cases"
+              inputmode="numeric"
+              maxlength="6"
+              autocomplete="one-time-code"
+              placeholder="·"
+              :aria-label="`Chiffre ${i + 1} sur 6`"
+              class="w-full min-w-0 rounded-[10px] border-[1.5px] bg-encre-800 py-4 text-center text-[20px] font-extrabold text-white placeholder:font-normal placeholder:text-discret focus:outline-none"
+              :class="code[i] ? 'border-social' : 'border-nuit-bordure'"
+              @input="saisirCase(i, $event)"
+              @keydown="effacerCase(i, $event)"
+            >
+          </div>
+        </fieldset>
+
+        <label v-else class="flex flex-col gap-1.5">
+          <span :class="etiquette">Code de secours</span>
+          <input
+            v-model="code"
+            inputmode="text"
+            maxlength="11"
+            required
+            :class="[champ, 'text-center font-mono text-[20px] tracking-[.25em] uppercase']"
+          >
+        </label>
+
+        <p v-if="erreur" :class="alerte">{{ erreur }}</p>
+        <p v-if="info" class="text-[13px] text-succes-vif">{{ info }}</p>
+
         <button
-          v-else
-          type="button"
-          class="text-discret hover:underline"
-          @click="codeDeSecours = !codeDeSecours"
+          type="submit"
+          :class="bouton"
+          :disabled="enCours || (codeDeSecours ? code.trim().length < 6 : code.length !== 6)"
         >
+          {{ enCours ? 'Vérification…' : 'Vérifier et entrer' }}
+        </button>
+
+        <p v-if="!totp" class="text-center text-[12.5px] text-discret-clair">
+          <button
+            type="button"
+            class="disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="avantRenvoi > 0"
+            @click="renvoyer"
+          >
+            Renvoyer le code<b v-if="avantRenvoi > 0" class="text-gris-perle"> ({{ delaiRenvoi }})</b>
+          </button>
+        </p>
+        <button v-else type="button" :class="lienSombre" @click="codeDeSecours = !codeDeSecours">
           {{ codeDeSecours ? 'Revenir au code à six chiffres' : 'Utiliser un code de secours' }}
         </button>
-        <button type="button" class="text-discret hover:underline" @click="etape = 'identifiants'; erreur = ''">Changer de compte</button>
-      </div>
-      <p v-if="totp" class="text-[12.5px] text-discret">
-        Téléphone perdu ? Passez au code de secours par le lien ci-dessus.
-      </p>
-      <p v-else-if="fournisseur === 'interne'" class="text-[12.5px] text-discret">
-        Tant que l’envoi automatique n’est pas branché, le code apparaît dans la sortie du serveur.
-      </p>
-      <p v-else class="text-[12.5px] text-discret">
-        Le code est envoyé par e-mail. Vérifiez vos indésirables si rien n’arrive dans la minute.
-      </p>
-    </form>
+        <button type="button" :class="lienSombre" @click="etape = 'identifiants'; erreur = ''">
+          Changer de compte
+        </button>
+
+        <p v-if="!totp && fournisseur === 'interne'" :class="note">
+          Tant que l’envoi automatique n’est pas branché, le code apparaît dans la sortie du serveur.
+        </p>
+      </form>
+    </div>
   </div>
 </template>
