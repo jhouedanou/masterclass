@@ -123,82 +123,94 @@ const autres = computed(() =>
 )
 
 const ATTENTE = '—'
-const pastille = 'rounded-full px-2.5 py-1 text-[11px] font-bold'
+
+/**
+ * Largeurs de l'écran 23 : `1.6fr 1.1fr 92px 92px 120px 120px`. Les quatre
+ * colonnes fixes prennent 424 px ; les deux premières se partagent le reste
+ * dans le rapport 1,6 / 1,1, ce qu'un `colgroup` exprime en `calc`.
+ */
+const LARGEURS = [
+  'calc((100% - 424px) * 0.593)',
+  'calc((100% - 424px) * 0.407)',
+  '92px',
+  '92px',
+  '120px',
+  '120px',
+]
 </script>
 
 <template>
   <div>
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <h1 class="font-title text-[26px] font-light">Référencement (SEO)</h1>
-      <input
-        v-model="recherche"
-        type="search"
-        placeholder="Rechercher une page…"
-        class="w-[260px] max-w-full rounded-full border border-ligne px-3.5 py-2 text-[13px] focus:border-social focus:outline-none"
-      >
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <h1 class="font-title text-[24px] font-light">Référencement (SEO)</h1>
+      <label class="inline-flex items-center rounded-full border border-ligne bg-white px-3.5 py-2">
+        <span class="sr-only">Rechercher une page</span>
+        <input
+          v-model="recherche"
+          type="search"
+          placeholder="Rechercher une page…"
+          class="w-[220px] max-w-full bg-transparent text-[12px] font-semibold focus:outline-none"
+        >
+      </label>
     </div>
-    <p class="mt-2 max-w-3xl text-[13.5px] text-discret">
+    <p class="mt-1.5 max-w-3xl text-[13px] text-discret">
       Chaque page publiée apparaît ici dès sa création. Le panneau « Référencement et partage »
       s’ouvre depuis cette liste ou depuis l’onglet du même nom dans l’éditeur de la page — les deux
       modifient les mêmes champs.
     </p>
 
-    <div v-if="data?.manquants.length || data?.doublons.titles.length || data?.doublons.descriptions.length"
-         class="mt-5 rounded-[14px] border border-alerte bg-alerte-voile p-5 text-[13px] text-alerte">
-      <p class="font-bold">Contrôles</p>
-      <ul class="mt-2 list-disc space-y-1 pl-5">
-        <li v-for="chemin in data?.manquants" :key="chemin">
-          {{ chemin }} — Title ou Meta description obligatoire avant publication.
-        </li>
-        <li v-for="d in data?.doublons.titles" :key="d.valeur">
-          Title dupliqué sur : {{ d.chemins.join(', ') }}
-        </li>
-        <li v-for="d in data?.doublons.descriptions" :key="d.valeur">
-          Meta description dupliquée sur : {{ d.chemins.join(', ') }}
-        </li>
-      </ul>
-    </div>
-
-    <UiOnglets
-      v-model="filtre"
-      class="mt-5"
-      :onglets="FILTRES.map((f) => ({ cle: f.valeur, libelle: f.libelle, compteur: compte(f.valeur), alerte: f.valeur === 'a-completer' && compte(f.valeur) > 0 }))"
-    />
-
-    <div class="mt-5 grid gap-6 md:grid-cols-2 lg:grid-cols-[1fr_460px]">
+    <div class="mt-4 grid items-start gap-4 lg:grid-cols-[1fr_420px]">
       <div>
-        <AdminTableauSimple :colonnes="['Page', 'Type', 'Title', 'Meta', 'Indexation', 'Action']">
-          <tr v-for="entree in entrees" :key="entree.id" :class="selection?.id === entree.id && 'bg-fond-clair'">
-            <td class="px-4 py-3">
-              <p class="font-medium">{{ entree.libelle }}</p>
-              <p class="font-mono text-[11.5px] text-discret">
+        <UiOnglets
+          v-model="filtre"
+          :onglets="FILTRES.map((f) => ({ cle: f.valeur, libelle: f.libelle, compteur: compte(f.valeur), alerte: f.valeur === 'a-completer' && compte(f.valeur) > 0 }))"
+        />
+
+        <AdminTableauSimple
+          class="mt-4"
+          :colonnes="['Page', 'Type', 'Title', 'Meta', 'Indexation', 'Action']"
+          :largeurs="LARGEURS"
+          largeur-min="860px"
+        >
+          <!-- Une page dont un champ manque est mise en lumière ambre : c'est
+               la seule ligne teintée de la maquette. -->
+          <tr
+            v-for="entree in entrees"
+            :key="entree.id"
+            :class="incomplete(entree) ? 'bg-alerte-neige' : selection?.id === entree.id && 'bg-fond-clair'"
+          >
+            <td class="px-4 py-3.5">
+              <p class="font-bold">{{ entree.libelle }}</p>
+              <p class="font-mono text-[11px] text-discret">
                 {{ publiee(entree) || entree.statut === 'annonce' ? entree.chemin : 'brouillon — slug à définir' }}
               </p>
             </td>
-            <td class="px-4 py-3 text-[12.5px]">{{ libelleType(entree) }}</td>
-            <td class="px-4 py-3 text-center">
-              <span v-if="!publiee(entree) && !entree.seo.title" class="text-discret">—</span>
+            <td class="px-4 py-3.5 text-[12px] text-texte">{{ libelleType(entree) }}</td>
+            <td class="px-4 py-3.5 text-[12px] font-bold">
+              <span v-if="!publiee(entree) && !entree.seo.title" class="text-alerte">—</span>
               <span v-else-if="entree.seo.title?.trim()" class="text-succes">✓</span>
-              <span v-else class="text-[12px] font-bold text-alerte">Manquant</span>
+              <span v-else class="text-alerte">Manquant</span>
             </td>
-            <td class="px-4 py-3 text-center">
-              <span v-if="!publiee(entree) && !entree.seo.metaDescription" class="text-discret">—</span>
+            <td class="px-4 py-3.5 text-[12px] font-bold">
+              <span v-if="!publiee(entree) && !entree.seo.metaDescription" class="text-alerte">—</span>
               <span v-else-if="entree.seo.metaDescription?.trim()" class="text-succes">✓</span>
-              <span v-else class="text-[12px] font-bold text-alerte">Manquante</span>
+              <span v-else class="text-alerte">Manquante</span>
             </td>
-            <td class="px-4 py-3">
-              <span
-                :class="[pastille, {
-                  'bg-succes-voile text-succes': indexation(entree) === 'Autorisée',
-                  'bg-[#fdeeee] text-erreur': indexation(entree) === 'Bloquée',
-                  'bg-fond-voile text-discret': indexation(entree) === 'Désactivée',
-                }]"
-              >{{ indexation(entree) }}</span>
+            <!-- Valeur de sens : gras dans sa couleur, jamais en pastille. -->
+            <td
+              class="px-4 py-3.5 text-[12px] font-bold"
+              :class="{
+                'text-succes': indexation(entree) === 'Autorisée',
+                'text-alerte': indexation(entree) === 'Bloquée',
+                'text-discret': indexation(entree) === 'Désactivée',
+              }"
+            >
+              {{ indexation(entree) }}
             </td>
-            <td class="px-4 py-3 text-right">
+            <td class="px-4 py-3.5">
               <button
-                class="text-[12.5px] underline"
-                :class="incomplete(entree) ? 'font-bold text-alerte' : 'text-social'"
+                class="text-[12.5px] font-bold"
+                :class="incomplete(entree) ? 'text-alerte' : 'text-social'"
                 @click="ouvrir(entree)"
               >
                 {{ incomplete(entree) ? 'Compléter' : 'Modifier' }}
@@ -210,49 +222,14 @@ const pastille = 'rounded-full px-2.5 py-1 text-[11px] font-bold'
           </tr>
         </AdminTableauSimple>
 
-        <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <UiBaseButton taille="sm" variante="contour" @click="exporter">Exporter la liste</UiBaseButton>
-          <p class="text-[12.5px] text-discret">
+        <div class="mt-3.5 flex flex-wrap items-center gap-3 text-[12.5px] text-discret">
+          <button class="rounded-full border border-ligne bg-white px-3.5 py-2 font-semibold text-encre" @click="exporter">
+            Exporter la liste
+          </button>
+          <span>
             Les pages du tunnel d’achat, des dashboards et des espaces privés ne figurent pas ici :
-            elles sont en noindex permanent et hors sitemap.
-          </p>
-        </div>
-
-        <!-- Encarts pédagogiques de l'écran 23 -->
-        <div class="mt-6 grid gap-4 md:grid-cols-2">
-          <section class="rounded-[14px] border border-ligne-douce bg-white p-5 text-[13px]">
-            <h2 class="font-title text-[17px] font-light">Où modifier le référencement</h2>
-            <dl class="mt-3 space-y-2">
-              <div>
-                <dt class="font-bold">Depuis cette liste</dt>
-                <dd class="text-texte">« Modifier » ouvre le panneau Référencement et partage de la page choisie, sans passer par son éditeur.</dd>
-              </div>
-              <div>
-                <dt class="font-bold">Depuis l’éditeur</dt>
-                <dd class="text-texte">L’onglet « Référencement et partage » est présent dans l’éditeur d’un module, d’un formateur, d’une page éditoriale et d’un article de blog.</dd>
-              </div>
-            </dl>
-            <p class="mt-3 text-[12.5px] text-discret">
-              Les deux chemins écrivent les mêmes champs : une modification faite dans l’éditeur
-              d’article apparaît immédiatement dans cette liste, et inversement.
-            </p>
-          </section>
-          <section class="rounded-[14px] border border-ligne-douce bg-white p-5 text-[13px]">
-            <h2 class="font-title text-[17px] font-light">Qui peut modifier quoi</h2>
-            <dl class="mt-3 space-y-2">
-              <div>
-                <dt class="font-bold">Contenu</dt>
-                <dd class="text-texte">Mot-clé principal, Title, meta description, Open Graph, images et textes alternatifs.</dd>
-              </div>
-              <div>
-                <dt class="font-bold">Avancé 🔒</dt>
-                <dd class="text-texte">Slug d’une page publiée, autorisation d’indexation, canonical personnalisée.</dd>
-              </div>
-            </dl>
-            <p class="mt-3 text-[12.5px] text-discret">
-              Les deux droits se cochent à la création du compte administrateur (écran 07).
-            </p>
-          </section>
+            elles sont en <b>noindex</b> permanent et hors sitemap.
+          </span>
         </div>
       </div>
 
@@ -271,37 +248,85 @@ const pastille = 'rounded-full px-2.5 py-1 text-[11px] font-bold'
           @fermer="selection = null"
           @enregistre="refresh()"
         />
-        <aside v-else class="rounded-[14px] border border-dashed border-ligne bg-white p-10 text-center text-[13px] text-discret">
-          Sélectionnez une page pour éditer son référencement.
-        </aside>
+
+        <!-- Encarts pédagogiques de l'écran 23, en colonne à droite de la liste. -->
+        <template v-else>
+          <section class="rounded-[14px] border border-ligne-douce bg-white p-6">
+            <h2 class="font-sans text-[15px] font-bold">Où modifier le référencement</h2>
+            <div class="mt-3.5 flex flex-col gap-3 text-[12.5px] leading-[1.6] text-texte">
+              <div class="rounded-[12px] border border-ligne-douce p-3.5">
+                <b class="mb-1 block">Depuis cette liste</b>
+                « Modifier » ouvre le panneau Référencement et partage de la page choisie, sans
+                passer par son éditeur.
+              </div>
+              <div class="rounded-[12px] border border-ligne-douce p-3.5">
+                <b class="mb-1 block">Depuis l’éditeur</b>
+                L’onglet « Référencement et partage » est présent dans l’éditeur d’un module, d’un
+                formateur, d’une page éditoriale et d’un article de blog.
+              </div>
+              <div class="rounded-[12px] border-[1.5px] border-social bg-social-nuage p-3.5">
+                Les deux chemins écrivent les mêmes champs : une modification faite dans l’éditeur
+                d’article apparaît immédiatement dans cette liste, et inversement.
+              </div>
+            </div>
+          </section>
+
+          <section class="rounded-[14px] border border-ligne-douce bg-white p-6">
+            <h2 class="font-sans text-[15px] font-bold">Qui peut modifier quoi</h2>
+            <div class="mt-3.5 flex flex-col gap-2.5 text-[12.5px] leading-[1.6] text-texte">
+              <div class="flex items-start gap-2.5">
+                <span class="shrink-0 rounded-full bg-social-voile px-2.5 py-1 text-[11px] font-bold whitespace-nowrap text-social">Contenu</span>
+                <span>Mot-clé principal, Title, meta description, Open Graph, images et textes alternatifs.</span>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="shrink-0 rounded-full bg-alerte-voile px-2.5 py-1 text-[11px] font-bold whitespace-nowrap text-alerte">Avancé 🔒</span>
+                <span>Slug d’une page publiée, autorisation d’indexation, canonical personnalisée.</span>
+              </div>
+              <p class="text-[12px] text-discret">
+                Les deux droits se cochent à la création du compte administrateur (écran 07).
+              </p>
+            </div>
+          </section>
+        </template>
 
         <!-- État technique : ce que l'application maîtrise est affirmé, ce qui
-             dépend d'un compte tiers est lu dans les réglages. -->
-        <section v-if="data" class="rounded-[14px] border border-ligne-douce bg-white p-5 text-[13px]">
-          <h2 class="font-title text-[17px] font-light">État technique</h2>
-          <dl class="mt-3 space-y-2">
+             dépend d'un compte tiers est lu dans les réglages. La maquette le
+             peint sur fond encre, seule carte sombre de l'écran. -->
+        <section v-if="data" class="rounded-[14px] bg-encre p-6 text-white">
+          <h2 class="font-sans text-[15px] font-bold text-white">État technique</h2>
+          <dl class="mt-3 flex flex-col gap-[9px] text-[12.5px] leading-[1.6] text-gris-perle">
             <div class="flex justify-between gap-3">
-              <dt class="text-discret">Sitemap XML</dt>
-              <dd><a :href="data.technique.sitemap.chemin" target="_blank" class="underline">{{ data.technique.sitemap.urls }} URL</a> · à jour</dd>
+              <dt>Sitemap XML</dt>
+              <dd class="font-bold text-succes-vif">
+                <a :href="data.technique.sitemap.chemin" target="_blank" class="text-inherit hover:underline">
+                  {{ data.technique.sitemap.urls }} URL
+                </a> · à jour
+              </dd>
             </div>
             <div class="flex justify-between gap-3">
-              <dt class="text-discret">robots.txt</dt>
-              <dd><a :href="data.technique.robots.chemin" target="_blank" class="underline">Sitemap déclaré</a></dd>
+              <dt>robots.txt</dt>
+              <dd class="font-bold text-succes-vif">
+                <a :href="data.technique.robots.chemin" target="_blank" class="text-inherit hover:underline">Sitemap déclaré</a>
+              </dd>
             </div>
             <div class="flex justify-between gap-3">
-              <dt class="text-discret">Search Console</dt>
-              <dd :class="data.technique.searchConsole === 'Connectée' ? 'text-succes' : 'text-alerte'">
-                <NuxtLink v-if="data.technique.searchConsole !== 'Connectée'" to="/admin/tracking" class="underline">À connecter</NuxtLink>
+              <dt>Search Console</dt>
+              <dd class="font-bold" :class="data.technique.searchConsole === 'Connectée' ? 'text-succes-vif' : 'text-[#f0b46a]'">
+                <NuxtLink v-if="data.technique.searchConsole !== 'Connectée'" to="/admin/tracking" class="text-inherit hover:underline">
+                  À connecter
+                </NuxtLink>
                 <template v-else>Connectée</template>
               </dd>
             </div>
             <div class="flex justify-between gap-3">
-              <dt class="text-discret">Redirections actives</dt>
-              <dd>{{ data.technique.redirections }}</dd>
+              <dt>Redirections actives</dt>
+              <dd class="font-bold text-white">{{ data.technique.redirections }}</dd>
             </div>
             <div class="flex justify-between gap-3">
-              <dt class="text-discret">Erreurs 404 (30 j)</dt>
-              <dd>{{ data.technique.erreurs404 ?? ATTENTE }}</dd>
+              <dt>Erreurs 404 (30 j)</dt>
+              <dd class="font-bold" :class="data.technique.erreurs404 ? 'text-[#f0b46a]' : 'text-white'">
+                {{ data.technique.erreurs404 ?? ATTENTE }}
+              </dd>
             </div>
           </dl>
         </section>

@@ -11,7 +11,6 @@ const { data: articles } = await useFetch<ArticleAdmin[]>('/api/admin/articles')
 const onglet = ref<'tous' | 'publie' | 'brouillon'>('tous')
 const categorie = ref('')
 const auteur = ref('')
-const recherche = ref('')
 
 const auteurs = computed(() =>
   [...new Map((articles.value ?? []).filter((a) => a.auteur).map((a) => [a.auteur!.id, a.auteur!.nom])).entries()]
@@ -27,11 +26,7 @@ const visibles = computed(() =>
   (articles.value ?? [])
     .filter((a) => onglet.value === 'tous' || a.statut === onglet.value)
     .filter((a) => !categorie.value || a.categorie === categorie.value)
-    .filter((a) => !auteur.value || a.auteurId === auteur.value)
-    .filter((a) => {
-      const q = recherche.value.trim().toLowerCase()
-      return !q || a.titre.toLowerCase().includes(q) || a.slug.includes(q)
-    }),
+    .filter((a) => !auteur.value || a.auteurId === auteur.value),
 )
 
 const compte = (statut: string) => (articles.value ?? []).filter((a) => a.statut === statut).length
@@ -50,69 +45,61 @@ const ONGLETS = computed(() => [
  * remerciement — mais cela ne doit pas passer inaperçu.
  */
 function indexation(a: ArticleAdmin) {
-  if (a.statut !== 'publie') return { texte: 'Hors ligne', classe: 'text-discret' }
-  if (a.seo?.indexable === false) return { texte: 'Non indexable', classe: 'text-alerte' }
-  if (!a.seo?.metaDescription) return { texte: 'Description à écrire', classe: 'text-alerte' }
-  return { texte: 'Indexable', classe: 'text-succes' }
+  if (a.statut !== 'publie' || a.seo?.indexable === false) {
+    return { texte: 'Désactivée', classe: 'text-discret' }
+  }
+  if (!a.seo?.metaDescription) return { texte: 'Bloquée', classe: 'text-alerte' }
+  return { texte: 'Autorisée', classe: 'text-succes' }
 }
 </script>
 
 <template>
   <div>
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="font-title text-[26px] font-light">Blog — articles</h1>
-      <UiBaseButton taille="sm" to="/admin/article/nouveau">+ Nouvel article</UiBaseButton>
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <h1 class="font-title text-[24px] font-light">Blog — articles</h1>
+      <UiBaseButton taille="sm" variante="sombre" to="/admin/article/nouveau">+ Nouvel article</UiBaseButton>
     </div>
-    <p class="mt-2 max-w-[760px] text-[13.5px] text-discret">
-      Les brouillons ne sont ni accessibles publiquement, ni indexables, ni présents dans le plan de
-      site. Le référencement de chaque article se règle depuis son éditeur ou depuis la liste SEO.
-    </p>
 
-    <UiOnglets
-      class="mt-5"
-      :onglets="ONGLETS"
-      :model-value="onglet"
-      @update:model-value="onglet = $event as typeof onglet"
-    />
-
-    <div class="mt-4 flex flex-wrap items-center justify-end gap-3">
-      <div class="flex flex-wrap gap-2 text-[13px]">
-        <select v-model="categorie" class="rounded-full border border-ligne bg-white px-3.5 py-2">
-          <option value="">Catégorie : toutes</option>
-          <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
-        </select>
-        <select v-model="auteur" class="rounded-full border border-ligne bg-white px-3.5 py-2">
-          <option value="">Auteur : tous</option>
-          <option v-for="a in auteurs" :key="a.id" :value="a.id">{{ a.nom }}</option>
-        </select>
-        <input
-          v-model="recherche"
-          type="search"
-          placeholder="Rechercher un titre"
-          class="w-[220px] max-w-full rounded-full border border-ligne px-3.5 py-2 focus:border-social focus:outline-none"
-        >
-      </div>
+    <div class="mt-4 flex flex-wrap items-center gap-2">
+      <UiOnglets
+        :onglets="ONGLETS"
+        :model-value="onglet"
+        @update:model-value="onglet = $event as typeof onglet"
+      />
+      <UiFiltrePilule
+        v-model="categorie"
+        etiquette="Filtrer par catégorie"
+        :options="[{ valeur: '', libelle: 'Catégorie : toutes' }, ...categories.map((c) => ({ valeur: c, libelle: c }))]"
+      />
+      <UiFiltrePilule
+        v-model="auteur"
+        etiquette="Filtrer par auteur"
+        :options="[{ valeur: '', libelle: 'Auteur : tous' }, ...auteurs.map((a) => ({ valeur: a.id, libelle: a.nom }))]"
+      />
     </div>
 
     <AdminTableauSimple
       class="mt-4"
-      :colonnes="['Article', 'Catégorie', 'Auteur', 'Publié le', 'Statut', 'Indexation', 'Actions']"
+      :colonnes="['Article', 'Catégorie', 'Auteur', 'Statut', 'Indexation']"
+      :largeurs="['auto', '150px', '120px', '110px', '90px']"
+      largeur-min="760px"
     >
       <tr v-for="article in visibles" :key="article.id">
-        <td class="px-4 py-3">
-          <p class="font-bold">{{ article.titre }}</p>
-          <p class="font-mono text-[11.5px] text-discret">
+        <td class="px-4 py-3.5">
+          <!-- Le titre est le point d'entrée de l'éditeur : la maquette ne
+               montre pas de colonne d'actions. -->
+          <NuxtLink :to="`/admin/article/${article.id}`" class="font-bold text-inherit hover:underline">
+            {{ article.titre }}
+          </NuxtLink>
+          <p class="font-mono text-[11px] text-discret">
             <template v-if="article.slug">/blog/{{ article.slug }}</template>
             <template v-else>slug à définir</template>
             <span v-if="article.aLaUne"> · à la une</span>
           </p>
         </td>
-        <td class="px-4 py-3">{{ article.categorie }}</td>
-        <td class="px-4 py-3">{{ article.auteur?.nom }}</td>
-        <td class="px-4 py-3 whitespace-nowrap">
-          {{ article.publieLe ? formatDate(article.publieLe) : '—' }}
-        </td>
-        <td class="px-4 py-3">
+        <td class="px-4 py-3.5 text-[12px]">{{ article.categorie }}</td>
+        <td class="px-4 py-3.5 text-[12px]">{{ article.auteur?.nom }}</td>
+        <td class="px-4 py-3.5">
           <span
             class="rounded-full px-2.5 py-1 text-[11px] font-bold"
             :class="article.statut === 'publie' ? 'bg-succes-voile text-succes' : 'bg-alerte-voile text-alerte'"
@@ -120,24 +107,19 @@ function indexation(a: ArticleAdmin) {
             {{ article.statut === 'publie' ? 'Publié' : 'Brouillon' }}
           </span>
         </td>
-        <td class="px-4 py-3 text-[12.5px]" :class="indexation(article).classe">
+        <!-- Valeur de sens : gras dans sa couleur, jamais en pastille. -->
+        <td class="px-4 py-3.5 text-[12px] font-bold" :class="indexation(article).classe">
           {{ indexation(article).texte }}
-        </td>
-        <td class="px-4 py-3 text-right whitespace-nowrap">
-          <NuxtLink :to="`/admin/article/${article.id}`" class="text-[12.5px] underline">Modifier</NuxtLink>
-          <NuxtLink
-            v-if="article.statut === 'publie'"
-            :to="`/blog/${article.slug}`"
-            target="_blank"
-            class="ml-3 text-[12.5px] underline"
-          >
-            Voir
-          </NuxtLink>
         </td>
       </tr>
       <tr v-if="!visibles.length">
-        <td colspan="7" class="px-4 py-8 text-center text-discret">Aucun article dans ce filtre.</td>
+        <td colspan="5" class="px-4 py-8 text-center text-discret">Aucun article dans ce filtre.</td>
       </tr>
     </AdminTableauSimple>
+
+    <p class="mt-3.5 rounded-[12px] border border-ligne-douce bg-white px-5 py-4 text-[12.5px] leading-[1.6] text-texte">
+      Un brouillon n’est ni accessible publiquement, ni indexable, ni présent dans le sitemap. À la
+      publication, l’article entre dans le sitemap et devient indexable si l’option est activée.
+    </p>
   </div>
 </template>

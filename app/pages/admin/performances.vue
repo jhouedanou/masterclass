@@ -128,7 +128,6 @@ const nombre = (valeur: number | null | undefined) =>
   valeur === null || valeur === undefined ? ATTENTE : new Intl.NumberFormat('fr-FR').format(valeur)
 const pourcent = (valeur: number | null | undefined) =>
   valeur === null || valeur === undefined ? ATTENTE : `${valeur.toString().replace('.', ',')} %`
-const franc = (valeur: number) => `${new Intl.NumberFormat('fr-FR').format(valeur)} F`
 const initiales = (nom: string) =>
   nom
     .split(' ')
@@ -163,58 +162,84 @@ const etapesFunnel = computed(() => {
   })
 })
 
-const carte = 'rounded-[14px] border border-ligne-douce bg-white p-6'
-const titre2 = 'font-title text-[19px] font-light'
-const select = 'rounded-full border border-ligne bg-white px-3.5 py-2'
+/** La maquette compose chaque marche du funnel dans un violet qui s'éclaircit,
+ *  puis bascule au vert sur le paiement abouti. Aucun de ces trois derniers tons
+ *  n'a de jeton. */
+const TEINTES_FUNNEL = ['bg-social', 'bg-[#9c5aa8]', 'bg-[#b98cc4]', 'bg-[#1fa855]']
+
+const maxVentesModule = computed(() =>
+  Math.max(...(data.value?.ventesParModule ?? []).map((l) => l.ventes), 1),
+)
+const maxVisitesJour = computed(() => Math.max(...(data.value?.visitesQuotidiennes ?? [1]), 1))
+const maxNouveaux = computed(() =>
+  Math.max(...(data.value?.nouveauxParSemaine ?? []).map((s) => s.nouveaux), 1),
+)
+
+const optionsMois = computed(() => [
+  { valeur: '', libelle: '🗓 30 derniers jours' },
+  ...(data.value?.moisDisponibles ?? []).map((m) => ({ valeur: m, libelle: `🗓 ${nomDuMois(m)}` })),
+])
+const optionsProgramme = [
+  { valeur: '', libelle: 'Programme' },
+  { valeur: 'social-media', libelle: 'Social Média' },
+  { valeur: 'entrepreneurs', libelle: 'Entrepreneurs' },
+]
+const optionsModule = computed(() => [
+  { valeur: '', libelle: 'Module' },
+  ...(data.value?.modulesDisponibles ?? []).map((m) => ({ valeur: m.id, libelle: m.titre })),
+])
+const optionsPays = computed(() => [
+  { valeur: '', libelle: 'Pays' },
+  ...(data.value?.paysDisponibles ?? []).filter(Boolean).map((p) => ({ valeur: p!, libelle: p! })),
+])
+const optionsAppareil = computed(() => [
+  { valeur: '', libelle: 'Appareil' },
+  ...(data.value?.appareilsDisponibles ?? []).map((a) => ({ valeur: a, libelle: a })),
+])
+const optionsSource = computed(() => [
+  { valeur: '', libelle: 'Source' },
+  ...(data.value?.sourcesDisponibles ?? []).map((s) => ({ valeur: s, libelle: s })),
+])
+
+// Écarts de la maquette : 22 px pour une carte de contenu, titre de carte en
+// Mulish gras 15 px — jamais en Jost, que la règle de base donnerait au `h2`.
+const carte = 'rounded-[14px] border border-ligne-douce bg-white p-[22px]'
+const titreCarte = 'font-sans text-[15px] font-bold'
+const lienCarte = 'text-[12px] font-bold text-social'
+/** Ligne de détail teintée des colonnes latérales (écrans 18b à 18e). */
+const ligneVoile = 'flex items-center justify-between gap-3 rounded-[8px] bg-social-nuage px-3.5 py-2.5'
 </script>
 
 <template>
   <div v-if="data">
-    <h1 class="font-title text-[26px] font-light">Performances</h1>
-
-    <div class="mt-5 flex flex-wrap gap-2 text-[13px]">
-      <select v-model="mois" :class="select" aria-label="Période">
-        <option value="">🗓 30 derniers jours</option>
-        <option v-for="m in data.moisDisponibles" :key="m" :value="m">🗓 {{ nomDuMois(m) }}</option>
-      </select>
-      <select v-model="programme" :class="select" aria-label="Programme">
-        <option value="">Programme ▾</option>
-        <option value="social-media">Social Média</option>
-        <option value="entrepreneurs">Entrepreneurs</option>
-      </select>
-      <select v-model="moduleId" class="max-w-[260px]" :class="select" aria-label="Module">
-        <option value="">Module ▾</option>
-        <option v-for="m in data.modulesDisponibles" :key="m.id" :value="m.id">{{ m.titre }}</option>
-      </select>
-      <select v-model="pays" :class="select" aria-label="Pays">
-        <option value="">Pays ▾</option>
-        <option v-for="p in data.paysDisponibles" :key="p" :value="p">{{ p }}</option>
-      </select>
-      <select v-model="appareil" :class="select" aria-label="Appareil">
-        <option value="">Appareil ▾</option>
-        <option v-if="!data.appareilsDisponibles.length" value="" disabled>—</option>
-        <option v-for="a in data.appareilsDisponibles" :key="a" :value="a">{{ a }}</option>
-      </select>
-      <select v-model="source" :class="select" aria-label="Source">
-        <option value="">Source ▾</option>
-        <option v-if="!data.sourcesDisponibles.length" value="" disabled>—</option>
-        <option v-for="s in data.sourcesDisponibles" :key="s" :value="s">{{ s }}</option>
-      </select>
+    <!-- En-tête : titre et filtres sur une même ligne (maquette, écran 18). -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h1 class="font-title text-[24px] font-light">Performances</h1>
+      <div class="flex flex-wrap gap-2.5">
+        <UiFiltrePilule v-model="mois" etiquette="Période" :options="optionsMois" />
+        <UiFiltrePilule v-model="programme" etiquette="Programme" :options="optionsProgramme" />
+        <UiFiltrePilule v-model="moduleId" etiquette="Module" :options="optionsModule" />
+        <UiFiltrePilule v-model="pays" etiquette="Pays" :options="optionsPays" />
+        <UiFiltrePilule v-model="appareil" etiquette="Appareil" :options="optionsAppareil" />
+        <UiFiltrePilule v-model="source" etiquette="Source" :options="optionsSource" />
+      </div>
     </div>
 
     <UiOnglets v-model="onglet" :onglets="ONGLETS" class="mt-4" />
 
     <!-- 18 · Résumé -->
     <template v-if="onglet === 'resume'">
-      <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="mt-[22px] grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <AdminCarteIndicateur
           libelle="Chiffre d’affaires"
-          :valeur="formatFcfa(data.ca)"
+          :valeur="formatNombre(data.ca)"
+          unite="FCFA"
           :detail="
             data.evolutionCa === null
               ? 'aucune vente sur la période précédente'
               : `${data.evolutionCa > 0 ? '+' : ''}${data.evolutionCa} % vs période précédente`
           "
+          :detail-accent="(data.evolutionCa ?? 0) > 0"
         />
         <AdminCarteIndicateur
           libelle="Ventes (modules)"
@@ -233,210 +258,253 @@ const select = 'rounded-full border border-ligne bg-white px-3.5 py-2'
         />
       </div>
 
-      <section class="mt-6" :class="carte">
-        <div class="flex items-baseline justify-between gap-3">
-          <h2 :class="titre2">Chiffre d’affaires quotidien</h2>
+      <section class="mt-5" :class="carte">
+        <div class="flex items-center justify-between gap-3">
+          <h2 :class="titreCarte">Chiffre d’affaires quotidien</h2>
           <span class="text-[12px] text-discret">FCFA / jour</span>
         </div>
-        <div class="mt-5 flex h-40 items-end gap-1.5" role="img" aria-label="Histogramme du chiffre d’affaires quotidien">
+        <div
+          class="mt-4 flex h-[120px] items-end gap-[5px]"
+          role="img"
+          aria-label="Histogramme du chiffre d’affaires quotidien"
+        >
+          <!-- La maquette ne teinte en violet plein que la journée de pointe. -->
           <div
             v-for="(valeur, i) in data.caQuotidien"
             :key="i"
-            class="flex-1 rounded-t-[3px] bg-social"
+            class="flex-1 rounded-t-[4px]"
+            :class="valeur === max ? 'bg-social' : 'bg-social-bordure'"
             :style="{ height: `${(valeur / max) * 100}%` }"
-            :title="`${new Intl.NumberFormat('fr-FR').format(valeur)} FCFA`"
+            :title="`${formatNombre(valeur)} FCFA`"
           />
         </div>
-        <p class="mt-3 text-[12px] text-discret">— pic : {{ formatFcfa(max) }}</p>
+        <!-- La série n'est pas datée côté serveur : la légende n'annonce que ses
+             bornes et le pic, plutôt que d'inventer des dates. -->
+        <div class="mt-2 flex justify-between gap-3 text-[11px] text-discret-clair">
+          <span>Début de période</span>
+          <span>Pic : {{ formatFcfa(max) }}</span>
+          <span>Aujourd’hui</span>
+        </div>
       </section>
 
-      <div class="mt-6 grid gap-6 lg:grid-cols-3">
+      <div class="mt-5 grid gap-4 lg:grid-cols-3">
         <section :class="carte">
-          <div class="flex items-baseline justify-between gap-3">
-            <h2 :class="titre2">Ventes</h2>
-            <button class="text-[12.5px] text-social underline" @click="onglet = 'ventes'">Onglet Ventes →</button>
+          <div class="flex items-center justify-between gap-3">
+            <h2 :class="titreCarte">Ventes</h2>
+            <button :class="lienCarte" @click="onglet = 'ventes'">Onglet Ventes →</button>
           </div>
-          <dl class="mt-4 space-y-2 text-[13.5px]">
+          <dl class="mt-3.5 flex flex-col gap-2.5 text-[13px]">
             <div class="flex justify-between gap-3">
               <dt class="text-discret">Par programme</dt>
-              <dd>SM {{ data.repartitionProgramme.socialMedia }} % · ENT {{ data.repartitionProgramme.entrepreneurs }} %</dd>
+              <dd class="font-bold">
+                <span class="text-social">SM {{ data.repartitionProgramme.socialMedia }} %</span> ·
+                <span class="text-entrepreneurs">ENT {{ data.repartitionProgramme.entrepreneurs }} %</span>
+              </dd>
             </div>
             <div class="flex justify-between gap-3">
               <dt class="text-discret">Top module</dt>
-              <dd class="truncate">{{ data.topModule ? `${data.topModule.titre} (${data.topModule.ventes})` : '—' }}</dd>
+              <dd class="truncate font-bold">{{ data.topModule ? `${data.topModule.titre} (${data.topModule.ventes})` : '—' }}</dd>
             </div>
-            <div class="flex justify-between gap-3"><dt class="text-discret">Top pays</dt><dd>{{ data.topPays ?? '—' }}</dd></div>
-            <div class="flex justify-between gap-3"><dt class="text-discret">Revenu / apprenant (LTV)</dt><dd>{{ formatFcfa(data.ltv) }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-discret">Top pays</dt><dd class="font-bold">{{ data.topPays ?? '—' }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-discret">Revenu / apprenant (LTV)</dt><dd class="font-bold">{{ formatFcfa(data.ltv) }}</dd></div>
           </dl>
         </section>
 
         <section :class="carte">
-          <div class="flex items-baseline justify-between gap-3">
-            <h2 :class="titre2">Visites</h2>
-            <button class="text-[12.5px] text-social underline" @click="onglet = 'visites'">Onglet Visites →</button>
+          <div class="flex items-center justify-between gap-3">
+            <h2 :class="titreCarte">Visites</h2>
+            <button :class="lienCarte" @click="onglet = 'visites'">Onglet Visites →</button>
           </div>
-          <dl class="mt-4 space-y-2 text-[13.5px]">
+          <dl class="mt-3.5 flex flex-col gap-2.5 text-[13px]">
             <div class="flex justify-between gap-3">
               <dt class="text-discret">Appareils</dt>
-              <dd>
+              <dd class="font-bold">
                 <template v-if="data.appareils">Mobile {{ data.appareils.partMobile }} % · Desktop {{ data.appareils.partDesktop }} %</template>
                 <template v-else>—</template>
               </dd>
             </div>
-            <div class="flex justify-between gap-3"><dt class="text-discret">Top source</dt><dd>{{ data.topSource ?? '—' }}</dd></div>
-            <div class="flex justify-between gap-3"><dt class="text-discret">Direct / référents</dt><dd>{{ pourcent(data.directReferents) }}</dd></div>
-            <div class="flex justify-between gap-3"><dt class="text-discret">Page la plus vue</dt><dd class="font-mono text-[12.5px]">{{ data.pageLaPlusVue ?? '—' }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-discret">Top source</dt><dd class="font-bold">{{ data.topSource ?? '—' }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-discret">Direct / référents</dt><dd class="font-bold">{{ pourcent(data.directReferents) }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-discret">Page la plus vue</dt><dd class="font-bold">{{ data.pageLaPlusVue ?? '—' }}</dd></div>
           </dl>
         </section>
 
         <section :class="carte">
-          <div class="flex items-baseline justify-between gap-3">
-            <h2 :class="titre2">Clients</h2>
-            <button class="text-[12.5px] text-social underline" @click="onglet = 'clients'">Onglet Clients →</button>
+          <div class="flex items-center justify-between gap-3">
+            <h2 :class="titreCarte">Clients</h2>
+            <button :class="lienCarte" @click="onglet = 'clients'">Onglet Clients →</button>
           </div>
-          <dl class="mt-4 space-y-2 text-[13.5px]">
-            <div class="flex justify-between gap-3"><dt class="text-discret">Acheteurs total</dt><dd>{{ data.acheteurs }}</dd></div>
-            <div class="flex justify-between gap-3"><dt class="text-discret">Nouveaux (période)</dt><dd>{{ data.nouveaux }}</dd></div>
+          <dl class="mt-3.5 flex flex-col gap-2.5 text-[13px]">
+            <div class="flex justify-between gap-3"><dt class="text-discret">Acheteurs total</dt><dd class="font-bold">{{ data.acheteurs }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-discret">Nouveaux (période)</dt><dd class="font-bold">{{ data.nouveaux }}</dd></div>
             <div class="flex justify-between gap-3">
               <dt class="text-discret">Récurrents (2 modules +)</dt>
-              <dd>{{ data.recurrents }} ({{ pourcent(data.retention) }})</dd>
+              <dd class="font-bold">{{ data.recurrents }} ({{ pourcent(data.retention) }})</dd>
             </div>
             <div class="flex justify-between gap-3">
               <dt class="text-discret">Meilleur acheteur</dt>
-              <dd>{{ data.meilleurAcheteur ? `${data.meilleurAcheteur.nom} · ${franc(data.meilleurAcheteur.ca)}` : '—' }}</dd>
+              <dd class="font-bold">{{ data.meilleurAcheteur ? `${data.meilleurAcheteur.nom} · ${formatFranc(data.meilleurAcheteur.ca)}` : '—' }}</dd>
             </div>
           </dl>
         </section>
       </div>
 
-      <p class="mt-5 text-[12.5px] text-discret">
-        Collecte via Google Tag Manager : Meta Pixel + API Conversions (CAPI) · Google Analytics 4 ·
-        TikTok Pixel · LinkedIn Insight — événements dédupliqués côté serveur.
-        <NuxtLink to="/admin/tracking" class="underline">Relier le tracking →</NuxtLink>
-      </p>
+      <!-- Bandeau de bas d'écran : une carte blanche, pas un paragraphe libre. -->
+      <div class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-ligne-douce bg-white px-[18px] py-3 text-[12px] text-discret">
+        <span>
+          Collecte via
+          <NuxtLink to="/admin/tracking" class="font-bold text-inherit hover:underline">Google Tag Manager</NuxtLink> :
+          Meta Pixel + API Conversions (CAPI) · Google Analytics 4 · TikTok Pixel · LinkedIn Insight —
+          événements dédupliqués côté serveur.
+        </span>
+        <span>
+          Détail des échecs de paiement : section
+          <NuxtLink to="/admin/transactions" class="font-bold text-inherit hover:underline">Transactions</NuxtLink>
+          (accès restreint) →
+        </span>
+      </div>
     </template>
 
     <!-- 18b · Funnel & conversion -->
-    <template v-if="onglet === 'funnel'">
-      <section class="mt-5" :class="carte">
-        <h2 :class="titre2">Funnel d’achat — 4 étapes</h2>
-        <ol class="mt-5 flex flex-col gap-3">
-          <li v-for="etape in etapesFunnel" :key="etape.libelle" class="flex flex-wrap items-center gap-4">
-            <span class="w-[240px] shrink-0 text-[13.5px] text-texte">{{ etape.libelle }}</span>
-            <div class="h-7 min-w-[40px] flex-1 overflow-hidden rounded-[6px] bg-fond-voile">
-              <div class="h-full rounded-[6px] bg-social" :style="{ width: `${Math.min(100, etape.largeur)}%` }" />
+    <div v-if="onglet === 'funnel'" class="mt-[22px] grid items-start gap-4 lg:grid-cols-[1.25fr_1fr]">
+      <section class="rounded-[14px] border border-ligne-douce bg-white p-6">
+        <h2 :class="titreCarte">Funnel d’achat — 4 étapes</h2>
+        <ol class="mt-4.5 flex flex-col gap-3">
+          <li v-for="(etape, i) in etapesFunnel" :key="etape.libelle">
+            <div class="mb-1.5 flex justify-between gap-3 text-[13px]">
+              <b>{{ etape.libelle }}</b>
+              <span>
+                <b>{{ nombre(etape.valeur) }}</b> · {{ etape.partBase }}
+                <span v-if="etape.perte" class="font-bold" :class="etape.perte === ATTENTE ? 'text-discret' : 'text-erreur'">{{ etape.perte }}</span>
+              </span>
             </div>
-            <span class="w-[130px] shrink-0 text-right text-[13.5px] font-bold">{{ nombre(etape.valeur) }} · {{ etape.partBase }}</span>
-            <span class="w-[56px] shrink-0 text-right text-[12.5px]" :class="etape.perte === ATTENTE ? 'text-discret' : 'text-erreur'">{{ etape.perte }}</span>
+            <!-- Barre à largeur proportionnelle, minimum 52 px pour que la
+                 dernière marche reste lisible (maquette). -->
+            <div
+              class="h-[26px] rounded-[8px]"
+              :class="TEINTES_FUNNEL[i]"
+              :style="{ width: `${Math.min(100, etape.largeur)}%`, minWidth: '52px' }"
+            />
           </li>
         </ol>
-        <p class="mt-5 border-t border-ligne-claire pt-4 text-[13px] text-discret">
+        <p class="mt-4 rounded-[10px] border border-alerte-bordure bg-alerte-pale px-[15px] py-3 text-[12.5px] leading-relaxed text-alerte-fonce">
           <template v-if="data.funnel.comptes">
             Plus grosse perte : étape 3 → 4 ({{ Math.round((1 - data.funnel.paiements / data.funnel.comptes) * 100) }} %
             des tunnels engagés n’aboutissent pas).
           </template>
           <template v-else>Les deux premières étapes attendent la collecte d’audience.</template>
           Détail des motifs d’échec de paiement dans
-          <NuxtLink to="/admin/transactions" class="underline">Transactions</NuxtLink> (accès restreint).
+          <NuxtLink to="/admin/transactions" class="font-bold text-inherit hover:underline">Transactions</NuxtLink>
+          (accès restreint).
         </p>
       </section>
 
-      <div class="mt-6 grid gap-6 lg:grid-cols-3">
+      <div class="flex flex-col gap-4">
         <section :class="carte">
-          <h2 :class="titre2">Conversion par appareil</h2>
-          <ul class="mt-4 space-y-2 text-[13.5px]">
-            <li v-for="l in data.conversionParAppareil" :key="l.appareil" class="flex justify-between gap-3">
+          <h2 :class="titreCarte">Conversion par appareil</h2>
+          <div class="mt-3 flex flex-col gap-2.5 text-[13px]">
+            <div v-for="l in data.conversionParAppareil" :key="l.appareil" :class="ligneVoile">
               <span>{{ l.appareil === 'Mobile' ? '📱' : '💻' }} {{ l.appareil }}</span>
-              <span class="text-discret">{{ nombre(l.visites) }} visites · {{ l.ventes }} ventes · {{ pourcent(l.taux) }}</span>
-            </li>
-          </ul>
+              <span><b>{{ nombre(l.visites) }} visites</b> · {{ l.ventes }} ventes · <b class="text-social">{{ pourcent(l.taux) }}</b></span>
+            </div>
+          </div>
         </section>
         <section :class="carte">
-          <h2 :class="titre2">Conversion par pays</h2>
-          <ul class="mt-4 space-y-2 text-[13.5px]">
-            <li v-for="l in data.conversionParPays" :key="l.pays" class="flex justify-between gap-3">
+          <h2 :class="titreCarte">Conversion par pays</h2>
+          <div class="mt-3 flex flex-col gap-2.5 text-[13px]">
+            <div v-for="l in data.conversionParPays" :key="l.pays" :class="ligneVoile">
               <span>{{ l.pays }}</span>
-              <span class="text-discret">{{ nombre(l.visites) }} · {{ l.ventes }} · {{ pourcent(l.taux) }}</span>
-            </li>
-            <li v-if="!data.conversionParPays.length" class="text-discret">—</li>
-          </ul>
+              <span>{{ nombre(l.visites) }} · {{ l.ventes }} · <b class="text-social">{{ pourcent(l.taux) }}</b></span>
+            </div>
+            <p v-if="!data.conversionParPays.length" class="text-discret">—</p>
+          </div>
         </section>
         <section :class="carte">
-          <h2 :class="titre2">Conversion par source</h2>
-          <ul class="mt-4 space-y-2 text-[13.5px]">
-            <li v-for="l in data.conversionParSource" :key="l.source" class="flex justify-between gap-3">
+          <h2 :class="titreCarte">Conversion par source</h2>
+          <div class="mt-3 flex flex-col gap-2.5 text-[13px]">
+            <div v-for="l in data.conversionParSource" :key="l.source" :class="ligneVoile">
               <span>{{ l.source }}</span>
-              <span class="text-discret">{{ nombre(l.visites) }} · {{ l.ventes }} · {{ pourcent(l.taux) }}</span>
-            </li>
-            <li v-if="!data.conversionParSource.length" class="text-discret">— (collecte à brancher)</li>
-          </ul>
+              <span>{{ nombre(l.visites) }} · {{ l.ventes }} · <b class="text-social">{{ pourcent(l.taux) }}</b></span>
+            </div>
+            <p v-if="!data.conversionParSource.length" class="text-discret">— (collecte à brancher)</p>
+          </div>
         </section>
       </div>
-    </template>
+    </div>
 
     <!-- 18c · Ventes -->
     <template v-if="onglet === 'ventes'">
-      <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <AdminCarteIndicateur libelle="Chiffre d’affaires" :valeur="franc(data.ca)" />
-        <AdminCarteIndicateur libelle="Total des ventes" :valeur="String(data.ventes)" />
-        <AdminCarteIndicateur libelle="Modules distincts vendus" :valeur="`${data.modulesDistincts.vendus} / ${data.modulesDistincts.total}`" />
-        <AdminCarteIndicateur libelle="Modules / acheteur" :valeur="data.modulesParAcheteur.toString().replace('.', ',')" />
-        <AdminCarteIndicateur libelle="Revenu / apprenant (LTV)" :valeur="franc(data.ltv)" />
+      <div class="mt-[22px] grid gap-[14px] sm:grid-cols-2 lg:grid-cols-5">
+        <AdminCarteIndicateur libelle="Chiffre d’affaires" :valeur="formatNombre(data.ca)" unite="F" taille="md" />
+        <AdminCarteIndicateur libelle="Total des ventes" :valeur="String(data.ventes)" taille="md" />
+        <AdminCarteIndicateur libelle="Modules distincts vendus" :valeur="`${data.modulesDistincts.vendus} / ${data.modulesDistincts.total}`" taille="md" />
+        <AdminCarteIndicateur libelle="Modules / acheteur" :valeur="data.modulesParAcheteur.toString().replace('.', ',')" taille="md" />
+        <AdminCarteIndicateur libelle="Revenu / apprenant (LTV)" :valeur="formatNombre(data.ltv)" unite="F" taille="md" />
       </div>
 
-      <div class="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr]">
+      <div class="mt-5 grid items-start gap-4 lg:grid-cols-[1.3fr_1fr]">
         <section :class="carte">
-          <h2 :class="titre2">Ventes par module</h2>
-          <ul class="mt-3 divide-y divide-ligne-claire text-[13.5px]">
-            <li v-for="l in data.ventesParModule.slice(0, 5)" :key="l.id" class="flex justify-between gap-3 py-2.5">
-              <span><span class="text-discret">{{ l.programme }} ·</span> {{ l.titre }}</span>
-              <span class="shrink-0 font-bold">{{ l.ventes }} · {{ franc(l.ca) }}</span>
-            </li>
-            <li v-if="!data.ventesParModule.length" class="py-6 text-center text-discret">Aucune vente sur la période.</li>
-          </ul>
-          <NuxtLink to="/admin/contenus" class="mt-3 inline-block text-[13px] text-social underline">
-            Voir les {{ data.modulesDistincts.total }} modules →
-          </NuxtLink>
+          <h2 :class="titreCarte">Ventes par module</h2>
+          <div class="mt-3.5 flex flex-col gap-2.5 text-[13px]">
+            <div
+              v-for="l in data.ventesParModule.slice(0, 5)"
+              :key="l.id"
+              class="grid items-center gap-3 sm:grid-cols-[1fr_130px_90px]"
+            >
+              <span class="truncate">
+                <b :class="l.programme === 'entrepreneurs' ? 'text-entrepreneurs' : 'text-social'">
+                  {{ l.programme === 'entrepreneurs' ? 'ENT' : 'SM' }}
+                </b> · {{ l.titre }}
+              </span>
+              <span class="hidden h-[7px] rounded-full bg-piste sm:block">
+                <span
+                  class="block h-full rounded-full"
+                  :class="l.programme === 'entrepreneurs' ? 'bg-entrepreneurs' : 'bg-social'"
+                  :style="{ width: `${(l.ventes / maxVentesModule) * 100}%` }"
+                />
+              </span>
+              <b class="text-right">{{ l.ventes }} · {{ formatFranc(l.ca) }}</b>
+            </div>
+            <p v-if="!data.ventesParModule.length" class="py-6 text-center text-discret">Aucune vente sur la période.</p>
+            <NuxtLink to="/admin/contenus" class="text-[12.5px] font-bold text-social">
+              Voir les {{ data.modulesDistincts.total }} modules →
+            </NuxtLink>
+          </div>
         </section>
 
-        <div class="flex flex-col gap-6">
+        <div class="flex flex-col gap-4">
           <section :class="carte">
-            <h2 :class="titre2">Ventes par programme</h2>
-            <div class="mt-3 flex h-2.5 w-full overflow-hidden rounded-full bg-fond-voile">
+            <h2 :class="titreCarte">Ventes par programme</h2>
+            <div class="mt-3.5 flex h-[22px] w-full overflow-hidden rounded-full bg-piste">
               <div class="h-full bg-social" :style="{ width: `${data.repartitionProgramme.socialMedia}%` }" />
               <div class="h-full bg-entrepreneurs" :style="{ width: `${data.repartitionProgramme.entrepreneurs}%` }" />
             </div>
-            <p class="mt-3 text-[13px]">
-              <span class="text-social">■</span> Social Média — {{ data.repartitionProgramme.ventesSocialMedia }} ({{ data.repartitionProgramme.socialMedia }} %)
-              <span class="ml-3 text-entrepreneurs">■</span> Entrepreneurs — {{ data.repartitionProgramme.ventesEntrepreneurs }} ({{ data.repartitionProgramme.entrepreneurs }} %)
-            </p>
+            <div class="mt-2.5 flex flex-wrap justify-between gap-2 text-[12.5px]">
+              <span><b class="text-social">■</b> Social Média — {{ data.repartitionProgramme.ventesSocialMedia }} ({{ data.repartitionProgramme.socialMedia }} %)</span>
+              <span><b class="text-entrepreneurs">■</b> Entrepreneurs — {{ data.repartitionProgramme.ventesEntrepreneurs }} ({{ data.repartitionProgramme.entrepreneurs }} %)</span>
+            </div>
           </section>
 
           <section :class="carte">
-            <h2 :class="titre2">Ventes par pays</h2>
-            <ul class="mt-3 flex flex-col gap-2 text-[13.5px]">
-              <li v-for="l in data.ventesParPays" :key="l.pays" class="flex justify-between gap-3">
-                <span class="text-texte">{{ l.pays }}</span>
-                <span class="text-discret">{{ l.ventes }} · {{ franc(l.ca) }} ({{ l.part }} %)</span>
-              </li>
-              <li v-if="!data.ventesParPays.length" class="text-discret">Aucune vente sur la période.</li>
-            </ul>
+            <h2 :class="titreCarte">Ventes par pays</h2>
+            <div class="mt-3 flex flex-col gap-2.5 text-[13px]">
+              <div v-for="l in data.ventesParPays" :key="l.pays" :class="ligneVoile">
+                <span>{{ l.pays }}</span>
+                <b>{{ l.ventes }} · {{ formatFranc(l.ca) }} ({{ l.part }} %)</b>
+              </div>
+              <p v-if="!data.ventesParPays.length" class="text-discret">Aucune vente sur la période.</p>
+            </div>
           </section>
 
           <section :class="carte">
-            <h2 :class="titre2">Moyens de paiement</h2>
-            <ul class="mt-3 flex flex-col gap-2.5 text-[13.5px]">
-              <li v-for="l in data.moyensPaiement" :key="l.moyen">
-                <div class="flex justify-between gap-3">
-                  <span class="text-texte">{{ l.moyen }}</span>
-                  <span class="text-discret">{{ l.part }} %</span>
-                </div>
-                <div class="mt-1 h-1.5 w-full rounded-full bg-fond-voile">
-                  <div class="h-full rounded-full bg-social" :style="{ width: `${l.part}%` }" />
-                </div>
-              </li>
-              <li v-if="!data.moyensPaiement.length" class="text-discret">Aucune vente sur la période.</li>
-            </ul>
+            <h2 :class="titreCarte">Moyens de paiement</h2>
+            <div class="mt-3 flex flex-col gap-2.5 text-[13px]">
+              <div v-for="l in data.moyensPaiement" :key="l.moyen" class="flex justify-between gap-3">
+                <span>{{ l.moyen }}</span>
+                <b>{{ l.part }} %</b>
+              </div>
+              <p v-if="!data.moyensPaiement.length" class="text-discret">Aucune vente sur la période.</p>
+            </div>
           </section>
         </div>
       </div>
@@ -444,146 +512,155 @@ const select = 'rounded-full border border-ligne bg-white px-3.5 py-2'
 
     <!-- 18d · Visites -->
     <template v-if="onglet === 'visites'">
-      <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <AdminCarteIndicateur libelle="Visites" :valeur="nombre(data.visites)" />
-        <AdminCarteIndicateur libelle="Visiteurs uniques" :valeur="nombre(data.visiteursUniques)" />
-        <AdminCarteIndicateur libelle="Pages vues" :valeur="nombre(data.pagesVues)" />
-        <AdminCarteIndicateur libelle="Durée moyenne" :valeur="data.dureeMoyenne ?? ATTENTE" />
+      <div class="mt-[22px] grid gap-[14px] sm:grid-cols-2 lg:grid-cols-4">
+        <AdminCarteIndicateur libelle="Visites" :valeur="nombre(data.visites)" taille="md" />
+        <AdminCarteIndicateur libelle="Visiteurs uniques" :valeur="nombre(data.visiteursUniques)" taille="md" />
+        <AdminCarteIndicateur libelle="Pages vues" :valeur="nombre(data.pagesVues)" taille="md" />
+        <AdminCarteIndicateur libelle="Durée moyenne" :valeur="data.dureeMoyenne ?? ATTENTE" taille="md" />
       </div>
 
-      <section class="mt-6" :class="carte">
-        <h2 :class="titre2">Visites quotidiennes</h2>
-        <div v-if="data.visitesQuotidiennes" class="mt-5 flex h-40 items-end gap-1.5" role="img" aria-label="Histogramme des visites quotidiennes">
-          <div
-            v-for="(valeur, i) in data.visitesQuotidiennes"
-            :key="i"
-            class="flex-1 rounded-t-[3px] bg-social"
-            :style="{ height: `${(valeur / Math.max(...data.visitesQuotidiennes, 1)) * 100}%` }"
-          />
-        </div>
-        <p v-else class="mt-4 text-[13px] text-discret">
+      <section class="mt-5" :class="carte">
+        <h2 :class="titreCarte">Visites quotidiennes</h2>
+        <template v-if="data.visitesQuotidiennes">
+          <div class="mt-3.5 flex h-[100px] items-end gap-[5px]" role="img" aria-label="Histogramme des visites quotidiennes">
+            <div
+              v-for="(valeur, i) in data.visitesQuotidiennes"
+              :key="i"
+              class="flex-1 rounded-t-[4px]"
+              :class="valeur === maxVisitesJour ? 'bg-entrepreneurs' : 'bg-entrepreneurs-bordure'"
+              :style="{ height: `${(valeur / maxVisitesJour) * 100}%` }"
+            />
+          </div>
+          <p class="mt-2 text-right text-[11px] text-discret-clair">Pic : {{ nombre(maxVisitesJour) }} visites</p>
+        </template>
+        <p v-else class="mt-3 text-[13px] text-discret">
           — Ces mesures proviendront de Google Tag Manager. Tant que la collecte n’est pas branchée dans
-          <NuxtLink to="/admin/tracking" class="underline">Tracking &amp; pixels</NuxtLink>, elles restent vides — aucune valeur n’est estimée.
+          <NuxtLink to="/admin/tracking" class="font-bold text-inherit hover:underline">Tracking &amp; pixels</NuxtLink>,
+          elles restent vides — aucune valeur n’est estimée.
         </p>
       </section>
 
-      <div class="mt-6 grid gap-6 lg:grid-cols-3">
+      <div class="mt-5 grid gap-4 lg:grid-cols-3">
         <section :class="carte">
-          <h2 :class="titre2">Visites par pays</h2>
-          <ul class="mt-4 space-y-2 text-[13.5px]">
-            <li v-for="l in data.visitesParPays ?? []" :key="l.pays" class="flex justify-between gap-3">
-              <span>{{ l.pays }}</span><span class="text-discret">{{ nombre(l.visites) }}</span>
-            </li>
-            <li v-if="!data.visitesParPays" class="text-discret">—</li>
-          </ul>
+          <h2 :class="titreCarte">Visites par pays</h2>
+          <div class="mt-3 flex flex-col gap-2.5 text-[13px]">
+            <div v-for="l in data.visitesParPays ?? []" :key="l.pays" :class="ligneVoile">
+              <span>{{ l.pays }}</span><b>{{ nombre(l.visites) }}</b>
+            </div>
+            <p v-if="!data.visitesParPays" class="text-discret">—</p>
+          </div>
         </section>
         <section :class="carte">
-          <h2 :class="titre2">Appareils &amp; navigateurs</h2>
-          <ul class="mt-4 space-y-2 text-[13.5px]">
-            <li class="flex justify-between gap-3">
+          <h2 :class="titreCarte">Appareils &amp; navigateurs</h2>
+          <div class="mt-3 flex flex-col gap-2.5 text-[13px]">
+            <div :class="ligneVoile">
               <span>📱 Mobile</span>
-              <span class="text-discret">{{ data.appareils ? `${nombre(data.appareils.mobile)} (${data.appareils.partMobile} %)` : '—' }}</span>
-            </li>
-            <li class="flex justify-between gap-3">
+              <b>{{ data.appareils ? `${nombre(data.appareils.mobile)} (${data.appareils.partMobile} %)` : '—' }}</b>
+            </div>
+            <div :class="ligneVoile">
               <span>💻 Desktop</span>
-              <span class="text-discret">{{ data.appareils ? `${nombre(data.appareils.desktop)} (${data.appareils.partDesktop} %)` : '—' }}</span>
-            </li>
-            <li class="flex justify-between gap-3 border-t border-ligne-claire pt-2">
+              <b>{{ data.appareils ? `${nombre(data.appareils.desktop)} (${data.appareils.partDesktop} %)` : '—' }}</b>
+            </div>
+            <!-- Dernière ligne sans fond dans la maquette : c'est une précision,
+                 pas une mesure du même rang. -->
+            <div class="flex items-center justify-between gap-3 px-3.5 pt-1.5 text-discret">
               <span class="truncate">{{ data.appareils?.navigateurs || '—' }}</span>
-              <span class="shrink-0 text-discret">{{ pourcent(data.appareils?.partNavigateurs) }}</span>
-            </li>
-          </ul>
-          <p v-if="data.appareils" class="mt-3 text-[12px] text-discret">D’après les appareils journalisés à la connexion.</p>
+              <b class="shrink-0">{{ pourcent(data.appareils?.partNavigateurs) }}</b>
+            </div>
+          </div>
         </section>
         <section :class="carte">
-          <h2 :class="titre2">Sources</h2>
-          <table class="mt-4 w-full text-[13.5px]">
-            <thead class="text-[12px] tracking-wider text-discret uppercase">
-              <tr><th class="pb-2 text-left font-bold">Medium</th><th class="pb-2 text-right font-bold">Référents</th></tr>
-            </thead>
-            <tbody>
-              <tr v-for="l in data.sources ?? []" :key="l.source">
-                <td class="py-1">{{ l.source }}</td><td class="py-1 text-right text-discret">{{ nombre(l.visites) }}</td>
-              </tr>
-              <tr v-if="!data.sources"><td colspan="2" class="py-1 text-discret">—</td></tr>
-            </tbody>
-          </table>
+          <h2 :class="titreCarte">Sources</h2>
+          <div class="mt-3 flex flex-col gap-2.5 text-[13px]">
+            <div v-for="l in data.sources ?? []" :key="l.source" :class="ligneVoile">
+              <span>{{ l.source }}</span><b>{{ nombre(l.visites) }}</b>
+            </div>
+            <p v-if="!data.sources" class="text-discret">—</p>
+          </div>
         </section>
       </div>
     </template>
 
     <!-- 18e · Clients -->
     <template v-if="onglet === 'clients'">
-      <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <AdminCarteIndicateur libelle="Acheteurs total" :valeur="String(data.acheteurs)" />
-        <AdminCarteIndicateur libelle="Nouveaux (période)" :valeur="String(data.nouveaux)" />
-        <AdminCarteIndicateur libelle="Récurrents (2 modules +)" :valeur="String(data.recurrents)" />
-        <AdminCarteIndicateur libelle="Taux de rétention" :valeur="pourcent(data.retention)" detail="ont racheté un 2e module" />
+      <div class="mt-[22px] grid gap-[14px] sm:grid-cols-2 lg:grid-cols-4">
+        <AdminCarteIndicateur libelle="Acheteurs total" :valeur="String(data.acheteurs)" taille="md" />
+        <AdminCarteIndicateur libelle="Nouveaux (période)" :valeur="String(data.nouveaux)" taille="md" />
+        <AdminCarteIndicateur libelle="Récurrents (2 modules +)" :valeur="String(data.recurrents)" taille="md" />
+        <AdminCarteIndicateur libelle="Taux de rétention" :valeur="pourcent(data.retention)" detail="ont racheté un 2e module" taille="md" />
       </div>
 
-      <section class="mt-6" :class="carte">
-        <h2 :class="titre2">Nouveaux acheteurs par semaine</h2>
-        <div class="mt-4 flex h-28 items-end gap-3" role="img" aria-label="Nouveaux acheteurs par semaine">
-          <div v-for="s in data.nouveauxParSemaine" :key="s.semaine" class="flex flex-1 flex-col items-center gap-1">
-            <div
-              class="w-full rounded-t-[4px] bg-social"
-              :style="{ height: `${(s.nouveaux / Math.max(...data.nouveauxParSemaine.map((x) => x.nouveaux), 1)) * 88}px` }"
-            />
-            <span class="text-[12px] text-discret">{{ s.semaine }} · {{ s.nouveaux }}</span>
-          </div>
-        </div>
-      </section>
-
-      <div class="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr]">
-        <section :class="carte">
-          <UiOnglets
-            v-model="sousOngletClients"
-            taille="sm"
-            :onglets="[
-              { cle: 'tous', libelle: 'Tous les clients' },
-              { cle: 'nouveaux', libelle: 'Nouveaux' },
-              { cle: 'recurrents', libelle: 'Récurrents' },
-            ]"
-          />
-          <h3 class="mt-4 text-[13px] font-bold">Meilleurs clients</h3>
-          <ul class="mt-2 divide-y divide-ligne-claire text-[13.5px]">
-            <li v-for="c in clientsAffiches.slice(0, 10)" :key="c.id" class="flex items-center gap-3 py-2.5">
-              <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-fond-voile text-[11px] font-bold text-social">{{ initiales(c.nom) }}</span>
-              <span class="flex-1">{{ c.nom }} · {{ c.achats }} achat{{ c.achats > 1 ? 's' : '' }}</span>
-              <span class="font-bold">{{ formatFcfa(c.ca) }}</span>
-            </li>
-            <li v-if="!clientsAffiches.length" class="py-6 text-center text-discret">Aucun achat sur la période.</li>
-          </ul>
-        </section>
-
-        <div class="flex flex-col gap-6">
+      <div class="mt-5 grid items-start gap-4 lg:grid-cols-[1.3fr_1fr]">
+        <div class="flex flex-col gap-4">
           <section :class="carte">
-            <h2 :class="titre2">Clients par pays</h2>
-            <ul class="mt-3 flex flex-col gap-2 text-[13.5px]">
-              <li v-for="l in data.clientsParPays" :key="l.pays" class="flex justify-between gap-3">
-                <span>{{ l.pays }}</span><span class="text-discret">{{ l.clients }}</span>
-              </li>
-              <li v-if="!data.clientsParPays.length" class="text-discret">—</li>
-            </ul>
+            <h2 :class="titreCarte">Nouveaux acheteurs par semaine</h2>
+            <div class="mt-3.5 flex h-[90px] items-end gap-2.5" role="img" aria-label="Nouveaux acheteurs par semaine">
+              <div
+                v-for="s in data.nouveauxParSemaine"
+                :key="s.semaine"
+                class="flex-1 rounded-t-[6px]"
+                :class="s.nouveaux === maxNouveaux ? 'bg-social' : 'bg-social-bordure'"
+                :style="{ height: `${(s.nouveaux / maxNouveaux) * 100}%` }"
+              />
+            </div>
+            <div class="mt-2 flex justify-between gap-2 text-[11px] text-discret-clair">
+              <span v-for="s in data.nouveauxParSemaine" :key="s.semaine">{{ s.semaine }} · {{ s.nouveaux }}</span>
+            </div>
+          </section>
+
+          <section :class="carte">
+            <UiOnglets
+              v-model="sousOngletClients"
+              taille="sm"
+              :onglets="[
+                { cle: 'tous', libelle: 'Tous les clients' },
+                { cle: 'nouveaux', libelle: 'Nouveaux' },
+                { cle: 'recurrents', libelle: 'Récurrents' },
+              ]"
+            />
+            <h3 class="mt-3.5 font-sans text-[13.5px] font-bold">Meilleurs clients</h3>
+            <div class="mt-2.5 flex flex-col gap-2.5 text-[13px]">
+              <div v-for="c in clientsAffiches.slice(0, 10)" :key="c.id" :class="ligneVoile">
+                <span class="flex items-center gap-2.5">
+                  <span class="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-social text-[11px] font-extrabold text-white">{{ initiales(c.nom) }}</span>
+                  <span><b>{{ c.nom }}</b> · {{ c.achats }} achat{{ c.achats > 1 ? 's' : '' }}</span>
+                </span>
+                <b class="shrink-0">{{ formatFcfa(c.ca) }}</b>
+              </div>
+              <p v-if="!clientsAffiches.length" class="py-6 text-center text-discret">Aucun achat sur la période.</p>
+            </div>
+          </section>
+        </div>
+
+        <div class="flex flex-col gap-4">
+          <section :class="carte">
+            <h2 :class="titreCarte">Clients par pays</h2>
+            <div class="mt-3 flex flex-col gap-2.5 text-[13px]">
+              <div v-for="l in data.clientsParPays" :key="l.pays" :class="ligneVoile">
+                <span>{{ l.pays }}</span><b>{{ l.clients }}</b>
+              </div>
+              <p v-if="!data.clientsParPays.length" class="text-discret">—</p>
+            </div>
           </section>
           <section :class="carte">
-            <h2 :class="titre2">Clients par programme</h2>
-            <ul class="mt-3 flex flex-col gap-2 text-[13.5px]">
-              <li class="flex justify-between gap-3"><span>Social Média uniquement</span><span class="text-discret">{{ data.clientsParProgramme.socialMediaSeul }}</span></li>
-              <li class="flex justify-between gap-3"><span>Entrepreneurs uniquement</span><span class="text-discret">{{ data.clientsParProgramme.entrepreneursSeul }}</span></li>
-              <li class="flex justify-between gap-3"><span>Les deux programmes</span><span class="text-discret">{{ data.clientsParProgramme.lesDeux }}</span></li>
-            </ul>
-            <p v-if="data.ltvBiProgrammes !== null" class="mt-3 text-[12px] text-discret">
+            <h2 :class="titreCarte">Clients par programme</h2>
+            <div class="mt-3 flex flex-col gap-2.5 text-[13px]">
+              <div class="flex justify-between gap-3">
+                <span class="font-bold text-social">Social Média uniquement</span><b>{{ data.clientsParProgramme.socialMediaSeul }}</b>
+              </div>
+              <div class="flex justify-between gap-3">
+                <span class="font-bold text-entrepreneurs">Entrepreneurs uniquement</span><b>{{ data.clientsParProgramme.entrepreneursSeul }}</b>
+              </div>
+              <div class="flex justify-between gap-3">
+                <span>Les deux programmes</span><b>{{ data.clientsParProgramme.lesDeux }}</b>
+              </div>
+            </div>
+            <p v-if="data.ltvBiProgrammes !== null" class="mt-3 text-[12px] leading-relaxed text-discret">
               Les clients bi-programmes ont un LTV moyen de {{ formatFcfa(data.ltvBiProgrammes) }} — cible prioritaire des relances.
             </p>
           </section>
         </div>
       </div>
     </template>
-
-    <p class="mt-5 text-[12.5px] text-discret">
-      Détail des échecs de paiement : section
-      <NuxtLink to="/admin/transactions" class="underline">Transactions</NuxtLink> (accès restreint) →
-    </p>
   </div>
 </template>

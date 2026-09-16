@@ -71,7 +71,7 @@ const LIBELLE_ETAT: Record<string, string> = {
          ouvrir un second, que la base refuserait. -->
     <p
       v-if="depotEnCours && !enCours"
-      class="rounded-[10px] border border-alerte bg-alerte-voile p-3 text-[13px] text-alerte"
+      class="mb-3 rounded-[10px] border border-alerte-bordure bg-alerte-pale px-3.5 py-[11px] text-[12px] text-alerte-fonce"
     >
       Un téléversement de <b>{{ depotEnCours.nomFichier }}</b> est déjà en cours sur ce chapitre
       ({{ depotEnCours.parts.length }} / {{ depotEnCours.nbParts }} parts).
@@ -81,7 +81,7 @@ const LIBELLE_ETAT: Record<string, string> = {
 
     <p
       v-else-if="depot.repriseDisponible.value && !enCours"
-      class="rounded-[10px] border border-alerte bg-alerte-voile p-3 text-[13px] text-alerte"
+      class="mb-3 rounded-[10px] border border-alerte-bordure bg-alerte-pale px-3.5 py-[11px] text-[12px] text-alerte-fonce"
     >
       Téléversement interrompu à
       {{ Math.round((depot.repriseDisponible.value.parts.length / depot.repriseDisponible.value.nbParts) * 100) }} % —
@@ -91,15 +91,15 @@ const LIBELLE_ETAT: Record<string, string> = {
 
     <div
       v-if="!enCours"
-      class="mt-3 rounded-[14px] border border-dashed p-6 text-center"
-      :class="survol ? 'border-social bg-social-voile' : 'border-ligne bg-white'"
+      class="rounded-[12px] border-[1.5px] border-dashed p-5 text-center text-[13px] text-discret"
+      :class="survol ? 'border-social bg-social-voile' : 'border-ligne-pointillee'"
       @dragover.prevent="survol = true"
       @dragleave="survol = false"
       @drop.prevent="surDepotFichier"
     >
-      <p class="text-[14px] text-texte">
-        ⬆ Glissez le <b>MP4</b> du chapitre, ou
-        <label class="cursor-pointer text-social underline">
+      <p>
+        ⬆ Glissez une vidéo (MP4, 1080p max) ou
+        <label class="cursor-pointer font-bold text-social">
           parcourir
           <input
             ref="champ"
@@ -109,14 +109,14 @@ const LIBELLE_ETAT: Record<string, string> = {
             @change="choisir(($event.target as HTMLInputElement).files?.[0])"
           >
         </label>
-        — le téléversement reprend automatiquement en cas de coupure.
+        — upload repris automatiquement en cas de coupure
       </p>
-      <p class="mt-1.5 text-[12.5px] text-discret">
+      <p class="mt-1.5 text-[11.5px]">
         Aucun transcodage n’est fait par la plateforme : le fichier est servi tel quel.
       </p>
     </div>
 
-    <div v-else class="mt-3 rounded-[14px] border border-ligne-douce bg-white p-5">
+    <div v-else class="rounded-[12px] border border-ligne-douce bg-white px-[18px] py-4">
       <div class="flex flex-wrap items-baseline justify-between gap-2">
         <p class="text-[13.5px] font-bold text-encre">
           {{ LIBELLE_ETAT[depot.etat.value] }} — {{ depot.nomFichier.value }}
@@ -140,7 +140,7 @@ const LIBELLE_ETAT: Record<string, string> = {
       </button>
     </div>
 
-    <p v-if="depot.erreur.value" class="mt-3 rounded-[10px] border border-erreur bg-[#fdeeee] p-3 text-[13px] text-erreur">
+    <p v-if="depot.erreur.value" class="mt-3 rounded-[10px] border border-erreur-bordure bg-erreur-voile px-3.5 py-[11px] text-[12px] text-erreur-fonce">
       {{ depot.erreur.value }}
     </p>
 

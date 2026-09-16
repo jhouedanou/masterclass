@@ -52,34 +52,50 @@ watchEffect(() => {
   })
 })
 
-interface Carte {
+/**
+ * La maquette (écran 19) regroupe le pixel Meta et son API Conversions dans une
+ * seule carte — ce sont deux identifiants du même outil — et sort le conteneur
+ * GTM en tête, encadré de violet : c'est lui qui porte tous les autres.
+ */
+interface ChampPixel {
   cle: keyof typeof champs
-  titre: string
   libelle: string
-  exemple: string
-  note: string
+  exemple?: string
   secret?: boolean
 }
+interface CartePixel {
+  titre: string
+  champs: ChampPixel[]
+  note?: string
+  /** Seule la carte Meta porte le lien « Événement test : envoyer ». */
+  testEvenement?: boolean
+}
 
-const CARTES: Carte[] = [
-  { cle: 'gtmConteneur', titre: 'Google Tag Manager', libelle: 'ID du conteneur', exemple: 'GTM-XXXXXXX',
-    note: 'Chargé sur les pages publiques après acceptation de la mesure. L’administration et l’espace apprenant ne sont pas mesurés.' },
-  { cle: 'ga4Mesure', titre: 'Google Analytics 4', libelle: 'ID de mesure', exemple: 'G-XXXXXXXXXX',
-    note: 'E-commerce : vue de module, ajout au panier, début de commande, achat.' },
-  { cle: 'metaPixelId', titre: 'Meta Pixel', libelle: 'Pixel ID', exemple: '1234567890',
-    note: 'Déduplication pixel / API Conversions par identifiant d’événement.' },
-  { cle: 'metaCapiJeton', titre: 'Meta — API Conversions', libelle: 'Jeton d’accès serveur', exemple: '', secret: true,
-    note: 'Envoi serveur des conversions, plus fiable que le pixel seul.' },
-  { cle: 'tiktokPixelId', titre: 'TikTok Pixel', libelle: 'Pixel ID', exemple: '', note: '' },
-  { cle: 'linkedinPartnerId', titre: 'LinkedIn Insight', libelle: 'Partner ID', exemple: '', note: '' },
+const CARTES: CartePixel[] = [
+  {
+    titre: 'Meta Pixel + API Conversions',
+    champs: [
+      { cle: 'metaPixelId', libelle: 'Pixel ID', exemple: '1234567890' },
+      { cle: 'metaCapiJeton', libelle: 'Jeton d’accès CAPI (serveur)', secret: true },
+    ],
+    note: 'Déduplication pixel / CAPI par identifiant d’événement.',
+    testEvenement: true,
+  },
+  {
+    titre: 'Google Analytics 4',
+    champs: [{ cle: 'ga4Mesure', libelle: 'ID de mesure', exemple: 'G-XXXXXXXXXX' }],
+    note: 'E-commerce activé : vue de module, ajout au panier, début de commande, achat.',
+  },
+  { titre: 'TikTok Pixel', champs: [{ cle: 'tiktokPixelId', libelle: 'Pixel ID' }] },
+  { titre: 'LinkedIn Insight Tag', champs: [{ cle: 'linkedinPartnerId', libelle: 'Partner ID' }] },
 ]
 
 /** Un identifiant vide signifie « pas encore fourni » : la carte le dit
  *  franchement plutôt que d'afficher un état « connecté » trompeur. */
 function etat(valeur: string) {
   return valeur
-    ? { texte: 'Renseigné', classe: 'bg-succes-voile text-succes' }
-    : { texte: 'En attente', classe: 'bg-alerte-voile text-alerte' }
+    ? { texte: '✓ Actif', classe: 'bg-succes-voile text-succes' }
+    : { texte: 'En attente de vérification', classe: 'bg-alerte-voile text-alerte' }
 }
 
 // --- Vérification de l'installation (écran 19) ------------------------------
@@ -142,134 +158,136 @@ async function enregistrer() {
     enCours.value = false
   }
 }
+
+// Écran de réglages : titre de page en Jost 300 à 23 px, titres de carte en
+// Mulish gras — 15 px pour le conteneur GTM, 14 px pour les cartes de pixel.
+const carte = 'rounded-[14px] border border-ligne-douce bg-white p-[18px]'
+const titrePixel = 'font-sans text-[14px] font-bold'
+const pastille = 'shrink-0 rounded-full px-2.5 py-[3px] text-[10.5px] font-bold'
+/** État d'une carte : son premier identifiant fait foi. */
+const etatCarte = (bloc: CartePixel) => etat(champs[bloc.champs[0]?.cle ?? 'gtmConteneur'])
+const champPixel =
+  'w-full rounded-[9px] border-[1.5px] border-ligne px-3 py-2.5 font-mono text-[13px] focus:border-social focus:outline-none disabled:bg-fond-voile disabled:text-discret'
 </script>
 
 <template>
-  <div v-if="data">
-    <h1 class="font-title text-[26px] font-light">Tracking &amp; pixels</h1>
-    <p class="mt-2 max-w-[720px] text-[13.5px] text-discret">
-      Un seul conteneur Google Tag Manager est chargé sur les pages publiques ; tous les pixels se
-      gèrent ensuite dans GTM. Les identifiants ci-dessous alimentent les événements serveur et la
-      vérification de propriété.
-    </p>
-    <p class="mt-2 max-w-[720px] text-[12.5px] text-discret">
-      Le conteneur ne se charge qu’après acceptation de la mesure dans le bandeau cookies, et
-      jamais sur l’administration, l’espace apprenant ni le tunnel d’achat : ces pages n’ont rien à
-      faire dans une audience publicitaire.
+  <div v-if="data" class="max-w-[1100px]">
+    <h1 class="font-title text-[23px] font-light">Tracking &amp; pixels</h1>
+    <p class="mt-1.5 text-[13.5px] text-discret">
+      Un seul conteneur GTM est injecté sur le site et la PWA ; tous les pixels se gèrent ensuite
+      dans GTM. Les identifiants ci-dessous alimentent les événements serveur (CAPI) et la
+      vérification. Le conteneur ne se charge qu’après acceptation de la mesure, et jamais sur
+      l’administration, l’espace apprenant ni le tunnel d’achat.
     </p>
 
-    <div class="mt-4 flex flex-wrap items-center gap-3">
-      <UiBaseButton taille="sm" variante="contour" @click="verifierInstallation">
-        Vérifier l’installation
+    <!-- Verrou : bandeau d'alerte pleine largeur, action à droite (maquette). -->
+    <div class="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-[12px] border-[1.5px] border-alerte bg-alerte-voile px-[18px] py-3.5">
+      <span class="text-[12.5px] leading-relaxed text-alerte-fonce">
+        <b>🔒 {{ deverrouille ? 'Modification déverrouillée.' : 'Modification verrouillée.' }}</b>
+        Les champs sont en lecture seule pour éviter toute erreur (un tracker cassé = perte de
+        données publicitaires). Déverrouiller exige le mot de passe admin, et chaque changement est
+        journalisé avec l’ancienne valeur.
+      </span>
+      <UiBaseButton v-if="!deverrouille" taille="sm" variante="sombre" @click="deverrouille = true">
+        Déverrouiller
       </UiBaseButton>
-      <UiBaseButton taille="sm" variante="contour" @click="envoyerEvenementTest">
-        Envoyer un événement test
-      </UiBaseButton>
-    </div>
-    <p v-if="verification" class="mt-2 max-w-[720px] rounded-[10px] border border-ligne bg-white p-3 text-[12.5px] text-texte">
-      {{ verification }}
-    </p>
-    <p v-if="evenementTest" class="mt-2 max-w-[720px] rounded-[10px] border border-ligne bg-white p-3 text-[12.5px] text-texte">
-      {{ evenementTest }}
-    </p>
-
-    <!-- Verrou -->
-    <div
-      class="mt-6 rounded-[14px] border p-5"
-      :class="deverrouille ? 'border-social bg-social-voile' : 'border-ligne-douce bg-white'"
-    >
-      <div class="flex flex-wrap items-start justify-between gap-4">
-        <div class="flex items-start gap-3">
-          <Icon :name="deverrouille ? 'ph:lock-open' : 'ph:lock-simple'" size="22" class="mt-0.5 text-encre" />
-          <div>
-            <p class="text-[14px] font-bold text-encre">
-              {{ deverrouille ? 'Modification déverrouillée' : 'Modification verrouillée' }}
-            </p>
-            <p class="mt-1 max-w-[600px] text-[13px] text-texte">
-              Les champs sont en lecture seule pour éviter toute erreur : un traqueur cassé, ce sont
-              des données publicitaires perdues sans que personne ne s’en aperçoive. Déverrouiller
-              exige votre mot de passe, et chaque changement est journalisé avec son ancienne valeur.
-            </p>
-          </div>
-        </div>
-        <UiBaseButton
-          v-if="!deverrouille"
-          taille="sm"
-          variante="contour"
-          @click="deverrouille = true"
-        >
-          Déverrouiller
-        </UiBaseButton>
-      </div>
-
-      <label v-if="deverrouille" class="mt-4 block max-w-[360px]">
-        <span class="mb-1.5 block text-[13px] font-bold">Votre mot de passe</span>
+      <label v-else class="w-full max-w-[360px]">
+        <span class="mb-1.5 block text-[12.5px] font-bold text-alerte-fonce">Votre mot de passe</span>
         <input
           v-model="motDePasse"
           type="password"
           autocomplete="current-password"
-          class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px] focus:border-social focus:outline-none"
+          class="w-full rounded-[10px] border-[1.5px] border-ligne bg-white px-3 py-2.5 text-[14px] focus:border-social focus:outline-none"
         >
       </label>
     </div>
 
-    <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-[#fdeeee] px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>
+    <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-erreur-voile px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>
     <p v-if="succes" class="mt-4 rounded-[10px] border border-succes bg-succes-voile px-4 py-3 text-[14px] text-succes">{{ succes }}</p>
 
-    <!-- Cartes -->
-    <div class="mt-6 grid gap-4 lg:grid-cols-2">
-      <section
-        v-for="bloc in CARTES"
-        :key="bloc.cle"
-        class="rounded-[14px] border border-ligne-douce bg-white p-5"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <h2 class="font-title text-[17px] font-light">{{ bloc.titre }}</h2>
-          <span
-            class="rounded-full px-2.5 py-1 text-[11px] font-bold"
-            :class="etat(champs[bloc.cle]).classe"
-          >
-            {{ etat(champs[bloc.cle]).texte }}
-          </span>
-        </div>
-        <label class="mt-3 block">
-          <span class="mb-1.5 block text-[12.5px] font-bold text-texte">{{ bloc.libelle }}</span>
+    <!-- Conteneur principal : la maquette l'encadre de violet, il porte tout. -->
+    <section class="mt-4 rounded-[14px] border-[1.5px] border-social bg-social-nuage p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="font-sans text-[15px] font-bold">Google Tag Manager (conteneur principal)</h2>
+        <span :class="[pastille, etat(champs.gtmConteneur).classe]">{{ etat(champs.gtmConteneur).texte }}</span>
+      </div>
+      <div class="mt-3 flex flex-wrap items-end gap-3">
+        <label class="min-w-[240px] flex-1">
+          <span class="mb-1.5 block text-[12.5px] font-bold">ID du conteneur</span>
           <input
-            v-model="champs[bloc.cle]"
-            :type="bloc.secret && !deverrouille ? 'password' : 'text'"
-            :placeholder="bloc.exemple"
+            v-model="champs.gtmConteneur"
+            placeholder="GTM-XXXXXXX"
             :disabled="!deverrouille"
-            class="w-full rounded-[10px] border border-ligne px-3 py-2.5 font-mono text-[13.5px] focus:border-social focus:outline-none disabled:bg-fond-voile disabled:text-discret"
+            class="w-full rounded-[10px] border-[1.5px] border-ligne bg-white px-3.5 py-3 font-mono text-[14px] focus:border-social focus:outline-none disabled:bg-fond-voile disabled:text-discret"
           >
         </label>
-        <p v-if="bloc.note" class="mt-2 text-[12px] text-discret">{{ bloc.note }}</p>
+        <UiBaseButton taille="sm" variante="sombre" @click="verifierInstallation">
+          Vérifier l’installation
+        </UiBaseButton>
+      </div>
+      <p class="mt-2.5 text-[12px] text-discret">
+        Injecté automatiquement dans le <code>&lt;head&gt;</code> de toutes les pages publiques
+        (site + PWA + tunnel), consentement cookies respecté (Consent Mode v2).
+      </p>
+      <p v-if="verification" class="mt-2.5 rounded-[10px] border border-ligne bg-white px-3.5 py-3 text-[12.5px] text-texte">
+        {{ verification }}
+      </p>
+    </section>
+
+    <div class="mt-4 grid gap-[14px] lg:grid-cols-2">
+      <section v-for="bloc in CARTES" :key="bloc.titre" :class="carte">
+        <div class="flex flex-wrap items-center justify-between gap-2.5">
+          <h2 :class="titrePixel">{{ bloc.titre }}</h2>
+          <span :class="[pastille, etatCarte(bloc).classe]">{{ etatCarte(bloc).texte }}</span>
+        </div>
+        <label v-for="c in bloc.champs" :key="c.cle" class="mt-2.5 block">
+          <span class="mb-1.5 block text-[12px] font-bold">{{ c.libelle }}</span>
+          <input
+            v-model="champs[c.cle]"
+            :type="c.secret && !deverrouille ? 'password' : 'text'"
+            :placeholder="c.exemple"
+            :disabled="!deverrouille"
+            :class="champPixel"
+          >
+        </label>
+        <p v-if="bloc.note || bloc.testEvenement" class="mt-2 text-[11.5px] text-discret">
+          {{ bloc.note }}
+          <template v-if="bloc.testEvenement">
+            Événement test :
+            <button class="font-bold text-inherit hover:underline" @click="envoyerEvenementTest">envoyer</button>
+          </template>
+        </p>
+        <p v-if="bloc.testEvenement && evenementTest" class="mt-2 rounded-[9px] border border-ligne bg-fond-clair px-3 py-2.5 text-[11.5px] text-texte">
+          {{ evenementTest }}
+        </p>
       </section>
     </div>
 
-    <!-- Code personnalisé -->
-    <section
-      v-if="estSuperieur"
-      class="mt-4 rounded-[14px] border border-alerte bg-alerte-voile p-5"
-    >
-      <h2 class="font-title text-[17px] font-light">Code personnalisé</h2>
-      <p class="mt-1 text-[12.5px] text-texte">
-        Scripts additionnels injectés dans le <code>&lt;head&gt;</code>. Réservé aux administrateurs
-        supérieurs — une erreur ici casse toutes les pages du site.
+    <section v-if="estSuperieur" class="mt-4" :class="carte">
+      <h2 :class="titrePixel">Code personnalisé (avancé)</h2>
+      <p class="mt-1 mb-2.5 text-[12px] text-discret">
+        Scripts additionnels injectés dans le <code>&lt;head&gt;</code> — réservé aux admins avec le
+        droit « Performances (marketing) ». Chaque modification est journalisée.
       </p>
       <textarea
         v-model="champs.codePersonnalise"
-        rows="4"
+        rows="3"
         :disabled="!deverrouille"
-        class="mt-3 w-full rounded-[10px] border border-ligne bg-white px-3 py-2.5 font-mono text-[13px] focus:border-social focus:outline-none disabled:bg-fond-voile disabled:text-discret"
+        placeholder="<!-- Ex : script de heatmap, A/B testing… -->"
+        class="min-h-[72px] w-full rounded-[10px] border-[1.5px] border-ligne bg-white px-3.5 py-3 font-mono text-[12.5px] text-texte focus:border-social focus:outline-none disabled:bg-fond-voile disabled:text-discret"
       />
     </section>
 
-    <div class="mt-6 flex flex-wrap items-center gap-3">
-      <UiBaseButton :disabled="!deverrouille || enCours" @click="enregistrer">
-        {{ enCours ? 'Enregistrement…' : 'Enregistrer les réglages' }}
+    <div class="mt-5 flex flex-wrap items-center gap-3">
+      <UiBaseButton variante="sombre" :disabled="!deverrouille || enCours" @click="enregistrer">
+        <template v-if="enCours">Enregistrement…</template>
+        <template v-else-if="deverrouille">Enregistrer</template>
+        <template v-else>Enregistrer (déverrouiller d’abord)</template>
       </UiBaseButton>
-      <p class="text-[12.5px] text-discret">
-        Dernière modification {{ formatDate(data.majLe) }}<span v-if="data.majPar"> par {{ data.majPar }}</span>.
+      <p class="max-w-[620px] text-[12.5px] text-discret">
+        À l’enregistrement, chaque changement est inscrit au journal avec son ancienne valeur.
+        Événements suivis : PageView · ViewContent · InitiateCheckout · AddPaymentInfo · Purchase ·
+        CompleteRegistration. Dernière modification {{ formatDate(data.majLe) }}<span v-if="data.majPar"> par {{ data.majPar }}</span>.
       </p>
     </div>
   </div>

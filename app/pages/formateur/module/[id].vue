@@ -26,35 +26,27 @@ usePagePrivee(`${data.value.module.titre} — mes modules`)
         <p class="surtitre" :class="data.module.programme === 'social-media' ? 'text-social' : 'text-entrepreneurs'">
           Module {{ numeroModule(data.module.numero) }} · {{ data.module.thematique }}
         </p>
-        <h1 class="mt-1 font-title text-[26px] font-light">{{ data.module.titre }}</h1>
+        <h1 class="mt-1 font-title text-[22px] font-light">{{ data.module.titre }}</h1>
       </div>
       <UiBaseButton variante="contour" taille="sm" :to="`/modules/${data.module.slug}`">
         Voir la fiche publique
       </UiBaseButton>
     </div>
 
-    <div class="mt-6 grid gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-      <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
-        <p class="text-[12px] text-discret">Inscrits</p>
-        <p class="mt-1 font-title text-[27px] font-light">{{ data.inscrits }}</p>
-      </div>
-      <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
-        <p class="text-[12px] text-discret">Complétion moyenne</p>
-        <p class="mt-1 font-title text-[27px] font-light">{{ data.completion }} %</p>
-      </div>
-      <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
-        <p class="text-[12px] text-discret">Certificats délivrés</p>
-        <p class="mt-1 font-title text-[27px] font-light">{{ data.certificats }}</p>
-      </div>
-      <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
-        <p class="text-[12px] text-discret">Durée du module</p>
-        <p class="mt-1 font-title text-[27px] font-light">{{ formatDuree(data.module.dureeMinutes) }}</p>
-        <p class="mt-1 text-[11.5px] text-discret">{{ data.module.nbChapitres }} chapitres</p>
-      </div>
+    <div class="mt-4 grid gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
+      <AdminCarteIndicateur taille="md" libelle="Inscrits" :valeur="String(data.inscrits)" />
+      <AdminCarteIndicateur taille="md" libelle="Complétion moyenne" :valeur="`${data.completion} %`" />
+      <AdminCarteIndicateur taille="md" libelle="Certificats délivrés" :valeur="String(data.certificats)" />
+      <AdminCarteIndicateur
+        taille="md"
+        libelle="Durée du module"
+        :valeur="formatDuree(data.module.dureeMinutes)"
+        :detail="`${data.module.nbChapitres} chapitres`"
+      />
     </div>
 
-    <section class="mt-6">
-      <h2 class="font-title text-[19px] font-light">Progression chapitre par chapitre</h2>
+    <section class="mt-5.5">
+      <h2 class="font-sans text-[15px] font-bold">Progression chapitre par chapitre</h2>
       <AdminTableauSimple class="mt-3" :colonnes="['Chapitre', 'Terminé par', 'Part des inscrits']">
         <tr v-for="chapitre in data.chapitres" :key="chapitre.position">
           <td class="px-4 py-3">
@@ -64,7 +56,7 @@ usePagePrivee(`${data.value.module.titre} — mes modules`)
           <td class="px-4 py-3 font-bold">{{ chapitre.vuPar }} / {{ data.inscrits }}</td>
           <td class="px-4 py-3">
             <span class="flex items-center gap-2">
-              <span class="h-1.5 min-w-[60px] flex-1 rounded-full bg-fond-voile">
+              <span class="h-1.5 min-w-[60px] flex-1 rounded-full bg-piste">
                 <span
                   class="block h-full rounded-full bg-social"
                   :style="{ width: `${data.inscrits ? Math.round((chapitre.vuPar / data.inscrits) * 100) : 0}%` }"
@@ -80,12 +72,12 @@ usePagePrivee(`${data.value.module.titre} — mes modules`)
       </p>
     </section>
 
-    <section class="mt-8">
-      <h2 class="font-title text-[19px] font-light">Les inscrits</h2>
+    <section class="mt-5.5">
+      <h2 class="font-sans text-[15px] font-bold">Les inscrits</h2>
       <AdminTableauSimple class="mt-3" :colonnes="['Apprenant', 'Progression', 'Inscrit le', 'Certificat']">
         <tr v-for="apprenant in data.apprenants" :key="apprenant.id">
           <td class="px-4 py-3">
-            <NuxtLink :to="`/formateur/apprenant/${apprenant.id}`" class="font-bold hover:underline">
+            <NuxtLink :to="`/formateur/apprenant/${apprenant.id}`" class="font-bold text-inherit hover:underline">
               {{ apprenant.nom }}
             </NuxtLink>
           </td>

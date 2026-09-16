@@ -62,7 +62,7 @@ const initiales = computed(
           </span>
         </div>
 
-        <nav aria-label="Navigation de l’espace formateur" class="hidden items-center gap-5 text-[14.5px] font-semibold whitespace-nowrap lg:flex xl:gap-6">
+        <nav aria-label="Navigation de l’espace formateur" class="hidden items-center gap-5 text-[14.5px] font-semibold whitespace-nowrap lg:flex xl:gap-6.5">
           <NuxtLink
             v-for="lien in liens"
             :key="lien.chemin"
@@ -80,12 +80,12 @@ const initiales = computed(
           </NuxtLink>
         </nav>
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2.5">
           <!-- La maquette n'ouvre pas de menu sur l'avatar ; il reste le seul
                chemin vers le profil, la barre latérale ne le listant plus. -->
           <NuxtLink
             to="/formateur/profil"
-            class="grid size-9 place-items-center rounded-full bg-social text-[13px] font-bold text-white"
+            class="grid size-9 place-items-center rounded-full bg-social text-[13px] font-extrabold text-white"
             :aria-label="`Profil de ${auth.utilisateur?.prenom ?? ''}`"
           >
             {{ initiales }}

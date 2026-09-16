@@ -2,26 +2,26 @@
 const props = defineProps<{ title: string; description: string; chemin: string }>()
 
 const config = useRuntimeConfig()
-const url = computed(() => `${config.public.siteUrl}${props.chemin}`.replace(/^https?:\/\//, ''))
+const url = computed(() =>
+  `${config.public.siteUrl}${props.chemin}`.replace(/^https?:\/\//, '').replace(/\//g, ' › '),
+)
 
-// Aperçu indicatif : aucune limite dure de caractères n'est imposée (spec SEO §3).
+// Aperçu indicatif : aucune limite dure de caractères n'est imposée (spec SEO
+// §3), et l'écran 24 n'affiche aucun compteur — il montre le résultat, pas la
+// règle.
 </script>
 
 <template>
-  <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
-    <p class="surtitre text-discret">Aperçu du résultat Google</p>
-    <div class="mt-3">
-      <p class="text-[12.5px] text-texte">{{ url }}</p>
-      <p class="mt-1 text-[18px] text-[#1a0dab]">{{ title || 'Title non renseigné' }}</p>
-      <p class="mt-1 text-[13.5px] text-texte">
-        {{ description || 'Meta description non renseignée.' }}
-      </p>
-    </div>
-    <p class="mt-3 text-[12px] text-discret">
-      Title : {{ title.length }} caractères · Meta description : {{ description.length }} caractères.
-      <span v-if="title.length > 60 || description.length > 160" class="text-alerte">
-        Au-delà des longueurs habituelles, Google peut réécrire l’extrait.
-      </span>
+  <!-- Encart de l'écran 24, à l'intérieur de la carte : ce n'est pas une carte
+       à part, d'où le fond clair et le filet tendre. -->
+  <div class="rounded-[12px] border border-ligne-douce bg-fond-clair p-4">
+    <p class="mb-2.5 text-[11px] font-bold tracking-[0.1em] text-discret uppercase">
+      Aperçu du résultat Google
+    </p>
+    <p class="font-mono text-[11.5px] text-succes">{{ url }}</p>
+    <p class="mt-1 mb-[3px] text-[17px] text-[#1a0dab]">{{ title || 'Title non renseigné' }}</p>
+    <p class="text-[12.5px] leading-[1.5] text-texte">
+      {{ description || 'Meta description non renseignée.' }}
     </p>
   </div>
 </template>

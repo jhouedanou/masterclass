@@ -51,6 +51,14 @@ function exporter() {
   )
 }
 
+/** « 05/09 · 14:32 » : la maquette date chaque ligne en monospace court. */
+function dateCourte(iso: string) {
+  const d = new Date(iso)
+  const jour = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit' }).format(d)
+  const heure = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(d)
+  return `${jour} · ${heure}`
+}
+
 /** L'adresse est tronquée à l'affichage, comme dans la maquette : elle sert à
  *  distinguer deux sessions, pas à localiser quelqu'un. */
 function ipCourte(ip?: string) {
@@ -62,83 +70,76 @@ function ipCourte(ip?: string) {
 
 <template>
   <div v-if="data">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <h1 class="font-title text-[26px] font-light">Historique &amp; versions</h1>
-      <UiBaseButton taille="sm" variante="contour" @click="exporter">Exporter en CSV</UiBaseButton>
-    </div>
-    <p class="mt-2 max-w-[760px] text-[12.5px] text-discret">
-      Toutes les actions sensibles sont journalisées : publication, modification de fiche,
-      attribution ou révocation d’accès, changement de slug, annulation de session, modification des
-      paramètres financiers.
-    </p>
-
-    <div class="mt-5 flex flex-wrap gap-2 text-[13px]">
-      <select v-model="auteur" class="rounded-full border border-ligne bg-white px-3.5 py-2">
-        <option value="">Tous les auteurs</option>
-        <option v-for="a in data.auteurs" :key="a" :value="a">{{ a }}</option>
-      </select>
-      <select v-model="type" class="rounded-full border border-ligne bg-white px-3.5 py-2">
-        <option value="">Tous les types</option>
-        <option v-for="t in data.types" :key="t" :value="t">{{ LIBELLES_TYPE[t!] ?? t }}</option>
-      </select>
-      <select v-model="objet" class="rounded-full border border-ligne bg-white px-3.5 py-2">
-        <option value="">Tous les objets</option>
-        <option v-for="o in data.objets" :key="o" :value="o">{{ o }}</option>
-      </select>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h1 class="font-title text-[24px] font-light">Journal des actions</h1>
+      <!-- « Filtrer : admin · type · objet ▾ » de la maquette : trois filtres,
+           trois pilules, plutôt qu'un menu qui les cacherait. -->
+      <div class="flex flex-wrap gap-2">
+        <UiFiltrePilule
+          v-model="auteur"
+          etiquette="Filtrer par administrateur"
+          :options="[{ valeur: '', libelle: 'Admin : tous' }, ...data.auteurs.map((a) => ({ valeur: a, libelle: a }))]"
+        />
+        <UiFiltrePilule
+          v-model="type"
+          etiquette="Filtrer par type d’action"
+          :options="[{ valeur: '', libelle: 'Type : tous' }, ...data.types.map((t) => ({ valeur: t, libelle: LIBELLES_TYPE[t] ?? t }))]"
+        />
+        <UiFiltrePilule
+          v-model="objet"
+          etiquette="Filtrer par objet"
+          :options="[{ valeur: '', libelle: 'Objet : tous' }, ...data.objets.map((o) => ({ valeur: o, libelle: o }))]"
+        />
+      </div>
     </div>
 
-    <AdminTableauSimple
-      class="mt-4"
-      :colonnes="['Date', 'Auteur', 'Action', 'Type', 'Objet', 'Adresse IP', 'Notification', '']"
-    >
-      <template v-for="entree in data.entrees" :key="entree.id">
-        <tr>
-          <td class="px-4 py-3 whitespace-nowrap text-[12.5px] text-discret">
-            {{ formatDate(entree.date) }}
-          </td>
-          <td class="px-4 py-3 font-bold">{{ entree.auteur }}</td>
-          <td class="px-4 py-3">
-            {{ entree.action }}
-            <span class="block text-[12px] text-discret">{{ entree.cible }}</span>
-          </td>
-          <td class="px-4 py-3">
-            <span v-if="entree.type" class="rounded-full bg-fond-voile px-2.5 py-1 text-[11px] font-bold text-discret">
-              {{ LIBELLES_TYPE[entree.type] ?? entree.type }}
-            </span>
-            <span v-else class="text-discret">—</span>
-          </td>
-          <td class="px-4 py-3 text-[12.5px]">
-            <span v-if="entree.objet">{{ entree.objet }}</span>
-            <span v-else class="text-discret">—</span>
-          </td>
-          <td class="px-4 py-3 font-mono text-[12px] whitespace-nowrap">
-            <span v-if="entree.ip" class="text-discret">{{ ipCourte(entree.ip) }}</span>
-            <span v-else class="text-discret">—</span>
-          </td>
-          <td class="px-4 py-3 text-[12.5px]">
-            <span v-if="entree.notification" class="text-succes">{{ entree.notification }}</span>
-            <span v-else class="text-discret">—</span>
-          </td>
-          <td class="px-4 py-3 text-right">
+    <!-- Une seule carte, une ligne par action : la maquette ne dresse pas de
+         tableau ici, elle déroule un fil daté. -->
+    <div class="mt-4 rounded-[14px] border border-ligne-douce bg-white px-5 py-1.5">
+      <div
+        v-for="(entree, i) in data.entrees"
+        :key="entree.id"
+        class="flex items-start gap-3.5 py-3.5 text-[13px]"
+        :class="i < data.entrees.length - 1 && 'border-b border-fond-voile'"
+      >
+        <span class="min-w-[96px] shrink-0 font-mono text-[11.5px] text-discret">
+          {{ dateCourte(entree.date) }}
+        </span>
+        <span class="min-w-0">
+          <b>{{ entree.auteur }}</b> {{ entree.action }}
+          <template v-if="entree.cible"> — <b>{{ entree.cible }}</b></template>
+          <span class="mt-0.5 block text-[11.5px] text-discret">
+            <template v-if="entree.objet">{{ entree.objet }} · </template>
+            <template v-if="entree.notification">{{ entree.notification }} · </template>
             <button
-              v-if="entree.diff || entree.ip"
-              class="text-[12.5px] underline"
+              v-if="entree.diff"
+              class="text-inherit hover:underline"
               @click="ouverte = ouverte === entree.id ? '' : entree.id"
             >
-              {{ ouverte === entree.id ? 'Masquer' : 'Détail' }}
+              {{ ouverte === entree.id ? 'Masquer le détail' : 'Diff consultable' }}
             </button>
-          </td>
-        </tr>
-        <tr v-if="ouverte === entree.id">
-          <td colspan="8" class="bg-fond-voile px-4 py-3 text-[12.5px]">
-            <p v-if="entree.ip" class="text-discret">Adresse : {{ ipCourte(entree.ip) }}</p>
-            <pre v-if="entree.diff" class="mt-2 overflow-x-auto font-mono text-[12px] text-texte">{{ JSON.stringify(entree.diff, null, 2) }}</pre>
-          </td>
-        </tr>
-      </template>
-      <tr v-if="!data.entrees.length">
-        <td colspan="8" class="px-4 py-8 text-center text-discret">Aucune entrée dans ce filtre.</td>
-      </tr>
-    </AdminTableauSimple>
+            <template v-if="entree.diff && entree.ip"> · </template>
+            <template v-if="entree.ip">IP {{ ipCourte(entree.ip) }}</template>
+          </span>
+          <pre
+            v-if="ouverte === entree.id && entree.diff"
+            class="mt-2 overflow-x-auto rounded-[10px] bg-fond-clair p-3 font-mono text-[11.5px] text-texte"
+          >{{ JSON.stringify(entree.diff, null, 2) }}</pre>
+        </span>
+      </div>
+      <p v-if="!data.entrees.length" class="py-8 text-center text-[13px] text-discret">
+        Aucune entrée dans ce filtre.
+      </p>
+    </div>
+
+    <div class="mt-3 flex flex-wrap items-center gap-3 text-[12.5px] text-discret">
+      <button class="rounded-full border border-ligne bg-white px-3.5 py-2 font-semibold text-encre" @click="exporter">
+        Exporter en CSV
+      </button>
+      <span>
+        Journal inaltérable, conservé 24 mois. Toute connexion admin, modification, attribution et
+        action de paiement y figure.
+      </span>
+    </div>
   </div>
 </template>

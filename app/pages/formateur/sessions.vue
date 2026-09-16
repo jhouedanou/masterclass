@@ -27,26 +27,28 @@ const aujourdhui = new Date().toISOString().slice(0, 10)
 
 <template>
   <div>
-    <h1 class="font-title text-[26px] font-light">Mes sessions de coaching</h1>
-    <p class="mt-2 max-w-[760px] text-[13.5px] text-discret">
-      Le nom d’une session ouvre sa salle : elle accepte l’entrée à partir de 15 minutes avant le
-      début.
-    </p>
+    <h1 class="font-title text-[22px] font-light">Mes sessions de coaching</h1>
 
     <AdminTableauSimple
-      class="mt-6"
+      class="mt-4"
       :colonnes="['Date · Heure', 'Session', 'Inscrits', 'Participation', 'Notes']"
+      :largeurs="['135px', 'auto', '120px', '130px', '110px']"
+      largeur-min="780px"
     >
+      <!-- La prochaine séance est signalée par un fond à peine teinté et un
+           filet violet de 3 px à gauche, pas par une ligne colorée. -->
       <tr
         v-for="session in ordonnees"
         :key="session.id"
-        :class="session.date >= aujourdhui && session.statut === 'planifiee' ? 'bg-social-voile/40' : ''"
+        :class="session.date >= aujourdhui && session.statut === 'planifiee'
+          ? 'border-l-[3px] border-l-social bg-social-neige'
+          : ''"
       >
         <td class="px-4 py-3 font-bold whitespace-nowrap">
           {{ formatDateCourte(session.date) }} · {{ session.heure }}
         </td>
         <td class="px-4 py-3">
-          <NuxtLink :to="`/formateur/session/${session.id}`" class="hover:underline">
+          <NuxtLink :to="`/formateur/session/${session.id}`" class="text-inherit hover:underline">
             {{ session.titre || session.thematique?.nom }}
           </NuxtLink>
           <span v-if="session.statut === 'annulee'" class="ml-2 text-[12px] font-bold text-erreur">
@@ -54,7 +56,7 @@ const aujourdhui = new Date().toISOString().slice(0, 10)
           </span>
         </td>
         <td class="px-4 py-3">
-          <NuxtLink :to="`/formateur/sujets/${session.id}`" class="hover:underline">
+          <NuxtLink :to="`/formateur/sujets/${session.id}`" class="text-inherit hover:underline">
             <b>{{ session.inscrits }}</b> / {{ session.places }}
           </NuxtLink>
         </td>
@@ -65,9 +67,9 @@ const aujourdhui = new Date().toISOString().slice(0, 10)
           <span v-else class="text-discret">à venir</span>
         </td>
         <td class="px-4 py-3">
-          <span v-if="session.note" class="font-bold text-alerte">
+          <span v-if="session.note" class="font-bold text-or">
             {{ session.note.toString().replace('.', ',') }} ★
-            <span class="font-normal text-discret">({{ session.nbNotes }})</span>
+            <span class="text-[11.5px] font-normal text-discret">({{ session.nbNotes }})</span>
           </span>
           <NuxtLink
             v-else

@@ -18,8 +18,8 @@ const accordInscrit = computed(() =>
 </script>
 
 <template>
-  <div class="rounded-[14px] border border-ligne bg-white p-6">
-    <p class="surtitre text-discret uppercase">
+  <div class="rounded-[14px] border border-ligne-douce bg-white p-5.5">
+    <p class="surtitre-menu text-discret">
       Fiche apprenant — lecture seule (inscrits à vos modules / sessions)
     </p>
 
@@ -38,9 +38,9 @@ const accordInscrit = computed(() =>
       </div>
     </div>
 
-    <div v-if="fiche.persona" class="mt-3.5 rounded-[12px] border border-social-bordure bg-social-voile p-4">
+    <div v-if="fiche.persona" class="mt-3.5 rounded-[12px] border border-social-bordure-tendre bg-social-nuage p-4">
       <p class="surtitre text-social">Persona — pour préparer vos sessions</p>
-      <dl class="mt-2.5 flex flex-col gap-1.5 text-[13px]">
+      <dl class="mt-2.5 flex flex-col gap-1.75 text-[13px]">
         <div v-if="fiche.persona.secteur" class="flex justify-between gap-4">
           <dt class="text-discret">Secteur</dt>
           <dd class="text-right font-bold">{{ fiche.persona.secteur }}</dd>
@@ -105,7 +105,7 @@ const accordInscrit = computed(() =>
       </span>
     </p>
 
-    <p class="mt-3.5 rounded-[10px] border border-ligne-claire bg-fond-clair px-3.5 py-3 text-[11.5px] leading-relaxed text-discret">
+    <p class="mt-3.5 rounded-[10px] border border-ligne-claire bg-fond-clair px-3.25 py-2.75 text-[11.5px] leading-relaxed text-discret">
       Vous ne voyez que les apprenants inscrits à vos modules, sessions ou coachings privés. Contact
       et paiements restent masqués — la relation passe par la plateforme.
     </p>

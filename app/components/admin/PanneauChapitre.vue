@@ -69,95 +69,103 @@ async function retirerVideo() {
   }
 }
 
+// Écran 09 : filets de 1,5 px et chemise 11/13, plus serrés que les champs
+// de formulaire du reste du back-office.
 const champ =
-  'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px] focus:border-social focus:outline-none'
+  'w-full rounded-[10px] border-[1.5px] border-ligne px-3.5 py-[11px] text-[13.5px] focus:border-social focus:outline-none'
+const etiquette = 'mb-1.5 block text-[12.5px] font-bold'
 </script>
 
 <template>
-  <aside class="h-fit rounded-[14px] border border-ligne-douce bg-white p-5">
-    <h3 class="font-title text-[17px] font-light">Chapitre {{ numero }} — détail</h3>
+  <aside class="h-fit rounded-[12px] border border-ligne-douce p-[18px]">
+    <h3 class="font-sans text-[14px] font-bold">Chapitre {{ numero }} — détail</h3>
 
-    <label class="mt-4 block">
-      <span class="mb-1.5 block text-[13px] font-bold">Titre du chapitre</span>
-      <input
-        v-model="titre"
-        :class="champ"
-        @blur="titre !== chapitre.titre && emit('modifier', { titre })"
-      >
-    </label>
-
-    <div class="mt-4 border-t border-ligne-claire pt-4">
-      <p class="text-[13px] font-bold">Vidéo</p>
-      <p v-if="chapitre.videoCle" class="mt-1.5 text-[13px] text-texte">
-        {{ chapitre.videoNomFichier ?? chapitre.videoCle }}
-        <span v-if="chapitre.videoDureeSecondes" class="text-discret">
-          · {{ Math.round(chapitre.videoDureeSecondes / 60) }} min
-        </span>
-        <span v-if="chapitre.videoFormat === 'hls'" class="mt-0.5 block text-[12px] text-discret">
-          Flux transcodé à la main : il se retire en ligne de commande, pas ici.
-        </span>
-        <button
-          v-else
-          class="mt-1 block text-[12.5px] text-erreur underline"
-          @click="retirerVideo"
-        >
-          Retirer la vidéo
-        </button>
-      </p>
-      <p v-else class="mt-1.5 text-[13px] text-discret">Aucune vidéo déposée.</p>
-    </div>
-
-    <div class="mt-4 border-t border-ligne-claire pt-4">
-      <p class="text-[13px] font-bold">Script synchronisé (SRT / VTT)</p>
-      <p class="mt-1.5 text-[13px]" :class="chapitre.nbLignesScript ? 'text-succes' : 'text-discret'">
-        <template v-if="chapitre.nbLignesScript">
-          {{ chapitre.scriptNomFichier ?? 'transcription' }} ✓
-          <span class="text-discret">· {{ chapitre.nbLignesScript }} passages</span>
-        </template>
-        <template v-else>Aucune transcription importée.</template>
-      </p>
-      <label class="mt-2 inline-block cursor-pointer text-[12.5px] text-social underline">
-        {{ chapitre.nbLignesScript ? 'Remplacer' : 'Importer un fichier' }}
+    <div class="mt-3.5 flex flex-col gap-3">
+      <label class="block">
+        <span :class="etiquette">Titre du chapitre</span>
         <input
-          type="file"
-          accept=".srt,.vtt"
-          class="sr-only"
-          :disabled="importEnCours"
-          @change="importerScript(($event.target as HTMLInputElement).files?.[0])"
+          v-model="titre"
+          :class="champ"
+          @blur="titre !== chapitre.titre && emit('modifier', { titre })"
         >
       </label>
-      <p v-if="messageScript" class="mt-2 text-[12.5px] text-succes">{{ messageScript }}</p>
-      <p v-if="erreurScript" class="mt-2 text-[12.5px] text-erreur">{{ erreurScript }}</p>
 
-      <AdminMarcheASuivre sujet="script" />
-    </div>
+      <div>
+        <p :class="etiquette">Vidéo</p>
+        <div
+          v-if="chapitre.videoCle"
+          class="flex items-center justify-between gap-3 rounded-[10px] border-[1.5px] border-ligne px-3.5 py-[11px] text-[13px]"
+        >
+          <span class="min-w-0 truncate">
+            {{ chapitre.videoNomFichier ?? chapitre.videoCle }}
+            <span v-if="chapitre.videoDureeSecondes" class="text-discret">
+              · {{ Math.round(chapitre.videoDureeSecondes / 60) }} min
+            </span>
+          </span>
+          <span v-if="chapitre.videoFormat === 'hls'" class="shrink-0 text-[12px] text-discret">
+            flux transcodé
+          </span>
+          <button v-else class="shrink-0 text-[12px] font-bold text-erreur" @click="retirerVideo">
+            Retirer
+          </button>
+        </div>
+        <p v-else class="text-[13px] text-discret">Aucune vidéo déposée.</p>
+        <p v-if="chapitre.videoFormat === 'hls'" class="mt-1.5 text-[11.5px] text-discret">
+          Flux transcodé à la main : il se retire en ligne de commande, pas ici.
+        </p>
+      </div>
 
-    <!-- Ces deux réglages sont au module, pas au chapitre. La maquette les
-         montre ici ; on le dit plutôt que de laisser croire le contraire. -->
-    <div class="mt-4 border-t border-ligne-claire pt-4">
-      <label class="flex items-start gap-2.5 text-[13.5px]">
+      <div>
+        <p :class="etiquette">Script synchronisé (SRT / VTT)</p>
+        <div class="flex items-center justify-between gap-3 rounded-[10px] border-[1.5px] border-ligne px-3.5 py-[11px] text-[13px]">
+          <span class="min-w-0 truncate" :class="chapitre.nbLignesScript ? '' : 'text-discret'">
+            <template v-if="chapitre.nbLignesScript">
+              {{ chapitre.scriptNomFichier ?? 'transcription' }} ✓
+              <span class="text-discret">· {{ chapitre.nbLignesScript }} passages</span>
+            </template>
+            <template v-else>Aucune transcription importée.</template>
+          </span>
+          <label class="shrink-0 cursor-pointer text-[12px] font-bold text-social">
+            {{ chapitre.nbLignesScript ? 'Remplacer' : 'Importer' }}
+            <input
+              type="file"
+              accept=".srt,.vtt"
+              class="sr-only"
+              :disabled="importEnCours"
+              @change="importerScript(($event.target as HTMLInputElement).files?.[0])"
+            >
+          </label>
+        </div>
+        <p v-if="messageScript" class="mt-1.5 text-[11.5px] text-succes">{{ messageScript }}</p>
+        <p v-if="erreurScript" class="mt-1.5 text-[11.5px] text-erreur">{{ erreurScript }}</p>
+
+        <AdminMarcheASuivre sujet="script" />
+      </div>
+
+      <!-- Ces deux réglages sont au module, pas au chapitre. La maquette les
+           montre ici ; on le dit plutôt que de laisser croire le contraire. -->
+      <label class="flex items-center gap-2.5 text-[12.5px] font-semibold text-texte">
         <input
           type="checkbox"
-          class="mt-0.5"
+          class="size-4 accent-social"
           :checked="filigraneActif"
           @change="emit('reglages', { filigraneActif: ($event.target as HTMLInputElement).checked })"
         >
         Watermark nominatif dynamique activé
       </label>
-      <label class="mt-2.5 flex items-start gap-2.5 text-[13.5px]">
+      <label class="flex items-center gap-2.5 text-[12.5px] font-semibold text-texte">
         <input
           type="checkbox"
-          class="mt-0.5"
+          class="size-4 accent-social"
           :checked="telechargementBloque"
           @change="emit('reglages', { telechargementBloque: ($event.target as HTMLInputElement).checked })"
         >
         Téléchargement bloqué (streaming seul)
       </label>
-      <p class="mt-2 text-[12px] text-discret">
-        S’appliquent à tout le module. Le blocage masque le bouton de
-        téléchargement ; il n’empêche ni un enregistrement d’écran, ni la récupération de l’URL
-        signée pendant ses quatre heures de validité. C’est le filigrane qui rend une rediffusion
-        attribuable.
+      <p class="text-[11.5px] text-discret">
+        Les deux s’appliquent à tout le module. Le blocage masque le bouton de téléchargement ; il
+        n’empêche ni un enregistrement d’écran, ni la récupération de l’URL signée pendant ses
+        quatre heures de validité. C’est le filigrane qui rend une rediffusion attribuable.
       </p>
     </div>
   </aside>

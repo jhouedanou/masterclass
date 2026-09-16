@@ -64,66 +64,72 @@ const optionsModules = computed(() => [
 <template>
   <div v-if="data">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="font-title text-[26px] font-light">
+      <h1 class="font-title text-[28px] font-light">
         Bonjour {{ auth.utilisateur?.prenom }} — vos indicateurs du mois
       </h1>
       <div class="flex flex-wrap gap-2.5">
-        <FormateurFiltrePilule v-model="mois" etiquette="Mois" :options="optionsMois" />
-        <FormateurFiltrePilule v-model="moduleChoisi" etiquette="Module" :options="optionsModules" />
+        <UiFiltrePilule v-model="mois" etiquette="Mois" :options="optionsMois" />
+        <UiFiltrePilule v-model="moduleChoisi" etiquette="Module" :options="optionsModules" />
       </div>
     </div>
 
-    <div class="mt-6 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-      <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
-        <p class="text-[12px] text-discret">Apprenants inscrits</p>
-        <p class="mt-1 font-title text-[27px] font-light">{{ data.inscrits }}</p>
-        <p class="mt-1 text-[11.5px] font-bold text-succes">+{{ data.nouveaux }} ce mois</p>
+    <!-- Cartes d'indicateur écrites à la main, et non `AdminCarteIndicateur` :
+         la maquette compose ici la valeur à 27 px avec 18 px de marge
+         intérieure, et pose l'étoile de « Note moyenne » en or — trois formes
+         qu'aucune taille du composant ne rend. -->
+    <div class="mt-5.5 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div class="rounded-[14px] border border-ligne-douce bg-white p-4.5">
+        <p class="mb-1.25 text-[12px] text-discret">Apprenants inscrits</p>
+        <p class="font-title text-[27px] leading-tight font-light">{{ data.inscrits }}</p>
+        <p class="mt-0.75 text-[11.5px] font-bold text-succes">+{{ data.nouveaux }} ce mois</p>
       </div>
-      <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
-        <p class="text-[12px] text-discret">Complétion moyenne</p>
-        <p class="mt-1 font-title text-[27px] font-light">{{ data.completionMoyenne }} %</p>
-        <p class="mt-1 text-[11.5px] text-discret">sur vos {{ data.nbModules }} modules</p>
+      <div class="rounded-[14px] border border-ligne-douce bg-white p-4.5">
+        <p class="mb-1.25 text-[12px] text-discret">Complétion moyenne</p>
+        <p class="font-title text-[27px] leading-tight font-light">{{ data.completionMoyenne }} %</p>
+        <p class="mt-0.75 text-[11.5px] text-discret">sur vos {{ data.nbModules }} modules</p>
       </div>
-      <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
-        <p class="text-[12px] text-discret">Présence en session</p>
-        <p class="mt-1 font-title text-[27px] font-light">
+      <div class="rounded-[14px] border border-ligne-douce bg-white p-4.5">
+        <p class="mb-1.25 text-[12px] text-discret">Présence en session</p>
+        <p class="font-title text-[27px] leading-tight font-light">
           {{ data.presenceMoyenne === null ? '—' : `${data.presenceMoyenne} %` }}
         </p>
-        <p class="mt-1 text-[11.5px] text-discret">
+        <p class="mt-0.75 text-[11.5px] text-discret">
           {{ data.presenceMoyenne === null ? 'aucune présence relevée' : 'moyenne des 6 dernières' }}
         </p>
       </div>
-      <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
-        <p class="text-[12px] text-discret">Note moyenne</p>
-        <p class="mt-1 font-title text-[27px] font-light">
+      <div class="rounded-[14px] border border-ligne-douce bg-white p-4.5">
+        <p class="mb-1.25 text-[12px] text-discret">Note moyenne</p>
+        <p class="font-title text-[27px] leading-tight font-light">
           <template v-if="data.noteMoyenne === null">—</template>
           <template v-else>
-            {{ data.noteMoyenne.toString().replace('.', ',') }} <span class="text-[14px] text-alerte">★</span>
+            {{ data.noteMoyenne.toString().replace('.', ',') }} <span class="text-[14px] text-or">★</span>
           </template>
         </p>
-        <p class="mt-1 text-[11.5px] text-discret">{{ data.nbNotes }} notes reçues</p>
+        <p class="mt-0.75 text-[11.5px] text-discret">{{ data.nbNotes }} notes reçues</p>
       </div>
-      <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
-        <p class="text-[12px] text-discret">Rémunération du mois</p>
-        <p class="mt-1 font-title text-[27px] font-light">{{ formatFcfa(data.remunerationDuMois) }}</p>
-        <NuxtLink to="/formateur/revenus" class="mt-1 block text-[11.5px] text-discret underline">
+      <div class="rounded-[14px] border border-ligne-douce bg-white p-4.5">
+        <p class="mb-1.25 text-[12px] text-discret">Rémunération du mois</p>
+        <p class="font-title text-[27px] leading-tight font-light">
+          {{ formatNombre(data.remunerationDuMois) }}<span class="font-sans text-[13px] font-normal"> F</span>
+        </p>
+        <NuxtLink to="/formateur/revenus" class="mt-0.75 block text-[11.5px] text-discret hover:underline">
           détail dans Revenus
         </NuxtLink>
       </div>
     </div>
 
-    <div class="mt-4 grid gap-4 lg:grid-cols-[1.35fr_1fr]">
+    <div class="mt-5.5 grid gap-4 lg:grid-cols-[1.35fr_1fr]">
       <div class="flex flex-col gap-4">
         <!-- Prochaine séance à animer, quel que soit le mois affiché. -->
         <section
           v-if="data.prochaineSession"
           class="sur-sombre flex flex-wrap items-center gap-5 rounded-[16px] bg-encre p-6 text-white"
         >
-          <div class="rounded-[10px] bg-encre-800 px-4 py-2.5 text-center">
-            <b class="block font-title text-[20px] font-light text-social-clair">
+          <div class="rounded-[10px] bg-nuit-panneau px-4 py-2.5 text-center">
+            <b class="block text-[20px] text-social-clair">
               {{ new Date(data.prochaineSession.date).getUTCDate() }}
             </b>
-            <span class="text-[11px] font-bold tracking-wider text-social-clair uppercase">
+            <span class="text-[11px] font-bold text-social-clair uppercase">
               {{ new Intl.DateTimeFormat('fr-FR', { month: 'short', timeZone: 'UTC' }).format(new Date(data.prochaineSession.date)).replace('.', '') }}
             </span>
           </div>
@@ -132,7 +138,7 @@ const optionsModules = computed(() => [
               Votre prochaine coaching session — {{ formatDateCourte(data.prochaineSession.date) }} ·
               {{ data.prochaineSession.heure }} GMT
             </b>
-            <p class="mt-1 text-[13px] text-[#b9b4c4]">
+            <p class="mt-1 text-[13px] text-nuit-clair">
               {{ data.prochaineSession.thematique?.nom }}
               <template v-if="data.prochaineSession.modulesCouverts.length">
                 · modules {{ data.prochaineSession.modulesCouverts.map(numeroModule).join(', ') }}
@@ -148,11 +154,11 @@ const optionsModules = computed(() => [
           </UiBaseButton>
         </section>
 
-        <section v-if="data.prochaineSession" class="rounded-[14px] border border-ligne-douce bg-white p-5">
+        <section v-if="data.prochaineSession" class="rounded-[14px] border border-ligne-douce bg-white p-5.5">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <b class="text-[15px]">
+            <h2 class="font-sans text-[15px] font-bold">
               Sujets soumis pour la session du {{ formatJourMois(data.prochaineSession.date) }}
-            </b>
+            </h2>
             <NuxtLink
               :to="`/formateur/sujets/${data.prochaineSession.id}`"
               class="text-[12.5px] font-bold text-social hover:underline"
@@ -167,9 +173,14 @@ const optionsModules = computed(() => [
             <li
               v-for="sujet in data.sujets.slice(0, 3)"
               :key="sujet.utilisateurId"
-              class="rounded-[10px] bg-fond-clair px-3.5 py-2.5"
+              class="rounded-[10px] bg-fond-clair px-3.5 py-2.75"
             >
-              <NuxtLink :to="`/formateur/apprenant/${sujet.utilisateurId}`" class="font-bold hover:underline">
+              <!-- La maquette écrit le nom en gras noir : le lien vers la fiche
+                   ne doit donc pas prendre le violet des liens. -->
+              <NuxtLink
+                :to="`/formateur/apprenant/${sujet.utilisateurId}`"
+                class="font-bold text-inherit hover:underline"
+              >
                 {{ sujet.apprenant }}
               </NuxtLink>
               — « {{ sujet.sujet }} »
@@ -179,17 +190,17 @@ const optionsModules = computed(() => [
       </div>
 
       <div class="flex flex-col gap-4">
-        <section class="rounded-[14px] border border-ligne-douce bg-white p-5">
-          <b class="text-[15px]">À traiter</b>
+        <section class="rounded-[14px] border border-ligne-douce bg-white p-5.5">
+          <h2 class="font-sans text-[15px] font-bold">À traiter</h2>
           <div class="mt-3 flex flex-col gap-2.5 text-[13.5px]">
-            <NuxtLink to="/formateur/coaching-prive" class="flex justify-between hover:underline">
+            <NuxtLink to="/formateur/coaching-prive" class="flex justify-between text-inherit hover:underline">
               <span>Coaching privé — séances à venir</span>
               <b class="text-social">{{ data.aTraiter.coachingPrive }}</b>
             </NuxtLink>
             <NuxtLink
               v-if="data.prochaineSession"
               :to="`/formateur/sujets/${data.prochaineSession.id}`"
-              class="flex justify-between hover:underline"
+              class="flex justify-between text-inherit hover:underline"
             >
               <span>Sujets à lire avant le {{ formatJourMois(data.aTraiter.prochaineSessionDate) }}</span>
               <b class="text-social">{{ data.aTraiter.sujetsALire }}</b>
@@ -201,16 +212,16 @@ const optionsModules = computed(() => [
           </div>
         </section>
 
-        <section class="rounded-[14px] border border-ligne-douce bg-white p-5">
-          <b class="text-[15px]">Dernières notes reçues</b>
+        <section class="rounded-[14px] border border-ligne-douce bg-white p-5.5">
+          <h2 class="font-sans text-[15px] font-bold">Dernières notes reçues</h2>
           <p v-if="!data.dernieresNotes.length" class="mt-3 text-[13px] text-discret">
             Aucune note reçue pour l’instant.
           </p>
           <ul class="mt-3 flex flex-col gap-2.5 text-[13px] text-texte">
             <li v-for="(note, i) in data.dernieresNotes" :key="i" class="flex justify-between gap-3">
               <span>
-                <span class="text-alerte">{{ '★'.repeat(note.note) }}</span
-                ><span class="text-ligne-douce">{{ '★'.repeat(5 - note.note) }}</span>
+                <span class="text-or">{{ '★'.repeat(note.note) }}</span
+                ><span class="text-ligne">{{ '★'.repeat(5 - note.note) }}</span>
                 <template v-if="note.commentaire"> « {{ note.commentaire }} »</template>
               </span>
               <span class="whitespace-nowrap text-discret">{{ note.origine }} {{ formatJourMois(note.date) }}</span>

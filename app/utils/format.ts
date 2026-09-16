@@ -1,3 +1,8 @@
+/** « 3 120 000 » : le nombre seul, quand l'unité se compose à part. */
+export function formatNombre(valeur: number): string {
+  return new Intl.NumberFormat('fr-FR').format(valeur)
+}
+
 export function formatFcfa(montant: number, ttc = false): string {
   return `${new Intl.NumberFormat('fr-FR').format(montant)} FCFA${ttc ? ' TTC' : ''}`
 }
@@ -69,4 +74,25 @@ export function formatRelatif(iso: string | null | undefined, maintenant = Date.
   if (jours === 1) return 'hier'
   if (jours < 7) return `il y a ${jours} j`
   return formatDateCourte(iso)
+}
+
+/**
+ * « 10 000 F », forme courte des montants dans les tableaux et les cartes
+ * serrées du back-office (planche C, écrans 01, 18c et 21). `formatFcfa`
+ * écrit l'unité en toutes lettres, trop longue pour ces colonnes.
+ */
+export function formatFranc(montant: number): string {
+  return `${new Intl.NumberFormat('fr-FR').format(montant)} F`
+}
+
+/**
+ * « Coury Othniel » → « C. Othniel ». La vue d'ensemble (planche C, écran 01)
+ * abrège le prénom des formateurs faute de place ; le calendrier (écran 03)
+ * les écrit en entier.
+ */
+export function abregerPrenom(nom: string): string {
+  const morceaux = nom.trim().split(/\s+/)
+  if (morceaux.length < 2) return nom
+  const [prenom, ...reste] = morceaux
+  return `${prenom!.charAt(0).toUpperCase()}. ${reste.join(' ')}`
 }
