@@ -12,6 +12,7 @@
  * la CLI, mais elle attrape tout ce qui relève du SQL lui-même.
  */
 import { PGlite } from '@electric-sql/pglite'
+import * as donnees from '../server/data/db.ts'
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
@@ -61,19 +62,29 @@ try {
   process.exit(1)
 }
 
+/**
+ * Comptes attendus, lus dans la source du jeu de données plutôt que saisis.
+ *
+ * Écrits à la main, ils dérivaient à chaque ajout éditorial : un chapitre de
+ * plus et le contrôle échouait sans que rien ne soit cassé, jusqu'à ce que le
+ * bruit fasse ignorer un échec qui, lui, comptait. Ce qu'on veut vérifier n'a
+ * jamais été « soixante-douze chapitres », mais « le seed a tout porté ».
+ */
 const ATTENDUS = {
-  programmes: 2,
-  phases: 2,
-  thematiques: 6,
-  formateurs: 7,
-  modules: 18,
-  chapitres: 72,
-  utilisateurs: 9,
-  acces: 2,
-  sessions_coaching: 3,
-  articles: 5,
-  demandes_coaching_prive: 3,
-  historique_coaching_prive: 6,
+  programmes: donnees.programmes.length,
+  phases: donnees.phases.length,
+  thematiques: donnees.thematiques.length,
+  formateurs: donnees.formateurs.length,
+  modules: donnees.modules.length,
+  chapitres: donnees.modules.flatMap((m) => m.chapitres).length,
+  utilisateurs: donnees.utilisateurs.length,
+  acces: donnees.acces.length,
+  sessions_coaching: donnees.sessionsCoaching.length,
+  articles: donnees.articles.length,
+  demandes_coaching_prive: donnees.demandesCoachingPrive.length,
+  historique_coaching_prive: donnees.historiqueCoachingPrive.length,
+  // Deux tables de réglages à ligne unique : le nombre est la règle, pas une
+  // donnée éditoriale.
   reglages_financiers: 1,
   reglages_seo: 1,
 }
@@ -82,6 +93,23 @@ for (const [table, attendu] of Object.entries(ATTENDUS)) {
   if (rows[0].n === attendu) succes(`${table} — ${attendu} lignes`)
   else echec(`${table} — ${rows[0].n} lignes, ${attendu} attendues`)
 }
+
+/**
+ * Les deux chemins d'installation — migrations puis seed d'un côté, fichiers de
+ * `supabase/en-ligne` de l'autre — doivent aboutir au même contenu. On compare
+ * donc les deux bases l'une à l'autre plutôt que chacune à des nombres écrits
+ * ici, qui ne disaient rien de l'égalité cherchée et vieillissaient au premier
+ * chapitre ajouté.
+ *
+ * Le relevé se prend maintenant, avant que les assertions d'erreur qui suivent
+ * ne laissent des transactions avortées derrière elles.
+ */
+const COMPTAGE = `select (select count(*) from modules)::int    as modules,
+                         (select count(*) from chapitres)::int  as chapitres,
+                         (select count(*) from articles)::int   as articles,
+                         (select count(*) from formateurs)::int as formateurs`
+
+const { rows: parMigrations } = await db.query(COMPTAGE)
 
 // --- Aides d'assertion -----------------------------------------------------
 
@@ -840,15 +868,15 @@ else echec(`rattrapage : ${apresRattrapage[0].pourvus} comptes pourvus, 8 attend
 if (apresRattrapage[0].aya === 'scrypt$deja$choisi') succes('rattrapage : mot de passe existant préservé')
 else echec('rattrapage : un mot de passe existant a été écrasé')
 
-const { rows: controle } = await enLigne.query(
-  `select (select count(*) from modules)::int as modules,
-          (select count(*) from chapitres)::int as chapitres,
-          (select count(*) from articles)::int as articles`,
-)
-if (controle[0].modules === 18 && controle[0].chapitres === 72 && controle[0].articles === 5) {
-  succes('contenu identique à celui des migrations')
+const { rows: parInstallation } = await enLigne.query(COMPTAGE)
+
+if (JSON.stringify(parMigrations[0]) === JSON.stringify(parInstallation[0])) {
+  succes(`contenu identique à celui des migrations — ${JSON.stringify(parInstallation[0])}`)
 } else {
-  echec(`contenu divergent : ${JSON.stringify(controle[0])}`)
+  echec(
+    `contenu divergent — migrations ${JSON.stringify(parMigrations[0])}, ` +
+      `installation ${JSON.stringify(parInstallation[0])}`,
+  )
 }
 
 await enLigne.close()
