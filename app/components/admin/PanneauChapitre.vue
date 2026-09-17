@@ -24,6 +24,9 @@ const emit = defineEmits<{
   modifier: [champs: { libelle?: string; titre?: string; dureeMinutes?: number }]
   reglages: [champs: { filigraneActif?: boolean; telechargementBloque?: boolean }]
   rafraichir: []
+  /** La médiathèque s'ouvre au niveau de la page : la zone de dépôt l'ouvre
+   *  aussi, et deux fenêtres pour un même choix se contrediraient. */
+  mediatheque: []
 }>()
 
 const titre = ref(props.chapitre.titre)
@@ -62,26 +65,6 @@ async function importerScript(fichier: File | null | undefined) {
     erreurScript.value = (e as { statusMessage?: string }).statusMessage ?? 'L’import a échoué.'
   } finally {
     importEnCours.value = false
-  }
-}
-
-// La médiathèque s'ouvre en fenêtre plutôt que dans une page : le choix d'une
-// vidéo se fait en regard du chapitre qu'on est en train de remplir, sans
-// perdre les champs en cours d'édition.
-const mediathequeOuverte = ref(false)
-
-async function choisirVideo(video: { id: string; nom: string }) {
-  erreurScript.value = ''
-  try {
-    await $fetch('/api/admin/mediatheque/attacher', {
-      method: 'POST',
-      body: { chapitreId: props.chapitre.id, videoId: video.id },
-    })
-    mediathequeOuverte.value = false
-    emit('rafraichir')
-  } catch (e) {
-    const avec = e as { statusMessage?: string; data?: { statusMessage?: string } }
-    erreurScript.value = avec.data?.statusMessage ?? avec.statusMessage ?? 'Le rattachement a échoué.'
   }
 }
 
@@ -131,13 +114,21 @@ const etiquette = 'mb-1.5 block text-[12.5px] font-bold'
         </label>
         <label class="block">
           <span :class="etiquette">Durée annoncée (min)</span>
+          <!-- Dès qu'une vidéo est là, elle fait foi : le champ montre sa durée
+               et ne se saisit plus. Avant le tournage il reste une estimation,
+               et c'est à ce moment-là qu'il sert. -->
           <input
             v-model.number="duree"
             type="number"
             min="1"
-            :class="champ"
-            @blur="duree !== chapitre.dureeMinutes && duree && emit('modifier', { dureeMinutes: duree })"
+            :class="[champ, chapitre.videoDureeSecondes ? 'bg-fond-voile text-discret' : '']"
+            :readonly="!!chapitre.videoDureeSecondes"
+            :title="chapitre.videoDureeSecondes ? 'Déduite de la durée de la vidéo déposée.' : ''"
+            @blur="!chapitre.videoDureeSecondes && duree !== chapitre.dureeMinutes && duree && emit('modifier', { dureeMinutes: duree })"
           >
+          <span v-if="chapitre.videoDureeSecondes" class="mt-1 block text-[11.5px] text-discret">
+            Déduite de la vidéo.
+          </span>
         </label>
       </div>
 
@@ -167,7 +158,7 @@ const etiquette = 'mb-1.5 block text-[12.5px] font-bold'
              stockage. -->
         <button
           class="mt-2 text-[12px] font-bold text-social underline"
-          @click="mediathequeOuverte = true"
+          @click="emit('mediatheque')"
         >
           Choisir une vidéo déjà déposée…
         </button>
@@ -236,35 +227,5 @@ const etiquette = 'mb-1.5 block text-[12.5px] font-bold'
       </p>
     </div>
 
-    <!-- La médiathèque en fenêtre. `Teleport` la sort du panneau : une aside en
-         `overflow` la rognerait, et son `z-index` ne vaut que dans son parent. -->
-    <Teleport to="body">
-      <div
-        v-if="mediathequeOuverte"
-        class="fixed inset-0 z-50 grid place-items-start overflow-y-auto bg-encre/50 p-4"
-        @click.self="mediathequeOuverte = false"
-      >
-        <div class="my-6 w-full max-w-3xl rounded-carte bg-white p-[26px] shadow-[0_16px_40px_rgba(23,21,28,.12)]">
-          <div class="flex flex-wrap items-baseline justify-between gap-3">
-            <h2 class="font-sans text-[16px] font-bold">
-              Choisir une vidéo pour « {{ chapitre.libelle }} »
-            </h2>
-            <button class="text-[13px] text-discret underline" @click="mediathequeOuverte = false">
-              Fermer
-            </button>
-          </div>
-          <p class="mt-1 text-[12.5px] text-discret">
-            Une même vidéo peut servir plusieurs chapitres : la choisir ici ne la copie pas.
-          </p>
-          <div class="mt-4">
-            <AdminMediatheque
-              choisissable
-              :video-id-courante="chapitre.videoId"
-              @choisir="choisirVideo"
-            />
-          </div>
-        </div>
-      </div>
-    </Teleport>
   </aside>
 </template>

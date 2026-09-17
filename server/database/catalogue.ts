@@ -828,6 +828,16 @@ export async function majChapitre(
       .select('id'),
     'mise à jour du chapitre',
   )
+
+  // La durée annoncée d'un chapitre entre dans le total du module tant que la
+  // vidéo n'est pas déposée.
+  if (champs.dureeMinutes !== undefined) {
+    const chapitre = verifierOptionnel(
+      await supabase().from('chapitres').select('module_id').eq('id', id).maybeSingle(),
+      'chapitre',
+    )
+    if (chapitre) await recalculerDureeModule(chapitre.module_id)
+  }
 }
 
 /**
@@ -858,6 +868,13 @@ export async function majVideoChapitre(
         video_nom_fichier: champs.videoNomFichier,
         video_taille_octets: champs.videoTailleOctets,
         video_importee_le: champs.videoCle ? new Date().toISOString() : null,
+        // La durée annoncée s'aligne sur le fichier dès qu'il est là : c'est
+        // une estimation d'avant tournage, et la laisser à dix-huit minutes
+        // sous une vidéo de trois faisait mentir la fiche. Au retrait, elle
+        // garde sa dernière valeur — il reste une durée à annoncer.
+        ...(champs.videoDureeSecondes
+          ? { duree_minutes: Math.max(1, Math.round(champs.videoDureeSecondes / 60)) }
+          : {}),
       } as never)
       .eq('id', id)
       .select('id')
@@ -918,6 +935,51 @@ export async function retirerEtatPretModule(moduleId: string): Promise<void> {
       .not('pret_le', 'is', null)
       .select('id'),
     'retrait de l’état prêt',
+  )
+  // Les deux tiennent au même fait — un chapitre a changé — et tout ce qui
+  // touche aux chapitres passe déjà par ici. Les séparer rouvrirait la porte à
+  // un point d'entrée oublié, et c'est exactement ce qui laissait les dix-huit
+  // modules annoncer soixante minutes.
+  await recalculerDureeModule(moduleId)
+}
+
+/**
+ * Durée d'un module : la somme de ses chapitres, et non un chiffre saisi.
+ *
+ * Elle s'affichait partout — carte du catalogue, fiche publique, récapitulatif
+ * d'achat, `courseWorkload` des données structurées, attestation — et valait
+ * soixante minutes sur les dix-huit modules, parce qu'aucun écran ne permettait
+ * de la corriger. Un module de onze minutes se vendait donc pour une heure.
+ *
+ * La vidéo fait foi quand elle est là ; à défaut, la durée annoncée du chapitre
+ * prend le relais, ce qui laisse une fiche lisible avant le tournage. C'est la
+ * règle que suivaient déjà l'espace apprenant et le calcul d'avancement.
+ */
+export async function recalculerDureeModule(moduleId: string): Promise<void> {
+  const chapitres = verifier(
+    await supabase()
+      .from('chapitres')
+      .select('duree_minutes, video_duree_secondes')
+      .eq('module_id', moduleId),
+    'durées des chapitres',
+  )
+
+  // Un module sans chapitre garde sa durée : la remettre à zéro afficherait
+  // « 0 min » sur une fiche qu'on vient à peine de créer.
+  if (!chapitres.length) return
+
+  const secondes = chapitres.reduce(
+    (somme, c) => somme + (c.video_duree_secondes ?? (c.duree_minutes ?? 0) * 60),
+    0,
+  )
+
+  verifier(
+    await supabase()
+      .from('modules')
+      .update({ duree_minutes: Math.max(1, Math.round(secondes / 60)) } as never)
+      .eq('id', moduleId)
+      .select('id'),
+    'durée du module',
   )
 }
 

@@ -276,6 +276,20 @@ inserer(
   'Chapitres — position 0 pour l’introduction',
 )
 
+/**
+ * La durée d'un module se déduit de ses chapitres, ici comme à l'exécution.
+ * L'écrire en dur dans les modules donnerait une base neuve déjà fausse : les
+ * fiches annonceraient une durée que les vidéos ne tiennent pas.
+ */
+blocs.push(
+  `-- Durée des modules : la somme de leurs chapitres, jamais un chiffre saisi\n` +
+    `update modules m set duree_minutes = greatest(1, round(t.secondes / 60.0))\n` +
+    `  from (select module_id,\n` +
+    `               sum(coalesce(video_duree_secondes, coalesce(duree_minutes, 0) * 60)) as secondes\n` +
+    `          from chapitres group by module_id) t\n` +
+    ` where t.module_id = m.id;`,
+)
+
 // Une empreinte par compte : chacune porte son propre sel.
 const empreintes = new Map<string, string>()
 for (const u of utilisateurs) {
