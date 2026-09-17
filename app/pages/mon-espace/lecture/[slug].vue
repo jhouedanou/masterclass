@@ -52,6 +52,7 @@ const lecteur = useLecteurVideo({
   position: () => index.value,
   source: () => source.value,
   format: () => autorisation.value?.format ?? null,
+  surFin: () => lancerEnchainement(),
 })
 
 const video = ref<HTMLVideoElement | null>(null)
@@ -141,11 +142,69 @@ function surClavierScene(evenement: KeyboardEvent) {
   }
 }
 
-/** La maquette n'affiche plus l'index des chapitres dans le lecteur : un seul
- *  lien d'enchaînement remplace la rangée de pastilles. */
 const chapitreSuivant = computed(() =>
   index.value + 1 < moduleCourant.value.chapitres.length ? moduleCourant.value.chapitres[index.value + 1] : null,
 )
+
+// --- Enchaînement automatique ------------------------------------------------
+
+/**
+ * Dix secondes entre deux chapitres.
+ *
+ * Assez pour lire le titre qui suit et décider, assez peu pour que suivre un
+ * module d'une traite ne demande pas un clic tous les quarts d'heure. Le
+ * décompte s'annule au moindre signe de désaccord — un clic sur « Rester »,
+ * une relecture, un changement de chapitre — parce qu'enchaîner malgré
+ * l'apprenant serait pire que ne rien enchaîner du tout.
+ */
+const SECONDES_ENCHAINEMENT = 10
+const resteAvantSuivant = ref<number | null>(null)
+let minuteurEnchainement: ReturnType<typeof setInterval> | undefined
+
+function annulerEnchainement() {
+  if (minuteurEnchainement) clearInterval(minuteurEnchainement)
+  minuteurEnchainement = undefined
+  resteAvantSuivant.value = null
+}
+
+function lancerEnchainement() {
+  if (!chapitreSuivant.value) return
+  annulerEnchainement()
+  resteAvantSuivant.value = SECONDES_ENCHAINEMENT
+  minuteurEnchainement = setInterval(() => {
+    if (resteAvantSuivant.value === null) return
+    resteAvantSuivant.value -= 1
+    if (resteAvantSuivant.value <= 0) {
+      annulerEnchainement()
+      allerAuChapitre(index.value + 1)
+    }
+  }, 1000)
+}
+
+onBeforeUnmount(annulerEnchainement)
+
+// --- Sommaire en surimpression ----------------------------------------------
+
+/** Le sommaire par-dessus la vidéo, comme le fait Udemy : on change de
+ *  chapitre sans quitter le lecteur ni perdre le plein écran. */
+const sommaireOuvert = ref(false)
+
+function allerAuChapitre(nouvel: number) {
+  if (nouvel < 0 || nouvel >= moduleCourant.value.chapitres.length) return
+  annulerEnchainement()
+  sommaireOuvert.value = false
+  index.value = nouvel
+}
+
+// Changer de chapitre par un autre chemin coupe aussi le décompte.
+watch(index, annulerEnchainement)
+
+/** Durée d'un chapitre, telle qu'annoncée : le sommaire doit se lire avant
+ *  d'ouvrir la vidéo, donc sans attendre ses métadonnées. */
+function dureeChapitre(c: { videoDureeSecondes?: number | null; dureeMinutes?: number | null }): string {
+  const secondes = c.videoDureeSecondes ?? (c.dureeMinutes ?? 0) * 60
+  return secondes ? horloge(secondes) : '—'
+}
 
 function horloge(secondes: number): string {
   const total = Math.max(0, Math.floor(secondes))
@@ -259,8 +318,21 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
           class="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-[.14]">
         <!-- `object-contain` : la scène de la maquette est un cadre large, pas
              un 16/9 — recadrer y amputerait l'image. -->
+        <!-- `contextmenu` bloqué : le menu du clic droit de Chrome propose
+             « Enregistrer la vidéo sous… », qui télécharge le fichier servi.
+             `controlslist` retire l'entrée équivalente des contrôles natifs, et
+             `disablepictureinpicture` la fenêtre détachée, d'où l'on
+             enregistrait tout aussi bien.
+
+             Aucun de ces réglages n'est une protection : l'URL signée reste
+             lisible dans les outils de développement pendant ses quatre heures
+             de validité, et rien n'empêche un enregistrement d'écran. Ils
+             écartent le geste facile ; c'est le filigrane nominatif qui rend
+             une rediffusion attribuable. -->
         <video v-if="source" ref="video" class="relative z-10 h-full w-full object-contain"
-          :controls="!controlesCustom" :tabindex="controlesCustom ? -1 : undefined" controlslist="nodownload" playsinline
+          :controls="!controlesCustom" :tabindex="controlesCustom ? -1 : undefined"
+          controlslist="nodownload noplaybackrate noremoteplayback" disablepictureinpicture disableremoteplayback
+          playsinline @contextmenu.prevent
           preload="metadata" @play="lecteur.gestionnaires.onPlay" @pause="lecteur.gestionnaires.onPause"
           @ended="lecteur.gestionnaires.onEnded" @timeupdate="lecteur.gestionnaires.onTimeupdate"
           @loadedmetadata="lecteur.gestionnaires.onLoadedmetadata"
@@ -284,6 +356,80 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
           {{ auth.utilisateur?.prenom }} {{ auth.utilisateur?.nom }} · {{ auth.utilisateur?.email }}
         </p>
 
+        <!-- Sommaire, par-dessus la vidéo. Le bouton se retire pendant le
+             décompte : deux propositions concurrentes au même endroit, et
+             l'apprenant ne sait plus laquelle l'emporte. -->
+        <button
+          v-if="source && !resteAvantSuivant"
+          type="button"
+          class="absolute top-[18px] left-5 z-30 flex items-center gap-2 rounded-full bg-black/55 px-3.5 py-2 text-[12.5px] font-bold text-white backdrop-blur transition hover:bg-black/75"
+          :aria-expanded="sommaireOuvert"
+          @click="sommaireOuvert = !sommaireOuvert"
+        >
+          <Icon name="ph:list" class="size-4" />
+          {{ sommaireOuvert ? 'Fermer' : 'Chapitres' }}
+        </button>
+
+        <div
+          v-if="sommaireOuvert && source"
+          class="absolute inset-y-0 left-0 z-30 flex w-[min(340px,86%)] flex-col bg-encre/95 backdrop-blur"
+        >
+          <p class="shrink-0 px-5 pt-[68px] pb-3 text-[12px] font-bold tracking-wide text-discret-clair uppercase">
+            {{ moduleCourant.chapitres.length }} chapitres
+          </p>
+          <ul class="min-h-0 flex-1 overflow-y-auto px-3 pb-5">
+            <li v-for="(c, i) in moduleCourant.chapitres" :key="c.libelle + i">
+              <button
+                type="button"
+                class="flex w-full items-baseline gap-3 rounded-lg border-l-[3px] px-3 py-2.5 text-left transition"
+                :class="i === index
+                  ? 'border-social bg-social/22 text-white'
+                  : 'border-transparent text-discret-clair hover:bg-encre-800'"
+                :aria-current="i === index ? 'true' : undefined"
+                @click="allerAuChapitre(i)"
+              >
+                <span class="min-w-[22px] font-mono text-[12px]" :class="i === index ? 'text-social-clair' : 'text-discret'">
+                  {{ i + 1 }}
+                </span>
+                <span class="min-w-0 flex-1">
+                  <span class="block text-[13.5px] font-bold">{{ c.libelle }}</span>
+                  <span class="block truncate text-[12.5px] font-normal opacity-80">{{ c.titre }}</span>
+                </span>
+                <span class="shrink-0 font-mono text-[11.5px] text-discret">{{ dureeChapitre(c) }}</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Fin de chapitre : le suivant s'enchaîne, sauf refus. -->
+        <div
+          v-if="resteAvantSuivant !== null && chapitreSuivant"
+          class="absolute inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-black/75 px-6 text-center backdrop-blur-sm"
+          role="status"
+        >
+          <p class="text-[12.5px] tracking-wide text-discret-clair uppercase">Chapitre suivant</p>
+          <p class="font-title text-[22px] font-light text-white">{{ chapitreSuivant.titre }}</p>
+          <p class="text-[13.5px] text-discret-clair">
+            Lecture dans {{ resteAvantSuivant }} seconde{{ resteAvantSuivant > 1 ? 's' : '' }}
+          </p>
+          <div class="mt-1 flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              class="rounded-full bg-social px-5 py-2.5 text-[13.5px] font-extrabold text-white"
+              @click="allerAuChapitre(index + 1)"
+            >
+              Passer maintenant
+            </button>
+            <button
+              type="button"
+              class="rounded-full border border-white/35 px-5 py-2.5 text-[13.5px] font-bold text-white"
+              @click="annulerEnchainement"
+            >
+              Rester sur ce chapitre
+            </button>
+          </div>
+        </div>
+
         <EspaceControlesVideo
           v-if="controlesCustom && source"
           v-model:vitesse="lecteur.vitesse.value"
@@ -291,6 +437,7 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
           :duree="lecteur.dureeSecondes.value || (chapitre?.videoDureeSecondes ?? 0)"
           :en-lecture="lecteur.enLecture.value"
           :qualite="lecteur.qualite.value"
+          :adaptative="autorisation?.format === 'hls'"
           :vitesses="vitesses"
           :plein-ecran="lecteur.pleinEcran.value"
           @basculer="lecteur.basculerLecture()"
@@ -342,7 +489,7 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
       </section>
 
       <p v-if="chapitreSuivant" class="mx-4 mb-10 text-right lg:mx-8">
-        <button type="button" class="text-[13.5px] font-bold text-social-clair hover:text-white" @click="index += 1">
+        <button type="button" class="text-[13.5px] font-bold text-social-clair hover:text-white" @click="allerAuChapitre(index + 1)">
           {{ chapitreSuivant.libelle }} →
         </button>
       </p>

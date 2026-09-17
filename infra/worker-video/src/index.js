@@ -314,20 +314,46 @@ async function servirEcriture(requete, env, url, cors) {
 }
 
 /**
- * Normalisation de la plage servie. `objet.range` prend deux formes selon la
- * requête — un décalage et une longueur, ou un suffixe. Ignorer la seconde
- * casserait `Range: bytes=-1024`, que les lecteurs emploient pour lire la fin
- * d'un fichier.
+ * Plage demandée, lue dans l'en-tête de la requête.
+ *
+ * Elle était auparavant déduite de `objet.range`, le descripteur que rend le
+ * stockage. Or celui-ci arrive avec `offset` et `length` à `NaN` — sur toutes
+ * les requêtes, plage explicite comprise. Le diffuseur répondait donc
+ * `Content-Range: bytes NaN-NaN/26453062` à chaque lecture de vidéo : un
+ * en-tête que la spécification n'admet pas, et qu'un décodeur a le droit de
+ * refuser. Le corps servi, lui, était correct — d'où un défaut invisible aux
+ * tailles de réponse.
+ *
+ * On repart donc de l'en-tête, que nous maîtrisons. Trois formes :
+ * `bytes=100-199`, `bytes=100-` et `bytes=-1024` (les mille derniers octets).
+ *
+ * Renvoie `null` s'il n'y a pas de plage — réponse entière, statut 200 — et
+ * `'hors-fichier'` si elle commence après la fin, ce que la spécification
+ * demande de refuser par un 416.
  */
-function plage(range, taille) {
-  if (!range) return null
-  if ('suffix' in range) {
-    const longueur = Math.min(range.suffix, taille)
-    return { debut: taille - longueur, longueur }
+function plageDemandee(enTete, taille) {
+  if (!enTete) return null
+
+  const correspondance = /^bytes=(\d*)-(\d*)$/.exec(enTete.trim())
+  if (!correspondance) return null
+
+  const [, brutDebut, brutFin] = correspondance
+  if (brutDebut === '' && brutFin === '') return null
+
+  // `bytes=-1024` : les N derniers octets.
+  if (brutDebut === '') {
+    const longueur = Math.min(Number(brutFin), taille)
+    if (!Number.isFinite(longueur) || longueur <= 0) return null
+    return { debut: taille - longueur, fin: taille - 1 }
   }
-  const debut = range.offset ?? 0
-  const longueur = range.length ?? taille - debut
-  return { debut, longueur }
+
+  const debut = Number(brutDebut)
+  if (!Number.isFinite(debut) || debut < 0) return null
+  if (debut >= taille) return 'hors-fichier'
+
+  const fin = brutFin === '' ? taille - 1 : Math.min(Number(brutFin), taille - 1)
+  if (!Number.isFinite(fin) || fin < debut) return 'hors-fichier'
+  return { debut, fin }
 }
 
 export default {
@@ -362,10 +388,25 @@ export default {
     // La plage et les requêtes conditionnelles sont remises telles quelles au
     // stockage : sans `Accept-Ranges`, Safari refuse purement et simplement de
     // lire un média, et se déplacer dans une vidéo devient impossible partout.
-    const objet = await env.VIDEOS.get(chemin, {
-      range: requete.headers,
-      onlyIf: requete.headers,
-    })
+    // Une plage qui commence au-delà de la fin du fichier fait lever le
+    // stockage. Sans ce filet, le Worker s'interrompait et Cloudflare rendait
+    // son propre « error code 1101 » en 500 — là où la spécification demande un
+    // 416, que les lecteurs savent interpréter.
+    let objet
+    try {
+      objet = await env.VIDEOS.get(chemin, {
+        range: requete.headers,
+        onlyIf: requete.headers,
+      })
+    } catch {
+      const entier = await env.VIDEOS.head(chemin)
+      if (!entier) return new Response('Fichier introuvable', { status: 404, headers: cors })
+      // `cors` est un objet simple, pas un itérable : `new Headers(cors)` le
+      // lit, `Object.fromEntries` lèverait.
+      const refus = new Headers(cors)
+      refus.set('content-range', `bytes */${entier.size}`)
+      return new Response(null, { status: 416, headers: refus })
+    }
     if (!objet) return new Response('Fichier introuvable', { status: 404, headers: cors })
 
     const extension = chemin.slice(chemin.lastIndexOf('.') + 1)
@@ -388,6 +429,18 @@ export default {
     // navigateur a déjà la bonne version. Les confondre renverrait un 416 là
     // où un 304 est attendu.
     if (!('body' in objet)) {
+      // Deux causes possibles, et les confondre coûte cher. Une requête
+      // conditionnelle satisfaite veut dire « vous avez déjà la bonne
+      // version » : c'est 304. Une plage hors du fichier, c'est 416.
+      //
+      // Se fier à la seule présence de `Range` renvoyait 416 à chaque
+      // revalidation d'une vidéo déjà en cache — et un lecteur vidéo envoie
+      // presque toujours `Range`. La lecture échouait donc sur un fichier
+      // intact, dès la seconde visite.
+      const conditionnelle =
+        requete.headers.has('if-none-match') || requete.headers.has('if-modified-since')
+      if (conditionnelle) return new Response(null, { status: 304, headers: entetes })
+
       if (requete.headers.get('range')) {
         entetes.set('content-range', `bytes */${objet.size}`)
         return new Response(null, { status: 416, headers: entetes })
@@ -401,13 +454,18 @@ export default {
       return new Response(requete.method === 'HEAD' ? null : texte, { headers: entetes })
     }
 
-    const portion = plage(objet.range, objet.size)
+    const portion = plageDemandee(requete.headers.get('range'), objet.size)
+
+    if (portion === 'hors-fichier') {
+      entetes.set('content-range', `bytes */${objet.size}`)
+      return new Response(null, { status: 416, headers: entetes })
+    }
+
     if (portion) {
-      const fin = portion.debut + portion.longueur - 1
-      entetes.set('content-range', `bytes ${portion.debut}-${fin}/${objet.size}`)
+      entetes.set('content-range', `bytes ${portion.debut}-${portion.fin}/${objet.size}`)
       // `writeHttpMetadata` n'écrit pas la longueur : sans elle, le lecteur ne
       // sait pas quand la portion s'arrête.
-      entetes.set('content-length', String(portion.longueur))
+      entetes.set('content-length', String(portion.fin - portion.debut + 1))
       return new Response(requete.method === 'HEAD' ? null : objet.body, {
         status: 206,
         headers: entetes,
