@@ -105,8 +105,10 @@ const RATTRAPAGES = [
   'rattrapage-videos.sql',
   'rattrapage-planche-e.sql',
   'rattrapage-contenus-reels.sql',
+  'rattrapage-compteurs-dynamiques.sql',
   'rattrapage-og-image-png.sql',
   'rattrapage-ordre-chapitres.sql',
+  'rattrapage-durees-deduites.sql',
 ]
 
 for (const nom of RATTRAPAGES) {
