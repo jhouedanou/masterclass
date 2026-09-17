@@ -1,4 +1,5 @@
 import {
+  chapitresIdentifiesParModules,
   listerFormateurs,
   listerModules,
   listerPhases,
@@ -26,6 +27,10 @@ export default defineEventHandler(async (event) => {
     listerModules(),
     listerFormateurs(),
   ])
+
+  // Les identifiants de chapitre viennent à part : sans eux, « Modifier »
+  // dans la colonne de droite ne saurait pas quel chapitre ouvrir.
+  const idsChapitres = await chapitresIdentifiesParModules(modules.map((m) => m.id))
 
   return programmes.map((p) => ({
     id: p.id,
@@ -66,9 +71,11 @@ export default defineEventHandler(async (event) => {
                 // « Vidéo de bienvenue — Uploadée / À téléverser » en tête du
                 // panneau module (écran 02).
                 videoIntro: Boolean(m.videoIntroCle),
-                chapitres: m.chapitres.map((c) => ({
+                chapitres: m.chapitres.map((c, i) => ({
+                  id: idsChapitres.get(m.id)?.[i]?.id ?? '',
                   libelle: c.libelle,
                   titre: c.titre,
+                  dureeMinutes: c.dureeMinutes ?? null,
                   script: (c.script?.length ?? 0) > 0,
                   video: Boolean(c.videoCle),
                 })),

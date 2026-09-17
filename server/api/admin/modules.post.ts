@@ -1,5 +1,12 @@
 import { enregistrerJournal } from '../../database/administration'
-import { creerModule, listerThematiques, reordonnerModules, trouverFormateur } from '../../database/catalogue'
+import {
+  creerModule,
+  dupliquerModule,
+  listerThematiques,
+  reordonnerModules,
+  trouverFormateur,
+  trouverModule,
+} from '../../database/catalogue'
 import { exigerSection } from '../../utils/session'
 
 /**
@@ -9,7 +16,9 @@ import { exigerSection } from '../../utils/session'
 export default defineEventHandler(async (event) => {
   const admin = await exigerSection(event, 'modules-chapitres')
   const body = await readBody<{
-    action?: 'creer' | 'reordonner'
+    action?: 'creer' | 'reordonner' | 'dupliquer'
+    /** Duplication : le module recopié. */
+    source?: string
     titre: string
     slug: string
     numero: number
@@ -31,6 +40,31 @@ export default defineEventHandler(async (event) => {
       `${body.ordre.length} modules`,
     )
     return { ok: true }
+  }
+
+  /**
+   * Duplication : la copie reprend les textes et les chapitres, jamais les
+   * vidéos ni l'état de publication. Elle naît en brouillon, sous une URL
+   * libre, et s'ouvre directement dans l'éditeur.
+   */
+  if (body.action === 'dupliquer') {
+    if (!body.source) throw createError({ statusCode: 422, statusMessage: 'Module source manquant' })
+    const source = await trouverModule(body.source)
+    if (!source) throw createError({ statusCode: 404, statusMessage: 'Module introuvable' })
+
+    const slug = body.slug?.trim() || `${source.slug}-copie`
+    const copie = await dupliquerModule(source.id, {
+      slug,
+      titre: body.titre?.trim() || `${source.titre} (copie)`,
+      thematiqueId: body.thematiqueId || undefined,
+    })
+    await enregistrerJournal(
+      `${admin.prenom} ${admin.nom}`,
+      'a dupliqué le module',
+      `${source.titre} → ${copie.titre}`,
+      { type: 'contenu', objet: copie.id },
+    )
+    return copie
   }
 
   if (!body.titre?.trim() || !body.slug?.trim()) {

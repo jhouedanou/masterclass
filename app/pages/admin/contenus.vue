@@ -5,8 +5,10 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Modules & chapitres — administration')
 
 interface ChapitreArbre {
+  id: string
   libelle: string
   titre: string
+  dureeMinutes: number | null
   script: boolean
   video: boolean
 }
@@ -246,6 +248,36 @@ function deposerModule(cible: ModuleArbre, thematique: ThematiqueArbre) {
   if (depuis < 0 || vers < 0) return
   ids.splice(vers, 0, ...ids.splice(depuis, 1))
   appeler('/api/admin/modules', { action: 'reordonner', ordre: ids })
+}
+
+// --- Vidéos et chapitres ----------------------------------------------------
+
+/** L'éditeur s'ouvre sur le chapitre visé, et non sur le premier de la liste :
+ *  c'est tout l'intérêt d'un « Modifier » posé ligne par ligne. */
+const lienChapitre = (moduleId: string, chapitreId: string) =>
+  `/admin/module/${moduleId}?onglet=chapitres&chapitre=${chapitreId}`
+
+async function dupliquerChapitre(moduleId: string, chapitreId: string) {
+  await appeler('/api/admin/chapitres', { action: 'dupliquer', moduleId, id: chapitreId })
+}
+
+/** La copie d'un module naît en brouillon, sans vidéo : on l'ouvre aussitôt,
+ *  puisque c'est là que le travail reprend. */
+async function dupliquerModule(m: ModuleArbre) {
+  erreur.value = ''
+  enCours.value = true
+  try {
+    const copie = await $fetch<{ id: string }>('/api/admin/modules', {
+      method: 'POST',
+      body: { action: 'dupliquer', source: m.id },
+    })
+    await refresh()
+    await navigateTo(`/admin/module/${copie.id}?onglet=chapitres`)
+  } catch (e) {
+    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'La duplication a échoué.'
+  } finally {
+    enCours.value = false
+  }
 }
 
 // --- Libellés ---------------------------------------------------------------
@@ -565,19 +597,53 @@ const pastilleModule = 'rounded-full px-2 py-[3px] text-[10.5px] font-bold'
                   {{ moduleSelectionne.videoIntro ? 'Uploadée' : 'À téléverser' }}
                 </span>
               </div>
-              <div v-for="(c, i) in moduleSelectionne.chapitres" :key="i" class="flex justify-between gap-3">
-                <span class="min-w-0 truncate"><span aria-hidden="true">⋮⋮</span> {{ c.libelle }} · {{ c.titre }}</span>
-                <span class="shrink-0" :class="!c.script && 'text-discret'">
-                  {{ c.script ? 'Script ✓' : 'Script à importer' }}
+              <!-- Chaque chapitre porte ses propres commandes : la vidéo et le
+                   script se déposent au chapitre, pas au module, et l'éditeur
+                   s'ouvre directement sur celui qu'on vise. -->
+              <div
+                v-for="c in moduleSelectionne.chapitres"
+                :key="c.id"
+                class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1"
+              >
+                <span class="min-w-0 flex-1 truncate">
+                  <span aria-hidden="true">⋮⋮</span> {{ c.libelle }} · {{ c.titre }}
+                </span>
+                <span class="flex shrink-0 items-center gap-2.5">
+                  <span :class="c.video ? 'text-succes' : 'text-alerte'">
+                    {{ c.video ? 'Vidéo ✓' : 'Vidéo à déposer' }}
+                  </span>
+                  <span :class="!c.script && 'text-discret'">
+                    {{ c.script ? 'Script ✓' : 'Script à importer' }}
+                  </span>
+                  <NuxtLink :to="lienChapitre(moduleSelectionne.id, c.id)" class="font-bold">
+                    {{ c.video ? 'Modifier la vidéo' : 'Déposer la vidéo' }}
+                  </NuxtLink>
+                  <button
+                    class="font-bold text-social"
+                    :disabled="enCours"
+                    title="Copier ce chapitre — textes et transcription, la vidéo restant à redéposer"
+                    @click="dupliquerChapitre(moduleSelectionne.id, c.id)"
+                  >
+                    Dupliquer
+                  </button>
                 </span>
               </div>
               <p v-if="!moduleSelectionne.chapitres.length" class="text-discret">Aucun chapitre.</p>
-              <NuxtLink
-                :to="`/admin/module/${moduleSelectionne.id}?onglet=chapitres`"
-                class="text-[12.5px] font-bold"
-              >
-                + Ajouter un chapitre (illimité)
-              </NuxtLink>
+              <div class="mt-1 flex flex-wrap gap-x-3 gap-y-1.5 text-[12.5px] font-bold">
+                <NuxtLink :to="`/admin/module/${moduleSelectionne.id}?onglet=chapitres`">
+                  + Ajouter un chapitre (illimité)
+                </NuxtLink>
+                <NuxtLink :to="`/admin/module/${moduleSelectionne.id}?onglet=chapitres`">
+                  Gérer vidéos &amp; scripts
+                </NuxtLink>
+                <button class="text-social" :disabled="enCours" @click="dupliquerModule(moduleSelectionne)">
+                  Dupliquer le module
+                </button>
+              </div>
+              <p class="text-[11.5px] leading-[1.5] text-discret">
+                Une copie reprend les textes, les chapitres et les transcriptions&nbsp;; les fichiers
+                vidéo, eux, restent à redéposer sur la copie.
+              </p>
             </div>
           </section>
 

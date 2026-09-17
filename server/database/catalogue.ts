@@ -688,6 +688,129 @@ export async function creerChapitre(
   await retirerEtatPretModule(moduleId)
 }
 
+/**
+ * Recopie d'un chapitre — libellé, titre, durée et transcription.
+ *
+ * La vidéo ne suit pas. Un fichier déposé vit sous une clé dérivée du module
+ * et de la position du chapitre ; deux chapitres partageant la même clé se
+ * retireraient mutuellement leur vidéo au premier « Retirer ». La copie donne
+ * donc un chapitre complet côté texte, dont la vidéo reste à redéposer.
+ */
+export async function dupliquerChapitre(
+  id: string,
+  cible?: { moduleId?: string; titre?: string },
+): Promise<{ id: string; moduleId: string }> {
+  const source = verifierOptionnel(
+    await supabase().from('chapitres').select('*').eq('id', id).maybeSingle(),
+    'chapitre',
+  )
+  if (!source) throw createError({ statusCode: 404, statusMessage: 'Chapitre introuvable' })
+
+  const moduleId = cible?.moduleId ?? source.module_id
+  const existants = (await chapitresParModule([moduleId])).get(moduleId) ?? []
+  const rows = verifier(
+    await supabase()
+      .from('chapitres')
+      .insert({
+        module_id: moduleId,
+        position: existants.length,
+        libelle: source.libelle,
+        titre: cible?.titre ?? `${source.titre} (copie)`,
+        duree_minutes: source.duree_minutes,
+        script: source.script,
+        script_format: source.script_format,
+        script_nom_fichier: source.script_nom_fichier,
+        script_importe_le: source.script.length ? new Date().toISOString() : null,
+      } as never)
+      .select('id'),
+    'duplication du chapitre',
+  )
+  await retirerEtatPretModule(moduleId)
+  return { id: rows[0]!.id, moduleId }
+}
+
+/** Première URL libre à partir d'une base : `base`, puis `base-2`, `base-3`…
+ *  Dupliquer deux fois le même module ne doit pas buter sur l'URL déjà prise. */
+async function slugLibre(base: string): Promise<string> {
+  const pris = new Set(
+    verifier(
+      await supabase().from('modules').select('slug').like('slug', `${base}%`),
+      'URLs des modules',
+    ).map((m) => m.slug),
+  )
+  if (!pris.has(base)) return base
+  let n = 2
+  while (pris.has(`${base}-${n}`)) n += 1
+  return `${base}-${n}`
+}
+
+/**
+ * Recopie d'un module entier : la fiche pédagogique et tous ses chapitres.
+ *
+ * La copie naît en brouillon, hors vente, jamais « prête » : elle porte les
+ * textes de l'original mais aucune de ses vidéos, et rien ne doit laisser
+ * croire qu'elle est publiable en l'état.
+ */
+export async function dupliquerModule(
+  id: string,
+  champs: { slug: string; titre: string; thematiqueId?: string },
+): Promise<Module> {
+  const source = verifierOptionnel(
+    await supabase().from('modules').select('*').eq('id', id).maybeSingle(),
+    'module',
+  )
+  if (!source) throw createError({ statusCode: 404, statusMessage: 'Module introuvable' })
+
+  const thematiqueId = champs.thematiqueId ?? source.thematique_id
+  // Le numéro se prend à la suite du programme : l'index unique
+  // (programme, numero) refuserait celui de l'original.
+  const voisins = verifier(
+    await supabase().from('modules').select('numero').eq('programme', source.programme),
+    'numéros du programme',
+  )
+  const numero = Math.max(0, ...voisins.map((m) => m.numero)) + 1
+  // L'URL demandée peut déjà servir : l'identifiant en dérivant, les deux se
+  // libèrent d'un seul coup.
+  const slug = await slugLibre(champs.slug)
+
+  const { data, error } = await supabase()
+    .from('modules')
+    .insert({
+      id: `mod-${slug}`,
+      slug,
+      numero,
+      titre: champs.titre,
+      programme: source.programme,
+      thematique_id: thematiqueId,
+      formateur_id: source.formateur_id,
+      promesse: source.promesse,
+      pourquoi: source.pourquoi,
+      pour_qui: source.pour_qui,
+      prerequis: source.prerequis,
+      acquis: source.acquis,
+      livrable: source.livrable,
+      faq: source.faq,
+      points_forts: source.points_forts,
+      prix_fcfa: source.prix_fcfa,
+      prix_masque: source.prix_masque,
+      filigrane_actif: source.filigrane_actif,
+      telechargement_bloque: source.telechargement_bloque,
+      statut: 'brouillon',
+    } as never)
+    .select('*')
+    .single()
+
+  if (error?.code === '23505') {
+    throw createError({ statusCode: 409, statusMessage: 'Un module porte déjà cette URL' })
+  }
+  if (error) throw traduireErreur(error, 'duplication du module')
+
+  const chapitres = (await chapitresParModule([id])).get(id) ?? []
+  for (const c of chapitres) await dupliquerChapitre(c.id, { moduleId: data.id, titre: c.titre })
+
+  return versModule(data, (await chapitresParModule([data.id])).get(data.id) ?? [])
+}
+
 export async function majChapitre(
   id: string,
   champs: { libelle?: string; titre?: string; dureeMinutes?: number | null },
@@ -837,6 +960,26 @@ export async function reordonnerChapitres(moduleId: string, ids: string[]): Prom
       'réordonnancement',
     )
   }
+}
+
+/**
+ * Identifiants des chapitres de plusieurs modules, en une requête.
+ *
+ * L'arbre des contenus a besoin de pointer chaque chapitre par son
+ * identifiant ; `Chapitre`, le type métier servi aux pages publiques, ne le
+ * porte pas — et ce n'est pas à lui de le porter.
+ */
+export async function chapitresIdentifiesParModules(
+  moduleIds: string[],
+): Promise<Map<string, { id: string; position: number; libelle: string; titre: string }[]>> {
+  const groupes = new Map<string, { id: string; position: number; libelle: string; titre: string }[]>()
+  for (const [moduleId, rows] of await chapitresParModule(moduleIds)) {
+    groupes.set(
+      moduleId,
+      rows.map((c) => ({ id: c.id, position: c.position, libelle: c.libelle, titre: c.titre })),
+    )
+  }
+  return groupes
 }
 
 /** Chapitres d'un module, sous leur forme brute — l'éditeur a besoin des

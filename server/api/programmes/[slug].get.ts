@@ -1,10 +1,10 @@
 import {
-import { formateurPublic, modulePublic } from '../../utils/public'
   listerFormateurs,
   listerModules,
   listerThematiques,
   trouverProgramme,
 } from '../../database/catalogue'
+import { formateurPublic, modulePublic } from '../../utils/public'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')

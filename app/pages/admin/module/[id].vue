@@ -213,7 +213,9 @@ async function restaurer(versionId: string) {
 
 // --- Chapitre sélectionné, « Prêt », autosave -------------------------------
 
-const chapitreSelectionne = ref<string>('')
+// `?chapitre=` : l'arbre des contenus pointe un chapitre précis. Sans cette
+// lecture, « Modifier la vidéo » retombait sur le premier chapitre du module.
+const chapitreSelectionne = ref<string>((route.query.chapitre as string) ?? '')
 watchEffect(() => {
   const liste = data.value?.chapitres ?? []
   if (!liste.some((c) => c.id === chapitreSelectionne.value)) {
@@ -480,6 +482,13 @@ const champ =
             <button class="rounded-[8px] border border-ligne px-2 py-1 font-normal" :disabled="i === 0" aria-label="Monter le chapitre" @click="deplacer(i, -1)">↑</button>
             <button class="rounded-[8px] border border-ligne px-2 py-1 font-normal" :disabled="i === data.chapitres.length - 1" aria-label="Descendre le chapitre" @click="deplacer(i, 1)">↓</button>
             <button class="ml-1.5 text-social" @click="chapitreSelectionne = c.id">Modifier</button>
+            <button
+              class="text-social"
+              title="Copier ce chapitre — textes et transcription, la vidéo restant à redéposer"
+              @click="chapitre({ action: 'dupliquer', id: c.id })"
+            >
+              Dupliquer
+            </button>
             <button class="text-erreur" @click="chapitre({ action: 'supprimer', id: c.id })">Retirer</button>
           </div>
         </article>

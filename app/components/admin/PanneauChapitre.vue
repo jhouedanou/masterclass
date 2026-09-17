@@ -20,13 +20,21 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  modifier: [champs: { titre?: string; dureeMinutes?: number }]
+  modifier: [champs: { libelle?: string; titre?: string; dureeMinutes?: number }]
   reglages: [champs: { filigraneActif?: boolean; telechargementBloque?: boolean }]
   rafraichir: []
 }>()
 
 const titre = ref(props.chapitre.titre)
 watch(() => props.chapitre.titre, (v) => (titre.value = v))
+
+// Le libellé (« Chapitre 3 ») et la durée annoncée se posaient à la création
+// et ne se reprenaient plus : seul le titre était modifiable ici.
+const libelle = ref(props.chapitre.libelle)
+watch(() => props.chapitre.libelle, (v) => (libelle.value = v))
+
+const duree = ref<number | null>(props.chapitre.dureeMinutes)
+watch(() => props.chapitre.dureeMinutes, (v) => (duree.value = v))
 
 const importEnCours = ref(false)
 const messageScript = ref('')
@@ -90,6 +98,28 @@ const etiquette = 'mb-1.5 block text-[12.5px] font-bold'
         >
       </label>
 
+      <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+        <label class="block">
+          <span :class="etiquette">Libellé</span>
+          <input
+            v-model="libelle"
+            placeholder="Chapitre 1"
+            :class="champ"
+            @blur="libelle !== chapitre.libelle && emit('modifier', { libelle })"
+          >
+        </label>
+        <label class="block">
+          <span :class="etiquette">Durée annoncée (min)</span>
+          <input
+            v-model.number="duree"
+            type="number"
+            min="1"
+            :class="champ"
+            @blur="duree !== chapitre.dureeMinutes && duree && emit('modifier', { dureeMinutes: duree })"
+          >
+        </label>
+      </div>
+
       <div>
         <p :class="etiquette">Vidéo</p>
         <div
@@ -112,6 +142,12 @@ const etiquette = 'mb-1.5 block text-[12.5px] font-bold'
         <p v-else class="text-[13px] text-discret">Aucune vidéo déposée.</p>
         <p v-if="chapitre.videoFormat === 'hls'" class="mt-1.5 text-[11.5px] text-discret">
           Flux transcodé à la main : il se retire en ligne de commande, pas ici.
+        </p>
+        <!-- Remplacer, c'est redéposer : le dépôt qui suit écrase la vidéo en
+             place, et l'ancienne n'est effacée qu'une fois la nouvelle écrite. -->
+        <p v-else-if="chapitre.videoCle" class="mt-1.5 text-[11.5px] text-discret">
+          Pour la remplacer, déposez le nouveau fichier dans la zone de dépôt&nbsp;:
+          l’ancienne vidéo n’est effacée qu’une fois la nouvelle en place.
         </p>
       </div>
 
