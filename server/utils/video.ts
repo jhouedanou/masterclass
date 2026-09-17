@@ -19,6 +19,8 @@
  * deux implémentations et échoue si elles divergent.
  */
 
+import { dureeMp4, OCTETS_ENTETE_MP4 } from '#shared/utils/dureeMp4'
+
 /** Durée de validité d'une autorisation de lecture. Assez longue pour un
  *  chapitre entier, assez courte pour qu'un lien copié devienne vite inerte. */
 export const DUREE_AUTORISATION_SECONDES = 60 * 60 * 4
@@ -106,6 +108,45 @@ export async function urlLectureSignee(
     s: signature,
   })
   return `${baseVideo()}/${cle}/${FICHIER_VIDEO[format]}?${parametres}`
+}
+
+/**
+ * Durée réelle d'une vidéo déposée, lue dans l'objet plutôt que rapportée.
+ *
+ * Le navigateur annonce une durée à l'ouverture du dépôt — il faut bien en
+ * avoir une avant que le fichier n'existe. Une fois l'objet en place, le
+ * fichier peut répondre lui-même : une plage d'un mégaoctet suffit à atteindre
+ * la boîte `mvhd`, puisque le dépôt n'accepte que des fichiers dont la table
+ * précède les données.
+ *
+ * `null` en cas de doute — en-tête illisible, plage refusée, diffuseur muet.
+ * L'appelant conserve alors la valeur annoncée : une durée approximative vaut
+ * mieux qu'une durée effacée.
+ */
+export async function lireDureeDepuisStockage(
+  cle: string,
+  utilisateurId: string,
+  origine?: string,
+): Promise<number | null> {
+  try {
+    const url = await urlLectureSignee(cle, utilisateurId, 'fichier')
+    // En développement la base est la route locale `/medias` : un `fetch`
+    // serveur exige une adresse absolue.
+    const absolue = url.startsWith('/') ? `${(origine ?? '').replace(/\/+$/, '')}${url}` : url
+    if (absolue.startsWith('/')) return null
+
+    const reponse = await fetch(absolue, {
+      headers: { range: `bytes=0-${OCTETS_ENTETE_MP4 - 1}` },
+    })
+    if (!reponse.ok) return null
+
+    const duree = dureeMp4(await reponse.arrayBuffer())
+    return duree && Number.isFinite(duree) && duree > 0 ? duree : null
+  } catch {
+    // La durée annoncée reste en place : ce n'est pas un motif d'échec du
+    // dépôt, dont les octets sont déjà arrivés.
+    return null
+  }
 }
 
 /**

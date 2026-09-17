@@ -1,4 +1,4 @@
--- 29 · Rattrapage : ordre des chapitres
+-- Rattrapage : ordre des chapitres
 --
 -- Le module « Comprendre le business du client » avait ses chapitres mélangés
 -- en base — Chapitre 1, Introduction, Chapitre 3, Chapitre 2 — et sa fiche

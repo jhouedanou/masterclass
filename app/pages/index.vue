@@ -7,6 +7,7 @@ import type {
   ProgrammeSlug,
   Thematique,
 } from '#shared/types'
+import { compterModules } from '#shared/utils/compteurs'
 
 type ThematiqueGarnie = Thematique & { modules: (Module & { formateur: Formateur | null })[] }
 
@@ -32,6 +33,15 @@ function reperes(slug: ProgrammeSlug) {
   const siens = (catalogue.value ?? []).filter((m) => m.programme === slug)
   return { modules: siens.length, thematiques: new Set(siens.map((m) => m.thematiqueId)).size }
 }
+
+// Le carrousel y puise le nombre à substituer au jeton `{modules}` des
+// descriptions, pour que la phrase d'accroche ne puisse pas annoncer un
+// catalogue qui n'existe plus.
+const modulesParProgramme = computed(() => {
+  const compte: Record<string, number> = {}
+  for (const module of catalogue.value ?? []) compte[module.programme] = (compte[module.programme] ?? 0) + 1
+  return compte
+})
 
 const selection = ref<'social-media' | 'entrepreneurs'>('social-media')
 const { data: programmeSelectionne } = await useFetch<{
@@ -93,12 +103,13 @@ useJsonLd({
       v-if="programmes?.length"
       :programmes="programmes"
       :banniere="banniere?.contenu ?? null"
+      :modules-par-programme="modulesParProgramme"
     />
 
     <!-- bandeau sous le hero -->
     <div class="border-b border-ligne-claire bg-fond-clair">
       <div class="conteneur flex flex-wrap gap-x-7 gap-y-2 py-4.5 text-[14px] text-texte">
-        <span><b class="text-encre">{{ nbModulesTotal }} modules</b><span class="hidden lg:inline"> disponibles</span></span>
+        <span><b class="text-encre">{{ compterModules(nbModulesTotal) }}</b><span class="hidden lg:inline"> disponibles</span></span>
         <span><b class="text-encre">10 000 FCFA TTC</b><span class="hidden lg:inline"> par module</span></span>
         <span><b class="text-encre">Accès à vie</b><span class="hidden lg:inline"> après l’achat</span></span>
       </div>
@@ -132,11 +143,11 @@ useJsonLd({
             </p>
             <!-- Tablette (planche A, écran 11) : carte courte, une ligne de repères et un lien. -->
             <p class="mb-5.5 flex flex-wrap gap-5 text-[14px] text-texte lg:hidden">
-              {{ reperes(programme.slug).modules }} modules ·
+              {{ compterModules(reperes(programme.slug).modules) }} ·
               {{ reperes(programme.slug).thematiques }} thématiques · sessions de coaching collectif
             </p>
             <p class="mb-5.5 hidden flex-wrap gap-5 text-[14px] text-texte lg:flex">
-              <span><b class="text-encre">{{ reperes(programme.slug).modules }} modules</b></span>
+              <span><b class="text-encre">{{ compterModules(reperes(programme.slug).modules) }}</b></span>
               <span><b class="text-encre">{{ reperes(programme.slug).thematiques }} thématiques</b></span>
               <span><b class="text-encre">Sessions</b> de coaching collectif</span>
             </p>

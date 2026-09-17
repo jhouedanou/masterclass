@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { interpolerCompteurs } from '#shared/utils/compteurs'
 import type { ContenuBanniere, Programme, SlideBanniere } from '#shared/types'
 
 /**
@@ -16,6 +17,12 @@ const props = defineProps<{
   programmes: Programme[]
   /** Contenu publié du bloc « banniere ». `null` tant qu'il n'est pas chargé. */
   banniere?: Partial<ContenuBanniere> | null
+  /**
+   * Nombre de modules visibles au catalogue, par slug de programme. Sert à
+   * remplacer le jeton `{modules}` des descriptions : le chiffre annoncé suit
+   * alors le catalogue au lieu d'être figé dans le texte.
+   */
+  modulesParProgramme?: Record<string, number>
 }>()
 
 /** Première moitié du H1 si le CMS ne la fournit pas : la valeur historique. */
@@ -56,7 +63,10 @@ function depuisProgramme(programme: Programme): SlideAffiche {
     estSocial: programme.slug === 'social-media',
     surtitre: programme.surtitreHero,
     accroche: programme.h1Variable,
-    description: programme.descriptionHero,
+    description: interpolerCompteurs(
+      programme.descriptionHero,
+      props.modulesParProgramme?.[programme.slug] ?? 0,
+    ),
     cta: programme.ctaHero,
     imageFond: `/images/hero/${programme.slug}.svg`,
     imageVisuel: null,
@@ -72,7 +82,12 @@ function composer(slide: SlideBanniere, programme: Programme, rang: number): Sli
     // Deux slides peuvent viser le même programme : le rang garantit une clé unique.
     cle: `${rang}-${programme.slug}`,
     accroche: texte(slide.accroche) ?? repli.accroche,
-    description: texte(slide.description) ?? repli.description,
+    description: texte(slide.description)
+      ? interpolerCompteurs(
+          texte(slide.description)!,
+          props.modulesParProgramme?.[programme.slug] ?? 0,
+        )
+      : repli.description,
     cta: texte(slide.cta) ?? repli.cta,
     imageFond: texte(slide.imageFond) ?? repli.imageFond,
     imageVisuel: texte(slide.imageVisuel),

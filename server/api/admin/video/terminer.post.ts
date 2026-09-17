@@ -1,7 +1,8 @@
 import { enregistrerJournal } from '../../../database/administration'
 import { majVideoChapitre, trouverChapitre } from '../../../database/catalogue'
+import { inscrireVideo } from '../../../database/mediatheque'
 import { cloreTeleversement, trouverTeleversement } from '../../../database/video'
-import { supprimerObjet, terminerDepot } from '../../../utils/video'
+import { lireDureeDepuisStockage, terminerDepot } from '../../../utils/video'
 import { exigerSection } from '../../../utils/session'
 
 /**
@@ -40,22 +41,37 @@ export default defineEventHandler(async (event) => {
   const fini = await terminerDepot(suivi.cle, uploadId, admin.id, ordonnees)
 
   const chapitre = await trouverChapitre(suivi.chapitreId)
-  const ancienneCle = chapitre?.video_cle ?? null
+
+  // L'objet est maintenant assemblé : il peut dire sa durée lui-même. Celle
+  // qu'avait annoncée le navigateur ne servait qu'à ouvrir le dépôt.
+  const mesuree = await lireDureeDepuisStockage(suivi.cle, admin.id, getRequestURL(event).origin)
+  const dureeSecondes = mesuree === null ? suivi.dureeSecondes : Math.round(mesuree)
+
+  // Le fichier entre d'abord à la médiathèque : le chapitre le désigne
+  // ensuite. L'ordre inverse laisserait un chapitre pointant une vidéo que la
+  // médiathèque ignore, et son effacement échapperait au décompte des usages.
+  const video = await inscrireVideo({
+    cle: suivi.cle,
+    nom: suivi.nomFichier,
+    nomFichier: suivi.nomFichier,
+    tailleOctets: fini.taille ?? suivi.tailleOctets,
+    dureeSecondes,
+    deposePar: admin.id,
+  })
 
   await majVideoChapitre(suivi.chapitreId, {
     videoCle: suivi.cle,
+    videoId: video.id,
     videoFormat: 'fichier',
-    videoDureeSecondes: suivi.dureeSecondes,
+    videoDureeSecondes: dureeSecondes,
     videoNomFichier: suivi.nomFichier,
     videoTailleOctets: fini.taille ?? suivi.tailleOctets,
   })
   await cloreTeleversement(uploadId, 'termine')
 
-  // L'ancienne vidéo ne part qu'une fois la nouvelle en place : l'inverse
-  // laisserait le chapitre muet si la finalisation échouait.
-  if (ancienneCle && ancienneCle !== suivi.cle) {
-    await supprimerObjet(ancienneCle, admin.id).catch(() => undefined)
-  }
+  // La vidéo que ce chapitre servait jusqu'ici n'est pas effacée : elle reste
+  // à la médiathèque, d'où elle se rattache ailleurs ou se supprime
+  // délibérément. Un dépôt de remplacement ne détruit donc plus rien.
 
   await enregistrerJournal(
     `${admin.prenom} ${admin.nom}`,
@@ -64,5 +80,5 @@ export default defineEventHandler(async (event) => {
     { type: 'contenu', objet: suivi.chapitreId },
   )
 
-  return { cle: suivi.cle, dureeSecondes: suivi.dureeSecondes, tailleOctets: fini.taille }
+  return { cle: suivi.cle, dureeSecondes, tailleOctets: fini.taille }
 })

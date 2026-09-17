@@ -157,8 +157,13 @@ délivrance d'un certificat, attribution d'accès, contraintes et déclencheurs.
 
 ### Modifier le contenu
 
-`server/data/db.ts` reste la source du contenu éditorial — 18 modules et leurs chapitres, fiches
-formateurs, articles — tant qu'aucun back-office ne permet de le saisir. Après modification :
+**Le contenu courant se modifie dans l'administration**, qui écrit directement en base. Un intitulé
+de module, un titre de chapitre, une vidéo, une mise en vente : tout cela se fait là, et l'effet est
+immédiat sur le site.
+
+`server/data/db.ts` ne dit pas ce que contient la plateforme : il dit avec quoi une base neuve
+démarre. Y reporter une correction de contenu ne change rien en ligne. Après modification de ce
+fichier :
 
 ```bash
 npm run db:seed:generer   # régénère supabase/seed.sql
@@ -167,6 +172,27 @@ npm run video:verifier    # contrôle la chaîne vidéo (signatures, sous-titres
 ```
 
 Aucun endpoint n'importe ce fichier : l'application passe par les dépôts de `server/database`.
+
+Pour un apport en volume — un tournage entier, une arborescence revue — l'administration est trop
+lente : écrire un `supabase/rattrapage-*.sql`, transactionnel et rejouable, et l'exécuter dans le
+SQL Editor du projet. Ces fichiers ne doivent jamais écraser ce que l'administration a produit : une
+clé vidéo déposée depuis le back-office porte un identifiant forgé par lui, et la remplacer ferait
+pointer le lecteur vers un flux inexistant.
+
+### Comparer le dépôt et la base en ligne
+
+```bash
+npm run db:comparer
+```
+
+Confronte `server/data/db.ts` à la base que lit l'application, et liste les écarts : programmes,
+thématiques, formateurs, modules, chapitres. Il ne synchronise rien et sort en code 1 dès qu'un
+écart existe.
+
+Un écart n'est pas une erreur — le contenu vit dans l'administration. Il devient suspect quand il
+porte sur une structure que personne n'a touchée : un module absent d'un côté, un `programme` ou un
+`numero` qui ne correspond pas. C'est aussi la façon de vérifier qu'un rattrapage SQL a bien été
+exécuté, et sur le bon projet.
 
 ### Ce que la base garantit
 

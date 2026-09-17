@@ -840,6 +840,7 @@ export async function majVideoChapitre(
   id: string,
   champs: {
     videoCle: string | null
+    videoId: string | null
     videoFormat: 'hls' | 'fichier' | null
     videoDureeSecondes: number | null
     videoNomFichier: string | null
@@ -851,6 +852,7 @@ export async function majVideoChapitre(
       .from('chapitres')
       .update({
         video_cle: champs.videoCle,
+        video_id: champs.videoId,
         video_format: champs.videoFormat,
         video_duree_secondes: champs.videoDureeSecondes,
         video_nom_fichier: champs.videoNomFichier,
@@ -996,6 +998,7 @@ export async function listerChapitres(moduleId: string) {
     // L'éditeur affiche l'état réel de chaque chapitre : sans ces colonnes, sa
     // ligne « Vidéo : … · script importé ✓ » n'aurait rien à dire.
     videoCle: c.video_cle,
+    videoId: c.video_id,
     videoFormat: c.video_format,
     videoNomFichier: c.video_nom_fichier,
     videoDureeSecondes: c.video_duree_secondes,

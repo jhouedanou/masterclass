@@ -29,7 +29,7 @@ compatibility_date = "2026-01-01"
 # Origines autorisées à lire les vidéos depuis un navigateur. Sans cette liste,
 # le lecteur du site se voit refuser la réponse par le navigateur lui-même.
 [vars]
-ORIGINES_AUTORISEES = "https://masterclass-jhouedanous-projects.vercel.app,http://localhost:3000,http://localhost:3001"
+ORIGINES_AUTORISEES = "https://masterclass-omega-five.vercel.app,https://masterclass-jhouedanous-projects.vercel.app,http://localhost:3000,http://localhost:3001"
 
 [[r2_buckets]]
 binding = "VIDEOS"

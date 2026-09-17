@@ -35,6 +35,7 @@ const tousLesLiens: Lien[] = [
   { libelle: 'Programmes & phases', chemin: '/admin/programmes', icone: 'ph:tree-structure', section: 'modules-chapitres' },
   { libelle: 'Fiches commerciales', chemin: '/admin/fiches', icone: 'ph:megaphone', section: 'fiches-commerciales' },
   { libelle: 'Modules & chapitres', chemin: '/admin/contenus', icone: 'ph:stack', section: 'modules-chapitres' },
+  { libelle: 'Médiathèque vidéo', chemin: '/admin/mediatheque', icone: 'ph:film-strip', section: 'modules-chapitres' },
   { libelle: 'Formateurs', chemin: '/admin/formateurs', icone: 'ph:users-three', section: 'formateurs' },
   { libelle: 'Calendrier des sessions', chemin: '/admin/sessions', icone: 'ph:calendar-dots', section: 'calendrier-sessions' },
   { libelle: 'Coaching privé', chemin: '/admin/coaching-prive', icone: 'ph:target', section: 'coaching-prive' },

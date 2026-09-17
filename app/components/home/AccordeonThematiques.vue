@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Formateur, Module, Thematique } from '#shared/types'
+import { compterModules } from '#shared/utils/compteurs'
 
 type ThematiqueGarnie = Thematique & { modules: (Module & { formateur: Formateur | null })[] }
 
@@ -39,7 +40,7 @@ watch(
             class="flex items-center gap-4.5 text-[14px]"
             :class="ouvert === thematique.id ? 'text-white' : 'text-discret'"
           >
-            {{ thematique.modules.length }} modules
+            {{ compterModules(thematique.modules.length) }}
             <span aria-hidden="true" class="text-xl">{{ ouvert === thematique.id ? '−' : '+' }}</span>
           </span>
         </button>

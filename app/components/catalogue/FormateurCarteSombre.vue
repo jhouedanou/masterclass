@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Formateur } from '#shared/types'
+import { compterModules } from '#shared/utils/compteurs'
 
 defineProps<{ formateur: Formateur & { nbModules?: number } }>()
 </script>
@@ -19,7 +20,7 @@ defineProps<{ formateur: Formateur & { nbModules?: number } }>()
       <p class="mt-1 text-[13px] text-[#b9b4c4]">{{ formateur.expertise }}</p>
       <p class="mt-1.5 text-[12.5px] text-[#8f8a9c]">
         {{ formateur.programmePrincipal === 'social-media' ? 'Social Média' : 'Entrepreneurs' }} ·
-        {{ formateur.nbModules }} modules
+        {{ compterModules(formateur.nbModules) }}
       </p>
     </div>
     <NuxtLink

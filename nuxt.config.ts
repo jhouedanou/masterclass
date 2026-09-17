@@ -1,9 +1,17 @@
 import tailwindcss from '@tailwindcss/vite'
 
+// `nuxt dev` pose NODE_ENV=development, `nuxt build` pose production. Quelques
+// réglages ci-dessous ne valent que pour le paquet livré : appliqués aussi au
+// serveur de développement, ils allongeaient le premier démarrage sans rien
+// apporter.
+const enDeveloppement = process.env.NODE_ENV === 'development'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
+  // `NUXT_DEVTOOLS=0 npm run dev` les coupe : ils ajoutent leur propre client
+  // à compiler au démarrage à froid, pour rien quand on ne s'en sert pas.
+  devtools: { enabled: process.env.NUXT_DEVTOOLS !== '0' },
 
   modules: [
     '@nuxt/fonts',
@@ -44,6 +52,7 @@ export default defineNuxtConfig({
         'ph:currency-circle-dollar',
         'ph:eye',
         'ph:eye-slash',
+        'ph:film-strip',
         'ph:gauge',
         'ph:graduation-cap',
         'ph:layout',
@@ -383,9 +392,14 @@ export default defineNuxtConfig({
     },
     // Les runtimes de ces modules doivent être inlinés : laissés externes, le
     // build de production émet des imports relatifs qui sortent du projet.
-    externals: {
-      inline: ['@nuxtjs/robots', '@nuxtjs/sitemap', '@nuxt/icon', '@nuxt/image', 'nuxt-schema-org'],
-    },
+    // Au build seulement : en développement, Nitro les lit depuis node_modules
+    // et les inliner obligeait Rollup à les rebundler à chaque démarrage à
+    // froid — « Nuxt Nitro server built in 25242ms » à lui seul.
+    externals: enDeveloppement
+      ? undefined
+      : {
+          inline: ['@nuxtjs/robots', '@nuxtjs/sitemap', '@nuxt/icon', '@nuxt/image', 'nuxt-schema-org'],
+        },
   },
 
   typescript: { strict: true },

@@ -1,4 +1,4 @@
--- 27 · Image sociale par défaut en PNG
+-- Rattrapage : Image sociale par défaut en PNG
 --
 -- WhatsApp, Facebook et LinkedIn ne lisent pas le SVG en `og:image` : toute
 -- page sans image propre se partageait sans vignette. Le fichier

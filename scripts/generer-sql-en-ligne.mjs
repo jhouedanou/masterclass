@@ -94,7 +94,22 @@ produits.push(nomDonnees)
 // n'ont pas de mot de passe et ne peuvent plus se connecter.
 // Rattrapages : correctifs à passer sur une base déjà installée, que le jeu de
 // données ne peut plus atteindre puisqu'il ne se rejoue pas.
-for (const nom of ['rattrapage-mots-de-passe.sql', 'rattrapage-videos.sql', 'rattrapage-planche-e.sql']) {
+// Un correctif ponctuel n'est pas une migration : glissé dans la suite
+// numérotée, il y occupe un numéro sans correspondre à aucun fichier de
+// `supabase/migrations`, et toute régénération décale alors tout ce qui suit.
+// C'est ce qui a rendu le dossier inrégénérable pendant un mois, et fait qu'une
+// migration ajoutée entre-temps n'est jamais partie en ligne. Les rattrapages
+// vivent donc ici, hors de la numérotation.
+const RATTRAPAGES = [
+  'rattrapage-mots-de-passe.sql',
+  'rattrapage-videos.sql',
+  'rattrapage-planche-e.sql',
+  'rattrapage-contenus-reels.sql',
+  'rattrapage-og-image-png.sql',
+  'rattrapage-ordre-chapitres.sql',
+]
+
+for (const nom of RATTRAPAGES) {
   const source = join(RACINE, 'supabase', nom)
   if (!existsSync(source)) continue
   writeFileSync(join(SORTIE, nom), readFileSync(source, 'utf8'), 'utf8')

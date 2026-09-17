@@ -11,6 +11,7 @@ interface Chapitre {
   dureeMinutes: number | null
   nbLignesScript: number
   videoCle: string | null
+  videoId: string | null
   videoFormat: 'hls' | 'fichier' | null
   videoNomFichier: string | null
   videoDureeSecondes: number | null

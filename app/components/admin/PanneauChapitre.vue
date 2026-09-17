@@ -6,6 +6,7 @@ interface ChapitreDetail {
   dureeMinutes: number | null
   nbLignesScript: number
   videoCle: string | null
+  videoId: string | null
   videoFormat: 'hls' | 'fichier' | null
   videoNomFichier: string | null
   videoDureeSecondes: number | null
@@ -61,6 +62,26 @@ async function importerScript(fichier: File | null | undefined) {
     erreurScript.value = (e as { statusMessage?: string }).statusMessage ?? 'L’import a échoué.'
   } finally {
     importEnCours.value = false
+  }
+}
+
+// La médiathèque s'ouvre en fenêtre plutôt que dans une page : le choix d'une
+// vidéo se fait en regard du chapitre qu'on est en train de remplir, sans
+// perdre les champs en cours d'édition.
+const mediathequeOuverte = ref(false)
+
+async function choisirVideo(video: { id: string; nom: string }) {
+  erreurScript.value = ''
+  try {
+    await $fetch('/api/admin/mediatheque/attacher', {
+      method: 'POST',
+      body: { chapitreId: props.chapitre.id, videoId: video.id },
+    })
+    mediathequeOuverte.value = false
+    emit('rafraichir')
+  } catch (e) {
+    const avec = e as { statusMessage?: string; data?: { statusMessage?: string } }
+    erreurScript.value = avec.data?.statusMessage ?? avec.statusMessage ?? 'Le rattachement a échoué.'
   }
 }
 
@@ -140,14 +161,24 @@ const etiquette = 'mb-1.5 block text-[12.5px] font-bold'
           </button>
         </div>
         <p v-else class="text-[13px] text-discret">Aucune vidéo déposée.</p>
+
+        <!-- Le fonds déjà en ligne avant le glisser-déposer : redéposer un
+             fichier qui existe le paie deux fois, en temps de montée comme en
+             stockage. -->
+        <button
+          class="mt-2 text-[12px] font-bold text-social underline"
+          @click="mediathequeOuverte = true"
+        >
+          Choisir une vidéo déjà déposée…
+        </button>
         <p v-if="chapitre.videoFormat === 'hls'" class="mt-1.5 text-[11.5px] text-discret">
           Flux transcodé à la main : il se retire en ligne de commande, pas ici.
         </p>
         <!-- Remplacer, c'est redéposer : le dépôt qui suit écrase la vidéo en
              place, et l'ancienne n'est effacée qu'une fois la nouvelle écrite. -->
         <p v-else-if="chapitre.videoCle" class="mt-1.5 text-[11.5px] text-discret">
-          Pour la remplacer, déposez le nouveau fichier dans la zone de dépôt&nbsp;:
-          l’ancienne vidéo n’est effacée qu’une fois la nouvelle en place.
+          Pour la remplacer, choisissez-en une autre ci-dessus ou déposez un nouveau fichier&nbsp;:
+          l’ancienne retourne à la médiathèque, elle n’est pas effacée.
         </p>
       </div>
 
@@ -204,5 +235,36 @@ const etiquette = 'mb-1.5 block text-[12.5px] font-bold'
         quatre heures de validité. C’est le filigrane qui rend une rediffusion attribuable.
       </p>
     </div>
+
+    <!-- La médiathèque en fenêtre. `Teleport` la sort du panneau : une aside en
+         `overflow` la rognerait, et son `z-index` ne vaut que dans son parent. -->
+    <Teleport to="body">
+      <div
+        v-if="mediathequeOuverte"
+        class="fixed inset-0 z-50 grid place-items-start overflow-y-auto bg-encre/50 p-4"
+        @click.self="mediathequeOuverte = false"
+      >
+        <div class="my-6 w-full max-w-3xl rounded-carte bg-white p-[26px] shadow-[0_16px_40px_rgba(23,21,28,.12)]">
+          <div class="flex flex-wrap items-baseline justify-between gap-3">
+            <h2 class="font-sans text-[16px] font-bold">
+              Choisir une vidéo pour « {{ chapitre.libelle }} »
+            </h2>
+            <button class="text-[13px] text-discret underline" @click="mediathequeOuverte = false">
+              Fermer
+            </button>
+          </div>
+          <p class="mt-1 text-[12.5px] text-discret">
+            Une même vidéo peut servir plusieurs chapitres : la choisir ici ne la copie pas.
+          </p>
+          <div class="mt-4">
+            <AdminMediatheque
+              choisissable
+              :video-id-courante="chapitre.videoId"
+              @choisir="choisirVideo"
+            />
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </aside>
 </template>
