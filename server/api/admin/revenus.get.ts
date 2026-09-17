@@ -4,7 +4,7 @@ import { listerDemandesCoachingPrive, listerSessions } from '../../database/coac
 import { listerTransactions } from '../../database/commerce'
 import { listerUtilisateurs } from '../../database/comptes'
 import { transactionsReussies } from '../../utils/indicateurs'
-import { exigerAdmin } from '../../utils/session'
+import { exigerSection } from '../../utils/session'
 
 /**
  * Écran 21 — Revenus. Filtres combinables : mois, programme, module, coaching
@@ -12,7 +12,7 @@ import { exigerAdmin } from '../../utils/session'
  * recalculent selon la sélection.
  */
 export default defineEventHandler(async (event) => {
-  await exigerAdmin(event)
+  await exigerSection(event, 'statistiques-performance')
 
   const requete = getQuery(event)
   const lire = (cle: string) => (typeof requete[cle] === 'string' ? (requete[cle] as string) : '')

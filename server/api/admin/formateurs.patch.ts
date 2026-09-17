@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
     nom?: string
     expertise?: string
     bio?: string
+    photoAlt?: string
     programmePrincipal?: ProgrammeSlug
     ficheComplete?: boolean
     ordre?: string[]
@@ -47,6 +48,7 @@ export default defineEventHandler(async (event) => {
     nom: body.nom?.trim(),
     expertise: body.expertise?.trim(),
     bio: body.bio?.trim(),
+    photoAlt: body.photoAlt?.trim(),
     programmePrincipal: body.programmePrincipal,
     ficheComplete: body.ficheComplete,
   })

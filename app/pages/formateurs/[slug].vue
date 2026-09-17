@@ -54,7 +54,7 @@ useJsonLd(() => ({
       <div>
         <NuxtImg
           :src="formateur.photo"
-          :alt="`Portrait de ${formateur.nom}`"
+          :alt="formateur.photoAlt || `Portrait de ${formateur.nom}`"
           width="280"
           height="280"
           class="w-full max-w-[280px] rounded-carte bg-fond-voile object-cover"

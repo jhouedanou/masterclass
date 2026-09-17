@@ -61,3 +61,31 @@ export function assainirHtml(valeur: string | null | undefined): string {
   const propre = sanitizeHtml(valeur, OPTIONS).trim()
   return propre.replace(/<[^>]+>|&nbsp;|\s/g, '') ? propre : ''
 }
+
+/** Champs d'un bloc du CMS dont la valeur est du HTML saisi au back-office. */
+const CHAMPS_HTML = ['corps']
+
+/**
+ * Assainit récursivement le contenu JSON d'un bloc du site vitrine.
+ *
+ * Le contenu d'un bloc n'a pas de schéma : c'est un objet libre, où seuls
+ * certains champs portent du HTML. Ce parcours les retrouve où qu'ils soient.
+ *
+ * Il n'était appliqué qu'à la lecture (`/api/vitrine/[cle]`), là où tout le
+ * reste du projet assainit à l'écriture. La base gardait donc du HTML brut, et
+ * un futur lecteur qui n'emprunterait pas cette route le sortirait tel quel.
+ * L'écriture l'applique désormais aussi ; la lecture le garde, pour les lignes
+ * enregistrées avant ce tour.
+ */
+export function assainirContenuCms(valeur: unknown): unknown {
+  if (Array.isArray(valeur)) return valeur.map(assainirContenuCms)
+  if (valeur && typeof valeur === 'object') {
+    return Object.fromEntries(
+      Object.entries(valeur as Record<string, unknown>).map(([cle, v]) => [
+        cle,
+        CHAMPS_HTML.includes(cle) && typeof v === 'string' ? assainirHtml(v) : assainirContenuCms(v),
+      ]),
+    )
+  }
+  return valeur
+}

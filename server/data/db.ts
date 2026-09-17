@@ -1228,7 +1228,7 @@ export const reglagesSeo = {
   gabaritTitre: '%s | E-Masterclass Big Five',
   descriptionParDefaut:
     'Des modules de 60 minutes pour les professionnels du Social Media et les entrepreneurs d’Afrique francophone. 10 000 FCFA TTC par module, accès à vie.',
-  imageSocialeParDefaut: '/images/og-default.svg',
+  imageSocialeParDefaut: '/images/og-default.png',
   googleSearchConsole: '',
   ga4: '',
 }

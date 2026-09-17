@@ -21,12 +21,20 @@ const { data: modules } = await useFetch<
   }[]
 >('/api/formateur/modules', { query: { jours: periode, module: moduleChoisi } })
 
-/** Sans filtre de module, la liste complète alimente le sélecteur — sinon il
- *  ne resterait qu'une option, la sienne. */
-const { data: tousLesModules } = await useFetch<{ id: string; titre: string }[]>(
-  '/api/formateur/modules',
-  { key: 'formateur-modules-liste' },
-)
+/**
+ * Le sélecteur garde la liste complète : filtrée, la réponse ne contiendrait
+ * plus que le module choisi, et on ne pourrait plus en changer.
+ *
+ * Elle se retient du premier chargement non filtré plutôt que de rappeler la
+ * route — cet appel-là refaisait à lui seul cinq requêtes, dont deux tables
+ * entières, pour deux champs que la réponse portait déjà.
+ */
+const catalogue = ref<{ id: string; titre: string }[]>([])
+watchEffect(() => {
+  if (!moduleChoisi.value && modules.value) {
+    catalogue.value = modules.value.map((m) => ({ id: m.id, titre: m.titre }))
+  }
+})
 
 const OPTIONS_PERIODE = [
   { valeur: '30', libelle: '30 derniers jours' },
@@ -36,22 +44,22 @@ const OPTIONS_PERIODE = [
 
 const optionsModules = computed(() => [
   { valeur: '', libelle: 'tous' },
-  ...(tousLesModules.value ?? []).map((m) => ({ valeur: m.id, libelle: m.titre })),
+  ...catalogue.value.map((m) => ({ valeur: m.id, libelle: m.titre })),
 ])
 </script>
 
 <template>
   <div>
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="font-title text-[26px] font-light">Mes modules — statistiques d’inscription</h1>
+      <h1 class="font-title text-[24px] font-light">Mes modules — statistiques d’inscription</h1>
       <div class="flex flex-wrap gap-2.5">
-        <FormateurFiltrePilule
+        <UiFiltrePilule
           v-model="periode"
           etiquette="Période"
           prefixe="🗓 Période :"
           :options="OPTIONS_PERIODE"
         />
-        <FormateurFiltrePilule
+        <UiFiltrePilule
           v-model="moduleChoisi"
           etiquette="Module"
           prefixe="Module :"
@@ -61,12 +69,16 @@ const optionsModules = computed(() => [
     </div>
 
     <AdminTableauSimple
-      class="mt-6"
+      class="mt-4"
       :colonnes="['Module', 'Inscrits', `Nouveaux (${periode} j)`, 'Complétion', 'Certificats']"
+      :largeurs="['auto', '110px', '130px', '130px', '120px']"
+      largeur-min="820px"
     >
       <tr v-for="module in modules" :key="module.id" class="hover:bg-fond-clair">
         <td class="px-4 py-3">
-          <NuxtLink :to="`/formateur/module/${module.id}`" class="font-bold hover:underline">
+          <!-- La maquette écrit le titre en gras noir : le lien ne prend pas
+               le violet des liens. -->
+          <NuxtLink :to="`/formateur/module/${module.id}`" class="font-bold text-inherit hover:underline">
             {{ module.titre }}
           </NuxtLink>
           <p class="text-[11.5px] font-bold" :class="module.programme === 'social-media' ? 'text-social' : 'text-entrepreneurs'">
@@ -81,13 +93,13 @@ const optionsModules = computed(() => [
         <td class="px-4 py-3 font-bold">
           {{ module.statut === 'disponible' ? module.inscrits : '—' }}
         </td>
-        <td class="px-4 py-3 font-bold text-succes">
-          <template v-if="module.statut === 'disponible'">+{{ module.nouveaux }}</template>
+        <td class="px-4 py-3">
+          <b v-if="module.statut === 'disponible'" class="text-succes">+{{ module.nouveaux }}</b>
           <span v-else class="text-discret">—</span>
         </td>
         <td class="px-4 py-3">
           <span v-if="module.statut === 'disponible'" class="flex items-center gap-2">
-            <span class="h-1.5 min-w-[60px] flex-1 rounded-full bg-fond-voile">
+            <span class="h-1.5 min-w-[60px] flex-1 rounded-full bg-piste">
               <span
                 class="block h-full rounded-full"
                 :class="module.programme === 'social-media' ? 'bg-social' : 'bg-entrepreneurs'"

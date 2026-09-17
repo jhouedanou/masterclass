@@ -1,9 +1,11 @@
 import { creerCandidature } from '../database/administration'
+import { limiterDebit } from '../utils/debit'
 
 const URL_VALIDE = /^https?:\/\/\S+$/i
 
 /** Formulaire public « Devenir formateur » (planche A, écran 06). */
 export default defineEventHandler(async (event) => {
+  await limiterDebit(event, 'candidature')
   const body = await readBody<{
     nom?: string
     whatsapp?: string

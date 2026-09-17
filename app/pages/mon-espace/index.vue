@@ -76,6 +76,22 @@ const LIBELLE_JOUR = (date: string) =>
   new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(`${date}T00:00:00`))
 
 const lienCommunaute = lienWhatsApp('Bonjour, je souhaite rejoindre la Communauté E-Masterclass Big Five.')
+
+/**
+ * La planche 07 donne cinq états à la carte module et colore le surtitre selon
+ * l'état — pas selon le programme, comme le faisait la phase précédente.
+ */
+function etatCarte(carte: Carte) {
+  if (carte.progression === 100) return 'complete'
+  if (carte.prochaineSession && carte.prochaineSession.joursAvant <= 1) return 'imminente'
+  return carte.progression > 0 ? 'en-cours' : 'nouveau'
+}
+const COULEUR_SURTITRE = {
+  complete: 'text-succes',
+  imminente: 'text-alerte',
+  'en-cours': 'text-social',
+  nouveau: 'text-discret',
+} as const
 </script>
 
 <template>
@@ -92,158 +108,181 @@ const lienCommunaute = lienWhatsApp('Bonjour, je souhaite rejoindre la Communaut
       </div>
     </div>
 
-    <EspaceBandeauProfil :completion="data.completionProfil" class="hidden lg:block" />
-    <EspaceBandeauProfil :completion="data.completionProfil" compact class="lg:hidden" />
+    <EspaceBandeauProfil :completion="data.completionProfil" class="mb-7 hidden lg:flex" />
+    <EspaceBandeauProfil :completion="data.completionProfil" compact class="mb-5 lg:hidden" />
 
-    <h1 class="mt-6 text-[28px] font-light lg:text-[30px]">
-      <span class="lg:hidden">Bonjour {{ prenom }}</span>
-      <span class="hidden lg:inline">
-        Bonjour {{ prenom }}, reprenez où vous vous étiez {{ feminin ? 'arrêtée' : 'arrêté' }}
-      </span>
-    </h1>
-
-    <div class="mt-6 grid gap-8 lg:grid-cols-[1fr_360px]">
+    <div class="grid gap-7 lg:grid-cols-[1fr_400px] lg:items-start">
       <div>
+        <!-- Le titre appartient à la colonne de gauche : c'est ce qui fait
+             remonter le panneau de planning à sa hauteur, comme dans la maquette. -->
+        <h1 class="mb-5 text-[28px] font-light lg:text-[30px]">
+          <span class="lg:hidden">Bonjour {{ prenom }}</span>
+          <span class="hidden lg:inline">
+            Bonjour {{ prenom }}, reprenez où vous vous étiez {{ feminin ? 'arrêtée' : 'arrêté' }}
+          </span>
+        </h1>
+
         <!-- Cartes modules (planche B, écrans 01 et 07) -->
-        <div v-if="data.cartes.length" class="grid gap-4 md:grid-cols-2">
+        <div v-if="data.cartes.length" class="flex flex-col gap-4">
           <article
             v-for="carte in data.cartes"
             :key="carte.moduleId"
-            class="flex flex-col rounded-[14px] border border-ligne-douce bg-white p-5"
+            class="grid gap-[18px] rounded-carte border border-ligne-douce bg-white p-6 sm:grid-cols-[1fr_auto] sm:items-center"
           >
-            <div class="flex items-start justify-between gap-3">
-              <p class="surtitre" :class="carte.programme === 'social-media' ? 'text-social' : 'text-entrepreneurs'">
-                <span class="hidden lg:inline">{{ carte.programme === 'social-media' ? 'Social Média' : 'Entrepreneurs' }} · </span>{{ carte.thematique }}
+            <div class="min-w-0">
+              <div class="mb-2 flex flex-wrap items-center gap-2.5">
+                <p class="surtitre" :class="COULEUR_SURTITRE[etatCarte(carte)]">
+                  <span class="hidden lg:inline">{{ carte.programme === 'social-media' ? 'Social Média' : 'Entrepreneurs' }} · </span>{{ carte.thematique }}
+                </p>
+                <span
+                  class="shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-bold"
+                  :class="carte.progression === 100 ? 'bg-succes-voile text-succes' : carte.progression > 0 ? 'bg-social-voile text-social' : 'bg-fond-voile text-discret'"
+                >
+                  {{ carte.progression === 100 ? 'Complété ✓' : carte.progression > 0 ? 'En cours' : 'Non commencé' }}
+                </span>
+              </div>
+              <h2 class="mb-1.5 font-title text-[21px] leading-[1.25] font-light">{{ carte.titre }}</h2>
+              <!-- 4 · Session imminente (planche B, écran 07) -->
+              <p
+                v-if="etatCarte(carte) === 'imminente' && carte.prochaineSession"
+                class="mb-2 rounded-[8px] bg-alerte-voile px-2.5 py-2 text-[12px] font-bold text-alerte"
+              >
+                🗓 Session de coaching {{ carte.prochaineSession.joursAvant === 0 ? 'aujourd’hui' : 'demain' }}
+                {{ carte.prochaineSession.heure.replace(':', 'h') }} — {{ Math.max(0, carte.prochaineSession.places - carte.prochaineSession.inscrits) }} places restantes
               </p>
-              <span
-                class="shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-bold"
-                :class="carte.progression === 100 ? 'bg-succes-voile text-succes' : carte.progression > 0 ? 'bg-social-voile text-social' : 'bg-fond-voile text-discret'"
-              >
-                {{ carte.progression === 100 ? 'Complété ✓' : carte.progression > 0 ? 'En cours' : 'Non commencé' }}
-              </span>
+              <p class="mb-3 text-[13.5px] text-discret">
+                {{ carte.formateur }} ·
+                <template v-if="carte.progression === 100 && carte.termineLe">Terminé le {{ formatDate(carte.termineLe) }}</template>
+                <template v-else-if="carte.prochaineSession">
+                  Prochaine session de coaching : {{ LIBELLE_JOUR(carte.prochaineSession.date) }}, {{ carte.prochaineSession.heure }}
+                </template>
+                <template v-else>Aucune session planifiée pour l’instant</template>
+              </p>
+              <!-- La jauge manquait : la maquette la donne à chaque carte. -->
+              <div class="flex items-center gap-3">
+                <div
+                  class="h-2 flex-1 overflow-hidden rounded-full"
+                  :class="carte.progression === 100 ? 'bg-succes-voile' : 'bg-piste'"
+                >
+                  <div
+                    class="h-full rounded-full"
+                    :class="carte.progression === 100 ? 'bg-whatsapp' : 'bg-social'"
+                    :style="{ width: `${carte.progression}%` }"
+                  />
+                </div>
+                <span class="text-[13px] font-bold" :class="carte.progression === 100 ? 'text-succes' : 'text-encre'">
+                  <span class="lg:hidden">{{ carte.chapitresVus }}/{{ carte.chapitresTotal }}</span>
+                  <span class="hidden lg:inline">{{ carte.chapitresVus }} / {{ carte.chapitresTotal }} chapitres</span>
+                </span>
+              </div>
             </div>
-            <h2 class="mt-2 font-title text-[20px] leading-[1.25] font-light">{{ carte.titre }}</h2>
-            <!-- 4 · Session imminente (planche B, écran 07) -->
-            <p
-              v-if="carte.progression < 100 && carte.prochaineSession && carte.prochaineSession.joursAvant <= 1"
-              class="mt-2 rounded-[10px] bg-alerte-voile px-3 py-2 text-[13px] text-alerte"
+            <UiBaseButton
+              v-if="etatCarte(carte) === 'imminente'"
+              to="/mon-espace/sessions"
+              taille="sm"
             >
-              🗓 Session de coaching {{ carte.prochaineSession.joursAvant === 0 ? 'aujourd’hui' : 'demain' }}
-              {{ carte.prochaineSession.heure.replace(':', 'h') }} — {{ Math.max(0, carte.prochaineSession.places - carte.prochaineSession.inscrits) }} places restantes
-            </p>
-            <p class="mt-1.5 text-[13px] text-discret">
-              {{ carte.formateur }} ·
-              <template v-if="carte.progression === 100 && carte.termineLe">Terminé le {{ formatDate(carte.termineLe) }}</template>
-              <template v-else-if="carte.prochaineSession">
-                Prochaine session de coaching : {{ LIBELLE_JOUR(carte.prochaineSession.date) }}, {{ carte.prochaineSession.heure }}
-              </template>
-              <template v-else>Aucune session planifiée pour l’instant</template>
-            </p>
-            <div class="mt-auto flex items-center justify-between gap-3 pt-4">
-              <span class="text-[13.5px] font-bold text-encre">
-                <span class="lg:hidden">{{ carte.chapitresVus }}/{{ carte.chapitresTotal }}</span>
-                <span class="hidden lg:inline">{{ carte.chapitresVus }} / {{ carte.chapitresTotal }} chapitres</span><span v-if="carte.progression === 100"> ✓</span>
-              </span>
-              <UiBaseButton
-                v-if="carte.progression < 100 && carte.prochaineSession && carte.prochaineSession.joursAvant <= 1"
-                to="/mon-espace/sessions"
-                taille="sm"
-                variante="contour"
-              >
-                Voir la session
-              </UiBaseButton>
-              <UiBaseButton
-                v-else-if="carte.progression === 100"
-                :to="carte.certificat ? `/certificats/${carte.certificat}` : '/mon-espace/certificats'"
-                taille="sm"
-                variante="sombre"
-              >
-                Mon certificat
-              </UiBaseButton>
-              <UiBaseButton v-else :to="`/mon-espace/module/${carte.slug}`" taille="sm">
-                {{ carte.progression > 0 ? 'Continuer' : 'Commencer' }}
-              </UiBaseButton>
-            </div>
+              Voir la session
+            </UiBaseButton>
+            <UiBaseButton
+              v-else-if="carte.progression === 100"
+              :to="carte.certificat ? `/certificats/${carte.certificat}` : '/mon-espace/certificats'"
+              taille="sm"
+              variante="succes"
+            >
+              Mon certificat
+            </UiBaseButton>
+            <UiBaseButton v-else :to="`/mon-espace/module/${carte.slug}`" taille="sm" variante="sombre">
+              {{ carte.progression > 0 ? 'Continuer' : 'Commencer' }}
+            </UiBaseButton>
           </article>
         </div>
-        <p v-else class="rounded-[14px] border border-dashed border-ligne p-8 text-center text-[14px] text-discret">
+        <p v-else class="rounded-carte border border-dashed border-ligne p-8 text-center text-[14px] text-discret">
           Aucun module pour l’instant.
           <NuxtLink to="/modules" class="font-bold">Voir le catalogue</NuxtLink>.
         </p>
 
         <!-- Coaching privé + Historique d'achats (desktop) -->
-        <div class="mt-6 hidden gap-4 md:grid md:grid-cols-2">
-          <section class="rounded-[14px] border border-ligne-douce bg-white p-5">
-            <h2 class="font-title text-[19px] font-light">Coaching privé</h2>
-            <p class="mt-1 text-[13.5px] text-texte">
+        <div class="mt-4 hidden gap-4 md:grid md:grid-cols-2">
+          <section class="rounded-carte border border-ligne-douce bg-white p-6">
+            <h2 class="mb-2 font-title text-[18px] font-light">Coaching privé</h2>
+            <p class="mb-3.5 text-[13.5px] leading-[1.6] text-texte">
               Une session individuelle avec le formateur de votre choix, sur vos besoins précis.
             </p>
-            <p v-if="data.coachingPrive" class="mt-3 flex flex-wrap items-center gap-2 text-[13px] text-discret">
-              Demande du {{ formatDate(data.coachingPrive.date) }} — {{ data.coachingPrive.formateur }}
-              <span class="rounded-full px-2.5 py-0.5 text-[11.5px] font-bold" :class="CLASSES_COACHING_PRIVE[data.coachingPrive.statut]">
+            <div
+              v-if="data.coachingPrive"
+              class="mb-3.5 flex flex-wrap items-center justify-between gap-2 rounded-[10px] bg-fond-clair px-3.5 py-3 text-[13px]"
+            >
+              <span>Demande du {{ formatDate(data.coachingPrive.date) }} — {{ data.coachingPrive.formateur }}</span>
+              <span class="rounded-full px-2.5 py-1 text-[11.5px] font-bold" :class="CLASSES_COACHING_PRIVE[data.coachingPrive.statut]">
                 {{ LIBELLES_COACHING_PRIVE[data.coachingPrive.statut] }}
               </span>
-            </p>
-            <UiBaseButton to="/mon-espace/coaching-prive?nouvelle=1" class="mt-4" taille="sm" variante="contour">
+            </div>
+            <UiBaseButton to="/mon-espace/coaching-prive?nouvelle=1" taille="sm" variante="contour">
               Demander un coaching privé
             </UiBaseButton>
           </section>
-          <section class="rounded-[14px] border border-ligne-douce bg-white p-5">
-            <h2 class="font-title text-[19px] font-light">Historique d’achats</h2>
-            <ul v-if="data.achats.length" class="mt-3 divide-y divide-ligne-claire text-[13.5px]">
-              <li v-for="achat in data.achats" :key="achat.reference" class="py-2">
-                <p class="truncate text-encre">{{ achat.libelle }}</p>
-                <p class="text-[12.5px] text-discret">{{ formatDate(achat.date) }} · {{ formatFcfa(achat.total) }}</p>
+          <section class="rounded-carte border border-ligne-douce bg-white p-6">
+            <h2 class="mb-3 font-title text-[18px] font-light">Historique d’achats</h2>
+            <ul v-if="data.achats.length" class="flex flex-col gap-2.5 text-[13.5px]">
+              <li v-for="achat in data.achats" :key="achat.reference" class="flex justify-between gap-3">
+                <span class="truncate text-encre">{{ achat.libelle }}</span>
+                <span class="shrink-0 text-discret">{{ formatDate(achat.date) }} · {{ formatFcfa(achat.total) }}</span>
               </li>
             </ul>
-            <p v-else class="mt-3 text-[13.5px] text-discret">Aucun achat pour l’instant.</p>
-            <a :href="lienCommunaute" target="_blank" rel="noopener" class="mt-4 inline-block text-[14px] font-bold text-whatsapp hover:underline">
-              Rejoindre la Communauté WhatsApp →
-            </a>
+            <p v-else class="text-[13.5px] text-discret">Aucun achat pour l’instant.</p>
+            <div class="mt-3.5 border-t border-ligne-claire pt-3">
+              <a :href="lienCommunaute" target="_blank" rel="noopener" class="text-[13px] font-bold text-whatsapp hover:underline">
+                Rejoindre la Communauté WhatsApp →
+              </a>
+            </div>
           </section>
         </div>
       </div>
 
       <!-- Vos prochaines sessions de coaching -->
       <aside>
-        <section class="rounded-[14px] border border-ligne-douce bg-white p-5">
-          <h2 class="font-title text-[19px] font-light">
+        <!-- La maquette pose ce planning sur un panneau noir, pas sur une carte
+             blanche : c'est lui qui ancre la colonne de droite de l'écran 01. -->
+        <section class="sur-sombre rounded-[18px] bg-encre p-[26px] text-white">
+          <h2 class="mb-1 font-title text-[19px] font-light text-white">
             <span class="md:hidden">Prochaine coaching session</span>
             <span class="hidden md:inline lg:hidden">Prochaine session</span>
             <span class="hidden lg:inline">Vos prochaines sessions de coaching</span>
           </h2>
-          <p class="mt-1 hidden text-[12.5px] text-discret lg:block">
+          <p class="mb-[18px] hidden text-[12.5px] text-nuit-clair lg:block">
             Sessions de coaching collectif de 2 h · 25 places · rappel 24 h avant par email et WhatsApp
           </p>
-          <ul v-if="data.planning.length" class="mt-4 space-y-3">
+          <ul v-if="data.planning.length" class="flex flex-col gap-3">
             <li
               v-for="(session, i) in data.planning"
               :key="session.id"
-              class="rounded-[12px] border border-ligne-claire p-3.5"
+              class="rounded-champ bg-encre-800 p-4"
               :class="i > 0 && 'hidden lg:block'"
             >
-              <div class="flex items-center justify-between gap-2">
-                <p class="text-[13px] font-bold text-encre">{{ LIBELLE_JOUR(session.date) }} · {{ session.heure }} GMT</p>
-                <span class="rounded-full bg-fond-voile px-2 py-0.5 text-[11.5px] font-bold text-discret">
+              <div class="mb-1.5 flex items-center justify-between gap-2">
+                <p class="text-[14.5px] font-bold">{{ LIBELLE_JOUR(session.date) }} · {{ session.heure }} GMT</p>
+                <span class="shrink-0 rounded-full bg-nuit-pastille px-2.5 py-1 text-[11px] font-bold text-social-clair">
                   {{ session.joursAvant === 0 ? 'Aujourd’hui' : `J-${session.joursAvant}` }}
                 </span>
               </div>
-              <p class="mt-1 text-[13.5px] text-texte">
+              <p class="mb-2.5 text-[13px] text-ligne-grise">
                 <span class="hidden lg:inline">{{ session.thematique }} — </span>{{ session.formateur }}<span class="lg:hidden"> · Zoom</span>
               </p>
               <UiBaseButton
                 :to="session.inscrit && session.joursAvant === 0 ? `/mon-espace/session/${session.id}` : '/mon-espace/sessions'"
                 taille="sm"
-                class="mt-3 w-full"
-                :variante="session.inscrit && session.joursAvant === 0 ? 'social' : 'contour'"
+                class="w-full"
+                :variante="session.inscrit
+                  ? (session.joursAvant === 0 ? 'social' : 'verrouille-sombre')
+                  : 'contour-clair'"
                 :disabled="data.completionProfil < 100"
               >
                 {{ session.inscrit ? 'Rejoindre — actif le jour J' : 'Réserver ma place' }}
               </UiBaseButton>
             </li>
           </ul>
-          <p v-else class="mt-4 text-[13.5px] text-discret">Aucune session à venir pour vos modules.</p>
-          <EspaceVerrouProfil :completion="data.completionProfil" class="mt-4" />
+          <p v-else class="text-[13.5px] text-nuit-clair">Aucune session à venir pour vos modules.</p>
+          <EspaceVerrouProfil :completion="data.completionProfil" variante="sombre" class="mt-4 block" />
         </section>
       </aside>
     </div>

@@ -5,6 +5,10 @@ const ouvert = ref(false)
 
 watch(() => route.fullPath, () => (ouvert.value = false))
 
+// La maquette dresse le logo à pleine hauteur sur l'accueil et le rabat sur
+// les pages intérieures, où le contenu prime sur la marque.
+const accueil = computed(() => route.path === '/')
+
 const liens = [
   { libelle: 'Accueil', chemin: '/', couleur: '' },
   { libelle: 'Social Média', chemin: '/programmes/social-media', couleur: 'text-social' },
@@ -17,12 +21,13 @@ const liens = [
 
 <template>
   <header class="border-b border-ligne-claire bg-white">
-    <div class="conteneur flex items-center justify-between gap-6 py-[18px]">
+    <div class="conteneur flex items-center justify-between gap-6" :class="accueil ? 'py-[18px]' : 'py-3.5'">
       <NuxtLink to="/" aria-label="E-Masterclass Big Five — accueil">
         <img
           src="/images/brand/logo.png"
           alt="E-Masterclass Programme | Big Five"
-          class="block h-[46px] w-auto lg:h-[58px]"
+          class="block w-auto"
+          :class="accueil ? 'h-[46px] lg:h-[58px]' : 'h-9'"
           width="260"
           height="58"
         >
@@ -35,7 +40,8 @@ const liens = [
           :to="lien.chemin"
           class="hidden border-b-2 border-transparent pb-[3px] hover:opacity-70 lg:inline"
           :class="lien.couleur || 'text-encre'"
-          active-class="lien-actif"
+          exact-active-class="lien-actif"
+          :active-class="lien.chemin === '/' ? '' : 'lien-actif'"
         >
           {{ lien.libelle }}
         </NuxtLink>

@@ -48,7 +48,7 @@ onMounted(() => {
 
     <article class="mx-auto w-full max-w-[820px] bg-white p-10 shadow-lg print:max-w-none print:p-0 print:shadow-none">
       <header class="flex items-start justify-between gap-6 border-b border-ligne pb-6">
-        <img src="/images/brand/logo.png" alt="E-Masterclass | Big Five" class="h-12 w-auto">
+        <img src="/images/brand/logo.png" alt="E-Masterclass | Big Five" class="h-12 w-auto" width="176" height="48">
         <div class="text-right">
           <p class="surtitre text-discret">Relevé de rémunération</p>
           <p class="mt-1 font-title text-[22px] font-light">{{ formatMois(mois) }}</p>

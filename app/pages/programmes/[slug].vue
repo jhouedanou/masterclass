@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Formateur, Module, Programme, Thematique } from '#shared/types'
+import { dureeSessionEnHeures, PLACES_SESSION } from '#shared/utils/coaching'
 
 type ThematiqueGarnie = Thematique & { modules: (Module & { formateur: Formateur | null })[] }
 
@@ -17,6 +18,30 @@ if (!data.value) {
 const programme = computed(() => data.value!.programme)
 const social = computed(() => programme.value.slug === 'social-media')
 const filtre = ref('')
+
+/**
+ * Les quatre pilules du hero (planche A, écrans 02 et 02b). Elles annonçaient
+ * « 9 modules » et « 10 000 FCFA » en dur : le nombre suit maintenant le
+ * catalogue, et le prix les fiches. Le format de la session de coaching, lui,
+ * est une règle de la plateforme.
+ */
+const tousLesModules = computed(() => data.value!.thematiques.flatMap((t) => t.modules))
+
+const reperes = computed(() => {
+  const modules = tousLesModules.value
+  const prix = [...new Set(modules.map((m) => m.prixFcfa))]
+  // Un prix unique s'annonce tel quel ; plusieurs, on annonce le plus bas.
+  const prixAffiche = prix.length === 1 ? formatFcfa(prix[0]!, true) : `à partir de ${formatFcfa(Math.min(...prix), true)}`
+  return [
+    { valeur: `${modules.length} module${modules.length > 1 ? 's' : ''}`, suite: 'disponibles' },
+    { valeur: prixAffiche, suite: 'par module' },
+    { valeur: 'Accès à vie', suite: 'après l’achat' },
+    {
+      valeur: 'Coaching collectif',
+      suite: `de ${dureeSessionEnHeures()} — ${PLACES_SESSION} places`,
+    },
+  ]
+})
 
 const modulesAffiches = computed(() =>
   data.value!.thematiques
@@ -84,6 +109,8 @@ const mailles = computed(() => [
 ])
 useFilAriane(mailles)
 
+const config = useRuntimeConfig()
+
 useJsonLd(() => ({
   '@type': 'ItemList',
   name: `Modules du programme ${programme.value.nom}`,
@@ -91,7 +118,7 @@ useJsonLd(() => ({
     '@type': 'ListItem',
     position: i + 1,
     name: entree.module.titre,
-    url: `/modules/${entree.module.slug}`,
+    url: `${config.public.siteUrl}/modules/${entree.module.slug}`,
   })),
 }))
 </script>
@@ -108,22 +135,32 @@ useJsonLd(() => ({
         src="/images/brand/pattern.png"
         alt=""
         aria-hidden="true"
+        width="1144"
+        height="1090"
         class="pointer-events-none absolute top-0 right-0 hidden h-full w-[340px] object-cover md:block"
         :class="social ? 'opacity-[.28]' : 'opacity-[.24]'"
       >
       <div class="conteneur relative py-12">
-        <p class="surtitre text-white/80">Programme</p>
+        <!-- La maquette teinte le surtitre dans le clair du programme, pas en
+             blanc atténué : rose pâle sur le violet, bleuté sur le bleu. -->
+        <p class="surtitre" :class="social ? 'text-[#e6c7f0]' : 'text-[#c3c9ef]'">Programme</p>
         <h1 class="mt-3 font-title text-[44px] font-light lg:text-[56px]">
           {{ programme.nom }}
         </h1>
-        <p class="mt-4 max-w-[720px] text-[17px] leading-relaxed text-white/90">
+        <p
+          class="mt-4 max-w-[760px] text-[17px] leading-[1.65]"
+          :class="social ? 'text-[#f0e4f5]' : 'text-[#e3e6f7]'"
+        >
           {{ programme.descriptionProgramme }}
         </p>
-        <ul class="mt-7 flex flex-wrap gap-x-7 gap-y-2 text-[14px] text-white/85">
-          <li><b class="text-white">9 modules</b> disponibles</li>
-          <li><b class="text-white">10 000 FCFA TTC</b> par module</li>
-          <li><b class="text-white">Accès à vie</b> après l’achat</li>
-          <li><b class="text-white">Coaching collectif</b> de 2 heures — 25 places</li>
+        <ul class="mt-6.5 flex flex-wrap gap-3.5 text-[14px]">
+          <li
+            v-for="repere in reperes"
+            :key="repere.valeur"
+            class="rounded-full bg-white/15 px-4 py-2.25"
+          >
+            {{ repere.valeur }} {{ repere.suite }}
+          </li>
         </ul>
       </div>
     </section>
@@ -132,6 +169,7 @@ useJsonLd(() => ({
     <section class="py-14">
       <div class="conteneur">
         <UiEnTeteSection
+          taille-surtitre="page"
           surtitre="Les modules du programme"
           titre="Choisissez la compétence que vous souhaitez renforcer"
           :intro="
@@ -187,14 +225,19 @@ useJsonLd(() => ({
       </div>
     </section>
 
-    <!-- FAQ du programme -->
-    <section class="border-t border-ligne-claire bg-fond-clair py-14">
-      <div class="conteneur grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
+    <!-- FAQ du programme : une seule colonne bornée à 900 px, dans le
+         prolongement de la liste des modules — la maquette ne lui donne ni
+         fond propre, ni filet, ni colonne latérale. Le gabarit en deux
+         colonnes est celui de la FAQ d'accueil (écran 01). -->
+    <section class="pb-12">
+      <div class="conteneur">
         <UiEnTeteSection
+          taille-surtitre="page"
+          taille="sm"
           surtitre="FAQ du programme"
           :titre="`Vos questions sur le programme ${programme.nom}`"
         />
-        <UiAccordeonFaq taille="sm" :questions="faq" />
+        <UiAccordeonFaq class="mt-4.5 max-w-[900px]" taille="sm" :questions="faq" />
       </div>
     </section>
   </div>

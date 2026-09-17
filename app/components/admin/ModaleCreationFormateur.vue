@@ -65,9 +65,9 @@ async function creer() {
 
 <template>
   <div class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-encre/50 p-4">
-    <div class="my-6 w-full max-w-xl rounded-carte bg-white p-6">
+    <div class="my-6 w-full max-w-xl rounded-carte bg-white p-[26px] shadow-[0_16px_40px_rgba(23,21,28,.12)]">
       <template v-if="resultat">
-        <h2 class="font-title text-[21px] font-light">Compte formateur créé</h2>
+        <h2 class="font-sans text-[16px] font-bold">Compte formateur créé</h2>
         <p class="mt-2 text-[14px] text-texte">
           {{ formulaire.prenom }} {{ formulaire.nom }} peut se connecter avec {{ resultat.email }}.
           Son espace s’ouvre en « Formateur simple » ; le coaching privé s’active depuis la liste.
@@ -84,7 +84,7 @@ async function creer() {
       </template>
 
       <form v-else class="space-y-4" @submit.prevent="creer">
-        <h2 class="font-title text-[21px] font-light">
+        <h2 class="font-sans text-[16px] font-bold">
           {{ candidature ? 'Créer le compte formateur' : 'Ajouter un formateur' }}
         </h2>
         <p v-if="candidature" class="text-[13px] text-discret">Depuis la candidature {{ candidature.id }} — {{ candidature.nom }}.</p>
@@ -144,7 +144,7 @@ async function creer() {
           >
         </fieldset>
 
-        <p v-if="erreur" class="rounded-[10px] border border-erreur bg-[#fdeeee] p-3 text-[13.5px] text-erreur">{{ erreur }}</p>
+        <p v-if="erreur" class="rounded-[10px] border border-erreur bg-erreur-voile p-3 text-[13.5px] text-erreur">{{ erreur }}</p>
 
         <div class="flex flex-wrap gap-2">
           <UiBaseButton type="submit" taille="sm" :disabled="envoi">Créer le compte</UiBaseButton>

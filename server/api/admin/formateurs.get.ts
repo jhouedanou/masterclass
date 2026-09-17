@@ -1,10 +1,10 @@
 import { listerFormateurs, listerModules } from '../../database/catalogue'
 import { listerSessions } from '../../database/coaching'
 import { listerUtilisateurs } from '../../database/comptes'
-import { exigerAdmin } from '../../utils/session'
+import { exigerSection } from '../../utils/session'
 
 export default defineEventHandler(async (event) => {
-  await exigerAdmin(event)
+  await exigerSection(event, 'formateurs')
 
   const [formateurs, modules, sessions, utilisateurs] = await Promise.all([
     listerFormateurs(),

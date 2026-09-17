@@ -13,8 +13,8 @@ const emit = defineEmits<{ confirmer: []; annuler: [] }>()
 
 <template>
   <div class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">
-    <div class="w-full max-w-lg rounded-carte bg-white p-6">
-      <h2 class="font-title text-[21px] font-light">
+    <div class="w-full max-w-[460px] rounded-carte bg-white p-[26px] shadow-[0_16px_40px_rgba(23,21,28,.12)]">
+      <h2 class="font-sans text-[16px] font-bold">
         Activer le coaching privé pour {{ formateur.nom }} ?
       </h2>
       <ul class="mt-4 space-y-1.5 text-[13.5px] text-texte">

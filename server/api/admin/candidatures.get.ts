@@ -1,7 +1,7 @@
 import { listerCandidatures } from '../../database/administration'
-import { exigerAdmin } from '../../utils/session'
+import { exigerUneSection } from '../../utils/session'
 
 export default defineEventHandler(async (event) => {
-  await exigerAdmin(event)
+  await exigerUneSection(event, ['candidatures-formateurs', 'formateurs'])
   return await listerCandidatures()
 })

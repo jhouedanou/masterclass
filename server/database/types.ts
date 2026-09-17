@@ -139,6 +139,7 @@ export type FormateurRow = ColonnesSeo & {
   bio: string
   programme_principal: ProgrammeSlugSql
   photo: string
+  photo_alt: string | null
   fiche_complete: boolean
   coaching_prive_fcfa_heure: number
   position: number
@@ -449,6 +450,13 @@ export type TentativeVerificationRow = {
   cree_le: string
 }
 
+export type TentativePubliqueRow = {
+  id: string
+  ip: string
+  route: string
+  cree_le: string
+}
+
 export type DemandeCoachingPriveRow = {
   id: string
   utilisateur_id: string
@@ -627,6 +635,7 @@ export type Database = {
         FormateurRow,
         | 'cree_le'
         | 'maj_le'
+        | 'photo_alt'
         | 'coaching_prive_actif'
         | 'email_pro'
         | 'whatsapp'
@@ -750,6 +759,7 @@ export type Database = {
         'date_delivrance' | 'prenom_nom_confirme_le' | 'revoque_le' | 'motif_revocation'
       >
       tentatives_verification: Table<TentativeVerificationRow, 'id' | 'cree_le'>
+      tentatives_publiques: Table<TentativePubliqueRow, 'id' | 'cree_le'>
       demandes_coaching_prive: Table<
         DemandeCoachingPriveRow,
         | 'id'

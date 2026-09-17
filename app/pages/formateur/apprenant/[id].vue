@@ -20,7 +20,7 @@ usePagePrivee(`${fiche.value.nomAffiche} — fiche apprenant`)
 </script>
 
 <template>
-  <div v-if="fiche" class="max-w-[520px]">
+  <div v-if="fiche" class="max-w-[440px]">
     <button type="button" class="text-[14px] text-discret hover:underline" @click="$router.back()">
       ← Retour
     </button>

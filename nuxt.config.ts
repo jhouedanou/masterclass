@@ -19,9 +19,19 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   // Les icônes Phosphor sont servies depuis le paquet local, côté serveur
-  // comme côté client : sans cette liste, le rendu serveur allait les chercher
+  // comme côté client : sans ce réglage, le rendu serveur allait les chercher
   // sur l'API Iconify et échouait hors ligne.
   icon: {
+    // `serverBundle.icons` n'existe pas dans @nuxt/icon 2.5 : la liste qui s'y
+    // trouvait était ignorée par le module (`ServerBundleOptions` n'accepte que
+    // `collections`, `remote`, `disabled`, `externalizeIconsJson`) et faisait
+    // échouer `npm run typecheck`. Sans `collections`, le module retombe de
+    // toute façon sur les collections installées — c'est-à-dire Phosphor en
+    // entier. L'option est donc écrite telle qu'elle s'applique réellement.
+    //
+    // Réduire le paquet serveur aux seules icônes employées demande de passer
+    // une collection filtrée (`getIcons()` de @iconify/utils sur
+    // @iconify-json/ph), pas une liste de noms.
     serverBundle: { collections: ['ph'] },
     clientBundle: { scan: true, sizeLimitKb: 512 },
   },
@@ -175,6 +185,9 @@ export default defineNuxtConfig({
       '/apercu/**',
     ],
     sources: ['/api/__sitemap__/urls'],
+    // Le module met le sitemap en cache dix minutes en production. La spec
+    // demande une mise à jour à chaque publication : pas de cache.
+    cacheMaxAgeSeconds: 0,
   },
 
   // Spec SEO §9 : Organization global, le reste est posé page par page.
@@ -267,6 +280,62 @@ export default defineNuxtConfig({
       { name: 'Jost', provider: 'google', weights: [300, 400, 500, 600] },
       { name: 'Mulish', provider: 'google', weights: [400, 600, 700, 800] },
     ],
+  },
+
+  /**
+   * En-têtes de sécurité et cache des lectures publiques.
+   *
+   * **Les pages ne sont pas mises en cache, et c'est délibéré** : `app.vue`
+   * restaure la session avant le premier rendu, et l'en-tête public affiche
+   * « Mon espace » ou « Connexion » selon l'état. Une page mise en cache
+   * servirait le HTML d'un visiteur connecté à tous les autres. Seules les
+   * routes d'API du catalogue, qui ne dépendent d'aucun compte, sont cachées.
+   *
+   * La CSP n'est pas posée ici : le site charge GTM, le SDK FeexPay et le SDK
+   * Zoom depuis des domaines tiers, et `tracking.client.ts` injecte du script
+   * en ligne à dessein. Elle demande une campagne `Report-Only` avant d'être
+   * appliquée — les quatre en-têtes ci-dessous, eux, ne cassent rien.
+   */
+  routeRules: {
+    '/**': {
+      headers: {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'SAMEORIGIN',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+      },
+    },
+
+    // Contenu éditorial : il change à la publication, pas à la requête. Une
+    // minute suffit à absorber une pointe de trafic sans que l'équipe attende
+    // pour voir son travail en ligne.
+    // `/**` ne couvre pas le chemin nu : chaque route est déclarée dans ses
+    // deux formes, l'index et le détail.
+    '/api/modules': { cache: { maxAge: 60 } },
+    '/api/modules/**': { cache: { maxAge: 60 } },
+    '/api/programmes': { cache: { maxAge: 60 } },
+    '/api/programmes/**': { cache: { maxAge: 60 } },
+    '/api/formateurs': { cache: { maxAge: 60 } },
+    '/api/formateurs/**': { cache: { maxAge: 60 } },
+    '/api/articles': { cache: { maxAge: 60 } },
+    '/api/articles/**': { cache: { maxAge: 60 } },
+    '/api/thematiques': { cache: { maxAge: 300 } },
+    '/api/referentiels': { cache: { maxAge: 300 } },
+
+    // Rien de ce qui touche à un compte, à un paiement ou à une session ne doit
+    // être caché — pas même par un intermédiaire.
+    '/api/auth/**': { headers: { 'Cache-Control': 'no-store' } },
+    '/api/mon-espace/**': { headers: { 'Cache-Control': 'no-store' } },
+    '/api/admin/**': { headers: { 'Cache-Control': 'no-store' } },
+    '/api/formateur/**': { headers: { 'Cache-Control': 'no-store' } },
+    '/api/commandes': { headers: { 'Cache-Control': 'no-store' } },
+    '/api/commandes/**': { headers: { 'Cache-Control': 'no-store' } },
+    '/api/zoom/**': { headers: { 'Cache-Control': 'no-store' } },
+    '/api/taches/**': { headers: { 'Cache-Control': 'no-store' } },
+    '/api/paiements/**': { headers: { 'Cache-Control': 'no-store' } },
+    '/api/certificats/**': { headers: { 'Cache-Control': 'no-store' } },
+    // L'aperçu sert un brouillon à qui détient le jeton : jamais de cache.
+    '/api/apercu/**': { headers: { 'Cache-Control': 'no-store' } },
   },
 
   nitro: {

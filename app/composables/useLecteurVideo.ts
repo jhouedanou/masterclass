@@ -1,4 +1,8 @@
-import Hls from 'hls.js'
+// `hls.js` pèse 640 ko et ne sert qu'aux chapitres diffusés en HLS. L'import
+// statique le faisait charger avec la page de lecture même quand le chapitre
+// est un MP4 unique, cas que `charger()` traite dix lignes plus haut sans lui.
+// Le type seul est importé ici ; le module vient au moment où il sert.
+import type HlsType from 'hls.js'
 
 /**
  * Lecteur HLS et relevé du temps réellement visionné.
@@ -36,8 +40,14 @@ export function useLecteurVideo(options: {
   const progression = ref<number | null>(null)
   /** Niveau de qualité servi par le streaming adaptatif (« 480p »), affiché « Auto 480p ». */
   const qualite = ref<string | null>(null)
+  /** Vitesse de lecture. Un ref, et non un réglage à sens unique : la barre de
+   *  contrôles de la maquette l'affiche autant qu'elle la change. */
+  const vitesse = ref(1)
+  /** Suit l'état réel du plein écran : la touche Échap en sort sans passer par
+   *  notre bouton, et un booléen basculé à la main mentirait alors. */
+  const pleinEcran = ref(false)
 
-  let hls: Hls | null = null
+  let hls: HlsType | null = null
   let dernierInstant = 0
   let secondesEnvoyees = 0
   /** Position à restaurer après un renouvellement d'autorisation : changer la
@@ -135,10 +145,10 @@ export function useLecteurVideo(options: {
   function rechargerEnPlace() {
     repriseApres = video.value?.currentTime ?? 0
     reprendreLecture = Boolean(video.value && !video.value.paused)
-    charger()
+    void charger()
   }
 
-  function charger() {
+  async function charger() {
     const element = video.value
     const source = options.source()
     detruire()
@@ -158,6 +168,8 @@ export function useLecteurVideo(options: {
       element.src = source
       return
     }
+
+    const { default: Hls } = await import('hls.js')
 
     if (Hls.isSupported()) {
       hls = new Hls({ capLevelToPlayerSize: true, startLevel: -1 })
@@ -237,16 +249,71 @@ export function useLecteurVideo(options: {
 
   function brancher(element: HTMLVideoElement | null) {
     video.value = element
-    if (element) charger()
+    if (element) void charger()
   }
 
+  /**
+   * Déplace le curseur, en restant à l'intérieur du chapitre.
+   *
+   * Le quart de seconde retranché n'est pas décoratif : un clic à l'extrême
+   * droite du rail poserait `currentTime = duration`, ce que le navigateur
+   * traite comme une fin de lecture — le chapitre se serait marqué terminé sur
+   * un simple déplacement.
+   */
   function allerA(secondes: number) {
-    if (video.value) video.value.currentTime = secondes
+    const element = video.value
+    if (!element) return
+    const duree = element.duration || dureeSecondes.value
+    element.currentTime = duree ? Math.min(Math.max(0, secondes), duree - 0.25) : Math.max(0, secondes)
   }
 
-  function vitesse(valeur: number) {
-    if (video.value) video.value.playbackRate = valeur
+  /** Déplacement relatif, pour les flèches du clavier. */
+  function avancerDe(delta: number) {
+    allerA(positionSecondes.value + delta)
   }
+
+  /**
+   * Lecture ou pause. On passe par la balise et rien d'autre : `play()` et
+   * `pause()` émettent les évènements que `gestionnaires` écoute déjà, donc le
+   * relevé de visionnage part sur pause exactement comme avec les contrôles
+   * natifs.
+   */
+  function basculerLecture() {
+    const element = video.value
+    if (!element) return
+    if (element.paused) void element.play().catch(() => undefined)
+    else element.pause()
+  }
+
+  function surPleinEcran() {
+    pleinEcran.value = Boolean(document.fullscreenElement)
+  }
+
+  /**
+   * Plein écran sur la scène entière, pour que la barre de contrôles y suive.
+   * Safari iOS refuse le plein écran sur autre chose que la balise vidéo : il
+   * reprend alors ses propres contrôles, ce qui reste préférable à un bouton
+   * sans effet.
+   */
+  function basculerPleinEcran(conteneur: HTMLElement | null) {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen()
+      return
+    }
+    if (conteneur?.requestFullscreen) {
+      void conteneur.requestFullscreen().catch(() => undefined)
+      return
+    }
+    const element = video.value as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null
+    element?.webkitEnterFullscreen?.()
+  }
+
+  onMounted(() => document.addEventListener('fullscreenchange', surPleinEcran))
+  onBeforeUnmount(() => document.removeEventListener('fullscreenchange', surPleinEcran))
+
+  watch(vitesse, (valeur) => {
+    if (video.value) video.value.playbackRate = valeur
+  })
 
   const gestionnaires = {
     onPlay: () => {
@@ -266,6 +333,10 @@ export function useLecteurVideo(options: {
     onLoadedmetadata: () => {
       chargement.value = false
       dureeSecondes.value = video.value?.duration ?? 0
+      // Poser une nouvelle source remet `playbackRate` à 1 : sans cette ligne,
+      // un renouvellement d'autorisation ramenait la vidéo en 1× alors que la
+      // barre affichait toujours 1.25×.
+      if (video.value) video.value.playbackRate = vitesse.value
       // Renouvellement d'autorisation en cours de lecture : on reprend là où
       // l'apprenant en était, et on ne redémarre que si la vidéo tournait.
       if (repriseApres !== null && video.value) {
@@ -288,6 +359,10 @@ export function useLecteurVideo(options: {
     charger,
     rechargerEnPlace,
     allerA,
+    avancerDe,
+    basculerLecture,
+    basculerPleinEcran,
+    pleinEcran,
     vitesse,
     gestionnaires,
     enLecture,

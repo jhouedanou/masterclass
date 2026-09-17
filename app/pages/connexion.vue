@@ -15,6 +15,9 @@ const erreur = ref('')
 const tentativesRestantes = ref<number | null>(null)
 const enCours = ref(false)
 
+const CHAMP = 'w-full rounded-[10px] border-[1.5px] border-ligne px-3.5 py-[13px] text-[14px] focus:border-social focus:outline-none'
+const ETIQUETTE = 'mb-1.5 block text-[13px] font-bold text-encre'
+
 usePagePrivee('Connexion')
 
 async function soumettre() {
@@ -61,26 +64,27 @@ async function soumettre() {
 
 <template>
   <div>
-    <h1 class="text-[34px] font-medium">Connexion</h1>
-    <p class="mt-2 text-[15px] text-texte">
+    <h1 class="mb-1.5 text-center font-title text-[24px] font-light">Connexion</h1>
+    <p class="mb-5.5 text-center text-[13.5px] leading-[1.5] text-discret">
       Accédez à vos modules, vos sessions de coaching et vos certificats de participation.
     </p>
 
-    <form class="mt-8 space-y-4" @submit.prevent="soumettre">
-      <div v-if="erreur" class="rounded-[10px] border border-erreur bg-[#fdeeee] px-4 py-3 text-[14px] text-erreur" role="alert">
-        {{ erreur }}
-        <template v-if="tentativesRestantes !== null">
-          Il vous reste <b>{{ tentativesRestantes }} {{ tentativesRestantes > 1 ? 'tentatives' : 'tentative' }}</b>
-          avant verrouillage temporaire du compte (15 min).
-        </template>
-      </div>
+    <!-- L'avertissement coiffe le formulaire et rougit les deux champs refusés. -->
+    <p v-if="erreur" class="mb-4 rounded-[12px] border border-erreur-bordure bg-erreur-voile px-4 py-3.5 text-[13px] leading-[1.5] text-erreur-fonce" role="alert">
+      {{ erreur }}
+      <template v-if="tentativesRestantes !== null">
+        Il vous reste <b>{{ tentativesRestantes }} {{ tentativesRestantes > 1 ? 'tentatives' : 'tentative' }}</b>
+        avant verrouillage temporaire du compte (15 min).
+      </template>
+    </p>
 
+    <form class="flex flex-col gap-3.5" @submit.prevent="soumettre">
       <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Adresse email</span>
-        <input v-model="email" type="email" autocomplete="email" required class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[15px] focus:border-social focus:outline-none">
+        <span :class="ETIQUETTE">Adresse email</span>
+        <input v-model="email" type="email" autocomplete="email" required :class="[CHAMP, erreur && 'border-[#e0aab2]']">
       </label>
       <label class="block">
-        <span class="mb-1.5 block text-[13px] font-bold text-texte">Mot de passe</span>
+        <span :class="ETIQUETTE">Mot de passe</span>
         <div class="relative">
           <!-- `type` lié plutôt que deux champs alternés : un seul champ garde
                la valeur, le curseur et le remplissage du gestionnaire. -->
@@ -89,7 +93,7 @@ async function soumettre() {
             :type="motDePasseVisible ? 'text' : 'password'"
             autocomplete="current-password"
             required
-            class="w-full rounded-[10px] border border-ligne py-2.5 pr-12 pl-4 text-[15px] focus:border-social focus:outline-none"
+            :class="[CHAMP, 'pr-12', erreur && 'border-[#e0aab2]']"
           >
           <button
             type="button"
@@ -103,25 +107,22 @@ async function soumettre() {
         </div>
       </label>
 
-      <div class="flex items-center justify-between text-[14px]">
+      <div class="flex items-center justify-between text-[13px]">
         <label class="flex items-center gap-2 text-texte">
-          <input v-model="resterConnecte" type="checkbox">
+          <input v-model="resterConnecte" type="checkbox" class="size-4 accent-social">
           Rester connecté
         </label>
-        <NuxtLink to="/mot-de-passe-oublie" class="text-discret hover:underline">
-          Mot de passe oublié ?
-        </NuxtLink>
+        <NuxtLink to="/mot-de-passe-oublie" class="font-bold">Mot de passe oublié ?</NuxtLink>
       </div>
 
-      <UiBaseButton type="submit" class="w-full" taille="lg" :disabled="enCours">
+      <UiBaseButton type="submit" class="w-full" variante="sombre" taille="lg" :disabled="enCours">
         {{ enCours ? 'Connexion…' : 'Me connecter' }}
       </UiBaseButton>
+
+      <p class="text-center text-[13px] text-discret">
+        Pas encore de compte ?
+        <NuxtLink to="/inscription" class="font-bold">Créez-en un</NuxtLink>
+      </p>
     </form>
-
-    <p class="mt-6 text-center text-[14px] text-texte">
-      Pas encore de compte ?
-      <NuxtLink to="/inscription" class="font-bold">Créez-en un</NuxtLink>
-    </p>
-
   </div>
 </template>

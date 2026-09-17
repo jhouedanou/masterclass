@@ -1,5 +1,11 @@
 <template>
-  <LegalPageLegale titre="Mentions légales" chemin="/mentions-legales" maj="1er août 2026">
+  <LegalPageLegale
+    cle="mentions-legales"
+    titre="Mentions légales"
+    chemin="/mentions-legales"
+    maj="1er août 2026"
+    repli-provisoire
+  >
     <h2>Éditeur</h2>
     <p>
       La plateforme E-Masterclass Big Five est éditée par BigFiveAbidjan SARL, RCCM

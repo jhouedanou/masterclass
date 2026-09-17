@@ -1,7 +1,7 @@
 import { enregistrerJournal } from '../../database/administration'
 import { listerThematiques, trouverFormateur } from '../../database/catalogue'
 import { creerSession } from '../../database/coaching'
-import { exigerAdmin } from '../../utils/session'
+import { exigerSection } from '../../utils/session'
 import { creerReunion, debutSession } from '../../utils/zoom'
 
 /**
@@ -12,7 +12,7 @@ import { creerReunion, debutSession } from '../../utils/zoom'
  * partiel : deux planifications simultanées ne peuvent plus se doubler.
  */
 export default defineEventHandler(async (event) => {
-  const admin = await exigerAdmin(event)
+  const admin = await exigerSection(event, 'calendrier-sessions')
   const body = await readBody<{
     thematiqueId: string
     formateurId: string

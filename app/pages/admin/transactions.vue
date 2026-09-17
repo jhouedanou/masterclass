@@ -6,7 +6,8 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Transactions — administration')
 
 const auth = useAuthStore()
-const statut = ref<'' | 'reussie' | 'echouee' | 'en-attente'>('')
+// Valeur de pilule : une chaîne, comme l'attend `UiFiltrePilule`.
+const statut = ref('')
 const codeEchec = ref<'' | CodeEchecPaiement | 'autre'>('')
 // Mois courant par défaut : l'écran 18f s'ouvre sur « Sept. 2026 ▾ ».
 const mois = ref(new Date().toISOString().slice(0, 7))
@@ -45,7 +46,26 @@ const moisCourt = (valeur: string) => {
 
 // Le mois courant peut ne rien contenir encore : il reste proposé pour que le
 // sélecteur affiche toujours ce qui est filtré.
-const moisProposes = computed(() => [...new Set([mois.value, ...(data.value?.moisDisponibles ?? [])].filter(Boolean))])
+const optionsMois = computed(() => [
+  ...[...new Set([mois.value, ...(data.value?.moisDisponibles ?? [])].filter(Boolean))].map((m) => ({
+    valeur: m,
+    libelle: moisCourt(m),
+  })),
+  { valeur: '', libelle: 'Tous les mois' },
+])
+
+const optionsStatut = [
+  { valeur: '', libelle: 'Tous statuts' },
+  { valeur: 'reussie', libelle: 'Réussies' },
+  { valeur: 'echouee', libelle: 'Échouées' },
+  { valeur: 'en-attente', libelle: 'En attente' },
+]
+
+/**
+ * La maquette peint chaque motif d'échec d'une teinte propre, de la plus grave
+ * à la plus anodine ; aucune n'a de jeton, l'ordre du tableau fait la couleur.
+ */
+const COULEURS_MOTIF = ['#c03434', '#d96a3b', '#a06a12', '#6d6a75', '#8a8695', '#c9c4d3']
 
 const echecsAffiches = computed(() => (data.value?.transactions ?? []).filter((t) => t.statut === 'echouee'))
 
@@ -74,156 +94,142 @@ function exporter() {
 
 <template>
   <div>
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="font-title text-[26px] font-light">
+    <div class="mb-[18px] flex flex-wrap items-center justify-between gap-3">
+      <h1 class="font-title text-[22px] font-light">
         Échecs de paiement
         <template v-if="data"> — {{ data.echecs.total }} tentative{{ data.echecs.total > 1 ? 's' : '' }} non abouties</template>
       </h1>
-      <div v-if="data" class="flex flex-wrap gap-2">
-        <select v-model="mois" class="rounded-full border border-ligne bg-white px-3.5 py-2 text-[13px]" aria-label="Mois">
-          <option v-for="m in moisProposes" :key="m" :value="m">{{ moisCourt(m) }} ▾</option>
-          <option value="">Tous les mois</option>
-        </select>
-        <UiBaseButton taille="sm" variante="contour" @click="exporter">Exporter CSV</UiBaseButton>
-      </div>
+      <UiFiltrePilule v-if="data" v-model="mois" etiquette="Mois" :options="optionsMois" />
     </div>
 
     <!-- Droit « Transactions » réservé à l'administrateur supérieur. -->
-    <div v-if="error" class="mt-6 rounded-[14px] border border-ligne bg-white p-10 text-center">
-      <p class="text-[28px]">🔒</p>
-      <p class="mt-3 font-title text-[21px] font-light">Accès restreint</p>
-      <p class="mx-auto mt-2 max-w-[520px] text-[14px] text-texte">
-        Votre compte ({{ auth.utilisateur?.role }}) n’a pas le droit « Transactions ». Seul un
-        administrateur de niveau supérieur peut vous l’accorder. Cette tentative d’accès est
-        journalisée.
+    <div v-if="error" class="rounded-carte border border-ligne bg-white p-9 text-center">
+      <p class="mx-auto mb-3 grid size-14 place-items-center rounded-full bg-piste text-[22px] text-discret">🔒</p>
+      <b class="text-[16px]">Transactions &amp; paiements — accès restreint</b>
+      <p class="mx-auto mt-2 max-w-[480px] text-[13px] leading-[1.6] text-discret">
+        Votre compte ({{ auth.utilisateur?.role }}) n’a pas le droit « Transactions ». Seul un admin
+        de niveau supérieur peut vous l’accorder. Cette tentative d’accès a été journalisée.
       </p>
     </div>
 
     <template v-else-if="data">
-      <!-- 18f · Répartition par motif -->
-      <section class="mt-5 rounded-[14px] border border-ligne-douce bg-white p-6">
-        <h2 class="font-title text-[19px] font-light">Répartition par motif (données FeexPay)</h2>
-        <ul class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <li v-for="m in data.echecs.parMotif" :key="m.code">
-            <button
-              class="w-full rounded-[10px] border px-3.5 py-2.5 text-left text-[13.5px]"
-              :class="codeEchec === m.code ? 'border-encre bg-encre text-white' : 'border-ligne text-texte'"
-              :aria-pressed="codeEchec === m.code"
-              @click="codeEchec = codeEchec === m.code ? '' : m.code; statut = codeEchec ? 'echouee' : statut"
-            >
-              <span class="flex justify-between gap-3">
-                <span>{{ m.libelle }}</span>
-                <span :class="codeEchec === m.code ? '' : 'text-discret'">{{ m.total }} · {{ m.part }} %</span>
-              </span>
-              <span class="mt-1.5 block h-1.5 w-full rounded-full" :class="codeEchec === m.code ? 'bg-white/30' : 'bg-fond-voile'">
-                <span class="block h-full rounded-full" :class="codeEchec === m.code ? 'bg-white' : 'bg-erreur'" :style="{ width: `${m.part}%` }" />
-              </span>
-            </button>
-          </li>
-        </ul>
-        <p class="mt-4 text-[12.5px] text-discret">
-          <template v-if="data.echecs.partPayesJ1 !== null">
-            {{ data.echecs.partPayesJ1 }} % des échecs sont suivis d’un paiement réussi dans les 24 h —
-          </template>
-          <template v-else>Aucun échec sur le mois —</template>
-          relance automatique email + WhatsApp après un échec « solde insuffisant ».
-        </p>
-      </section>
+      <!-- 18f · répartition des échecs et détail, côte à côte. -->
+      <div class="grid items-start gap-4 xl:grid-cols-[1fr_1.2fr]">
+        <section class="rounded-bloc border border-ligne-douce bg-white p-[22px]">
+          <h2 class="font-sans text-[15px] font-bold">Répartition par motif (données FeexPay)</h2>
+          <ul class="mt-4 flex flex-col gap-[11px] text-[13px]">
+            <li v-for="(m, i) in data.echecs.parMotif" :key="m.code">
+              <!-- Chaque motif filtre le détail ; au repos la ligne est celle
+                   de la maquette, la sélection se lit sur le libellé. -->
+              <button
+                class="block w-full text-left"
+                :aria-pressed="codeEchec === m.code"
+                @click="codeEchec = codeEchec === m.code ? '' : m.code; statut = codeEchec ? 'echouee' : statut"
+              >
+                <span class="mb-[5px] flex justify-between gap-3">
+                  <span :class="codeEchec === m.code && 'font-bold text-social'">{{ m.libelle }}</span>
+                  <b>{{ m.total }} · {{ m.part }} %</b>
+                </span>
+                <span class="block h-[9px] rounded-full bg-piste">
+                  <span
+                    class="block h-full rounded-full"
+                    :style="{ width: `${m.part}%`, background: COULEURS_MOTIF[i % COULEURS_MOTIF.length] }"
+                  />
+                </span>
+              </button>
+            </li>
+          </ul>
+          <p class="mt-4 rounded-[10px] border border-succes-bordure bg-succes-voile px-[15px] py-3 text-[12.5px] leading-[1.6] text-succes-fonce">
+            <template v-if="data.echecs.partPayesJ1 !== null">
+              {{ data.echecs.partPayesJ1 }} % des échecs sont suivis d’un paiement réussi dans les
+              24 h —
+            </template>
+            <template v-else>Aucun échec sur le mois —</template>
+            relance automatique email + WhatsApp après un échec « solde insuffisant ».
+          </p>
+        </section>
 
-      <div class="mt-5 flex flex-wrap gap-2" role="group" aria-label="Filtrer par statut">
-        <button
-          v-for="option in [
-            { valeur: '', libelle: 'Toutes' },
-            { valeur: 'reussie', libelle: 'Réussies' },
-            { valeur: 'echouee', libelle: 'Échouées' },
-            { valeur: 'en-attente', libelle: 'En attente' },
-          ]"
-          :key="option.valeur"
-          class="rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold"
-          :class="statut === option.valeur ? 'border-encre bg-encre text-white' : 'border-ligne text-texte'"
-          @click="statut = option.valeur as typeof statut; if (option.valeur !== 'echouee') codeEchec = ''"
+        <AdminTableauSimple
+          :colonnes="['Réf. FeexPay', 'Apprenant', 'Motif', 'Moyen', 'Suite']"
+          :largeurs="['120px', 'calc((100% - 370px) * 0.5455)', 'calc((100% - 370px) * 0.4545)', '120px', '130px']"
+          largeur-min="620px"
         >
-          {{ option.libelle }}
-        </button>
+          <tr v-for="t in echecsAffiches" :key="t.reference">
+            <td class="px-[18px] py-[13px] font-mono text-[12.5px]">{{ t.referencePrestataire ?? t.reference }}</td>
+            <td class="px-[18px] py-[13px] text-[12.5px]">
+              {{ t.apprenant }}
+              <span class="block text-[12px] text-discret">{{ t.module }} · {{ formatDate(t.date) }}</span>
+            </td>
+            <td class="px-[18px] py-[13px] text-[12.5px] font-bold text-erreur">
+              {{ t.motif }}
+              <span v-if="t.detailEchec" class="block font-normal text-discret">{{ t.detailEchec }}</span>
+            </td>
+            <td class="px-[18px] py-[13px] text-[12.5px]">{{ t.moyen }}</td>
+            <td class="px-[18px] py-[13px]">
+              <span
+                v-if="t.suite"
+                class="block rounded-full px-[9px] py-[3px] text-center text-[10.5px] font-bold whitespace-nowrap"
+                :class="{
+                  'bg-succes-voile text-succes': t.suite === 'paye-j1',
+                  'bg-alerte-voile text-alerte': t.suite === 'relance',
+                  'bg-piste text-discret': t.suite === 'sans-suite',
+                }"
+              >
+                {{ LIBELLES_SUITE[t.suite] }}
+              </span>
+            </td>
+          </tr>
+          <tr v-if="!echecsAffiches.length">
+            <td colspan="5" class="px-4 py-6 text-center text-[13px] text-discret">Aucun échec dans ce filtre.</td>
+          </tr>
+        </AdminTableauSimple>
       </div>
 
-      <!-- Vue « échecs » de la maquette : Réf. FeexPay · Apprenant · Motif · Moyen · Suite -->
-      <AdminTableauSimple
-        v-if="statut === 'echouee'"
-        class="mt-4"
-        :colonnes="['Réf. FeexPay', 'Apprenant', 'Motif', 'Moyen', 'Suite']"
-      >
-        <tr v-for="t in echecsAffiches" :key="t.reference">
-          <td class="px-4 py-3 font-mono text-[12.5px]">{{ t.referencePrestataire ?? t.reference }}</td>
-          <td class="px-4 py-3">
-            {{ t.apprenant }}
-            <span class="block text-[12px] text-discret">{{ t.module }} · {{ formatDate(t.date) }}</span>
-          </td>
-          <td class="px-4 py-3 text-[12.5px]">
-            <span class="font-bold">{{ t.motif }}</span>
-            <span v-if="t.detailEchec" class="block text-discret">{{ t.detailEchec }}</span>
-          </td>
-          <td class="px-4 py-3">{{ t.moyen }}</td>
-          <td class="px-4 py-3">
-            <span
-              v-if="t.suite"
-              class="rounded-full px-2.5 py-1 text-[11px] font-bold"
-              :class="{
-                'bg-succes-voile text-succes': t.suite === 'paye-j1',
-                'bg-alerte-voile text-alerte': t.suite === 'relance',
-                'bg-fond-voile text-discret': t.suite === 'sans-suite',
-              }"
-            >
-              {{ LIBELLES_SUITE[t.suite] }}
-            </span>
-          </td>
-        </tr>
-        <tr v-if="!echecsAffiches.length">
-          <td colspan="5" class="px-4 py-6 text-center text-[13px] text-discret">Aucun échec dans ce filtre.</td>
-        </tr>
-      </AdminTableauSimple>
+      <!-- 14 · vue autorisée : la carte grise de la maquette, tableau à
+           l'intérieur. -->
+      <section class="mt-5 rounded-carte border border-ligne bg-fond-cadre p-[26px]">
+        <div class="mb-3.5 flex flex-wrap items-center justify-between gap-2.5">
+          <b class="text-[15px]">Transactions — vue autorisée (admin principal)</b>
+          <span class="flex flex-wrap items-center gap-2">
+            <UiFiltrePilule v-model="statut" etiquette="Statut" :options="optionsStatut" />
+            <UiBaseButton taille="sm" variante="contour" @click="exporter">Exporter CSV</UiBaseButton>
+          </span>
+        </div>
 
-      <AdminTableauSimple
-        v-else
-        class="mt-4"
-        :colonnes="['Réf. FeexPay', 'Date', 'Apprenant', 'Module', 'Moyen', 'Montant', 'Statut', 'Motif', 'Suite']"
-      >
-        <tr v-for="t in data.transactions" :key="t.reference">
-          <td class="px-4 py-3 font-mono text-[12.5px]">{{ t.referencePrestataire ?? t.reference }}</td>
-          <td class="px-4 py-3 text-[12.5px]">{{ formatDate(t.date) }}</td>
-          <td class="px-4 py-3">{{ t.apprenant }}</td>
-          <td class="px-4 py-3">{{ t.module }}</td>
-          <td class="px-4 py-3">{{ t.moyen }}</td>
-          <td class="px-4 py-3">{{ formatFcfa(t.montant) }}</td>
-          <td class="px-4 py-3">
-            <span
-              class="rounded-full px-2.5 py-1 text-[11px] font-bold"
-              :class="{
-                'bg-succes-voile text-succes': t.statut === 'reussie',
-                'bg-[#fdeeee] text-erreur': t.statut === 'echouee',
-                'bg-alerte-voile text-alerte': t.statut === 'en-attente',
-              }"
-            >
-              {{ LIBELLES_STATUT[t.statut] }}
-            </span>
-          </td>
-          <td class="px-4 py-3 text-[12.5px]">
-            <template v-if="t.statut === 'echouee'">
-              <span class="font-bold">{{ t.motif }}</span>
-              <span v-if="t.detailEchec" class="block text-discret">{{ t.detailEchec }}</span>
-            </template>
-            <span v-else class="text-discret">—</span>
-          </td>
-          <td class="px-4 py-3 text-[12.5px]">{{ t.suite ? LIBELLES_SUITE[t.suite] : '—' }}</td>
-        </tr>
-        <tr v-if="!data.transactions.length">
-          <td colspan="9" class="px-4 py-6 text-center text-[13px] text-discret">Aucune transaction dans ce filtre.</td>
-        </tr>
-      </AdminTableauSimple>
+        <AdminTableauSimple
+          :colonnes="['Réf. FeexPay', 'Apprenant', 'Module', 'Moyen', 'Montant', 'Statut']"
+          :largeurs="['130px', 'calc((100% - 470px) * 0.5652)', 'calc((100% - 470px) * 0.4348)', '120px', '110px', '110px']"
+          largeur-min="740px"
+        >
+          <tr v-for="t in data.transactions" :key="t.reference">
+            <td class="px-4 py-[13px] font-mono text-[12.5px]">{{ t.referencePrestataire ?? t.reference }}</td>
+            <td class="px-4 py-[13px] text-[12.5px]">{{ t.apprenant }}</td>
+            <td class="px-4 py-[13px] text-[12.5px]">{{ t.module }}</td>
+            <td class="px-4 py-[13px] text-[12.5px]">{{ t.moyen }}</td>
+            <td class="px-4 py-[13px] text-[12.5px] font-bold">{{ formatFranc(t.montant) }}</td>
+            <td class="px-4 py-[13px]">
+              <span
+                class="block rounded-full px-[9px] py-[3px] text-center text-[10.5px] font-bold whitespace-nowrap"
+                :class="{
+                  'bg-succes-voile text-succes': t.statut === 'reussie',
+                  'bg-erreur-voile text-erreur-fonce': t.statut === 'echouee',
+                  'bg-alerte-voile text-alerte': t.statut === 'en-attente',
+                }"
+              >
+                {{ LIBELLES_STATUT[t.statut] }}
+              </span>
+            </td>
+          </tr>
+          <tr v-if="!data.transactions.length">
+            <td colspan="6" class="px-4 py-6 text-center text-[13px] text-discret">Aucune transaction dans ce filtre.</td>
+          </tr>
+        </AdminTableauSimple>
 
-      <p class="mt-3 text-[12.5px] text-discret">
-        Lecture seule — la source de vérité comptable reste le back-office FeexPay.
-      </p>
+        <p class="mt-2.5 text-[11.5px] text-discret">
+          Lecture seule — la source de vérité comptable reste le back-office FeexPay.
+          Rapprochement automatique quotidien.
+        </p>
+      </section>
     </template>
   </div>
 </template>

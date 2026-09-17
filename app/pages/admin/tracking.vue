@@ -11,6 +11,6 @@ usePagePrivee('Tracking & pixels')
 <template>
   <div>
     <h1 class="font-title text-[23px] font-light">Tracking &amp; pixels</h1>
-    <AdminVoletTracking class="mt-3" />
+    <AdminVoletTracking class="mt-1.5" />
   </div>
 </template>

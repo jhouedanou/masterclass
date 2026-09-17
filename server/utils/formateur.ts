@@ -1,4 +1,4 @@
-import type { SessionCoaching, Thematique } from '#shared/types'
+import type { NoteFormateur, SessionCoaching, SujetSession, Thematique } from '#shared/types'
 import { listerFormateurs, listerModules, listerThematiques, trouverFormateur } from '../database/catalogue'
 import { listerAcces } from '../database/comptes'
 import {
@@ -134,6 +134,22 @@ export async function statistiquesModules(
     })
 }
 
+/** Ligne du tableau « Mes revenus » (planche D, écran 06). */
+interface LigneRevenusFormateur {
+  libelle: string
+  ventes: number
+  /** « 3 séances » : la maquette compte les coachings en séances, non en
+   *  ventes. Absent, la colonne affiche le nombre seul. */
+  ventesLibelle?: string
+  ca: number
+  marge: number
+  part: number
+  /** La ligne de coaching a sa propre rangée sur l'écran mobile (écran 07),
+   *  libellée « Coaching privé (5 h) » : elle s'y retrouve par ce repère
+   *  plutôt qu'en relisant son libellé. */
+  coachingHeures?: number
+}
+
 /**
  * Rémunération du formateur.
  *
@@ -161,7 +177,7 @@ export async function revenusFormateur(formateurId: string, filtre: FiltreFormat
     (t) => t.statut === 'reussie' && dansPeriode(t.date.slice(0, 10), filtre),
   )
 
-  const lignes = siens
+  const lignes: LigneRevenusFormateur[] = siens
     .map((m) => {
       const ventes = reussies.filter((t) => t.moduleId === m.id)
       const ca = ventes.reduce((somme, t) => somme + t.montant, 0)
@@ -194,6 +210,8 @@ export async function revenusFormateur(formateurId: string, filtre: FiltreFormat
     lignes.push({
       libelle: `Coaching privé — ${heures} h à ${new Intl.NumberFormat('fr-FR').format(tarif)} F`,
       ventes: seances.length,
+      ventesLibelle: `${seances.length} séance${seances.length > 1 ? 's' : ''}`,
+      coachingHeures: heures,
       ca: caCoaching,
       marge: margeCoaching,
       part: Math.round(margeCoaching * partFormateur),
@@ -209,6 +227,9 @@ export async function revenusFormateur(formateurId: string, filtre: FiltreFormat
     total: {
       ca,
       frais,
+      // « FeexPay — 4 % » : le taux affiché sous la carte est celui des
+      // réglages financiers, non une valeur écrite dans la vue.
+      fraisPourcent: reglages.fraisPaiementPourcent,
       marge,
       remuneration: Math.round(marge * partFormateur),
       margePlateforme: Math.round(marge * partPlateforme),
@@ -228,14 +249,20 @@ export interface SessionFormateur extends SessionCoaching {
   nbNotes: number
 }
 
+/**
+ * `notesDejaLues` évite de relire `notes_formateurs` quand l'appelant les a
+ * déjà : la vue d'ensemble du formateur les demandait trois fois pour un seul
+ * écran — ici, dans `aTraiterFormateur`, et pour sa propre moyenne.
+ */
 export async function sessionsFormateur(
   formateurId: string,
   filtre: FiltreFormateur = {},
+  notesDejaLues?: NoteFormateur[],
 ): Promise<SessionFormateur[]> {
   const [sessions, thematiques, notes] = await Promise.all([
     listerSessions(),
     listerThematiques(),
-    listerNotesFormateur(formateurId),
+    notesDejaLues ?? listerNotesFormateur(formateurId),
   ])
 
   // La table des notes ne porte pas de séance : une note collective est
@@ -300,16 +327,39 @@ export interface ATraiter {
   nouvellesNotes: number
   /** Session dont les sujets sont à lire, pour « avant le 10/09 ». */
   prochaineSessionDate: string | null
+  /** Carte « Coaching privé — sam 12/09 · 10h00 » du téléphone (écran 07). */
+  prochaineSeancePrivee: {
+    apprenant: string
+    creneau: string | null
+    heures: number
+    sujetsSoumis: boolean
+  } | null
+}
+
+/** Ce que la vue d'ensemble a déjà chargé, et qu'il serait absurde de relire. */
+export interface DejaLu {
+  sessions?: SessionFormateur[]
+  notes?: NoteFormateur[]
+  sujetsProchaineSession?: SujetSession[]
 }
 
 /**
  * Bloc « À traiter » (planche D, écran 01) et pastille « Coaching privé 2 » de
  * la navigation : trois compteurs qui appellent un geste du formateur.
+ *
+ * La fonction lisait `notes_formateurs` deux fois — une fois pour son propre
+ * compteur, une fois à l'intérieur de `sessionsFormateur`. Et la vue d'ensemble
+ * rejouait l'ensemble alors que le gabarit de l'espace venait de l'appeler en
+ * parallèle : le même écran faisait deux fois les six mêmes requêtes. D'où
+ * `dejaLu`, que la vue d'ensemble remplit avec ce qu'elle a sous la main.
  */
-export async function aTraiterFormateur(formateurId: string): Promise<ATraiter> {
-  const [sessions, notes, demandes] = await Promise.all([
-    sessionsFormateur(formateurId),
-    listerNotesFormateur(formateurId),
+export async function aTraiterFormateur(
+  formateurId: string,
+  dejaLu: DejaLu = {},
+): Promise<ATraiter> {
+  const notes = dejaLu.notes ?? (await listerNotesFormateur(formateurId))
+  const [sessions, demandes] = await Promise.all([
+    dejaLu.sessions ?? sessionsFormateur(formateurId, {}, notes),
     listerDemandesCoachingPriveFormateur(formateurId),
   ])
 
@@ -318,17 +368,32 @@ export async function aTraiterFormateur(formateurId: string): Promise<ATraiter> 
     sessions
       .filter((s) => s.statut === 'planifiee' && s.date >= aujourdhui)
       .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null
-  const sujets = prochaine ? await listerSujetsSessions([prochaine.id]) : []
+  const sujets = dejaLu.sujetsProchaineSession
+    ?? (prochaine ? await listerSujetsSessions([prochaine.id]) : [])
 
   const depuisUnMois = new Date(Date.now() - FENETRE_NOUVELLES_NOTES_JOURS * 86_400_000)
     .toISOString()
     .slice(0, 10)
 
+  // Séances payées, la plus anciennement calée en tête : `creneau` est un
+  // libellé d'affichage, c'est la date de calage qui ordonne.
+  const payees = demandes
+    .filter((d) => d.statut === 'payee')
+    .sort((a, b) => (a.creneauRetenuLe ?? a.recueLe).localeCompare(b.creneauRetenuLe ?? b.recueLe))
+
   return {
-    coachingPrive: demandes.filter((d) => d.statut === 'payee').length,
+    coachingPrive: payees.length,
     sujetsALire: sujets.filter((s) => !s.luLe).length,
     nouvellesNotes: notes.filter((n) => n.date >= depuisUnMois).length,
     prochaineSessionDate: prochaine?.date ?? null,
+    prochaineSeancePrivee: payees[0]
+      ? {
+          apprenant: payees[0].apprenant,
+          creneau: payees[0].creneau ?? null,
+          heures: payees[0].heures,
+          sujetsSoumis: Boolean(payees[0].besoins.trim()),
+        }
+      : null,
   }
 }
 

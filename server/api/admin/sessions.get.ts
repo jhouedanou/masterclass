@@ -1,9 +1,9 @@
 import { listerFormateurs, listerModules, listerThematiques } from '../../database/catalogue'
 import { listerSessions } from '../../database/coaching'
-import { exigerAdmin } from '../../utils/session'
+import { exigerSection } from '../../utils/session'
 
 export default defineEventHandler(async (event) => {
-  await exigerAdmin(event)
+  await exigerSection(event, 'calendrier-sessions')
   const { programme, statut, thematique, formateur } = getQuery(event) as Record<
     string,
     string | undefined

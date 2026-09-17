@@ -1,3 +1,4 @@
+import { limiterDebit } from '../utils/debit'
 import { notifier } from '../utils/notifications'
 
 /**
@@ -7,6 +8,7 @@ import { notifier } from '../utils/notifications'
  * réception part aussitôt : « un accusé vient de vous être adressé ».
  */
 export default defineEventHandler(async (event) => {
+  await limiterDebit(event, 'contact')
   const body = await readBody<{
     nom?: string
     email?: string
@@ -21,7 +23,25 @@ export default defineEventHandler(async (event) => {
   const sujet = (body.sujet ?? '').trim()
   const message = (body.message ?? '').trim()
 
+  // Le corps part en variables de gabarit d'e-mail : chaque champ est borné,
+  // pour qu'un formulaire public ne serve pas à pousser un roman dans la boîte
+  // de l'équipe.
+  const LONGUEURS: Record<string, number> = {
+    nom: 120,
+    email: 254,
+    whatsapp: 30,
+    sujet: 120,
+    reference: 120,
+    message: 5000,
+  }
+
   const erreurs: Record<string, string> = {}
+  for (const [champ, maximum] of Object.entries(LONGUEURS)) {
+    const valeur = (body as Record<string, string | undefined>)[champ] ?? ''
+    if (valeur.trim().length > maximum) {
+      erreurs[champ] = `Ce champ est limité à ${maximum} caractères.`
+    }
+  }
   if (!nom) erreurs.nom = 'Indiquez votre nom et prénom.'
   if (!email) erreurs.email = 'Indiquez votre adresse email.'
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {

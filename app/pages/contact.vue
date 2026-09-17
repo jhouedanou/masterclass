@@ -99,9 +99,10 @@ const etat = ref<'saisie' | 'envoi' | 'envoye' | 'erreur'>('saisie')
 /** Erreurs par champ, renvoyées par le serveur (« Adresse email incomplète — vérifiez le format. »). */
 const erreurs = ref<Record<string, string>>({})
 
-const CHAMP = 'w-full rounded-[10px] border px-4 py-2.5 text-[15px] focus:outline-none'
+const CHAMP = 'w-full rounded-[10px] border-[1.5px] px-3.5 py-[13px] text-[14px] focus:outline-none'
+const ETIQUETTE = 'mb-1.5 block text-[13px] font-bold text-encre'
 function classeChamp(nom: string) {
-  return [CHAMP, erreurs.value[nom] ? 'border-erreur bg-[#fdeeee] focus:border-erreur' : 'border-ligne focus:border-social']
+  return [CHAMP, erreurs.value[nom] ? 'border-[#c9505b] focus:border-erreur' : 'border-ligne focus:border-social']
 }
 
 function verifierEmail() {
@@ -154,52 +155,49 @@ useJsonLd({
 </script>
 
 <template>
-  <div>
-    <section class="rayures-social border-b border-ligne-claire">
-      <div class="conteneur py-12">
-        <UiSurtitre ton="social">Contact et assistance</UiSurtitre>
-        <h1 class="mt-3 text-[42px] font-medium">Une question ? Parlons-en.</h1>
-        <p class="mt-4 max-w-[760px] text-[17px] leading-relaxed text-texte">
-          Consultez les réponses aux questions fréquentes ou contactez notre équipe. Pour une
-          question rapide, privilégiez WhatsApp. Pour une demande détaillée ou administrative,
-          utilisez le formulaire.
-        </p>
-        <UiBaseButton
-          class="mt-6"
-          variante="whatsapp"
-          taille="lg"
-          :href="lienWhatsApp('Bonjour, j’ai une question.')"
-        >
-          <Icon name="ph:whatsapp-logo-fill" size="20" />
-          Discuter sur WhatsApp
-        </UiBaseButton>
-      </div>
-    </section>
+  <!-- Planche A, écran 08 : présentation et FAQ à gauche, formulaire encadré à droite. -->
+  <div class="conteneur grid items-start gap-14 py-14 lg:grid-cols-2">
+    <div>
+      <UiSurtitre ton="discret" taille="section">Contact et assistance</UiSurtitre>
+      <h1 class="mt-2.5 mb-2.5 font-title text-[38px] font-light">Une question ? Parlons-en.</h1>
+      <p class="mb-6 text-[15.5px] leading-[1.65] text-texte">
+        Consultez les réponses aux questions fréquentes ou contactez notre équipe. Pour une
+        question rapide, privilégiez WhatsApp. Pour une demande détaillée ou administrative,
+        utilisez le formulaire.
+      </p>
+      <UiBaseButton
+        class="mb-8"
+        variante="whatsapp"
+        :href="lienWhatsApp('Bonjour, j’ai une question.')"
+      >
+        <Icon name="ph:whatsapp-logo-fill" size="20" />
+        Discuter sur WhatsApp
+      </UiBaseButton>
 
-    <section class="py-14">
-      <div class="conteneur grid gap-12 lg:grid-cols-[1fr_1fr]">
-        <!-- Planche A, écran 08 : FAQ à gauche, formulaire à droite. -->
-        <div>
-          <h2 class="font-title text-[27px] font-light">FAQ générale</h2>
-          <div class="mt-6 flex flex-col gap-8">
-            <div v-for="groupe in groupesFaq" :key="groupe.titre">
-              <h3 class="surtitre text-discret">{{ groupe.titre }}</h3>
-              <UiAccordeonFaq class="mt-3" taille="sm" :questions="groupe.questions" :ouvert-par-defaut="-1" />
-            </div>
-          </div>
+      <h2 class="mb-4 font-title text-[23px] font-light">FAQ générale</h2>
+      <div class="flex flex-col gap-5.5">
+        <div v-for="groupe in groupesFaq" :key="groupe.titre">
+          <h3 class="mb-2.5 text-[11.5px] font-bold tracking-[0.14em] text-social uppercase">
+            {{ groupe.titre }}
+          </h3>
+          <UiAccordeonFaq taille="sm" :questions="groupe.questions" :ouvert-par-defaut="-1" />
         </div>
+      </div>
+    </div>
 
-        <div>
-          <h2 class="font-title text-[27px] font-light">Envoyez-nous un message</h2>
+    <div class="rounded-[18px] border border-ligne-tendre p-8">
+      <h2 class="mb-4.5 font-title text-[23px] font-light">Envoyez-nous un message</h2>
 
-          <form v-if="etat !== 'envoye'" class="mt-6 grid gap-5 sm:grid-cols-2" novalidate @submit.prevent="soumettre">
+      <form class="flex flex-col gap-3.5" novalidate @submit.prevent="soumettre">
+        <template v-if="etat !== 'envoye'">
+          <div class="grid gap-3.5 sm:grid-cols-2">
             <label class="block">
-              <span class="mb-1.5 block text-[13px] font-bold text-texte">Nom et prénom *</span>
-              <input v-model="formulaire.nom" required :class="classeChamp('nom')" :aria-invalid="!!erreurs.nom">
-              <span v-if="erreurs.nom" class="mt-1.5 block text-[12.5px] text-erreur">{{ erreurs.nom }}</span>
+              <span :class="ETIQUETTE">Nom et prénom *</span>
+              <input v-model="formulaire.nom" required placeholder="Votre identité" :class="classeChamp('nom')" :aria-invalid="!!erreurs.nom">
+              <span v-if="erreurs.nom" class="mt-1.5 block text-[12px] font-semibold text-erreur-fonce">{{ erreurs.nom }}</span>
             </label>
             <label class="block">
-              <span class="mb-1.5 block text-[13px] font-bold text-texte">Email *</span>
+              <span :class="ETIQUETTE">Email *</span>
               <input
                 v-model="formulaire.email"
                 required
@@ -208,46 +206,51 @@ useJsonLd({
                 :aria-invalid="!!erreurs.email"
                 @blur="verifierEmail"
               >
-              <span v-if="erreurs.email" class="mt-1.5 block text-[12.5px] text-erreur">{{ erreurs.email }}</span>
+              <span v-if="erreurs.email" class="mt-1.5 block text-[12px] font-semibold text-erreur-fonce">{{ erreurs.email }}</span>
             </label>
-            <label class="block">
-              <span class="mb-1.5 block text-[13px] font-bold text-texte">Numéro WhatsApp (facultatif)</span>
-              <input v-model="formulaire.whatsapp" type="tel" :class="classeChamp('whatsapp')">
-            </label>
-            <label class="block">
-              <span class="mb-1.5 block text-[13px] font-bold text-texte">Sujet *</span>
-              <select v-model="formulaire.sujet" required :class="[...classeChamp('sujet'), 'bg-white']" :aria-invalid="!!erreurs.sujet">
-                <option value="">Choisir…</option>
-                <option v-for="sujet in sujets" :key="sujet">{{ sujet }}</option>
-              </select>
-              <span v-if="erreurs.sujet" class="mt-1.5 block text-[12.5px] text-erreur">{{ erreurs.sujet }}</span>
-            </label>
-            <label class="block sm:col-span-2">
-              <span class="mb-1.5 block text-[13px] font-bold text-texte">Référence de paiement (facultatif)</span>
-              <input v-model="formulaire.reference" placeholder="Ex. FP-2608-14352" :class="classeChamp('reference')">
-            </label>
-            <label class="block sm:col-span-2">
-              <span class="mb-1.5 block text-[13px] font-bold text-texte">Message *</span>
-              <textarea v-model="formulaire.message" required rows="6" :class="classeChamp('message')" :aria-invalid="!!erreurs.message" />
-              <span v-if="erreurs.message" class="mt-1.5 block text-[12.5px] text-erreur">{{ erreurs.message }}</span>
-            </label>
+          </div>
+          <label class="block">
+            <span :class="ETIQUETTE">Numéro WhatsApp (facultatif)</span>
+            <input v-model="formulaire.whatsapp" type="tel" placeholder="+225 07 00 00 00 00" :class="classeChamp('whatsapp')">
+          </label>
+          <label class="block">
+            <span :class="ETIQUETTE">Sujet *</span>
+            <select v-model="formulaire.sujet" required :class="[...classeChamp('sujet'), 'bg-white text-texte']" :aria-invalid="!!erreurs.sujet">
+              <option value="">Choisir…</option>
+              <option v-for="sujet in sujets" :key="sujet">{{ sujet }}</option>
+            </select>
+            <span v-if="erreurs.sujet" class="mt-1.5 block text-[12px] font-semibold text-erreur-fonce">{{ erreurs.sujet }}</span>
+          </label>
+          <label class="block">
+            <span :class="ETIQUETTE">Référence de paiement (facultatif)</span>
+            <input v-model="formulaire.reference" placeholder="Ex. FP-2608-14352" :class="classeChamp('reference')">
+          </label>
+          <label class="block">
+            <span :class="ETIQUETTE">Message *</span>
+            <textarea
+              v-model="formulaire.message"
+              required
+              rows="4"
+              placeholder="Décrivez votre demande."
+              :class="[...classeChamp('message'), 'min-h-[110px]']"
+              :aria-invalid="!!erreurs.message"
+            />
+            <span v-if="erreurs.message" class="mt-1.5 block text-[12px] font-semibold text-erreur-fonce">{{ erreurs.message }}</span>
+          </label>
 
-            <div class="sm:col-span-2">
-              <UiBaseButton type="submit" class="w-full" taille="lg" :disabled="etat === 'envoi'">
-                {{ etat === 'envoi' ? 'Envoi…' : 'Envoyer mon message' }}
-              </UiBaseButton>
-              <p v-if="etat === 'erreur'" class="mt-3 text-[14px] text-erreur">
-                L’envoi a échoué. Réessayez ou passez par WhatsApp.
-              </p>
-            </div>
-          </form>
-
-          <p v-else class="mt-6 rounded-[14px] border border-succes bg-succes-voile p-6 text-[15px] text-succes" role="status">
-            ✓ Message envoyé. Vous recevrez une réponse par email sous 24 h ouvrées — un accusé vient
-            de vous être adressé.
+          <UiBaseButton type="submit" class="w-full" variante="sombre" taille="lg" :disabled="etat === 'envoi'">
+            {{ etat === 'envoi' ? 'Envoi…' : 'Envoyer mon message' }}
+          </UiBaseButton>
+          <p v-if="etat === 'erreur'" class="rounded-[12px] border border-erreur-bordure bg-erreur-voile px-4 py-3.5 text-[13px] leading-[1.5] text-erreur-fonce">
+            L’envoi a échoué. Réessayez ou passez par WhatsApp.
           </p>
-        </div>
-      </div>
-    </section>
+        </template>
+
+        <p v-else class="rounded-[12px] border border-succes-bordure bg-succes-voile px-4 py-3.5 text-[13px] leading-[1.5] text-succes-fonce" role="status">
+          ✓ Message envoyé. Vous recevrez une réponse par email sous 24 h ouvrées — un accusé vient
+          de vous être adressé.
+        </p>
+      </form>
+    </div>
   </div>
 </template>

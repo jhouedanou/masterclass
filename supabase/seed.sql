@@ -292,7 +292,7 @@ insert into reglages_financiers (id, frais_paiement_pourcent, part_big_five_pour
 
 -- Réglages SEO globaux — ligne unique
 insert into reglages_seo (id, titre_par_defaut, gabarit_titre, description_par_defaut, image_sociale_par_defaut, google_search_console, ga4) values
-  (true, 'E-Masterclass Big Five', '%s | E-Masterclass Big Five', 'Des modules de 60 minutes pour les professionnels du Social Media et les entrepreneurs d’Afrique francophone. 10 000 FCFA TTC par module, accès à vie.', '/images/og-default.svg', '', '');
+  (true, 'E-Masterclass Big Five', '%s | E-Masterclass Big Five', 'Des modules de 60 minutes pour les professionnels du Social Media et les entrepreneurs d’Afrique francophone. 10 000 FCFA TTC par module, accès à vie.', '/images/og-default.png', '', '');
 
 -- Compteurs des identifiants applicatifs
 select setval('seq_session_coaching', 3, true);

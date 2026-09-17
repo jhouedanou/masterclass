@@ -112,73 +112,78 @@ async function enregistrerReglages() {
   }
 }
 
+const optionsMois = computed(() => [
+  { valeur: '', libelle: '🗓 Date : depuis le début' },
+  ...(data.value?.moisDisponibles ?? []).map((m) => ({ valeur: m, libelle: `🗓 Date : ${nomDuMois(m)}` })),
+])
+const optionsProgramme = [
+  { valeur: '', libelle: 'Programme' },
+  { valeur: 'social-media', libelle: 'Social Média' },
+  { valeur: 'entrepreneurs', libelle: 'Entrepreneurs' },
+]
+const optionsModule = computed(() => [
+  { valeur: '', libelle: 'Module' },
+  ...(data.value?.modulesDisponibles ?? []).map((m) => ({ valeur: m.id, libelle: m.titre })),
+])
+const optionsSession = computed(() => [
+  { valeur: '', libelle: 'Coaching session' },
+  ...(data.value?.sessionsDisponibles ?? []).map((x) => ({ valeur: x.id, libelle: x.libelle })),
+])
+const optionsCoachingPrive = [
+  { valeur: '', libelle: 'Coaching privé' },
+  { valeur: 'uniquement', libelle: 'Coaching privé uniquement' },
+  { valeur: 'exclu', libelle: 'Sans le coaching privé' },
+]
+const optionsFormateur = computed(() => [
+  { valeur: '', libelle: 'Formateur' },
+  ...(data.value?.formateursDisponibles ?? []).map((f) => ({ valeur: f.id, libelle: f.nom })),
+])
+const optionsPays = computed(() => [
+  { valeur: '', libelle: 'Pays' },
+  ...(data.value?.paysDisponibles ?? []).filter(Boolean).map((x) => ({ valeur: x!, libelle: x! })),
+])
+
 const champ =
   'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px] focus:border-social focus:outline-none disabled:bg-fond-clair'
-const select = 'rounded-full border border-ligne bg-white px-3.5 py-2'
+// Écarts de la maquette (écran 21) : carte de contenu à 22 px, titre de carte en
+// Mulish gras 15 px, tableau interne encadré d'un filet clair.
+const carte = 'rounded-[14px] border border-ligne-douce bg-white p-[22px]'
+const titreCarte = 'font-sans text-[15px] font-bold'
+const tableauInterne = 'mt-3.5 overflow-hidden rounded-[10px] border border-ligne-claire text-[12.5px]'
+const enTeteInterne =
+  'bg-fond-clair text-[10.5px] font-bold tracking-[0.06em] text-discret uppercase'
 </script>
 
 <template>
   <div v-if="data">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <h1 class="font-title text-[26px] font-light">Revenus</h1>
-      <div class="flex flex-wrap gap-2">
-        <UiBaseButton taille="sm" variante="contour" @click="exporter">Exporter en CSV</UiBaseButton>
-        <UiBaseButton
-          v-if="auth.estAdminSuperieur"
-          taille="sm"
-          variante="contour"
-          @click="reglagesOuverts = !reglagesOuverts"
-        >
-          {{ reglagesOuverts ? 'Fermer' : 'Répartition et frais' }}
-        </UiBaseButton>
-      </div>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h1 class="font-title text-[24px] font-light">Revenus</h1>
+      <UiBaseButton taille="sm" variante="contour" @click="exporter">⬇ Exporter en CSV</UiBaseButton>
     </div>
 
-    <div class="mt-4 flex flex-wrap gap-2 text-[13px]">
-      <select v-model="mois" :class="select" aria-label="Date">
-        <option value="">🗓 Date : depuis le début ▾</option>
-        <option v-for="m in data.moisDisponibles" :key="m" :value="m">🗓 Date : {{ nomDuMois(m) }}</option>
-      </select>
-      <select v-model="programme" :class="select" aria-label="Programme">
-        <option value="">Programme ▾</option>
-        <option value="social-media">Social Média</option>
-        <option value="entrepreneurs">Entrepreneurs</option>
-      </select>
-      <select v-model="moduleId" class="max-w-[240px]" :class="select" aria-label="Module">
-        <option value="">Module ▾</option>
-        <option v-for="m in data.modulesDisponibles" :key="m.id" :value="m.id">{{ m.titre }}</option>
-      </select>
-      <select v-model="session" class="max-w-[240px]" :class="select" aria-label="Coaching session">
-        <option value="">Coaching session ▾</option>
-        <option v-for="s in data.sessionsDisponibles" :key="s.id" :value="s.id">{{ s.libelle }}</option>
-      </select>
-      <select v-model="coachingPrive" :class="select" aria-label="Coaching privé">
-        <option value="">Coaching privé ▾</option>
-        <option value="uniquement">Coaching privé uniquement</option>
-        <option value="exclu">Sans le coaching privé</option>
-      </select>
-      <select v-model="formateur" :class="select" aria-label="Formateur">
-        <option value="">Formateur ▾</option>
-        <option v-for="f in data.formateursDisponibles" :key="f.id" :value="f.id">{{ f.nom }}</option>
-      </select>
-      <select v-model="pays" :class="select" aria-label="Pays">
-        <option value="">Pays ▾</option>
-        <option v-for="p in data.paysDisponibles" :key="p" :value="p">{{ p }}</option>
-      </select>
+    <!-- Filtres combinables : la note de la maquette tient sur la même ligne. -->
+    <div class="mt-4 flex flex-wrap items-center gap-2">
+      <UiFiltrePilule v-model="mois" etiquette="Date" :options="optionsMois" />
+      <UiFiltrePilule v-model="programme" etiquette="Programme" :options="optionsProgramme" />
+      <UiFiltrePilule v-model="moduleId" etiquette="Module" :options="optionsModule" />
+      <UiFiltrePilule v-model="session" etiquette="Coaching session" :options="optionsSession" />
+      <UiFiltrePilule v-model="coachingPrive" etiquette="Coaching privé" :options="optionsCoachingPrive" />
+      <UiFiltrePilule v-model="formateur" etiquette="Formateur" :options="optionsFormateur" />
+      <UiFiltrePilule v-model="pays" etiquette="Pays" :options="optionsPays" />
+      <span class="text-[11.5px] text-discret">
+        Filtres combinables — tous les indicateurs se recalculent selon la sélection
+      </span>
     </div>
-    <p class="mt-2 text-[12.5px] text-discret">
-      Filtres combinables — tous les indicateurs se recalculent selon la sélection
-    </p>
 
     <p v-if="message" class="mt-4 rounded-[10px] border border-succes bg-succes-voile px-4 py-3 text-[14px] text-succes">{{ message }}</p>
-    <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-[#fdeeee] px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>
+    <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-erreur-voile px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>
 
     <form
       v-if="reglagesOuverts && auth.estAdminSuperieur"
-      class="mt-4 rounded-[14px] border border-social bg-white p-6"
+      class="mt-4 rounded-[14px] border-[1.5px] border-social bg-white p-[22px]"
       @submit.prevent="enregistrerReglages"
     >
-      <h2 class="font-title text-[19px] font-light">Répartition et frais</h2>
+      <h2 :class="titreCarte">Répartition et frais</h2>
       <p class="mt-1 text-[12.5px] text-discret">
         Ces pourcentages commandent tous les chiffres de cet écran. Réservé à l’administrateur
         principal, et journalisé.
@@ -206,81 +211,134 @@ const select = 'rounded-full border border-ligne bg-white px-3.5 py-2'
           <input v-model.number="brouillon.objectifCaMensuel" type="number" min="0" :class="champ">
         </label>
       </div>
-      <UiBaseButton type="submit" taille="sm" class="mt-4">Enregistrer</UiBaseButton>
+      <div class="mt-4 flex gap-2">
+        <UiBaseButton type="submit" taille="sm">Enregistrer</UiBaseButton>
+        <UiBaseButton variante="contour" taille="sm" @click="reglagesOuverts = false">Fermer</UiBaseButton>
+      </div>
     </form>
 
-    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+    <div class="mt-5 grid gap-[14px] sm:grid-cols-2 lg:grid-cols-5">
       <AdminCarteIndicateur
         libelle="Chiffre d’affaires"
-        :valeur="formatFcfa(data.total.ca)"
+        :valeur="formatNombre(data.total.ca)"
+        unite="F"
+        taille="sm"
         detail="modules + coaching privé"
       />
       <AdminCarteIndicateur
         libelle="Frais de paiement"
-        :valeur="formatFcfa(data.total.frais)"
+        :valeur="formatNombre(data.total.frais)"
+        unite="F"
+        taille="sm"
         :detail="`FeexPay — ${data.reglages.fraisPaiementPourcent} % du CA`"
       />
+      <!-- La maquette accentue la marge brute : c'est elle qui commande les deux
+           cartes suivantes. -->
       <AdminCarteIndicateur
         libelle="Marge brute"
-        :valeur="formatFcfa(data.total.marge)"
+        :valeur="formatNombre(data.total.marge)"
+        unite="F"
+        taille="sm"
         detail="CA − frais de paiement"
-      />
-      <AdminCarteIndicateur
-        :libelle="`Revenu Big Five — marge brute × ${data.reglages.partBigFivePourcent} %`"
-        :valeur="formatFcfa(data.total.revenuBigFive)"
-        :detail="`marge brute × ${data.reglages.partBigFivePourcent} %`"
         accent
       />
       <AdminCarteIndicateur
-        :libelle="`Revenu formateurs — marge brute × ${data.reglages.partFormateurPourcent} %`"
-        :valeur="formatFcfa(data.total.revenuFormateurs)"
+        libelle="Revenu Big Five"
+        :valeur="formatNombre(data.total.revenuBigFive)"
+        unite="F"
+        taille="sm"
+        :detail="`marge brute × ${data.reglages.partBigFivePourcent} %`"
+      />
+      <AdminCarteIndicateur
+        libelle="Revenu formateurs"
+        :valeur="formatNombre(data.total.revenuFormateurs)"
+        unite="F"
+        taille="sm"
         :detail="`marge brute × ${data.reglages.partFormateurPourcent} %`"
       />
     </div>
 
-    <h2 class="mt-8 font-title text-[19px] font-light">Répartition par source de revenu</h2>
-    <AdminTableauSimple class="mt-3" :colonnes="['Source', 'CA', 'Frais', 'Marge brute']">
-      <tr v-for="l in data.parSource" :key="l.source">
-        <td class="px-4 py-3 font-bold">{{ l.source }}</td>
-        <td class="px-4 py-3">{{ formatFcfa(l.ca) }}</td>
-        <td class="px-4 py-3 text-discret">{{ formatFcfa(l.frais) }}</td>
-        <td class="px-4 py-3">{{ formatFcfa(l.marge) }}</td>
-      </tr>
-      <tr class="bg-fond-clair font-bold">
-        <td class="px-4 py-3">Total</td>
-        <td class="px-4 py-3">{{ formatFcfa(data.total.ca) }}</td>
-        <td class="px-4 py-3">{{ formatFcfa(data.total.frais) }}</td>
-        <td class="px-4 py-3">{{ formatFcfa(data.total.marge) }}</td>
-      </tr>
-    </AdminTableauSimple>
-    <p class="mt-3 text-[12.5px] text-discret">
-      Les sessions de coaching collectives sont incluses dans le prix des modules — leur revenu est
-      porté par la ligne Modules. Pourcentages Big Five / formateur :
-      <b>{{ data.reglages.partBigFivePourcent }} % / {{ data.reglages.partFormateurPourcent }} %</b>,
-      paramétrables par l’admin principal (modification journalisée).
-    </p>
+    <div class="mt-5 grid items-start gap-4 lg:grid-cols-[1fr_1.15fr]">
+      <section :class="carte">
+        <h2 :class="titreCarte">Répartition par source de revenu</h2>
+        <div :class="tableauInterne">
+          <table class="w-full table-fixed text-left">
+            <colgroup><col style="width:34%"><col style="width:26%"><col style="width:20%"><col style="width:20%"></colgroup>
+            <thead :class="enTeteInterne">
+              <tr class="border-b border-ligne-claire">
+                <th class="px-3.5 py-2.5">Source</th><th class="px-3.5 py-2.5">CA</th>
+                <th class="px-3.5 py-2.5">Frais</th><th class="px-3.5 py-2.5">Marge brute</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="l in data.parSource" :key="l.source" class="border-b border-fond-voile">
+                <td class="px-3.5 py-3"><b>{{ l.source }}</b></td>
+                <td class="px-3.5 py-3">{{ formatFranc(l.ca) }}</td>
+                <td class="px-3.5 py-3">{{ formatFranc(l.frais) }}</td>
+                <td class="px-3.5 py-3 font-bold">{{ formatFranc(l.marge) }}</td>
+              </tr>
+              <tr class="bg-social-nuage">
+                <td class="px-3.5 py-3"><b>Total</b></td>
+                <td class="px-3.5 py-3 font-bold">{{ formatFranc(data.total.ca) }}</td>
+                <td class="px-3.5 py-3 font-bold">{{ formatFranc(data.total.frais) }}</td>
+                <td class="px-3.5 py-3 font-bold text-social">{{ formatFranc(data.total.marge) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-3.5 rounded-[10px] border border-ligne-claire bg-fond-clair px-[15px] py-3 text-[12px] leading-relaxed text-discret">
+          Les sessions de coaching collectives sont incluses dans le prix des modules — leur revenu
+          est porté par la ligne Modules. Pourcentages Big Five / formateur :
+          <b class="text-encre">{{ data.reglages.partBigFivePourcent }} % / {{ data.reglages.partFormateurPourcent }} %</b>,
+          <!-- La maquette ne montre pas de bouton de réglage : c'est la mention
+               elle-même qui ouvre le formulaire, pour l'admin principal seul. -->
+          <button
+            v-if="auth.estAdminSuperieur"
+            class="text-inherit hover:underline"
+            @click="reglagesOuverts = !reglagesOuverts"
+          >paramétrables par l’admin principal</button>
+          <template v-else>paramétrables par l’admin principal</template>
+          (modification journalisée).
+        </p>
+      </section>
 
-    <h2 class="mt-8 font-title text-[19px] font-light">
-      Rémunération par formateur — marge brute de ses ventes × {{ data.reglages.partFormateurPourcent }} %
-    </h2>
-    <AdminTableauSimple class="mt-3" :colonnes="['Formateur', 'CA généré', 'Marge brute', 'Rémunération']">
-      <tr v-for="f in data.parFormateur" :key="f.id">
-        <td class="px-4 py-3 font-bold">{{ f.nom }}</td>
-        <td class="px-4 py-3">{{ formatFcfa(f.ca) }}</td>
-        <td class="px-4 py-3">{{ formatFcfa(f.marge) }}</td>
-        <td class="px-4 py-3">{{ formatFcfa(f.remuneration) }}</td>
-      </tr>
-      <tr class="bg-fond-clair font-bold">
-        <td class="px-4 py-3">Total</td>
-        <td class="px-4 py-3">{{ formatFcfa(data.total.ca) }}</td>
-        <td class="px-4 py-3">{{ formatFcfa(data.total.marge) }}</td>
-        <td class="px-4 py-3">{{ formatFcfa(data.total.revenuFormateurs) }}</td>
-      </tr>
-    </AdminTableauSimple>
-
-    <p class="mt-4 text-[12.5px] text-discret">
-      Chaque formateur retrouve exactement ces chiffres — limités aux siens — dans l’onglet Revenus
-      de son dashboard.
-    </p>
+      <section :class="carte">
+        <h2 :class="titreCarte">
+          Rémunération par formateur — marge brute de ses ventes × {{ data.reglages.partFormateurPourcent }} %
+        </h2>
+        <div :class="tableauInterne">
+          <table class="w-full table-fixed text-left">
+            <colgroup><col style="width:34%"><col style="width:22%"><col style="width:22%"><col style="width:22%"></colgroup>
+            <thead :class="enTeteInterne">
+              <tr class="border-b border-ligne-claire">
+                <th class="px-3.5 py-2.5">Formateur</th><th class="px-3.5 py-2.5">CA généré</th>
+                <th class="px-3.5 py-2.5">Marge brute</th><th class="px-3.5 py-2.5">Rémunération</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="f in data.parFormateur" :key="f.id" class="border-b border-fond-voile">
+                <td class="px-3.5 py-3">
+                  <b>{{ f.nom }}</b>
+                  <span v-if="f.caPrive > 0" class="ml-1 text-[10.5px] font-bold text-social">+ privé</span>
+                </td>
+                <td class="px-3.5 py-3">{{ formatFranc(f.ca) }}</td>
+                <td class="px-3.5 py-3">{{ formatFranc(f.marge) }}</td>
+                <td class="px-3.5 py-3 font-bold">{{ formatFranc(f.remuneration) }}</td>
+              </tr>
+              <tr class="bg-social-nuage">
+                <td class="px-3.5 py-3"><b>Total</b></td>
+                <td class="px-3.5 py-3 font-bold">{{ formatFranc(data.total.ca) }}</td>
+                <td class="px-3.5 py-3 font-bold">{{ formatFranc(data.total.marge) }}</td>
+                <td class="px-3.5 py-3 font-bold text-social">{{ formatFranc(data.total.revenuFormateurs) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-3 text-[12px] leading-relaxed text-discret">
+          Chaque formateur retrouve exactement ces chiffres — limités aux siens — dans l’onglet
+          Revenus de son dashboard.
+        </p>
+      </section>
+    </div>
   </div>
 </template>

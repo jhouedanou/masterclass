@@ -1,3 +1,4 @@
+import { formateurPublic, modulePublic } from '../../utils/public'
 import {
   listerFormateurs,
   listerModules,
@@ -18,6 +19,8 @@ export default defineEventHandler(async (event) => {
     listerFormateurs(),
   ])
 
+  const parFormateur = new Map(formateurs.map((f) => [f.id, formateurPublic(f)]))
+
   return {
     programme,
     // Les thématiques sont des sections de la page programme (spec SEO §1).
@@ -30,8 +33,8 @@ export default defineEventHandler(async (event) => {
           .filter((m) => m.thematiqueId === t.id && m.statut !== 'brouillon')
           .sort((a, b) => a.numero - b.numero)
           .map((m) => ({
-            ...m,
-            formateur: formateurs.find((f) => f.id === m.formateurId) ?? null,
+            ...modulePublic(m),
+            formateur: parFormateur.get(m.formateurId) ?? null,
           })),
       })),
   }

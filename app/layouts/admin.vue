@@ -97,7 +97,7 @@ const perimetre = computed(() => {
     <aside class="sur-sombre hidden w-[250px] shrink-0 flex-col overflow-y-auto bg-encre py-[22px] text-nuit-clair lg:flex">
       <div class="border-b border-nuit-filet px-5 pb-[18px]">
         <NuxtLink to="/" class="block rounded-[8px] bg-white px-2.5 py-1.5">
-          <img src="/images/brand/logo.png" alt="E-Masterclass Big Five" class="h-[26px] w-full object-contain">
+          <img src="/images/brand/logo.png" alt="E-Masterclass Big Five" class="h-[26px] w-full object-contain" width="180" height="26">
         </NuxtLink>
         <p class="surtitre-menu mt-2 text-discret-clair">Dashboard Admin</p>
       </div>
@@ -131,7 +131,7 @@ const perimetre = computed(() => {
          d'icônes de 64 px, vignette de marque en tête, verrou en pied. -->
     <aside class="sur-sombre hidden w-16 shrink-0 flex-col items-center gap-1.5 overflow-y-auto bg-encre py-4 text-nuit-clair md:flex lg:hidden">
       <NuxtLink to="/" class="mb-2.5 rounded-[8px] bg-white p-[5px]" aria-label="Accueil du site">
-        <img src="/images/brand/pattern.png" alt="" class="size-[26px] rounded-[4px] object-cover">
+        <img src="/images/brand/pattern-vignette.png" alt="" class="size-[26px] rounded-[4px] object-cover" width="26" height="26" loading="lazy">
       </NuxtLink>
       <NuxtLink
         v-for="lien in liensRail"

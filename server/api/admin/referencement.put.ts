@@ -6,7 +6,7 @@ import {
   type TableSeo,
 } from '../../database/administration'
 import { colonnesSeo } from '../../database/mappers'
-import { exigerAdmin } from '../../utils/session'
+import { exigerUneSection } from '../../utils/session'
 
 /** Champs que seul un administrateur supérieur peut modifier (spec SEO §3 et §13). */
 const CHAMPS_RESERVES: (keyof SeoFields)[] = ['slug', 'indexable', 'canonical']
@@ -22,7 +22,7 @@ const PREFIXES: Record<TableSeo, string> = {
 }
 
 export default defineEventHandler(async (event) => {
-  const utilisateur = await exigerAdmin(event)
+  const utilisateur = await exigerUneSection(event, ['referencement-contenu', 'modules-chapitres', 'blog'])
   const body = await readBody<{ id: string; seo: SeoFields; confirmationSlug?: boolean }>(event)
 
   const cible = await localiserEntiteSeo(body.id)

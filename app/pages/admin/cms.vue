@@ -140,6 +140,10 @@ async function supprimerTemoignage(id: string) {
   await refresh()
 }
 
+// Écran 15 : filets de 1,5 px, chemise 11/13.
+const champ =
+  'w-full rounded-[10px] border-[1.5px] border-ligne px-3.5 py-[11px] text-[13px] focus:border-social focus:outline-none'
+
 /** Un aperçu court du contenu, pour lire la liste sans ouvrir chaque bloc. */
 function resume(bloc: Bloc): string {
   const c = bloc.contenu as Record<string, unknown>
@@ -162,196 +166,180 @@ function resume(bloc: Bloc): string {
 
 <template>
   <div v-if="data">
-    <h1 class="font-title text-[26px] font-light">CMS — Site vitrine</h1>
-    <p class="mt-2 max-w-[700px] text-[13.5px] text-discret">
-      Chaque zone éditable du site public. Toute modification passe d’abord à l’historique :
-      la version précédente reste restaurable depuis
-      <NuxtLink to="/admin/historique" class="underline">Historique &amp; versions</NuxtLink>.
-    </p>
+    <h1 class="font-title text-[24px] font-light">CMS — Site vitrine</h1>
 
-    <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-[#fdeeee] px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>
+    <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-erreur-voile px-4 py-3 text-[13px] text-erreur">{{ erreur }}</p>
 
-    <!-- Blocs -->
-    <div class="mt-6 flex flex-col gap-3">
+    <!-- Écran 15 : une ligne-carte par zone éditable ; celle qu'on ouvre
+         s'étend sur place, cerclée de violet, au lieu de renvoyer plus bas. -->
+    <div class="mt-4 flex flex-col gap-2.5">
       <article
         v-for="bloc in data.blocs"
         :key="bloc.cle"
-        class="rounded-[14px] border border-ligne-douce bg-white p-5"
+        class="rounded-[12px] bg-white px-5 py-4 text-[13.5px]"
+        :class="edition?.cle === bloc.cle ? 'border-[1.5px] border-social' : 'border border-ligne-douce'"
       >
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 class="font-title text-[18px] font-light">{{ bloc.libelle }}</h2>
-            <p class="mt-1 text-[13px] text-discret">{{ resume(bloc) }}</p>
-            <p v-if="bloc.publieDu || bloc.publieAu" class="mt-1 text-[12.5px] text-alerte">
-              Programmé du {{ formatDate(bloc.publieDu) }} au {{ formatDate(bloc.publieAu) }}
-            </p>
-          </div>
-          <div class="flex items-center gap-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <span>
+            <b>{{ bloc.libelle }}</b> — {{ resume(bloc) }}
+            <span v-if="bloc.publieDu || bloc.publieAu" class="text-alerte">
+              · programmé du {{ formatDate(bloc.publieDu) }} au {{ formatDate(bloc.publieAu) }}
+            </span>
+          </span>
+          <span class="flex items-center gap-2.5">
             <span
               class="rounded-full px-2.5 py-1 text-[11px] font-bold"
-              :class="bloc.statut === 'publie' ? 'bg-succes-voile text-succes' : 'bg-fond-voile text-discret'"
+              :class="bloc.statut === 'publie' ? 'bg-succes-voile text-succes' : 'bg-alerte-voile text-alerte'"
             >
               {{ bloc.statut === 'publie' ? 'Publié' : 'Brouillon' }}
             </span>
-            <UiBaseButton taille="sm" variante="contour" @click="ouvrir(bloc)">Modifier</UiBaseButton>
-          </div>
+            <button
+              v-if="edition?.cle !== bloc.cle"
+              class="text-[12.5px] font-bold text-social"
+              @click="ouvrir(bloc)"
+            >
+              Modifier
+            </button>
+            <button v-else class="text-[12.5px] font-bold text-discret" @click="edition = null">Fermer</button>
+          </span>
         </div>
 
-        <p class="mt-2.5 text-[12px] text-discret">
-          Mis à jour {{ formatDate(bloc.majLe) }}<span v-if="bloc.majPar"> par {{ bloc.majPar }}</span>.
-        </p>
+        <template v-if="edition && edition.cle === bloc.cle">
+          <div class="mt-3">
+            <AdminEditeurBloc
+              :key="edition.cle"
+              :cle="edition.cle"
+              :contenu="edition.contenu"
+              @maj="edition!.contenu = $event"
+            />
+          </div>
+
+          <label class="mt-3 flex items-center gap-2.5 text-[12.5px] font-semibold text-texte">
+            <input
+              type="checkbox"
+              class="size-4 accent-social"
+              :checked="edition.statut === 'publie'"
+              @change="edition!.statut = edition!.statut === 'publie' ? 'brouillon' : 'publie'"
+            >
+            Publier ce bloc sur le site
+          </label>
+
+          <!-- Programmation (écran 15 : « Programmer : du 15/10 au 01/11 ») : un
+               bandeau qui s'éteint tout seul évite d'avoir à penser à revenir
+               l'éteindre. Les deux dates alimentent `publie_du` / `publie_au`. -->
+          <div class="mt-2.5 flex flex-wrap items-center gap-2.5 text-[12.5px]">
+            <span class="font-semibold text-texte">Programmer : du</span>
+            <label>
+              <span class="sr-only">Visible à partir du (facultatif)</span>
+              <input v-model="edition.publieDu" type="date" :class="champ">
+            </label>
+            <span class="font-semibold text-texte">au</span>
+            <label>
+              <span class="sr-only">Jusqu’au (facultatif)</span>
+              <input v-model="edition.publieAu" type="date" :class="champ">
+            </label>
+            <span class="text-discret">(facultatif)</span>
+            <UiBaseButton class="ml-auto" variante="sombre" taille="sm" :disabled="enCours" @click="enregistrer">
+              {{ enCours ? 'Enregistrement…' : 'Publier' }}
+            </UiBaseButton>
+          </div>
+
+          <div class="mt-3 border-t border-ligne-claire pt-3">
+            <p class="text-[12.5px] font-bold">Historique des versions</p>
+            <ul v-if="historique.length" class="mt-2 flex flex-col gap-1.5">
+              <li
+                v-for="v in historique"
+                :key="v.id"
+                class="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-ligne-claire px-3 py-2.5 text-[12px]"
+              >
+                <span class="text-discret">{{ formatDate(v.creeLe) }} · {{ v.auteur }}</span>
+                <button v-if="peutRestaurer" class="font-bold text-social" @click="restaurer(v.id)">
+                  Restaurer
+                </button>
+              </li>
+            </ul>
+            <p v-else class="mt-1.5 text-[12px] text-discret">Aucune version antérieure.</p>
+            <p v-if="historique.length && !peutRestaurer" class="mt-1.5 text-[11.5px] text-discret">
+              Restaurer une version demande le droit « Historique &amp; versions ».
+            </p>
+            <p class="mt-2 text-[11.5px] text-discret">
+              Mis à jour {{ formatDate(bloc.majLe) }}<span v-if="bloc.majPar"> par {{ bloc.majPar }}</span>.
+            </p>
+          </div>
+        </template>
       </article>
 
       <!-- Deux renvois de l'écran 15 : le blog a sa section (écran 22), les
            témoignages se gèrent plus bas sur cette page. -->
-      <article class="rounded-[14px] border border-ligne-douce bg-white p-5">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 class="font-title text-[18px] font-light">
-              Blog — {{ data.blog.articles }} article{{ data.blog.articles > 1 ? 's' : '' }},
-              {{ data.blog.categories }} catégorie{{ data.blog.categories > 1 ? 's' : '' }}
-            </h2>
-            <p class="mt-1 text-[13px] text-discret">(section dédiée, écran 22)</p>
-          </div>
-          <div class="flex items-center gap-2.5">
-            <span class="rounded-full bg-succes-voile px-2.5 py-1 text-[11px] font-bold text-succes">Publié</span>
-            <UiBaseButton to="/admin/blog" taille="sm" variante="contour">Gérer</UiBaseButton>
-          </div>
-        </div>
+      <article class="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-ligne-douce bg-white px-5 py-4 text-[13.5px]">
+        <span>
+          <b>Blog</b> — {{ data.blog.articles }} article{{ data.blog.articles > 1 ? 's' : '' }},
+          {{ data.blog.categories }} catégorie{{ data.blog.categories > 1 ? 's' : '' }}
+          <span class="text-discret">(section dédiée, écran 22)</span>
+        </span>
+        <span class="flex items-center gap-2.5">
+          <span class="rounded-full px-2.5 py-1 text-[11px] font-bold bg-succes-voile text-succes">Publié</span>
+          <NuxtLink to="/admin/blog" class="text-[12.5px] font-bold">Gérer</NuxtLink>
+        </span>
       </article>
-      <article class="rounded-[14px] border border-ligne-douce bg-white p-5">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 class="font-title text-[18px] font-light">
-              Témoignages — {{ temoignagesPublies }} publié{{ temoignagesPublies > 1 ? 's' : '' }}, ordre manuel
-            </h2>
-          </div>
-          <div class="flex items-center gap-2.5">
-            <span class="rounded-full bg-succes-voile px-2.5 py-1 text-[11px] font-bold text-succes">Publié</span>
-            <UiBaseButton to="#temoignages" taille="sm" variante="contour">Gérer</UiBaseButton>
-          </div>
-        </div>
+      <article class="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-ligne-douce bg-white px-5 py-4 text-[13.5px]">
+        <span>
+          <b>Témoignages</b> — {{ temoignagesPublies }} publié{{ temoignagesPublies > 1 ? 's' : '' }}, ordre manuel
+        </span>
+        <span class="flex items-center gap-2.5">
+          <span class="rounded-full px-2.5 py-1 text-[11px] font-bold bg-succes-voile text-succes">Publié</span>
+          <NuxtLink to="#temoignages" class="text-[12.5px] font-bold">Gérer</NuxtLink>
+        </span>
       </article>
     </div>
 
-    <!-- Éditeur -->
-    <div v-if="edition" class="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-[1fr_300px]">
-      <div class="rounded-[14px] border border-social bg-white p-6">
-        <h2 class="font-title text-[19px] font-light">{{ edition.libelle }}</h2>
-
-        <div class="mt-4">
-          <AdminEditeurBloc
-            :key="edition.cle"
-            :cle="edition.cle"
-            :contenu="edition.contenu"
-            @maj="edition.contenu = $event"
-          />
-        </div>
-
-        <label class="mt-5 flex items-center gap-2.5">
-          <input
-            type="checkbox"
-            :checked="edition.statut === 'publie'"
-            @change="edition.statut = edition.statut === 'publie' ? 'brouillon' : 'publie'"
-          >
-          <span class="text-[13.5px]">Publier ce bloc sur le site</span>
-        </label>
-
-        <!-- Programmation (écran 15 : « Programmer : du 15/10 au 01/11 ») : un
-             bandeau qui s'éteint tout seul évite d'avoir à penser à revenir
-             l'éteindre. Les deux dates alimentent `publie_du` / `publie_au`. -->
-        <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-ligne-claire pt-4 text-[13px]">
-          <span class="font-bold">Programmer : du</span>
-          <label>
-            <span class="sr-only">Visible à partir du (facultatif)</span>
-            <input v-model="edition.publieDu" type="date" class="rounded-[10px] border border-ligne px-3 py-2 text-[14px]">
-          </label>
-          <span class="font-bold">au</span>
-          <label>
-            <span class="sr-only">Jusqu’au (facultatif)</span>
-            <input v-model="edition.publieAu" type="date" class="rounded-[10px] border border-ligne px-3 py-2 text-[14px]">
-          </label>
-          <span class="text-[12px] text-discret">(facultatif)</span>
-        </div>
-
-        <div class="mt-5 flex flex-wrap gap-2">
-          <UiBaseButton taille="sm" :disabled="enCours" @click="enregistrer">
-            {{ enCours ? 'Enregistrement…' : 'Enregistrer' }}
-          </UiBaseButton>
-          <UiBaseButton to="/" variante="contour" taille="sm" cible="_blank">
-            Voir la page publique
-          </UiBaseButton>
-          <UiBaseButton variante="contour" taille="sm" @click="edition = null">Annuler</UiBaseButton>
-        </div>
-      </div>
-
-      <aside class="h-fit rounded-[14px] border border-ligne-douce bg-white p-5">
-        <h3 class="font-title text-[17px] font-light">Historique</h3>
-        <p class="mt-1 text-[12.5px] text-discret">
-          Chaque enregistrement dépose ici l’état précédent. Un bloc en brouillon ne s’affiche pas
-          sur la page publique, quelles que soient ses dates.
-        </p>
-        <ul v-if="historique.length" class="mt-3 flex flex-col gap-2">
-          <li
-            v-for="v in historique"
-            :key="v.id"
-            class="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-ligne-claire p-3 text-[12.5px]"
-          >
-            <span class="text-discret">{{ formatDate(v.creeLe) }} · {{ v.auteur }}</span>
-            <button v-if="peutRestaurer" class="text-social underline" @click="restaurer(v.id)">
-              Restaurer
-            </button>
-          </li>
-        </ul>
-        <p v-else class="mt-3 text-[13px] text-discret">Aucune version antérieure.</p>
-        <p v-if="historique.length && !peutRestaurer" class="mt-3 text-[12px] text-discret">
-          Restaurer une version demande le droit « Historique &amp; versions ».
-        </p>
-      </aside>
-    </div>
+    <p class="mt-3 text-[12px] text-discret">
+      Chaque bloc a un bouton « Prévisualiser » et un historique de versions avec restauration en
+      1 clic. Toute modification passe d’abord par
+      <NuxtLink to="/admin/historique" class="text-inherit hover:underline">Historique &amp; versions</NuxtLink>.
+    </p>
 
     <!-- Témoignages -->
-    <section id="temoignages" class="mt-10 scroll-mt-6">
-      <h2 class="font-title text-[21px] font-light">Témoignages</h2>
-      <p class="mt-1 text-[13px] text-discret">
-        {{ data.temoignages.filter((t) => t.publie).length }} publié(s) sur
-        {{ data.temoignages.length }} · ordre manuel.
-      </p>
+    <section id="temoignages" class="mt-4 scroll-mt-6 rounded-[12px] border border-ligne-douce bg-white px-5 py-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="font-sans text-[15px] font-bold">Témoignages</h2>
+        <span class="text-[12px] text-discret">
+          {{ temoignagesPublies }} publié(s) sur {{ data.temoignages.length }} · ordre manuel
+        </span>
+      </div>
 
-      <div v-if="data.temoignages.length" class="mt-4 flex flex-col gap-2.5">
+      <div v-if="data.temoignages.length" class="mt-3 flex flex-col gap-2.5">
         <article
           v-for="t in data.temoignages"
           :key="t.id"
-          class="flex flex-wrap items-start justify-between gap-3 rounded-[12px] border border-ligne-douce bg-white p-4"
+          class="flex flex-wrap items-start justify-between gap-3 rounded-[10px] border border-ligne-claire px-3 py-2.5"
         >
           <div class="max-w-[620px]">
-            <p class="text-[13.5px] text-texte">« {{ t.texte }} »</p>
-            <p class="mt-1.5 text-[12.5px] font-bold text-encre">
+            <p class="text-[13px] text-texte">« {{ t.texte }} »</p>
+            <p class="mt-1 text-[12px] font-bold text-encre">
               {{ t.auteur }}<span v-if="t.role" class="font-normal text-discret"> — {{ t.role }}</span>
             </p>
           </div>
-          <div class="flex items-center gap-2">
-            <button class="text-[12.5px] underline" @click="basculerPublication(t)">
+          <div class="flex items-center gap-3 text-[12.5px] font-bold">
+            <button class="text-social" @click="basculerPublication(t)">
               {{ t.publie ? 'Dépublier' : 'Publier' }}
             </button>
-            <button class="text-[12.5px] text-erreur underline" @click="supprimerTemoignage(t.id)">
-              Supprimer
-            </button>
+            <button class="text-erreur" @click="supprimerTemoignage(t.id)">Supprimer</button>
           </div>
         </article>
       </div>
-      <p v-else class="mt-4 rounded-[12px] border border-dashed border-ligne p-5 text-[13.5px] text-discret">
+      <p v-else class="mt-3 rounded-[10px] border border-dashed border-ligne-pointillee p-5 text-[13px] text-discret">
         Aucun témoignage pour l’instant. Les visuels et citations définitifs sont attendus du client.
       </p>
 
-      <form class="mt-4 rounded-[14px] border border-ligne-douce bg-white p-5" @submit.prevent="ajouterTemoignage">
-        <h3 class="font-title text-[16px] font-light">Ajouter un témoignage</h3>
-        <div class="mt-3 grid gap-3 sm:grid-cols-2">
-          <input v-model="nouveau.auteur" placeholder="Prénom et nom" required class="rounded-[10px] border border-ligne px-3 py-2.5 text-[14px] focus:border-social focus:outline-none">
-          <input v-model="nouveau.role" placeholder="Rôle, entreprise" class="rounded-[10px] border border-ligne px-3 py-2.5 text-[14px] focus:border-social focus:outline-none">
-          <textarea v-model="nouveau.texte" rows="3" placeholder="Le témoignage" required class="sm:col-span-2 rounded-[10px] border border-ligne px-3 py-2.5 text-[14px] focus:border-social focus:outline-none" />
+      <form class="mt-3 border-t border-ligne-claire pt-3" @submit.prevent="ajouterTemoignage">
+        <p class="text-[12.5px] font-bold">Ajouter un témoignage</p>
+        <div class="mt-2.5 grid gap-2.5 sm:grid-cols-2">
+          <input v-model="nouveau.auteur" placeholder="Prénom et nom" required :class="champ">
+          <input v-model="nouveau.role" placeholder="Rôle, entreprise" :class="champ">
+          <textarea v-model="nouveau.texte" rows="3" placeholder="Le témoignage" required class="sm:col-span-2" :class="champ" />
         </div>
-        <UiBaseButton type="submit" taille="sm" class="mt-3">Ajouter</UiBaseButton>
+        <UiBaseButton type="submit" taille="sm" class="mt-2.5">Ajouter</UiBaseButton>
       </form>
     </section>
   </div>

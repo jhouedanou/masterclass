@@ -17,11 +17,13 @@ const marque = (fait: boolean) => (fait ? '✓' : '')
 </script>
 
 <template>
+  <!-- Écran 09 : un simple encart ambre en bas de la colonne, pas un bandeau
+       d'alerte — la checklist informe, elle n'interdit rien. -->
   <div
-    class="rounded-[12px] border p-4 text-[13px]"
-    :class="checklist.pret ? 'border-succes bg-succes-voile text-succes' : 'border-alerte bg-alerte-voile text-alerte'"
+    class="rounded-[12px] border px-4 py-[13px] text-[12.5px] leading-[1.6]"
+    :class="checklist.pret ? 'border-succes-bordure bg-succes-pale text-succes-fonce' : 'border-alerte-bordure bg-alerte-pale text-alerte-fonce'"
   >
-    <p class="font-bold">
+    <p>
       Checklist avant « Prêt » :
       {{ checklist.details.chapitres }} chapitre{{ checklist.details.chapitres > 1 ? 's' : '' }} ·
       vidéos {{ checklist.details.avecVideo }}/{{ checklist.details.chapitres }}

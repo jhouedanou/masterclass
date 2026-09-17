@@ -411,6 +411,24 @@ formateurs et le partage d'articles.
    autres suivent le même gabarit.
 5. **Responsive** — les planches desktop, tablette et mobile de la maquette sont traitées comme des
    points de rupture d'une seule implémentation, pas comme trois interfaces distinctes.
+6. **Chiffres que la maquette montre et que le serveur ne sert pas encore** — l'audit de conformité
+   a buté sur cinq d'entre eux, laissés en tiret plutôt qu'inventés : le trafic du jour et les
+   mesures d'audience de la vue d'ensemble (Google Analytics n'est pas relié), les dates des
+   histogrammes de Performances (`caQuotidien` et `visitesQuotidiennes` ne renvoient que des
+   nombres), l'éligibilité et la présence en session par apprenant (écran Apprenants, colonne
+   « Coaching »), la note d'une séance de coaching privé réalisée (planche D, écran 05) et le taux
+   de frais FeexPay dans les revenus formateur.
+7. **Champs conservés hors maquette parce qu'aucun autre écran ne les porte** — le mot de passe
+   provisoire à la création d'un compte admin (l'API l'exige), la case « Masquer le prix jusqu'au
+   lancement » d'une fiche commerciale, le bouton « Créer le compte formateur » d'une candidature
+   (seul chemin d'acceptation), et le couple Prénom / Nom des paramètres admin, que la maquette
+   fond en un champ unique : les recouper au premier espace amputerait les noms composés.
+8. **Composants partagés encore calibrés sur une seule planche** — `UiBaseButton` suit les tailles
+   de la planche A (13,5 px, graisse 800) là où le back-office dessine ses boutons à 12,5–13 px en
+   graisse 700 ; `AdminTableauSimple` fige un rayon de 14 px et des en-têtes à 11,5 px là où les
+   tableaux étroits de la planche C descendent à 12 px et 10,5 px ; `AdminCarteIndicateur` ne
+   propose pas les valeurs à 27 px et 22 px de la planche D, dont les cartes restent écrites à la
+   main. Trois ajustements sans risque, à faire quand la revue visuelle les confirmera.
 
 ## Vidéo
 

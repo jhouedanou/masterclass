@@ -1,7 +1,9 @@
 import { enregistrerAlerteLancement, trouverModuleParSlug } from '../database/catalogue'
+import { limiterDebit } from '../utils/debit'
 
 /** « Être prévenu du lancement » (planche A, écran 03c, état 4) : collecte email/WhatsApp. */
 export default defineEventHandler(async (event) => {
+  await limiterDebit(event, 'alerte-lancement')
   const body = await readBody<{ slug?: string; email?: string; whatsapp?: string }>(event)
   const email = (body.email ?? '').trim().toLowerCase()
   const whatsapp = (body.whatsapp ?? '').trim()

@@ -14,8 +14,27 @@ const props = defineProps<{
 
 const emit = defineEmits<{ maj: [contenu: Record<string, unknown>] }>()
 
-type Slide = { accroche: string; cta: string; programme: string; imageFond: string; imageVisuel: string }
+type Slide = {
+  accroche: string
+  description: string
+  cta: string
+  programme: string
+  imageFond: string
+  imageVisuel: string
+  altFond: string
+  altVisuel: string
+}
 type Chiffre = { valeur: string; libelle: string }
+type DocLegal = { cle: string; titre: string; maj: string; corps: string }
+
+/** Les cinq documents de la planche A, écran 09, dans l'ordre du sommaire. */
+const DOCUMENTS_LEGAUX: { cle: string; titre: string }[] = [
+  { cle: 'cgv', titre: 'Conditions générales de vente' },
+  { cle: 'mentions-legales', titre: 'Mentions légales' },
+  { cle: 'cgu', titre: 'Conditions générales d’utilisation' },
+  { cle: 'confidentialite', titre: 'Politique de confidentialité' },
+  { cle: 'cookies', titre: 'Politique de cookies' },
+]
 
 /** Copie locale : le parent ne reçoit que des états complets, jamais une
  *  frappe intermédiaire. */
@@ -28,7 +47,16 @@ const chiffres = computed<Chiffre[]>(() => (local.chiffres as Chiffre[]) ?? [])
 function ajouterSlide() {
   local.slides = [
     ...slides.value,
-    { accroche: '', cta: '', programme: 'social-media', imageFond: '', imageVisuel: '' },
+    {
+      accroche: '',
+      description: '',
+      cta: '',
+      programme: 'social-media',
+      imageFond: '',
+      imageVisuel: '',
+      altFond: '',
+      altVisuel: '',
+    },
   ]
 }
 function retirerSlide(i: number) {
@@ -40,6 +68,31 @@ function deplacerSlide(i: number, sens: -1 | 1) {
   if (cible < 0 || cible >= copie.length) return
   ;[copie[i], copie[cible]] = [copie[cible]!, copie[i]!]
   local.slides = copie
+}
+
+/**
+ * Les documents légaux étaient stockés comme une simple liste de clés. On les
+ * normalise en objets complets, en conservant l'ordre du sommaire : le juriste
+ * rend ses textes document par document, et rien ne doit disparaître entre
+ * deux livraisons.
+ */
+const documentsLegaux = computed<DocLegal[]>(() => {
+  const enregistres = (local.documents ?? []) as (DocLegal | string)[]
+  return DOCUMENTS_LEGAUX.map((attendu) => {
+    const trouve = enregistres.find((d) =>
+      typeof d === 'string' ? d === attendu.cle : d.cle === attendu.cle,
+    )
+    if (!trouve || typeof trouve === 'string') {
+      return { cle: attendu.cle, titre: attendu.titre, maj: '', corps: '' }
+    }
+    return { ...trouve, titre: trouve.titre || attendu.titre }
+  })
+})
+
+const legalOuvert = ref(DOCUMENTS_LEGAUX[0]!.cle)
+
+function majDocumentLegal(cle: string, champ: 'titre' | 'maj' | 'corps', valeur: string) {
+  local.documents = documentsLegaux.value.map((d) => (d.cle === cle ? { ...d, [champ]: valeur } : d))
 }
 
 function ajouterChiffre() {
@@ -111,6 +164,13 @@ const TYPE = ['banniere', 'accueil', 'annonce']
               </select>
             </label>
             <label class="block sm:col-span-2">
+              <span class="mb-1.5 block text-[12.5px] font-bold">Description</span>
+              <textarea v-model="slide.description" rows="2" :class="champ" />
+              <span class="mt-1 block text-[12px] text-discret">
+                Paragraphe sous le titre. Vide, la description du programme est reprise.
+              </span>
+            </label>
+            <label class="block sm:col-span-2">
               <span class="mb-1.5 block text-[12.5px] font-bold">Libellé du bouton</span>
               <input v-model="slide.cta" :class="champ">
             </label>
@@ -119,8 +179,16 @@ const TYPE = ['banniere', 'accueil', 'annonce']
               <input v-model="slide.imageFond" placeholder="/images/hero/…" :class="champ">
             </label>
             <label class="block">
+              <span class="mb-1.5 block text-[12.5px] font-bold">Texte alternatif de l’image de fond</span>
+              <input v-model="slide.altFond" :class="champ">
+            </label>
+            <label class="block">
               <span class="mb-1.5 block text-[12.5px] font-bold">Visuel <span class="font-normal text-discret">(facultatif)</span></span>
               <input v-model="slide.imageVisuel" :class="champ">
+            </label>
+            <label class="block">
+              <span class="mb-1.5 block text-[12.5px] font-bold">Texte alternatif du visuel</span>
+              <input v-model="slide.altVisuel" :class="champ">
             </label>
           </div>
         </article>
@@ -160,6 +228,69 @@ const TYPE = ['banniere', 'accueil', 'annonce']
         <span class="mb-1.5 block text-[13px] font-bold">Lien <span class="font-normal text-discret">(facultatif)</span></span>
         <input v-model="local.lien as string" placeholder="/modules/…" :class="champ">
       </label>
+    </div>
+
+    <!-- Pages légales : cinq documents, un corps par document -->
+    <div v-else-if="cle === 'legales'">
+      <label class="block">
+        <span class="mb-1.5 block text-[13px] font-bold">Note interne</span>
+        <input v-model="local.note as string" :class="champ">
+        <span class="mt-1 block text-[12px] text-discret">
+          Visible du back-office seulement, jamais sur le site.
+        </span>
+      </label>
+
+      <div class="mt-5 flex flex-wrap gap-2">
+        <button
+          v-for="doc in documentsLegaux"
+          :key="doc.cle"
+          class="rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold"
+          :class="
+            doc.cle === legalOuvert
+              ? 'border-social bg-social text-white'
+              : 'border-ligne bg-white text-texte'
+          "
+          @click="legalOuvert = doc.cle"
+        >
+          {{ doc.titre }}
+          <span v-if="!doc.corps" class="ml-1 font-normal opacity-70">— vide</span>
+        </button>
+      </div>
+
+      <template v-for="doc in documentsLegaux" :key="doc.cle">
+        <div v-if="doc.cle === legalOuvert" class="mt-4 rounded-[12px] border border-ligne-claire p-4">
+          <div class="grid gap-3 sm:grid-cols-[1fr_200px]">
+            <label class="block">
+              <span class="mb-1.5 block text-[12.5px] font-bold">Titre affiché</span>
+              <input
+                :value="doc.titre"
+                :class="champ"
+                @input="majDocumentLegal(doc.cle, 'titre', ($event.target as HTMLInputElement).value)"
+              >
+            </label>
+            <label class="block">
+              <span class="mb-1.5 block text-[12.5px] font-bold">Dernière mise à jour</span>
+              <input
+                :value="doc.maj"
+                placeholder="1er août 2026"
+                :class="champ"
+                @input="majDocumentLegal(doc.cle, 'maj', ($event.target as HTMLInputElement).value)"
+              >
+            </label>
+          </div>
+          <div class="mt-3">
+            <span class="mb-1.5 block text-[12.5px] font-bold">Corps du document</span>
+            <UiChampTexteRiche
+              :model-value="doc.corps"
+              @update:model-value="majDocumentLegal(doc.cle, 'corps', $event)"
+            />
+            <span class="mt-1 block text-[12px] text-discret">
+              Titres et paragraphes. Le HTML est assaini avant publication. Tant que le corps est
+              vide, la page affiche son avertissement de texte à fournir.
+            </span>
+          </div>
+        </div>
+      </template>
     </div>
 
     <!-- Les blocs sans forme stable gardent le JSON -->

@@ -6,6 +6,7 @@ import {
 } from '../../database/backoffice'
 import type { CleBlocVitrineSql, StatutPublicationSql } from '../../database/types'
 import { exigerSection } from '../../utils/session'
+import { assainirContenuCms } from '../../utils/texteRiche'
 
 /**
  * Enregistre un bloc du site vitrine. L'état précédent part dans l'historique
@@ -33,7 +34,12 @@ export default defineEventHandler(async (event) => {
     auteur,
   })
 
-  const bloc = await majBlocVitrine(body.cle, body, auteur)
+  // Le HTML saisi est assaini ici, comme pour les articles et les modules : la
+  // base ne doit jamais contenir de balisage qu'on n'accepterait pas d'afficher.
+  const champs = body.contenu
+    ? { ...body, contenu: assainirContenuCms(body.contenu) as Record<string, unknown> }
+    : body
+  const bloc = await majBlocVitrine(body.cle, champs, auteur)
   await enregistrerJournal(auteur, 'a modifié le site vitrine', bloc.libelle)
   return bloc
 })

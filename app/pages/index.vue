@@ -1,10 +1,37 @@
 <script setup lang="ts">
-import type { Formateur, Module, Programme, Thematique } from '#shared/types'
+import type {
+  ContenuBanniere,
+  Formateur,
+  Module,
+  Programme,
+  ProgrammeSlug,
+  Thematique,
+} from '#shared/types'
 
 type ThematiqueGarnie = Thematique & { modules: (Module & { formateur: Formateur | null })[] }
 
 const { data: programmes } = await useFetch<Programme[]>('/api/programmes')
+
+// Bloc CMS de la bannière : facultatif par construction, donc chargé sans bloquer
+// la page. Tant qu'il manque — brouillon, hors fenêtre de publication ou route en
+// échec — le carrousel se rabat sur les programmes.
+const { data: banniere } = useFetch<{ cle: string, contenu: Partial<ContenuBanniere> }>(
+  '/api/vitrine/banniere',
+  { lazy: true },
+)
 const { data: formateurs } = await useFetch<(Formateur & { nbModules: number })[]>('/api/formateurs')
+
+// Les repères chiffrés de la maquette — « 18 modules », « 9 modules », « 3
+// thématiques » — étaient écrits en dur et mentaient dès qu'un module
+// changeait de statut. Le catalogue publié les donne.
+const { data: catalogue } = await useFetch<{ programme: ProgrammeSlug, thematiqueId: string }[]>(
+  '/api/modules',
+)
+const nbModulesTotal = computed(() => catalogue.value?.length ?? 0)
+function reperes(slug: ProgrammeSlug) {
+  const siens = (catalogue.value ?? []).filter((m) => m.programme === slug)
+  return { modules: siens.length, thematiques: new Set(siens.map((m) => m.thematiqueId)).size }
+}
 
 const selection = ref<'social-media' | 'entrepreneurs'>('social-media')
 const { data: programmeSelectionne } = await useFetch<{
@@ -62,12 +89,16 @@ useJsonLd({
 
 <template>
   <div>
-    <HomeHeroCarousel v-if="programmes?.length" :programmes="programmes" />
+    <HomeHeroCarousel
+      v-if="programmes?.length"
+      :programmes="programmes"
+      :banniere="banniere?.contenu ?? null"
+    />
 
     <!-- bandeau sous le hero -->
     <div class="border-b border-ligne-claire bg-fond-clair">
       <div class="conteneur flex flex-wrap gap-x-7 gap-y-2 py-4.5 text-[14px] text-texte">
-        <span><b class="text-encre">18 modules</b><span class="hidden lg:inline"> disponibles</span></span>
+        <span><b class="text-encre">{{ nbModulesTotal }} modules</b><span class="hidden lg:inline"> disponibles</span></span>
         <span><b class="text-encre">10 000 FCFA TTC</b><span class="hidden lg:inline"> par module</span></span>
         <span><b class="text-encre">Accès à vie</b><span class="hidden lg:inline"> après l’achat</span></span>
       </div>
@@ -77,6 +108,7 @@ useJsonLd({
     <section class="border-t border-ligne-claire bg-fond-clair py-14">
       <div class="conteneur">
         <UiEnTeteSection
+          taille-surtitre="page"
           surtitre="Nos programmes"
           titre="Deux programmes pour renforcer les compétences qui font la différence"
           intro="Choisissez votre univers, puis le module qui répond à votre besoin du moment."
@@ -100,11 +132,12 @@ useJsonLd({
             </p>
             <!-- Tablette (planche A, écran 11) : carte courte, une ligne de repères et un lien. -->
             <p class="mb-5.5 flex flex-wrap gap-5 text-[14px] text-texte lg:hidden">
-              9 modules · 3 thématiques · sessions de coaching collectif
+              {{ reperes(programme.slug).modules }} modules ·
+              {{ reperes(programme.slug).thematiques }} thématiques · sessions de coaching collectif
             </p>
             <p class="mb-5.5 hidden flex-wrap gap-5 text-[14px] text-texte lg:flex">
-              <span><b class="text-encre">9 modules</b></span>
-              <span><b class="text-encre">3 thématiques</b></span>
+              <span><b class="text-encre">{{ reperes(programme.slug).modules }} modules</b></span>
+              <span><b class="text-encre">{{ reperes(programme.slug).thematiques }} thématiques</b></span>
               <span><b class="text-encre">Sessions</b> de coaching collectif</span>
             </p>
             <NuxtLink
@@ -129,7 +162,7 @@ useJsonLd({
     <!-- thématiques -->
     <section class="py-14">
       <div class="conteneur">
-        <UiSurtitre>Les thématiques</UiSurtitre>
+        <UiSurtitre taille="page">Les thématiques</UiSurtitre>
         <div class="flex flex-wrap items-end justify-between gap-6">
           <h2 class="mt-2.5 max-w-[720px] text-[34px] font-light">
             Explorez les thématiques de chaque programme
@@ -172,6 +205,7 @@ useJsonLd({
     <section class="sur-sombre bg-encre py-14 text-white">
       <div class="conteneur">
         <UiEnTeteSection
+          taille-surtitre="page"
           surtitre="Nos formateurs"
           titre="Des professionnels de terrain pour transmettre ce qu’ils pratiquent"
           intro="Chaque module est conçu et animé par un professionnel expérimenté, qui prolonge l’apprentissage lors des sessions de coaching collectif."
@@ -196,6 +230,7 @@ useJsonLd({
       <div class="conteneur grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
         <div>
           <UiEnTeteSection
+          taille-surtitre="page"
             surtitre="Questions fréquentes"
             titre="Avant de commencer, voici l’essentiel"
             intro="Retrouvez les réponses aux principales questions concernant l’achat, l’accès aux modules et les sessions de coaching."

@@ -16,6 +16,15 @@ if (!data.value) {
 
 usePagePrivee(`Sujets de la session du ${formatJourMois(data.value.session.date)}`)
 
+// Le marquage « lu » est une écriture : elle part du navigateur, une fois la
+// liste affichée, et non plus du GET qui la charge. Un échec ne doit pas gêner
+// la lecture — le compteur retombera à la prochaine ouverture.
+onMounted(() => {
+  $fetch(`/api/formateur/sujets/${route.params.sessionId}/lus`, { method: 'POST' }).catch(
+    () => undefined,
+  )
+})
+
 /** Fiche ouverte dans le panneau latéral (planche D, écran 04). Elle se
  *  charge à la demande : la liste n'a pas à ramener toutes les fiches. */
 const apprenantOuvert = ref('')
@@ -40,35 +49,34 @@ async function ouvrirFiche(utilisateurId: string) {
       ← Mes sessions de coaching
     </NuxtLink>
 
-    <h1 class="mt-3 font-title text-[26px] font-light">
+    <h1 class="mt-3 font-title text-[22px] font-light">
       Sujets soumis pour la session du {{ formatJourMois(data.session.date) }}
     </h1>
-    <p class="mt-2 text-[13.5px] text-discret">
+    <p class="mt-1.5 text-[13.5px] text-discret">
       {{ data.session.thematique }} · {{ formatDateCourte(data.session.date) }} ·
       {{ data.session.heure }} · {{ data.session.inscrits }}/{{ data.session.places }} inscrits.
       Ouvrir cette page marque les sujets comme lus.
     </p>
 
-    <div class="mt-6 grid items-start gap-6 lg:grid-cols-[1.4fr_1fr]">
-      <div class="flex flex-col gap-5">
-        <section>
-          <h2 class="font-title text-[19px] font-light">
-            Les {{ data.sujets.length }} réponses
-          </h2>
-          <p v-if="!data.sujets.length" class="mt-3 text-[13.5px] text-discret">
+    <div class="mt-4 grid items-start gap-4 lg:grid-cols-[1.4fr_1fr]">
+      <div class="flex flex-col gap-4">
+        <!-- Même grammaire que la carte « Sujets soumis » de la vue d'ensemble :
+             titre dans la carte, réponses en pastilles grises à l'intérieur. -->
+        <section class="rounded-[14px] border border-ligne-douce bg-white p-5.5">
+          <h2 class="font-sans text-[15px] font-bold">Les {{ data.sujets.length }} réponses</h2>
+          <p v-if="!data.sujets.length" class="mt-3 text-[13px] text-discret">
             Aucun sujet soumis pour l’instant.
           </p>
-          <ul class="mt-3 flex flex-col gap-2.5">
+          <ul class="mt-3.5 flex flex-col gap-2.5 text-[13px] text-texte">
             <li
               v-for="sujet in data.sujets"
               :key="sujet.id"
-              class="rounded-[12px] border bg-white p-4 text-[13.5px]"
-              :class="sujet.nouveau ? 'border-social' : 'border-ligne-douce'"
+              class="rounded-[10px] bg-fond-clair px-3.5 py-2.75"
             >
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <button
                   type="button"
-                  class="font-bold hover:underline"
+                  class="font-bold text-encre hover:underline"
                   @click="ouvrirFiche(sujet.utilisateurId)"
                 >
                   {{ sujet.apprenant }}
@@ -77,7 +85,7 @@ async function ouvrirFiche(utilisateurId: string) {
                   Nouveau
                 </span>
               </div>
-              <p class="mt-1.5 text-texte">« {{ sujet.preoccupation }} »</p>
+              <p class="mt-1">« {{ sujet.preoccupation }} »</p>
               <p v-if="sujet.attente" class="mt-1 text-[12.5px] text-discret">
                 Attente : {{ sujet.attente }}
               </p>
@@ -85,8 +93,8 @@ async function ouvrirFiche(utilisateurId: string) {
           </ul>
         </section>
 
-        <section>
-          <h2 class="font-title text-[19px] font-light">Les inscrits</h2>
+        <section class="rounded-[14px] border border-ligne-douce bg-white p-5.5">
+          <h2 class="font-sans text-[15px] font-bold">Les inscrits</h2>
           <ul class="mt-3 flex flex-wrap gap-2">
             <li v-for="inscrit in data.inscrits" :key="inscrit.id">
               <button
@@ -110,7 +118,7 @@ async function ouvrirFiche(utilisateurId: string) {
       </div>
 
       <FormateurFicheApprenant v-if="fiche" :fiche="fiche" class="lg:sticky lg:top-6" />
-      <p v-else class="rounded-[14px] border border-dashed border-ligne bg-white p-6 text-[13.5px]"
+      <p v-else class="rounded-[14px] border border-dashed border-ligne bg-white p-5.5 text-[13.5px]"
          :class="erreurFiche ? 'text-erreur' : 'text-discret'">
         {{ erreurFiche || 'Choisissez un apprenant pour afficher sa fiche.' }}
       </p>

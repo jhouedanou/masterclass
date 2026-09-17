@@ -25,11 +25,20 @@ const formateurDe = (m: { formateurId: string }) => {
 }
 const url = computed(() => `${config.public.siteUrl}/blog/${article.value.slug}`)
 
+/** La catégorie se porte en pastille, teintée du programme qu'elle sert. */
+const teintePastille = computed(() => {
+  if (article.value.categorie === 'Social Média') return 'bg-social-voile text-social'
+  if (article.value.categorie === 'Entrepreneuriat') return 'bg-entrepreneurs-voile text-entrepreneurs'
+  return 'bg-fond-voile text-texte'
+})
+const PARTAGE = 'rounded-full border-[1.5px] border-ligne px-4.5 py-2.25 text-texte hover:bg-fond-clair'
+
 usePageSeo({
   titreAuto: `${article.value.titre} | E-Masterclass Big Five`,
   descriptionAuto: article.value.chapo,
   imageAuto: article.value.image,
   seo: article.value.seo,
+  type: 'article',
 })
 
 const mailles = computed(() => [
@@ -64,56 +73,76 @@ const html = computed(() => rendreTexteRiche(article.value.contenu))
 </script>
 
 <template>
-  <div v-if="data">
-    <div class="conteneur pt-6">
-      <FilAriane :mailles="mailles" />
-    </div>
+  <div v-if="data" class="conteneur grid items-start gap-14 pt-11 pb-14 lg:grid-cols-[1fr_340px]">
+    <article>
+      <FilAriane class="mb-4" :mailles="mailles" />
 
-    <article class="conteneur max-w-[760px] pt-6 pb-14">
-      <p class="surtitre text-social">{{ article.categorie }}</p>
-      <h1 class="mt-3 text-[38px] leading-[1.15] font-medium">{{ article.titre }}</h1>
-      <p class="mt-4 text-[19px] leading-relaxed text-texte">{{ article.chapo }}</p>
-
-      <p class="mt-5 text-[13px] text-discret">
-        <span v-if="data.auteur">{{ data.auteur.nom }} · </span>
-        <time :datetime="article.publieLe ?? undefined">{{ formatDate(article.publieLe) }}</time>
-        · {{ article.tempsLectureMinutes }} min de lecture
+      <p class="mb-3.5">
+        <span class="rounded-full px-3 py-[5px] text-[11.5px] font-bold" :class="teintePastille">
+          {{ article.categorie }}
+        </span>
       </p>
+      <h1 class="mb-3.5 font-title text-[40px] leading-[1.15] font-light text-pretty">{{ article.titre }}</h1>
+      <p class="mb-4.5 text-[18px] leading-relaxed font-semibold text-encre">{{ article.chapo }}</p>
+
+      <!-- Signature entre deux filets : c'est la césure entre le chapô et le corps. -->
+      <div class="mb-6.5 flex items-center gap-3 border-y border-ligne-claire py-3.5 text-[13.5px]">
+        <NuxtImg
+          v-if="data.auteur"
+          :src="data.auteur.photo"
+          :alt="data.auteur.photoAlt || `Portrait de ${data.auteur.nom}`"
+          width="42"
+          height="42"
+          loading="lazy"
+          class="size-[42px] rounded-full bg-fond-voile object-cover"
+        />
+        <div>
+          <b v-if="data.auteur">{{ data.auteur.nom }}</b>
+          <p class="text-discret">
+            <time :datetime="article.publieLe ?? undefined">{{ formatDate(article.publieLe) }}</time>
+            · {{ article.tempsLectureMinutes }} min de lecture
+          </p>
+        </div>
+      </div>
 
       <NuxtImg
         :src="article.image"
         :alt="article.imageAlt"
         width="960"
         height="540"
-        class="mt-8 aspect-16/9 w-full rounded-carte bg-fond-voile object-cover"
+        class="mb-7.5 h-[340px] w-full rounded-carte bg-fond-voile object-cover"
       />
 
       <!-- eslint-disable-next-line vue/no-v-html -->
-      <div class="editorial mt-8" v-html="html" />
+      <div class="editorial" v-html="html" />
 
-      <div v-if="data.modulesLies.length" class="mt-10 rounded-carte border border-ligne-douce bg-fond-clair p-6">
-        <h2 class="font-title text-[21px] font-light">Modules liés à cet article</h2>
-        <ul class="mt-4 divide-y divide-ligne-claire">
-          <li v-for="m in data.modulesLies" :key="m.id" class="flex flex-wrap items-center justify-between gap-3 py-3">
-            <div>
-              <p class="text-[11.5px] font-bold tracking-[0.1em] uppercase" :class="m.programme === 'social-media' ? 'text-social' : 'text-entrepreneurs'">
-                Module {{ numeroModule(m.numero) }}
-              </p>
-              <NuxtLink :to="`/modules/${m.slug}`" class="font-title text-[19px] font-light text-encre hover:underline">{{ m.titre }}</NuxtLink>
-              <p class="text-[13px] text-discret">{{ formateurDe(m) }}{{ formatFcfa(m.prixFcfa) }} TTC</p>
-            </div>
-            <UiBaseButton :to="`/modules/${m.slug}`" taille="sm" variante="contour">Voir le module</UiBaseButton>
-          </li>
-        </ul>
+      <div v-if="data.modulesLies.length" class="mt-7 rounded-carte border border-ligne-douce p-6">
+        <h2 class="mb-3.5 text-[11.5px] font-bold tracking-[0.14em] text-discret uppercase">
+          Modules liés à cet article
+        </h2>
+        <div class="grid gap-3.5 sm:grid-cols-2">
+          <NuxtLink
+            v-for="m in data.modulesLies"
+            :key="m.id"
+            :to="`/modules/${m.slug}`"
+            class="flex flex-col gap-1.5 rounded-[12px] border border-ligne-douce p-4 text-encre hover:bg-fond-clair"
+          >
+            <span class="text-[11.5px] font-bold tracking-[0.1em] uppercase" :class="m.programme === 'social-media' ? 'text-social' : 'text-entrepreneurs'">
+              Module {{ numeroModule(m.numero) }}
+            </span>
+            <span class="font-title text-[17px] font-light">{{ m.titre }}</span>
+            <span class="text-[12.5px] text-discret">{{ formateurDe(m) }}{{ formatFcfa(m.prixFcfa, true) }}</span>
+          </NuxtLink>
+        </div>
       </div>
 
-      <div class="mt-8 flex flex-wrap items-center gap-3 border-t border-ligne-claire pt-6 text-[13.5px]">
-        <span class="text-discret">Partager :</span>
+      <div class="mt-7 flex flex-wrap items-center gap-3 text-[13px] font-bold">
+        <span class="text-texte">Partager :</span>
         <a
           :href="lienWhatsApp(`${article.titre} — ${url}`)"
           target="_blank"
           rel="noopener"
-          class="rounded-full border border-ligne px-4 py-2 text-encre hover:bg-fond-clair"
+          class="rounded-full border-[1.5px] border-whatsapp px-4.5 py-2.25 text-whatsapp hover:bg-succes-voile"
         >
           WhatsApp
         </a>
@@ -121,7 +150,7 @@ const html = computed(() => rendreTexteRiche(article.value.contenu))
           :href="`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`"
           target="_blank"
           rel="noopener"
-          class="rounded-full border border-ligne px-4 py-2 text-encre hover:bg-fond-clair"
+          :class="PARTAGE"
         >
           Facebook
         </a>
@@ -129,30 +158,58 @@ const html = computed(() => rendreTexteRiche(article.value.contenu))
           :href="`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`"
           target="_blank"
           rel="noopener"
-          class="rounded-full border border-ligne px-4 py-2 text-encre hover:bg-fond-clair"
+          :class="PARTAGE"
         >
           LinkedIn
         </a>
       </div>
     </article>
 
-    <section v-if="data.associes.length" class="border-t border-ligne-claire bg-fond-clair py-14">
-      <div class="conteneur">
-        <h2 class="font-title text-[27px] font-light">Articles associés</h2>
-        <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <CatalogueArticleCarte v-for="a in data.associes" :key="a.id" :article="a" />
+    <!-- Colonne collante : articles associés puis appel aux programmes. -->
+    <aside class="flex flex-col gap-4.5 lg:sticky lg:top-6">
+      <div v-if="data.associes.length" class="rounded-carte border border-ligne-tendre p-5.5">
+        <h2 class="mb-3.5 text-[11.5px] font-bold tracking-[0.14em] text-discret uppercase">
+          Articles associés
+        </h2>
+        <div class="flex flex-col gap-3.5">
+          <NuxtLink
+            v-for="a in data.associes"
+            :key="a.id"
+            :to="`/blog/${a.slug}`"
+            class="flex items-start gap-3 text-encre"
+          >
+            <NuxtImg
+              :src="a.image"
+              :alt="a.imageAlt"
+              width="64"
+              height="64"
+              loading="lazy"
+              class="size-16 shrink-0 rounded-[10px] bg-fond-voile object-cover"
+            />
+            <span>
+              <span class="block text-[14px] leading-[1.35] font-semibold hover:underline">{{ a.titre }}</span>
+              <span class="text-[12.5px] text-discret">{{ a.tempsLectureMinutes }} min de lecture</span>
+            </span>
+          </NuxtLink>
         </div>
       </div>
-    </section>
 
-    <section class="border-t border-ligne-claire py-14">
-      <div class="conteneur text-center">
-        <h2 class="font-title text-[27px] font-light">Envie d’approfondir cette compétence ?</h2>
-        <p class="mt-3 text-[15.5px] text-texte">Chaque module se choisit à l’unité, selon votre besoin du moment.</p>
-        <UiBaseButton :to="`/programmes/${article.categorie === 'Entrepreneuriat' ? 'entrepreneurs' : 'social-media'}`" class="mt-6" variante="sombre">
+      <div class="sur-sombre rounded-carte bg-encre p-6 text-white">
+        <p class="mb-2.5 font-title text-[20px] leading-[1.3] font-light">
+          Envie d’approfondir cette compétence ?
+        </p>
+        <p class="mb-4 text-[13.5px] leading-relaxed text-nuit-clair">
+          Chaque module se choisit à l’unité, selon votre besoin du moment.
+        </p>
+        <UiBaseButton
+          :to="`/programmes/${article.categorie === 'Entrepreneuriat' ? 'entrepreneurs' : 'social-media'}`"
+          class="w-full"
+          variante="blanc"
+          taille="sm"
+        >
           Découvrir les programmes
         </UiBaseButton>
       </div>
-    </section>
+    </aside>
   </div>
 </template>

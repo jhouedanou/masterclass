@@ -330,47 +330,37 @@ const nomThematique = computed(
   () => data.value?.thematiques.find((t) => t.id === data.value?.module.thematiqueId)?.nom ?? '',
 )
 
-const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px] focus:border-social focus:outline-none'
+// Écran 09 : filets de 1,5 px, chemise 11/13, corps 13,5 px.
+const champ =
+  'w-full rounded-[10px] border-[1.5px] border-ligne px-3.5 py-[11px] text-[13.5px] focus:border-social focus:outline-none'
 </script>
 
 <template>
   <div v-if="data">
-    <NuxtLink to="/admin/contenus" class="text-[13px] text-discret hover:underline">← Modules &amp; chapitres</NuxtLink>
-
-    <div class="mt-3 flex flex-wrap items-start justify-between gap-4">
+    <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h1 class="font-title text-[26px] font-light">
+        <p class="text-[12px] text-discret">
+          <NuxtLink to="/admin/contenus" class="text-inherit hover:underline">Modules &amp; chapitres</NuxtLink>
+          / {{ data.module.programme === 'social-media' ? 'Social Média' : 'Entrepreneurs' }}
+          / {{ nomThematique }} /
+        </p>
+        <h1 class="mt-1 font-title text-[24px] font-light">
           Module {{ String(data.module.numero).padStart(2, '0') }} · {{ data.module.titre }}
         </h1>
-        <p class="mt-1.5 flex flex-wrap items-center gap-2 text-[13px] text-discret">
-          <span
-            class="rounded-full px-2.5 py-1 text-[11px] font-bold"
-            :class="{
-              'bg-succes-voile text-succes': data.module.statut === 'disponible',
-              'bg-alerte-voile text-alerte': data.module.statut === 'en-preparation',
-              'bg-fond-voile text-discret': data.module.statut === 'brouillon',
-            }"
-          >
-            {{ LIBELLE_STATUT[data.module.statut] ?? data.module.statut }}
-          </span>
-          <span
-            v-if="data.module.pretLe"
-            class="rounded-full bg-succes-voile px-2.5 py-1 text-[11px] font-bold text-succes"
-          >
-            Prêt
-          </span>
-          <span>{{ data.module.programme === 'social-media' ? 'Social Média' : 'Entrepreneurs' }}</span>
-          <span>·</span>
-          <span>{{ nomThematique }}</span>
-        </p>
       </div>
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2.5">
+        <!-- La maquette réunit statut et sauvegarde dans une seule pastille :
+             « Brouillon — sauvegardé il y a 12 s ». -->
         <span
-          v-if="mentionAutosave"
-          class="rounded-full bg-[#fff4e2] px-3 py-1.5 text-[12.5px] font-bold text-[#a06a12]"
+          class="rounded-full px-3.5 py-1.5 text-[12px] font-bold"
+          :class="{
+            'bg-succes-voile text-succes': data.module.statut === 'disponible',
+            'bg-alerte-voile text-alerte': data.module.statut !== 'disponible',
+          }"
           role="status"
         >
-          {{ mentionAutosave }}
+          {{ LIBELLE_STATUT[data.module.statut] ?? data.module.statut
+          }}<template v-if="mentionAutosave"> — {{ mentionAutosave }}</template>
         </span>
         <UiBaseButton
           :to="`/apercu/${data.module.slug}`"
@@ -383,36 +373,41 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
         <!-- « Prêt » est refusé côté serveur si la checklist ne passe pas : le
              bouton reste actif pour que le motif s'affiche plutôt que de
              laisser deviner pourquoi il ne se passe rien. -->
-        <UiBaseButton taille="sm" :variante="data.module.pretLe ? 'contour' : undefined" @click="basculerPret">
+        <UiBaseButton taille="sm" :variante="data.module.pretLe ? 'contour' : 'sombre'" @click="basculerPret">
           {{ data.module.pretLe ? 'Retirer « Prêt »' : 'Marquer « Prêt »' }}
         </UiBaseButton>
       </div>
     </div>
 
-    <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-[#fdeeee] px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>
-    <p v-if="succes" class="mt-4 rounded-[10px] border border-succes bg-succes-voile px-4 py-3 text-[14px] text-succes">{{ succes }}</p>
+    <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-erreur-voile px-4 py-3 text-[13px] text-erreur">{{ erreur }}</p>
+    <p v-if="succes" class="mt-4 rounded-[10px] border border-succes bg-succes-voile px-4 py-3 text-[13px] text-succes">{{ succes }}</p>
 
     <UiOnglets
-      class="mt-5"
+      class="mt-4"
+      variante="dossier"
       :onglets="ONGLETS"
       :model-value="onglet"
       @update:model-value="onglet = $event as Onglet"
     />
 
+    <!-- Écran 09 : les onglets sont soudés au panneau, qui perd son coin
+         supérieur gauche pour se raccorder au premier d'entre eux. -->
+    <div class="rounded-[0_14px_14px_14px] border border-ligne-douce bg-white p-[26px]">
+
     <!-- Informations -->
-    <section v-if="onglet === 'informations'" class="mt-6 max-w-[760px]">
-      <div class="flex flex-col gap-4">
+    <section v-if="onglet === 'informations'" class="max-w-[760px]">
+      <div class="flex flex-col gap-3">
         <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Titre du module</span>
+          <span class="mb-1.5 block text-[12.5px] font-bold">Titre du module</span>
           <input v-model="fiche.titre" :class="champ">
         </label>
         <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">La promesse</span>
+          <span class="mb-1.5 block text-[12.5px] font-bold">La promesse</span>
           <textarea v-model="fiche.promesse" rows="2" :class="champ" />
-          <span class="mt-1 block text-[12px] text-discret">Sous le titre, en une phrase — le bénéfice concret.</span>
+          <span class="mt-1 block text-[11.5px] text-discret">Sous le titre, en une phrase — le bénéfice concret.</span>
         </label>
         <div class="block">
-          <span id="champ-pourquoi" class="mb-1.5 block text-[13px] font-bold">Pourquoi ce module ?</span>
+          <span id="champ-pourquoi" class="mb-1.5 block text-[12.5px] font-bold">Pourquoi ce module ?</span>
           <UiChampTexteRiche
             v-model="fiche.pourquoi"
             :hauteur="160"
@@ -421,21 +416,21 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
           />
         </div>
         <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Pour qui ?</span>
+          <span class="mb-1.5 block text-[12.5px] font-bold">Pour qui ?</span>
           <textarea v-model="fiche.pourQui" rows="3" :class="champ" />
-          <span class="mt-1 block text-[12px] text-discret">Une ligne = une puce sur la fiche publique.</span>
+          <span class="mt-1 block text-[11.5px] text-discret">Une ligne = une puce sur la fiche publique.</span>
         </label>
         <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Prérequis</span>
+          <span class="mb-1.5 block text-[12.5px] font-bold">Prérequis</span>
           <input v-model="fiche.prerequis" :class="champ">
         </label>
         <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Les objectifs du module</span>
+          <span class="mb-1.5 block text-[12.5px] font-bold">Les objectifs du module</span>
           <textarea v-model="fiche.acquis" rows="3" :class="champ" />
-          <span class="mt-1 block text-[12px] text-discret">Une ligne = un objectif.</span>
+          <span class="mt-1 block text-[11.5px] text-discret">Une ligne = un objectif.</span>
         </label>
         <div class="block">
-          <span id="champ-livrable" class="mb-1.5 block text-[13px] font-bold">Ce que vous construisez pendant le module</span>
+          <span id="champ-livrable" class="mb-1.5 block text-[12.5px] font-bold">Ce que vous construisez pendant le module</span>
           <UiChampTexteRiche
             v-model="fiche.livrable"
             :hauteur="110"
@@ -450,68 +445,65 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
     </section>
 
     <!-- Chapitres -->
-    <section v-if="onglet === 'chapitres'" class="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-[1fr_380px]">
-      <div>
-        <AdminChecklistPret :checklist="data.checklist" />
-
-        <div v-if="data.chapitres.length" class="mt-4 flex flex-col gap-2">
-          <article
-            v-for="(c, i) in data.chapitres"
-            :key="c.id"
-            class="rounded-[12px] border bg-white p-4"
-            :class="chapitreSelectionne === c.id ? 'border-social' : 'border-ligne-douce'"
-          >
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <button class="min-w-0 flex-1 text-left" @click="chapitreSelectionne = c.id">
-                <p class="text-[14px] font-bold text-encre">
-                  <span class="text-discret">⋮⋮</span> {{ c.libelle }} · {{ c.titre }}
-                </p>
-                <!-- Ligne d'état : trois cas seulement, et le plus utile est le
-                     dernier — ce qu'il reste à faire sur ce chapitre. -->
-                <p
-                  class="mt-0.5 text-[12.5px]"
-                  :class="c.depotEnCours ? 'font-bold text-alerte' : c.videoCle ? 'text-succes' : 'text-discret'"
-                >
-                  <template v-if="c.depotEnCours">
-                    Téléversement en cours — {{ c.depotEnCours.nomFichier }}
-                    ({{ c.depotEnCours.parts.length }}/{{ c.depotEnCours.nbParts }} parts)
-                  </template>
-                  <template v-else-if="c.videoCle">
-                    Vidéo : {{ c.videoNomFichier ?? c.videoCle }}
-                    <template v-if="c.videoDureeSecondes"> · {{ Math.round(c.videoDureeSecondes / 60) }} min</template>
-                    <template v-if="poids(c.videoTailleOctets)"> · {{ poids(c.videoTailleOctets) }}</template>
-                    · {{ c.nbLignesScript ? 'script importé ✓' : 'script à importer' }}
-                  </template>
-                  <template v-else>
-                    Aucune vidéo · {{ c.nbLignesScript ? 'script importé ✓' : 'script à importer' }}
-                  </template>
-                </p>
-              </button>
-              <div class="flex items-center gap-1.5">
-                <button class="rounded-[8px] border border-ligne px-2 py-1 text-[12px]" :disabled="i === 0" @click="deplacer(i, -1)">↑</button>
-                <button class="rounded-[8px] border border-ligne px-2 py-1 text-[12px]" :disabled="i === data.chapitres.length - 1" @click="deplacer(i, 1)">↓</button>
-                <button class="ml-2 text-[12.5px] text-erreur underline" @click="chapitre({ action: 'supprimer', id: c.id })">Retirer</button>
-              </div>
-            </div>
-
-            <AdminDepotVideo
-              v-if="chapitreSelectionne === c.id"
-              class="mt-4 border-t border-ligne-claire pt-4"
-              :chapitre-id="c.id"
-              :module-id="data.module.id"
-              :depot-en-cours="c.depotEnCours"
-              @termine="refresh"
-              @annule="refresh"
-            />
-          </article>
-        </div>
-        <p v-else class="mt-4 rounded-[12px] border border-dashed border-ligne p-5 text-[13.5px] text-discret">
+    <section v-if="onglet === 'chapitres'" class="grid items-start gap-6 md:grid-cols-2 lg:grid-cols-[1fr_380px]">
+      <div class="flex flex-col gap-3">
+        <article
+          v-for="(c, i) in data.chapitres"
+          :key="c.id"
+          class="flex flex-wrap items-center gap-3.5 rounded-[12px] border px-[18px] py-4"
+          :class="chapitreSelectionne === c.id ? 'border-social' : 'border-ligne-douce'"
+        >
+          <span class="text-discret" aria-hidden="true">⋮⋮</span>
+          <div class="min-w-0 flex-1">
+            <p class="text-[14px] font-bold text-encre">{{ c.libelle }} — {{ c.titre }}</p>
+            <!-- Ligne d'état : trois cas seulement, et le plus utile est le
+                 dernier — ce qu'il reste à faire sur ce chapitre. -->
+            <p class="mt-[3px] text-[12px] text-discret">
+              <template v-if="c.depotEnCours">
+                Vidéo : {{ c.depotEnCours.nomFichier }} ·
+                <span class="font-bold text-alerte">
+                  téléversement {{ Math.round((c.depotEnCours.parts.length / c.depotEnCours.nbParts) * 100) }} %
+                </span>
+              </template>
+              <template v-else-if="c.videoCle">
+                Vidéo : {{ c.videoNomFichier ?? c.videoCle }}
+                <template v-if="c.videoDureeSecondes"> · {{ Math.round(c.videoDureeSecondes / 60) }} min</template>
+                <template v-if="poids(c.videoTailleOctets)"> · {{ poids(c.videoTailleOctets) }}</template>
+                · {{ c.nbLignesScript ? 'script importé ✓' : 'script manquant' }}
+              </template>
+              <template v-else>
+                Aucune vidéo · {{ c.nbLignesScript ? 'script importé ✓' : 'script manquant' }}
+              </template>
+            </p>
+          </div>
+          <div class="flex items-center gap-2 text-[12.5px] font-bold">
+            <button class="rounded-[8px] border border-ligne px-2 py-1 font-normal" :disabled="i === 0" aria-label="Monter le chapitre" @click="deplacer(i, -1)">↑</button>
+            <button class="rounded-[8px] border border-ligne px-2 py-1 font-normal" :disabled="i === data.chapitres.length - 1" aria-label="Descendre le chapitre" @click="deplacer(i, 1)">↓</button>
+            <button class="ml-1.5 text-social" @click="chapitreSelectionne = c.id">Modifier</button>
+            <button class="text-erreur" @click="chapitre({ action: 'supprimer', id: c.id })">Retirer</button>
+          </div>
+        </article>
+        <p v-if="!data.chapitres.length" class="rounded-[12px] border border-dashed border-ligne-pointillee p-5 text-[13px] text-discret">
           Aucun chapitre. Il en faut au moins un pour pouvoir ouvrir l’offre.
         </p>
 
-        <form class="mt-4 rounded-[14px] border border-ligne-douce bg-white p-5" @submit.prevent="ajouterChapitre">
-          <h3 class="font-title text-[16px] font-light">Ajouter un chapitre (illimité)</h3>
-          <div class="mt-3 grid gap-3 sm:grid-cols-[1fr_2fr_auto]">
+        <!-- Le dépôt vise le chapitre ouvert : la maquette pose la zone sous
+             la liste, une seule fois, et non dans chaque ligne. -->
+        <AdminDepotVideo
+          v-if="chapitreCourant"
+          :key="chapitreCourant.id"
+          :chapitre-id="chapitreCourant.id"
+          :module-id="data.module.id"
+          :depot-en-cours="chapitreCourant.depotEnCours"
+          @termine="refresh"
+          @annule="refresh"
+        />
+
+        <AdminChecklistPret :checklist="data.checklist" />
+
+        <form class="rounded-[12px] border border-ligne-douce px-[18px] py-4" @submit.prevent="ajouterChapitre">
+          <h3 class="font-sans text-[14px] font-bold">Ajouter un chapitre (illimité)</h3>
+          <div class="mt-3 grid gap-2.5 sm:grid-cols-[1fr_2fr_auto]">
             <input v-model="nouveauChapitre.libelle" placeholder="Chapitre 1" :class="champ">
             <input v-model="nouveauChapitre.titre" placeholder="Titre du chapitre" required :class="champ">
             <input v-model.number="nouveauChapitre.dureeMinutes" type="number" min="1" placeholder="min" :class="champ">
@@ -532,36 +524,30 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
       />
     </section>
 
-    <AdminApercuModule
-      v-if="onglet === 'chapitres'"
-      :module-id="data.module.id"
-      :slug="data.module.slug"
-    />
-
     <!-- Ressources -->
-    <section v-if="onglet === 'ressources'" class="mt-6 max-w-[760px]">
+    <section v-if="onglet === 'ressources'" class="max-w-[760px]">
       <div v-if="data.ressources.length" class="flex flex-col gap-2">
         <article
           v-for="r in data.ressources"
           :key="r.id"
-          class="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-ligne-douce bg-white p-4"
+          class="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-ligne-douce px-[18px] py-4"
         >
           <div class="min-w-0">
             <p class="text-[14px] font-bold text-encre">{{ r.titre }}</p>
             <p class="mt-0.5 truncate text-[12.5px] text-discret">{{ r.format }} · {{ r.url }}</p>
           </div>
-          <button class="text-[12.5px] text-erreur underline" @click="ressource({ action: 'supprimer', id: r.id })">Retirer</button>
+          <button class="text-[12.5px] font-bold text-erreur" @click="ressource({ action: 'supprimer', id: r.id })">Retirer</button>
         </article>
       </div>
-      <p v-else class="rounded-[12px] border border-dashed border-ligne p-5 text-[13.5px] text-discret">
+      <p v-else class="rounded-[12px] border border-dashed border-ligne-pointillee p-5 text-[13px] text-discret">
         Aucune ressource. Modèles, checklists et supports remis à l’apprenant se déposent ici.
       </p>
 
       <form
-        class="mt-4 rounded-[14px] border border-ligne-douce bg-white p-5"
+        class="mt-4 rounded-[12px] border border-ligne-douce px-[18px] py-4"
         @submit.prevent="ajouterRessource"
       >
-        <h3 class="font-title text-[16px] font-light">Ajouter une ressource</h3>
+        <h3 class="font-sans text-[14px] font-bold">Ajouter une ressource</h3>
         <div class="mt-3 grid gap-3 sm:grid-cols-[2fr_2fr_1fr]">
           <input v-model="nouvelleRessource.titre" placeholder="Titre" required :class="champ">
           <input v-model="nouvelleRessource.url" placeholder="Lien du fichier" required :class="champ">
@@ -572,15 +558,15 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
     </section>
 
     <!-- Fiche commerciale (écran 02B), même éditeur que /admin/fiche/[id] -->
-    <section v-if="onglet === 'fiche'" class="mt-6">
+    <section v-if="onglet === 'fiche'">
       <AdminFicheCommerciale :id="data.module.id" integre @enregistre="refresh" />
     </section>
 
     <!-- Offre & prix -->
-    <section v-if="onglet === 'offre'" class="mt-6 max-w-[620px]">
-      <div class="rounded-[14px] border border-ligne-douce bg-white p-5">
+    <section v-if="onglet === 'offre'" class="max-w-[620px]">
+      <div class="rounded-[12px] border border-ligne-douce px-[18px] py-4">
         <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Prix TTC (FCFA)</span>
+          <span class="mb-1.5 block text-[12.5px] font-bold">Prix TTC (FCFA)</span>
           <input v-model.number="prix" type="number" min="0" step="500" :class="champ">
         </label>
         <UiBaseButton class="mt-4" taille="sm" variante="contour" @click="appliquer({ prixFcfa: prix })">
@@ -588,11 +574,11 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
         </UiBaseButton>
       </div>
 
-      <div class="mt-4 rounded-[14px] border p-5" :class="data.peutOuvrirOffre ? 'border-succes bg-succes-voile' : 'border-alerte bg-alerte-voile'">
-        <p class="text-[14px] font-bold text-encre">
+      <div class="mt-4 rounded-[12px] border px-[18px] py-4" :class="data.peutOuvrirOffre ? 'border-succes-bordure bg-succes-pale' : 'border-alerte-bordure bg-alerte-pale'">
+        <p class="font-sans text-[14px] font-bold text-encre">
           {{ data.module.statut === 'disponible' ? 'Offre ouverte' : 'Offre fermée' }}
         </p>
-        <p class="mt-1.5 text-[13px] text-texte">
+        <p class="mt-1.5 text-[12.5px] leading-[1.6] text-texte">
           <template v-if="data.peutOuvrirOffre">
             Fermer l’offre ne retire jamais les accès déjà acquis : les apprenants gardent leur
             module à vie.
@@ -626,7 +612,7 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
     <!-- Historique -->
     <!-- Référencement et partage (planche C, écran 24) : même panneau que la
          liste SEO, mêmes champs, même API. -->
-    <section v-if="onglet === 'referencement'" class="mt-6 max-w-[620px]">
+    <section v-if="onglet === 'referencement'" class="max-w-[620px]">
       <AdminPanneauReferencement
         :id="data.module.id"
         :libelle="data.module.titre"
@@ -638,23 +624,34 @@ const champ = 'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]
       />
     </section>
 
-    <section v-if="onglet === 'historique'" class="mt-6 max-w-[760px]">
+    <section v-if="onglet === 'historique'" class="max-w-[760px]">
       <div v-if="data.versions.length" class="flex flex-col gap-2">
         <article
           v-for="v in data.versions"
           :key="v.id"
-          class="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-ligne-douce bg-white p-4"
+          class="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-ligne-douce px-[18px] py-4"
         >
           <p class="text-[13.5px]">
             <b class="text-encre">{{ new Date(v.creeLe).toLocaleString('fr-FR') }}</b>
             <span class="text-discret"> — avant modification par {{ v.auteur }}</span>
           </p>
-          <button class="text-[12.5px] underline" @click="restaurer(v.id)">Restaurer</button>
+          <button class="text-[12.5px] font-bold text-social" @click="restaurer(v.id)">Restaurer</button>
         </article>
       </div>
-      <p v-else class="rounded-[12px] border border-dashed border-ligne p-5 text-[13.5px] text-discret">
+      <p v-else class="rounded-[12px] border border-dashed border-ligne-pointillee p-5 text-[13px] text-discret">
         Aucune version enregistrée : ce module n’a pas encore été modifié depuis le back-office.
       </p>
     </section>
+    </div>
+
+    <!-- Prévisualisation desktop + mobile (écran 10), sous le panneau. -->
+    <AdminApercuModule
+      v-if="onglet === 'chapitres'"
+      :module-id="data.module.id"
+      :slug="data.module.slug"
+      :numero="data.module.numero"
+      :titre="data.module.titre"
+      :programme="data.module.programme === 'social-media' ? 'Social Média' : 'Entrepreneurs'"
+    />
   </div>
 </template>

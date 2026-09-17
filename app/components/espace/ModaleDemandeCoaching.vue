@@ -130,7 +130,7 @@ function envoyer() {
               :class="formateurId === f.id ? 'border-social bg-social-voile' : 'border-ligne'"
             >
               <input v-model="formateurId" type="radio" name="formateur" :value="f.id" class="accent-social">
-              <img :src="f.photo" alt="" class="size-10 rounded-full object-cover">
+              <img :src="f.photo" alt="" class="size-10 rounded-full object-cover" width="40" height="40" loading="lazy">
               <span>
                 <span class="block text-[14px] font-bold text-encre">{{ f.nom }}</span>
                 <span class="block text-[12px] text-discret">{{ f.expertise }}</span>

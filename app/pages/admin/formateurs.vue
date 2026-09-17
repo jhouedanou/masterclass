@@ -46,7 +46,7 @@ async function basculerCoachingPrive(f: FormateurAdmin) {
 // --- Édition d'une fiche (écran 11) -----------------------------------------
 
 const edition = ref<FormateurAdmin | null>(null)
-const fiche = reactive({ nom: '', expertise: '', bio: '', programmePrincipal: 'social-media', ficheComplete: false })
+const fiche = reactive({ nom: '', expertise: '', bio: '', photoAlt: '', programmePrincipal: 'social-media', ficheComplete: false })
 
 function ouvrirEdition(f: FormateurAdmin) {
   edition.value = f
@@ -54,6 +54,7 @@ function ouvrirEdition(f: FormateurAdmin) {
     nom: f.nom,
     expertise: f.expertise,
     bio: f.bio,
+    photoAlt: f.photoAlt ?? '',
     programmePrincipal: f.programmePrincipal,
     ficheComplete: f.ficheComplete,
   })
@@ -121,26 +122,24 @@ const confirmation = ref('')
 
 <template>
   <div>
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="font-title text-[26px] font-light">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <h1 class="font-title text-[22px] font-light">
         Formateurs — {{ formateurs?.length ?? 0 }} profils
       </h1>
-      <UiBaseButton taille="sm" variante="contour" @click="ouvrirCreation()">+ Ajouter un formateur</UiBaseButton>
+      <UiBaseButton taille="sm" variante="sombre" @click="ouvrirCreation()">
+        + Ajouter un formateur
+      </UiBaseButton>
     </div>
 
-    <p class="mt-2 max-w-[820px] text-[12.5px] text-discret">
-      Le profil public (photo, bio, spécialité) est modifiable ici ; l’ordre pilote la page
-      /formateurs. Tarif de coaching privé fixe à 50 000 FCFA / h pour tous. L’accès « Formateur
-      simple » ou « Formateur avec coaching privé » se bascule ci-dessous : il ouvre la section
-      dans son espace et le rend sélectionnable dans les demandes des apprenants.
-    </p>
+    <p v-if="message" class="mb-4 rounded-[12px] border border-succes bg-succes-voile p-3 text-[13.5px] text-succes">{{ message }}</p>
+    <p v-if="erreur" class="mb-4 rounded-[12px] border border-erreur bg-erreur-voile p-3 text-[13.5px] text-erreur">{{ erreur }}</p>
 
-    <p v-if="message" class="mt-4 rounded-[12px] border border-succes bg-succes-voile p-3 text-[13.5px] text-succes">{{ message }}</p>
-    <p v-if="erreur" class="mt-4 rounded-[12px] border border-erreur bg-[#fdeeee] p-3 text-[13.5px] text-erreur">{{ erreur }}</p>
-
+    <!-- Largeurs de colonnes de la maquette, écran 11. Les actions n'ont pas
+         de colonne : elles se rangent au bout de l'ordre public. -->
     <AdminTableauSimple
-      class="mt-5"
-      :colonnes="['Formateur', 'Modules', 'Accès', 'Tarif coaching', 'Ordre public', 'Actions']"
+      :colonnes="['Formateur', 'Modules', 'Accès', 'Tarif coaching', 'Ordre public']"
+      :largeurs="['calc((100% - 465px) * 0.6154)', 'calc((100% - 465px) * 0.3846)', '175px', '120px', '170px']"
+      largeur-min="820px"
     >
       <tr
         v-for="f in formateurs"
@@ -149,67 +148,86 @@ const confirmation = ref('')
         @dragover.prevent
         @drop.prevent="deposer(f)"
       >
-        <td class="px-4 py-3">
-          <p class="font-bold">{{ f.nom }}</p>
-          <p class="text-[12px] text-discret">{{ f.expertise }}</p>
-        </td>
-        <td class="px-4 py-3">
-          {{ f.nbModules }} module{{ f.nbModules > 1 ? 's' : '' }} · {{ f.nbProgrammes }} programme{{ f.nbProgrammes > 1 ? 's' : '' }}
-          <span class="block text-[12px]" :class="f.compte ? 'text-discret' : 'text-alerte'">
-            {{ f.compte ? f.compte.email : 'Aucun compte rattaché' }}
+        <td class="px-[18px] py-3.5">
+          <span class="flex items-center gap-2.5">
+            <span class="rayures-visuel-social size-[34px] shrink-0 rounded-full" />
+            <span class="min-w-0">
+              <!-- Le lien vers la fiche publique passe par le nom : la maquette
+                   ne montre pas d'action « Voir ». -->
+              <NuxtLink :to="`/formateurs/${f.slug}`" class="font-bold text-inherit hover:underline">
+                {{ f.nom }}
+              </NuxtLink>
+              <span class="block text-[11.5px] text-discret">{{ f.expertise }}</span>
+            </span>
           </span>
         </td>
-        <td class="px-4 py-3">
+        <td class="px-[18px] py-3.5">
+          {{ f.nbModules }} module{{ f.nbModules > 1 ? 's' : '' }} ·
+          {{ f.nbProgrammes }} programme{{ f.nbProgrammes > 1 ? 's' : '' }}
+        </td>
+        <td class="px-[18px] py-3.5">
           <span
-            class="rounded-full px-2.5 py-1 text-[11px] font-bold"
-            :class="f.coachingPriveActif ? 'bg-social-voile text-social' : 'bg-fond-voile text-discret'"
+            class="block rounded-full px-2.5 py-1 text-center text-[10.5px] font-bold whitespace-nowrap"
+            :class="f.coachingPriveActif ? 'bg-social-voile text-social' : 'bg-piste text-discret'"
           >
             {{ f.coachingPriveActif ? 'Formateur + coaching privé' : 'Formateur simple' }}
           </span>
         </td>
-        <td class="px-4 py-3 text-[13px]">
+        <td class="px-[18px] py-3.5">
           <template v-if="f.coachingPriveActif">
-            {{ formatFcfa(f.coachingPriveFcfaHeure) }}/h (fixe)
-            <button class="mt-1 block text-[12.5px] underline" @click="basculerCoachingPrive(f)">
-              Repasser simple
-            </button>
+            <b>{{ formatFcfa(f.coachingPriveFcfaHeure) }}/h</b>
+            <span class="text-[11px] text-discret">(fixe)</span>
           </template>
-          <button v-else class="text-[12.5px] text-social underline" @click="activation = f">
+          <button v-else class="text-[12px] font-bold text-social" @click="activation = f">
             Activer le coaching privé
           </button>
         </td>
-        <td class="px-4 py-3">
-          <span
-            class="cursor-grab text-discret"
-            draggable="true"
-            :aria-label="`Déplacer ${f.nom}`"
-            @dragstart="tire = f.id"
-            @dragend="tire = ''"
-          >⋮⋮</span>
-          {{ f.ordrePublic }}
-        </td>
-        <td class="px-4 py-3 text-right whitespace-nowrap">
-          <button class="text-[12.5px] underline" @click="ouvrirEdition(f)">Modifier</button>
-          <NuxtLink :to="`/formateurs/${f.slug}`" class="ml-3 text-[12.5px] underline">Voir</NuxtLink>
-          <button class="ml-3 text-[12.5px] text-erreur underline" @click="suppression = f">Supprimer</button>
+        <td class="px-[18px] py-3.5">
+          <span class="flex items-center gap-2 text-[12px] font-bold">
+            <span
+              class="cursor-grab text-discret"
+              draggable="true"
+              :aria-label="`Déplacer ${f.nom}`"
+              @dragstart="tire = f.id"
+              @dragend="tire = ''"
+            >⋮⋮</span>
+            <span class="font-normal">{{ f.ordrePublic }}</span>
+            <button class="ml-auto text-social hover:underline" @click="ouvrirEdition(f)">Modifier</button>
+            <button class="text-erreur hover:underline" @click="suppression = f">Supprimer</button>
+          </span>
         </td>
       </tr>
     </AdminTableauSimple>
 
-    <section class="mt-10 rounded-[14px] border border-ligne-douce bg-white p-5">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 class="font-title text-[19px] font-light">Candidatures « Devenir formateur »</h2>
-          <p class="mt-1 text-[13px] text-discret">
-            {{ (candidatures ?? []).filter((c) => c.statut === 'nouvelle').length }} nouvelle(s) ·
-            {{ (candidatures ?? []).filter((c) => c.statut === 'en-etude').length }} en étude
-          </p>
-        </div>
-        <UiBaseButton to="/admin/candidatures" taille="sm" variante="contour">
-          Ouvrir les candidatures
-        </UiBaseButton>
-      </div>
+    <p class="mt-3 text-[12px] leading-[1.6] text-discret">
+      Le profil public (photo, bio, ancre) est modifiable ici ; l’ordre ⋮⋮ pilote la page
+      /formateurs. Tarif coaching privé : <b class="text-encre">50 000 FCFA / h, fixe pour tous les
+      formateurs</b>. L’accès (Formateur simple / Formateur avec coaching privé) se gère dans
+      <NuxtLink to="/admin/parametres" class="font-bold">Paramètres → Administration des accès</NuxtLink>.
+    </p>
+
+    <!-- Écran 12 · les candidatures ont leur propre écran, résumé ici en ligne-carte. -->
+    <section class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-bloc border border-ligne-douce bg-white px-5 py-4">
+      <span class="text-[13.5px]">
+        <b class="text-[15px]">Candidatures « Devenir formateur »</b>
+        <span class="block text-[12.5px] text-discret">
+          {{ (candidatures ?? []).filter((c) => c.statut === 'nouvelle').length }} nouvelle(s) ·
+          {{ (candidatures ?? []).filter((c) => c.statut === 'en-etude').length }} en étude
+        </span>
+      </span>
+      <NuxtLink to="/admin/candidatures" class="text-[12.5px] font-bold">
+        Ouvrir les candidatures →
+      </NuxtLink>
     </section>
+
+    <!-- « + Ajouter un formateur » de l'en-tête : la modale n'était pas montée,
+         le bouton de la maquette n'ouvrait rien. -->
+    <AdminModaleCreationFormateur
+      v-if="creationOuverte"
+      :candidature="creation"
+      @fermer="creationOuverte = false"
+      @cree="creationOuverte = false; message = 'Compte formateur créé.'; apresCreation()"
+    />
 
     <!-- Activation du coaching privé (écran 07b), modale partagée avec
          l'administration des accès. -->
@@ -222,8 +240,8 @@ const confirmation = ref('')
 
     <!-- Édition de la fiche publique -->
     <div v-if="edition" class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">
-      <form class="w-full max-w-lg rounded-carte bg-white p-6" @submit.prevent="enregistrerFiche">
-        <h2 class="font-title text-[21px] font-light">Fiche de {{ edition.nom }}</h2>
+      <form class="w-full max-w-lg rounded-carte bg-white p-[26px] shadow-[0_16px_40px_rgba(23,21,28,.12)]" @submit.prevent="enregistrerFiche">
+        <h2 class="font-sans text-[16px] font-bold">Fiche de {{ edition.nom }}</h2>
         <p class="mt-1 text-[12.5px] text-discret">
           Ce que voit le visiteur sur /formateurs et dans le bloc « Votre formateur » des fiches
           commerciales.
@@ -240,6 +258,13 @@ const confirmation = ref('')
           <label class="block">
             <span class="mb-1.5 block text-[13px] font-bold">Biographie</span>
             <textarea v-model="fiche.bio" rows="4" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]" />
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Texte alternatif du portrait</span>
+            <input v-model="fiche.photoAlt" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]" placeholder="Ce que montre la photo, pour qui ne la voit pas">
+            <span class="mt-1 block text-[12px] text-discret">
+              Vide, « Portrait de {{ fiche.nom || 'Nom du formateur' }} » est utilisé.
+            </span>
           </label>
           <label class="block">
             <span class="mb-1.5 block text-[13px] font-bold">Programme de rattachement</span>
@@ -266,42 +291,37 @@ const confirmation = ref('')
     </div>
 
     <div v-if="suppression" class="fixed inset-0 z-50 grid place-items-center bg-encre/50 p-4">
-      <div class="w-full max-w-lg rounded-carte bg-white p-6">
-        <h2 class="font-title text-[21px] font-light">Supprimer le formateur {{ suppression.nom }} ?</h2>
-        <p class="mt-3 text-[14px] text-texte">
-          Son profil disparaît de la page /formateurs et il ne peut plus être choisi pour un coaching
-          privé.
+      <div class="w-full max-w-[460px] rounded-carte bg-white p-[26px] shadow-[0_16px_40px_rgba(23,21,28,.12)]">
+        <b class="text-[16px] text-erreur">Supprimer le formateur {{ suppression.nom }} ?</b>
+        <p class="mt-2.5 mb-3 text-[13px] leading-[1.6] text-texte">
+          Son profil disparaît de la page /formateurs et il ne peut plus être choisi pour un
+          coaching privé. <b>Impossible si des modules publiés ou des sessions à venir lui sont
+          rattachés</b> — réassignez-les d’abord (ici : {{ suppression.nbModules }} module(s) ·
+          {{ suppression.sessionsAVenir }} session(s)).
         </p>
-        <p
-          v-if="!suppression.supprimable"
-          class="mt-3 rounded-[10px] border border-erreur bg-[#fdeeee] p-3 text-[13.5px] text-erreur-fonce"
-        >
-          Impossible : {{ suppression.nbModules }} module(s) publié(s) et
-          {{ suppression.sessionsAVenir }} session(s) à venir lui sont rattachés. Réassignez-les
-          d’abord.
-        </p>
-        <template v-else>
-          <label class="mt-4 block">
-            <span class="mb-1.5 block text-[13px] font-bold text-texte">
-              Tapez « SUPPRIMER » pour confirmer
-            </span>
-            <input v-model="confirmation" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
-          </label>
-        </template>
-        <div class="mt-5 flex flex-wrap gap-2">
+        <label v-if="suppression.supprimable" class="mb-3.5 flex flex-col gap-1.5 text-[12.5px] font-bold text-texte">
+          Tapez « SUPPRIMER » pour confirmer
+          <input
+            v-model="confirmation"
+            placeholder="SUPPRIMER"
+            class="w-full rounded-[10px] border-[1.5px] border-ligne px-[13px] py-[11px] text-[13.5px] font-normal"
+          >
+        </label>
+        <div class="flex gap-2.5">
           <UiBaseButton
             taille="sm"
-            variante="sombre"
+            variante="danger"
+            class="flex-1"
             :disabled="!suppression.supprimable || confirmation !== 'SUPPRIMER'"
           >
             Supprimer définitivement
           </UiBaseButton>
-          <UiBaseButton taille="sm" variante="contour" @click="suppression = null; confirmation = ''">
+          <UiBaseButton taille="sm" variante="contour" class="flex-1" @click="suppression = null; confirmation = ''">
             Annuler
           </UiBaseButton>
         </div>
-        <p class="mt-3 text-[12px] text-discret">
-          Action journalisée, réservée aux administrateurs disposant du droit « Formateurs ».
+        <p class="mt-2.5 text-[11.5px] text-discret">
+          Action journalisée · réservée aux admins avec le droit « Formateurs ».
         </p>
       </div>
     </div>

@@ -12,7 +12,6 @@ const { data } = await useFetch<{
   thematique: Thematique | null
   programme: Programme | null
   nbModulesThematique: number
-  similaires: Module[]
 }>(() => `/api/modules/${route.params.slug}`)
 
 if (!data.value) {
@@ -49,14 +48,27 @@ const { data: possession } = await useFetch<{ possede: boolean }>('/api/mon-espa
 })
 const dejaAchete = computed(() => possession.value?.possede === true)
 
-const inclus = [
-  'Module vidéo de 60 minutes — vidéo d’intro + 3 chapitres',
-  'Ressources pédagogiques du module',
-  'Accès à vie depuis votre espace apprenant',
-  'Coaching collectif lié à la thématique, selon le calendrier',
-  'Certificat de participation',
-  'Accès à la communauté WhatsApp',
-]
+/** Les huit titres de section de la fiche partagent la même coiffe (24 px). */
+const TITRE_SECTION = 'mb-4 font-title text-[24px] font-light'
+/** Pastille d'état du bloc d'achat (planche A, 03c) : statut, jamais action. */
+const PASTILLE = 'inline-block rounded-full px-3 py-[5px] text-[11.5px] font-bold'
+const CHAMP = 'w-full rounded-[10px] border-[1.5px] border-ligne px-3.5 py-[13px] text-[14px] focus:border-social focus:outline-none'
+/** Les deux boutons de partage se partagent la largeur de la carte. */
+const PARTAGE = 'flex-1 rounded-full border-[1.5px] py-2.5 text-center'
+
+// La première ligne décrit ce module-ci : durée et nombre de chapitres étaient
+// figés à « 60 minutes » et « 3 chapitres » pour toutes les fiches.
+const inclus = computed(() => {
+  const chapitres = moduleCourant.value.chapitres.filter((c) => c.libelle !== 'Introduction').length
+  return [
+    `Module vidéo de ${formatDuree(moduleCourant.value.dureeMinutes)} — vidéo d’intro + ${chapitres} chapitres`,
+    'Ressources pédagogiques du module',
+    'Accès à vie depuis votre espace apprenant',
+    'Coaching collectif lié à la thématique, selon le calendrier',
+    'Certificat de participation',
+    'Accès à la communauté WhatsApp',
+  ]
+})
 
 usePageSeo({
   // Gabarit automatique du Title module (spec SEO §4).
@@ -125,254 +137,240 @@ function acheter() {
 
 <template>
   <div v-if="data">
-    <div class="conteneur pt-6">
-      <FilAriane :mailles="mailles" />
-    </div>
-
-    <div class="conteneur grid gap-12 pt-6 pb-14 lg:grid-cols-[1fr_360px]">
+    <div class="conteneur grid gap-14 pt-12 pb-16 lg:grid-cols-[1fr_400px] lg:items-start">
       <article>
-        <h1 class="text-[38px] leading-[1.12] font-medium lg:text-[44px]">
+        <FilAriane class="mb-[18px]" :mailles="mailles" />
+
+        <h1 class="mb-4 font-title text-[40px] leading-[1.15] font-light text-pretty">
           {{ moduleCourant.titre }}
         </h1>
-        <p class="mt-4 max-w-[720px] text-[17px] leading-relaxed text-texte">
+        <p class="mb-7 text-[18px] leading-relaxed font-semibold text-encre">
           {{ moduleCourant.promesse }}
         </p>
 
-        <section class="mt-10">
-          <h2 class="font-title text-[27px] font-light">Pourquoi ce module ?</h2>
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <div class="editorial mt-3 text-[15.5px] leading-relaxed text-texte" v-html="rendreTexteRiche(moduleCourant.pourquoi)" />
-        </section>
+        <h2 :class="TITRE_SECTION">Pourquoi ce module ?</h2>
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <div class="editorial mb-[30px] text-[15.5px] leading-[1.75] text-texte" v-html="rendreTexteRiche(moduleCourant.pourquoi)" />
 
-        <section class="mt-10 grid gap-6 sm:grid-cols-2">
-          <div class="rounded-[14px] border border-ligne-tendre p-6">
-            <h2 class="font-title text-[21px] font-light">Pour qui ?</h2>
-            <ul class="mt-3 space-y-2">
-              <li
-                v-for="ligne in moduleCourant.pourQui"
-                :key="ligne"
-                class="text-[14.5px] leading-relaxed text-texte"
-              >
-                — {{ ligne }}
-              </li>
+        <h2 :class="TITRE_SECTION">Pour qui ?</h2>
+        <!-- Public et prérequis tiennent dans un seul bloc encre, non dans deux
+             cartes claires : c'est le seul aplat sombre de la fiche. -->
+        <div class="sur-sombre mb-8 grid gap-8 rounded-carte bg-encre px-[30px] py-[26px] text-white sm:grid-cols-[1.4fr_1fr]">
+          <div>
+            <p class="mb-3 text-[11px] font-bold tracking-[0.12em] uppercase" :class="social ? 'text-social-pastel' : 'text-[#a9b2e2]'">
+              Pour qui
+            </p>
+            <ul class="flex flex-col gap-2 text-[14px] leading-[1.55] text-ligne-brume">
+              <li v-for="ligne in moduleCourant.pourQui" :key="ligne">— {{ ligne }}</li>
             </ul>
           </div>
-          <div class="rounded-[14px] border border-ligne-tendre p-6">
-            <h2 class="font-title text-[21px] font-light">Prérequis</h2>
-            <p class="mt-3 text-[14.5px] leading-relaxed text-texte">{{ moduleCourant.prerequis }}</p>
+          <div>
+            <p class="mb-3 text-[11px] font-bold tracking-[0.12em] uppercase" :class="social ? 'text-social-pastel' : 'text-[#a9b2e2]'">
+              Prérequis
+            </p>
+            <p class="text-[14px] leading-[1.55] text-ligne-brume">{{ moduleCourant.prerequis }}</p>
           </div>
-        </section>
+        </div>
 
-        <section class="mt-10">
-          <h2 class="font-title text-[27px] font-light">Programme</h2>
-          <ol class="mt-4 divide-y divide-ligne-claire overflow-hidden rounded-[14px] border border-ligne-tendre">
-            <li
-              v-for="(chapitre, i) in moduleCourant.chapitres"
-              :key="i"
-              class="flex items-center gap-4 px-6 py-4"
-            >
-              <span
-                class="w-16 shrink-0 text-[12px] font-bold tracking-[0.1em] uppercase"
-                :class="social ? 'text-social' : 'text-entrepreneurs'"
-              >
-                {{ chapitre.libelle === 'Introduction' ? 'Intro' : chapitre.libelle.replace('Chapitre', 'Ch.') }}
-              </span>
-              <span class="text-[15px] text-encre">{{ chapitre.titre }}</span>
-            </li>
-          </ol>
-        </section>
-
-        <section class="mt-10">
-          <h2 class="font-title text-[27px] font-light">Acquis</h2>
-          <ul class="mt-3 space-y-2">
-            <li
-              v-for="acquis in moduleCourant.acquis"
-              :key="acquis"
-              class="flex gap-2 text-[15px] leading-relaxed text-texte"
-            >
-              <span class="text-succes" aria-hidden="true">✓</span>
-              {{ acquis }}
-            </li>
-          </ul>
-        </section>
-
-        <section class="mt-10">
-          <h2 class="font-title text-[27px] font-light">Livrable</h2>
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <div class="editorial mt-3 text-[15.5px] leading-relaxed text-texte" v-html="rendreTexteRiche(moduleCourant.livrable)" />
-        </section>
-
-        <section v-if="moduleCourant.pointsForts.length" class="mt-10">
-          <h2 class="font-title text-[27px] font-light">Points forts</h2>
-          <p
-            v-for="point in moduleCourant.pointsForts"
-            :key="point"
-            class="mt-3 text-[15.5px] leading-relaxed text-texte"
+        <h2 :class="TITRE_SECTION">Programme</h2>
+        <ol class="mb-8 flex flex-col gap-2.5">
+          <li
+            v-for="(chapitre, i) in moduleCourant.chapitres"
+            :key="i"
+            class="flex items-center gap-4 rounded-[12px] border border-ligne-douce px-5 py-[15px]"
           >
-            {{ point }}
-          </p>
-        </section>
+            <span
+              class="shrink-0 text-[12px] font-bold uppercase"
+              :class="social ? 'text-social' : 'text-entrepreneurs'"
+            >
+              {{ chapitre.libelle === 'Introduction' ? 'Intro' : chapitre.libelle.replace('Chapitre', 'Ch.') }}
+            </span>
+            <span class="text-[15px] font-semibold text-encre">{{ chapitre.titre }}</span>
+          </li>
+        </ol>
 
-        <section v-if="data.formateur" class="mt-10 rounded-[14px] border border-ligne-tendre p-6">
-          <p class="surtitre" :class="social ? 'text-social' : 'text-entrepreneurs'">Votre formateur</p>
-          <h2 class="mt-2 font-title text-[27px] font-light">{{ data.formateur.nom }}</h2>
-          <div class="mt-4 flex flex-wrap items-start gap-5">
+        <h2 :class="TITRE_SECTION">Acquis</h2>
+        <ul
+          class="mb-8 flex flex-col gap-2.5 rounded-carte border px-7 py-6 text-[14.5px] leading-[1.55] text-texte"
+          :class="social ? 'border-social-bordure-tendre bg-social-nuage' : 'border-entrepreneurs-bordure bg-entrepreneurs-nuage'"
+        >
+          <li v-for="acquis in moduleCourant.acquis" :key="acquis">
+            <b :class="social ? 'text-social' : 'text-entrepreneurs'" aria-hidden="true">✓</b>
+            {{ acquis }}
+          </li>
+        </ul>
+
+        <h2 :class="TITRE_SECTION">Livrable</h2>
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <div class="editorial mb-[30px] text-[15.5px] leading-[1.75] text-texte" v-html="rendreTexteRiche(moduleCourant.livrable)" />
+
+        <template v-if="moduleCourant.pointsForts.length">
+          <h2 :class="TITRE_SECTION">Points forts</h2>
+          <div class="mb-8 rounded-bloc border border-ligne-douce px-6 py-5 text-[14.5px] leading-[1.7] text-texte">
+            <p v-for="(point, i) in moduleCourant.pointsForts" :key="point" :class="i > 0 && 'mt-3'">
+              {{ point }}
+            </p>
+          </div>
+        </template>
+
+        <template v-if="data.formateur">
+          <p class="mb-2 text-[12px] font-bold tracking-[0.14em] text-discret uppercase">Votre formateur</p>
+          <h2 :class="TITRE_SECTION">{{ data.formateur.nom }}</h2>
+          <div class="mb-8 flex items-start gap-[18px] rounded-bloc border border-ligne-douce p-[22px]">
             <NuxtImg
               :src="data.formateur.photo"
-              :alt="`Portrait de ${data.formateur.nom}`"
-              width="96"
-              height="96"
-              class="size-24 rounded-full bg-fond-voile object-cover"
+              :alt="data.formateur.photoAlt || `Portrait de ${data.formateur.nom}`"
+              width="64"
+              height="64"
+              loading="lazy"
+              class="size-16 shrink-0 rounded-full bg-fond-voile object-cover"
             />
-            <div class="min-w-[240px] flex-1">
-              <p class="text-[14px] font-bold" :class="social ? 'text-social' : 'text-entrepreneurs'">
+            <div>
+              <p class="mb-2 text-[13.5px] font-bold" :class="social ? 'text-social' : 'text-entrepreneurs'">
                 {{ data.formateur.expertise }} · Formateur de la thématique {{ data.thematique?.nom }}
               </p>
-              <p class="mt-2 text-[14.5px] leading-relaxed text-texte">{{ data.formateur.bio }}</p>
-              <p class="mt-3 text-[13px] text-discret">
+              <p class="mb-2.5 text-[14.5px] leading-[1.7] text-texte">{{ data.formateur.bio }}</p>
+              <p class="mb-3 text-[13.5px] text-discret">
                 {{ data.nbModulesThematique }} modules disponibles dans la thématique
                 {{ data.thematique?.nom }}
               </p>
               <NuxtLink
                 :to="`/formateurs/${data.formateur.slug}`"
-                class="mt-3 inline-block text-[14px] font-bold"
+                class="text-[13.5px] font-bold"
                 :class="social ? 'text-social' : 'text-entrepreneurs'"
               >
                 Découvrir le profil du formateur →
               </NuxtLink>
             </div>
           </div>
-        </section>
+        </template>
 
-        <section class="mt-10">
-          <h2 class="font-title text-[27px] font-light">FAQ du module</h2>
-          <UiAccordeonFaq class="mt-4" taille="sm" :questions="moduleCourant.faq" />
-        </section>
+        <h2 class="mb-3.5 font-title text-[24px] font-light">FAQ du module</h2>
+        <UiAccordeonFaq taille="sm" :questions="moduleCourant.faq" />
       </article>
 
-      <!-- carte d'achat sticky -->
-      <aside class="lg:sticky lg:top-24 lg:self-start">
-        <div class="overflow-hidden rounded-carte border border-ligne-douce">
+      <!-- carte d'achat collante -->
+      <aside class="lg:sticky lg:top-6 lg:self-start">
+        <div class="rounded-[18px] border border-ligne-tendre p-7 shadow-[0_12px_32px_rgba(23,21,28,.07)]">
           <div
-            class="flex h-40 items-center justify-center"
+            class="mb-5 flex h-[170px] items-center justify-center overflow-hidden rounded-[12px]"
             :class="social ? 'rayures-visuel-social' : 'rayures-visuel-entrepreneurs'"
           >
             <NuxtImg
               :src="`/images/modules/${moduleCourant.programme}.svg`"
               :alt="`Visuel du module ${moduleCourant.titre}`"
               width="360"
-              height="160"
+              height="170"
               class="size-full object-cover"
             />
           </div>
 
-          <div class="p-6">
-            <!-- 5 · Déjà acheté : le prix disparaît, le CTA ouvre l'espace apprenant. -->
-            <template v-if="dejaAchete">
-              <p class="font-title text-[24px] font-light text-succes">✓ Dans votre espace</p>
+          <!-- 5 · Déjà acheté : le prix disparaît, le CTA ouvre l'espace apprenant. -->
+          <template v-if="dejaAchete">
+            <span :class="[PASTILLE, 'bg-succes-voile text-whatsapp']">✓ Dans votre espace</span>
+            <UiBaseButton
+              :to="`/mon-espace/module/${moduleCourant.slug}`"
+              class="mt-3 w-full"
+              variante="sombre"
+              taille="lg"
+            >
+              Reprendre le module
+            </UiBaseButton>
+          </template>
+
+          <!-- 3 · Bientôt disponible : fiche publiée, vente non ouverte, bouton inactif, prix masquable. -->
+          <template v-else-if="bientot">
+            <span :class="[PASTILLE, 'bg-alerte-voile text-alerte']">Bientôt disponible</span>
+            <p v-if="!moduleCourant.prixMasque" class="mt-3 font-title text-[34px] font-light">
+              {{ formatFcfa(moduleCourant.prixFcfa) }}
+              <span class="text-[14px] text-discret">TTC</span>
+            </p>
+            <p class="mt-1.5 text-[13.5px] text-texte">
+              Prochainement<template v-if="moduleCourant.dateLancement"> — {{ formatDate(moduleCourant.dateLancement) }}</template>
+            </p>
+            <!-- Vente non ouverte : bouton inerte, en gris de filet plutôt qu'en contour. -->
+            <p class="mt-4 rounded-full bg-ligne-claire py-4 text-center text-[14px] font-extrabold text-discret-clair" aria-disabled="true">
+              Prochainement
+            </p>
+          </template>
+
+          <!-- 4 · Fiche à venir : vente non ouverte, collecte email/WhatsApp pour notification au lancement. -->
+          <template v-else-if="!disponible">
+            <span :class="[PASTILLE, social ? 'bg-social-voile text-social' : 'bg-entrepreneurs-voile text-entrepreneurs']">
+              À venir
+            </span>
+            <form v-if="alerte.etat !== 'envoye'" class="mt-3 flex flex-col gap-2.5" @submit.prevent="etrePrevenu">
+              <input
+                v-model="alerte.email"
+                type="email"
+                required
+                placeholder="Votre adresse email"
+                aria-label="Adresse email"
+                :class="CHAMP"
+              >
+              <input
+                v-model="alerte.whatsapp"
+                type="tel"
+                placeholder="Numéro WhatsApp (facultatif)"
+                aria-label="Numéro WhatsApp"
+                :class="CHAMP"
+              >
+              <p v-if="alerte.etat === 'erreur'" class="text-[13px] text-erreur">{{ alerte.message }}</p>
               <UiBaseButton
-                :to="`/mon-espace/module/${moduleCourant.slug}`"
-                class="mt-5 w-full"
-                variante="sombre"
+                type="submit"
+                class="w-full"
+                :variante="social ? 'contour-social' : 'contour'"
                 taille="lg"
+                :disabled="alerte.etat === 'envoi'"
               >
-                Reprendre le module
+                Être prévenu du lancement
               </UiBaseButton>
-            </template>
+            </form>
+            <p v-else class="mt-3 rounded-[12px] border border-succes-bordure bg-succes-voile px-4 py-3.5 text-[13px] leading-relaxed text-succes-fonce">
+              ✓ Nous vous préviendrons au lancement.
+            </p>
+          </template>
 
-            <!-- 3 · Bientôt disponible : fiche publiée, vente non ouverte, bouton inactif, prix masquable. -->
-            <template v-else-if="bientot">
-              <span class="inline-block rounded-full bg-alerte-voile px-3 py-1 text-[12px] font-bold tracking-[0.08em] text-alerte uppercase">
-                Bientôt disponible
-              </span>
-              <p v-if="!moduleCourant.prixMasque" class="mt-3 font-title text-[32px] font-light">
-                {{ formatFcfa(moduleCourant.prixFcfa) }}
-                <span class="text-[15px] text-discret">TTC</span>
-              </p>
-              <p class="mt-1 text-[13px] text-discret">
-                Prochainement<template v-if="moduleCourant.dateLancement"> — {{ formatDate(moduleCourant.dateLancement) }}</template>
-              </p>
-              <UiBaseButton class="mt-5 w-full" variante="contour" taille="lg" disabled aria-disabled="true">
-                Bientôt disponible
-              </UiBaseButton>
-            </template>
+          <!-- 1 et 2 · Disponible, visiteur ou connecté. -->
+          <template v-else>
+            <p class="mb-1.5 font-title text-[34px] font-light">
+              {{ formatFcfa(moduleCourant.prixFcfa) }}
+              <span class="font-sans text-[14px] text-discret">TTC</span>
+            </p>
+            <p class="mb-[18px] text-[13.5px] text-texte">Paiement unique · Accès à vie</p>
 
-            <!-- 4 · Fiche à venir : vente non ouverte, collecte email/WhatsApp pour notification au lancement. -->
-            <template v-else-if="!disponible">
-              <p class="font-title text-[24px] font-light text-alerte">À venir</p>
-              <p class="mt-1 text-[13px] text-discret">Fiche publiée, vente non ouverte.</p>
-              <form v-if="alerte.etat !== 'envoye'" class="mt-5 space-y-2.5" @submit.prevent="etrePrevenu">
-                <input
-                  v-model="alerte.email"
-                  type="email"
-                  required
-                  placeholder="Votre adresse email"
-                  aria-label="Adresse email"
-                  class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[14.5px] focus:border-social focus:outline-none"
-                >
-                <input
-                  v-model="alerte.whatsapp"
-                  type="tel"
-                  placeholder="Numéro WhatsApp (facultatif)"
-                  aria-label="Numéro WhatsApp"
-                  class="w-full rounded-[10px] border border-ligne px-4 py-2.5 text-[14.5px] focus:border-social focus:outline-none"
-                >
-                <p v-if="alerte.etat === 'erreur'" class="text-[13px] text-erreur">{{ alerte.message }}</p>
-                <UiBaseButton type="submit" class="w-full" variante="contour" taille="lg" :disabled="alerte.etat === 'envoi'">
-                  Être prévenu du lancement
-                </UiBaseButton>
-              </form>
-              <p v-else class="mt-5 rounded-[10px] border border-succes bg-succes-voile p-3 text-[14px] text-succes">
-                ✓ Nous vous préviendrons au lancement.
-              </p>
-            </template>
+            <UiBaseButton
+              class="mb-3 w-full"
+              :variante="social ? 'social' : 'entrepreneurs'"
+              taille="lg"
+              @click="acheter"
+            >
+              Acheter ce module
+            </UiBaseButton>
 
-            <!-- 1 et 2 · Disponible, visiteur ou connecté. -->
-            <template v-else>
-              <p class="font-title text-[32px] font-light">
-                {{ formatFcfa(moduleCourant.prixFcfa) }}
-                <span class="text-[15px] text-discret">TTC</span>
-              </p>
-              <p class="mt-1 text-[13px] text-discret">Paiement unique · Accès à vie</p>
+            <p class="text-center text-[12.5px] text-discret">
+              Mobile Money · Djamo · Wave · Visa — via FeexPay
+            </p>
+          </template>
 
-              <UiBaseButton
-                class="mt-5 w-full"
-                :variante="social ? 'social' : 'entrepreneurs'"
-                taille="lg"
-                @click="acheter"
-              >
-                Acheter ce module
-              </UiBaseButton>
+          <ul class="mt-[18px] flex flex-col gap-[9px] border-t border-ligne-claire pt-4 text-[13.5px] leading-relaxed text-texte">
+            <li v-for="ligne in inclus" :key="ligne">
+              <span class="text-succes" aria-hidden="true">✓</span> {{ ligne }}
+            </li>
+          </ul>
 
-              <p class="mt-3 text-center text-[12.5px] text-discret">
-                Mobile Money · Djamo · Wave · Visa — via FeexPay
-              </p>
-            </template>
-
-            <ul class="mt-5 space-y-2 border-t border-ligne-claire pt-5">
-              <li
-                v-for="ligne in inclus"
-                :key="ligne"
-                class="flex gap-2 text-[13.5px] leading-relaxed text-texte"
-              >
-                <span class="text-succes" aria-hidden="true">✓</span>
-                {{ ligne }}
-              </li>
-            </ul>
-
-            <div class="mt-5 flex flex-wrap gap-2 border-t border-ligne-claire pt-4 text-[13px]">
-              <button class="rounded-full border border-ligne px-4 py-2 hover:bg-fond-clair" @click="copierLien">
-                {{ lienCopie ? 'Lien copié' : 'Copier le lien' }}
-              </button>
-              <a
-                :href="lienWhatsApp(`${moduleCourant.titre} — ${config.public.siteUrl}/modules/${moduleCourant.slug}`)"
-                target="_blank"
-                rel="noopener"
-                class="rounded-full border border-ligne px-4 py-2 text-encre hover:bg-fond-clair"
-              >
-                Partager sur WhatsApp
-              </a>
-            </div>
+          <div class="mt-[18px] flex gap-2.5 text-[13px] font-bold">
+            <button :class="[PARTAGE, 'border-ligne text-texte hover:bg-fond-clair']" @click="copierLien">
+              {{ lienCopie ? 'Lien copié' : 'Copier le lien' }}
+            </button>
+            <a
+              :href="lienWhatsApp(`${moduleCourant.titre} — ${config.public.siteUrl}/modules/${moduleCourant.slug}`)"
+              target="_blank"
+              rel="noopener"
+              :class="[PARTAGE, 'border-whatsapp text-whatsapp hover:bg-succes-voile']"
+            >
+              Partager sur WhatsApp
+            </a>
           </div>
         </div>
       </aside>

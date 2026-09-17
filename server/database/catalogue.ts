@@ -393,6 +393,7 @@ export type ChampsProfilFormateur = Partial<
     | 'expertise'
     | 'bio'
     | 'photo'
+    | 'photoAlt'
     | 'emailPro'
     | 'whatsapp'
     | 'programmePrincipal'
@@ -409,6 +410,8 @@ export async function majFormateur(
   if (champs.expertise !== undefined) colonnes.expertise = champs.expertise
   if (champs.bio !== undefined) colonnes.bio = champs.bio
   if (champs.photo !== undefined) colonnes.photo = champs.photo
+  // Chaîne vide acceptée : c'est ainsi qu'on efface un texte alternatif.
+  if (champs.photoAlt !== undefined) colonnes.photo_alt = champs.photoAlt || null
   if (champs.emailPro !== undefined) colonnes.email_pro = champs.emailPro
   if (champs.whatsapp !== undefined) colonnes.whatsapp = champs.whatsapp
   // L'écran 11 édite aussi le programme de rattachement et la complétude de la

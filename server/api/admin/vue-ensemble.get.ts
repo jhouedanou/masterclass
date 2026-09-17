@@ -79,12 +79,16 @@ export default defineEventHandler(async (event) => {
     topModules: [...ventesParModule.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
-      .map(([moduleId, ventes]) => ({
-        titre: modules.find((m) => m.id === moduleId)?.titre ?? '—',
-        // La barre du top 5 prend la couleur du programme (écran 01).
-        programme: modules.find((m) => m.id === moduleId)?.programme ?? 'social-media',
-        ventes,
-      })),
+      .map(([moduleId, ventes]) => {
+        const module = modules.find((m) => m.id === moduleId)
+        return {
+          titre: module?.titre ?? '—',
+          // La barre du top 5 porte la couleur du programme : violet pour
+          // Social Média, bleu pour Entrepreneurs (planche C, écran 01).
+          programme: module?.programme ?? '',
+          ventes,
+        }
+      }),
     aTraiter: {
       coachingPrive: demandes.filter((d) => d.statut === 'en-attente').length,
       candidatures: candidatures.filter((c) => c.statut === 'nouvelle').length,

@@ -33,6 +33,9 @@ const lettres = computed(() => props.initiales?.trim() || '?')
     v-if="photo"
     :src="photo"
     alt=""
+    width="96"
+    height="96"
+    loading="lazy"
     class="shrink-0 rounded-full border border-ligne-claire bg-fond-clair object-cover"
     :class="emprise"
   >

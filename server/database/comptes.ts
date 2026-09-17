@@ -24,18 +24,48 @@ export async function trouverUtilisateur(id: string): Promise<Utilisateur | null
   return row ? versUtilisateur(row) : null
 }
 
-/** La connexion se fait sur l'e-mail, sans distinction de casse — l'index
- *  unique sur `lower(email)` interdit par ailleurs les doublons. */
+/**
+ * Recherche d'un compte par e-mail, sans distinction de casse.
+ *
+ * `.ilike()` transmet son second argument **tel quel** comme motif `LIKE` :
+ * `%`, `_` et `*` y sont des jokers. Une saisie venue d'un formulaire de
+ * connexion est donc un motif, pas une adresse — et `victime@ex.co_` retrouvait
+ * le compte de la victime. Le comptage des échecs, lui, compare en égalité
+ * stricte (`enregistrer_tentative_connexion`) : il ne trouvait personne, ne
+ * comptait rien, et le verrou des cinq essais ne tombait jamais. Force brute
+ * illimitée et silencieuse sur n'importe quel compte.
+ *
+ * D'où les deux précautions ci-dessous, appliquées partout où une adresse
+ * saisie atteint `.ilike` :
+ *
+ * 1. les métacaractères sont échappés avant de partir ;
+ * 2. l'égalité est revérifiée sur le résultat — l'index unique sur
+ *    `lower(email)` garantit qu'il n'y a qu'un candidat, donc cette seconde
+ *    lecture ne peut que confirmer ou infirmer.
+ */
+const METACARACTERES_LIKE = /[\\%_*]/g
+
+export function echapperMotifLike(valeur: string): string {
+  return valeur.replace(METACARACTERES_LIKE, '\\$&')
+}
+
+/** Vrai quand la ligne trouvée porte exactement l'adresse demandée. */
+function memeAdresse(trouvee: string, demandee: string): boolean {
+  return trouvee.trim().toLowerCase() === demandee.trim().toLowerCase()
+}
+
 export async function trouverUtilisateurParEmail(email: string): Promise<Utilisateur | null> {
+  const adresse = email.trim()
   const row = verifierOptionnel(
     await supabase()
       .from('utilisateurs')
       .select('*')
-      .ilike('email', email.trim())
+      .ilike('email', echapperMotifLike(adresse))
       .maybeSingle(),
     'compte par e-mail',
   )
-  return row ? versUtilisateur(row) : null
+  if (!row || !memeAdresse(row.email, adresse)) return null
+  return versUtilisateur(row)
 }
 
 export async function creerUtilisateur(champs: {
@@ -86,16 +116,17 @@ export async function creerUtilisateur(champs: {
 export async function trouverIdentifiants(
   email: string,
 ): Promise<{ utilisateur: Utilisateur; motDePasseHache: string | null } | null> {
+  const adresse = email.trim()
   const row = verifierOptionnel(
     await supabase()
       .from('utilisateurs')
       .select('*')
-      .ilike('email', email.trim())
+      .ilike('email', echapperMotifLike(adresse))
       .is('supprime_le', null)
       .maybeSingle(),
     'identifiants',
   )
-  if (!row) return null
+  if (!row || !memeAdresse(row.email, adresse)) return null
   return { utilisateur: versUtilisateur(row), motDePasseHache: row.mot_de_passe_hache }
 }
 

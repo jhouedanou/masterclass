@@ -168,6 +168,7 @@ export function versFormateur(row: FormateurRow): Formateur {
     bio: row.bio,
     programmePrincipal: row.programme_principal,
     photo: row.photo,
+    photoAlt: row.photo_alt || undefined,
     ficheComplete: row.fiche_complete,
     coachingPriveFcfaHeure: row.coaching_prive_fcfa_heure,
     position: row.position,

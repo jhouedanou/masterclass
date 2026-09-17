@@ -63,6 +63,8 @@
   --color-social-pilule: #e0d3e8;         /* bordure des pilules de module */
   --color-social-pastel: #c9a2d4;         /* violet lisible sur fond sombre */
   --color-social-brume: #b9a8d8;          /* surtitre sur fond sombre */
+  --color-social-voile-sombre: #e6d7ec;   /* texte de l'encart de verrouillage
+                                             posé sur le panneau noir */
 
   /* Bleus complémentaires */
   --color-entrepreneurs-nuage: #f0f1f8;
@@ -161,6 +163,15 @@
     outline-color: #fff;
   }
 
+  /* La règle de base colore chaque titre en encre, et cette déclaration bat
+     l'héritage : un H1 posé sur le hero d'une page programme ou sur un bloc
+     sombre s'affichait en encre sur violet. Sous `.sur-sombre`, les titres
+     reprennent la couleur du conteneur. Une utilité posée sur le titre
+     lui-même reste prioritaire. */
+  .sur-sombre :where(h1, h2, h3, h4, h5, h6) {
+    color: inherit;
+  }
+
   /* Sur-titre des maquettes : 11,5 px interlettré à .1em. La phase 1 l'avait
      posé à 13 px / .16em, ce qui grossissait chaque surtitre du site. */
   .surtitre {
@@ -169,6 +180,16 @@
   /* Micro-libellé : coiffe des colonnes et des encarts (10,5 px / .08em). */
   .surtitre-menu {
     @apply text-[10.5px] font-bold tracking-[0.08em] uppercase;
+  }
+  /* Le site vitrine compose ses surtitres plus grands et plus interlettrés que
+     le back-office : 13 px sur l'accueil et les pages programme, 12,5 px sur
+     les autres pages publiques. La valeur de base, 11,5 px / .1em, est celle
+     des écrans d'administration. */
+  .surtitre-page {
+    @apply text-[13px] tracking-[0.16em];
+  }
+  .surtitre-section {
+    @apply text-[12.5px] tracking-[0.16em];
   }
 
   .rayures-social {

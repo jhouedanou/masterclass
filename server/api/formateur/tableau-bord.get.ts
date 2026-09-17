@@ -35,16 +35,17 @@ export default defineEventHandler(async (event) => {
   const { du, au } = bornesDuMois(mois)
   const filtre = { du, au, moduleId }
 
-  const [mesModules, tousMesModules, toutesSessions, notes, revenus, aTraiter, catalogue] =
-    await Promise.all([
-      statistiquesModules(formateurId, filtre),
-      statistiquesModules(formateurId),
-      sessionsFormateur(formateurId),
-      listerNotesFormateur(formateurId),
-      revenusFormateur(formateurId, filtre),
-      aTraiterFormateur(formateurId),
-      listerModules(),
-    ])
+  // Les notes d'abord : `sessionsFormateur` et `aTraiterFormateur` les lisaient
+  // chacun de leur côté, et le gabarit de l'espace rejouait `aTraiterFormateur`
+  // en parallèle. Un seul chargement, partagé.
+  const notes = await listerNotesFormateur(formateurId)
+  const [mesModules, tousMesModules, toutesSessions, revenus, catalogue] = await Promise.all([
+    statistiquesModules(formateurId, filtre),
+    statistiquesModules(formateurId),
+    sessionsFormateur(formateurId, {}, notes),
+    revenusFormateur(formateurId, filtre),
+    listerModules(),
+  ])
 
   const publies = mesModules.filter((m) => m.statut === 'disponible')
 
@@ -57,6 +58,14 @@ export default defineEventHandler(async (event) => {
       .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null
 
   const sujets = prochaine ? await listerSujetsSessions([prochaine.id]) : []
+
+  // « À traiter » repart des mêmes séances, des mêmes notes et des mêmes sujets
+  // que ci-dessus : il ne refait aucune lecture.
+  const aTraiter = await aTraiterFormateur(formateurId, {
+    sessions: toutesSessions,
+    notes,
+    sujetsProchaineSession: sujets,
+  })
 
   // « modules 04, 05, 06 » : les modules publiés de la thématique couverte.
   const modulesCouverts = prochaine

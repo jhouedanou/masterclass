@@ -112,16 +112,17 @@ const champ =
   'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px] focus:border-social focus:outline-none'
 const etiquette = 'mb-1.5 block text-[12.5px] font-bold'
 const carte = 'rounded-[14px] border border-ligne-douce bg-white p-6'
+const titreCarte = 'font-sans text-[15px] font-bold'
 </script>
 
 <template>
-  <div v-if="data">
+  <div v-if="data" class="max-w-[1100px]">
     <h1 class="font-title text-[24px] font-light">Paramètres</h1>
 
-    <UiOnglets v-model="onglet" class="mt-5" accent="social" :onglets="ONGLETS" />
+    <UiOnglets v-model="onglet" class="mt-4.5" accent="social" :onglets="ONGLETS" />
 
-    <p v-if="message" class="mt-4 rounded-[10px] border border-succes bg-succes-voile px-4 py-3 text-[14px] text-succes">{{ message }}</p>
-    <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-erreur-voile px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>
+    <p v-if="message" class="mt-[22px] rounded-[10px] border border-succes bg-succes-voile px-4 py-3 text-[14px] text-succes">{{ message }}</p>
+    <p v-if="erreur" class="mt-[22px] rounded-[10px] border border-erreur bg-erreur-voile px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>
 
     <!--
       Les trois premiers volets rendent l'écran lui-même.
@@ -133,13 +134,13 @@ const carte = 'rounded-[14px] border border-ligne-douce bg-white p-6'
       sans rien afficher ni rien signaler.
     -->
     <Suspense>
-      <AdminVoletAcces v-if="onglet === 'acces'" class="mt-5" />
+      <AdminVoletAcces v-if="onglet === 'acces'" class="mt-[22px]" />
 
-      <AdminVoletTracking v-else-if="onglet === 'tracking'" class="mt-5" />
+      <AdminVoletTracking v-else-if="onglet === 'tracking'" class="mt-[22px]" />
 
-      <div v-else-if="onglet === 'referencement'" class="mt-5">
+      <div v-else-if="onglet === 'referencement'" class="mt-[22px]">
         <section :class="carte">
-          <b class="text-[15px]">Référencement — règles globales</b>
+          <h2 :class="titreCarte">Référencement — règles globales</h2>
           <p class="mt-1.5 text-[12.5px] text-discret">
             Ces valeurs servent de repli quand une page n’a pas les siennes.
           </p>
@@ -158,9 +159,9 @@ const carte = 'rounded-[14px] border border-ligne-douce bg-white p-6'
       </div>
 
       <!-- Mon profil : deux cartes côte à côte dans la maquette. -->
-      <div v-else class="mt-5 grid max-w-[900px] items-start gap-5 md:grid-cols-2">
+      <div v-else class="mt-[22px] grid items-start gap-5 lg:grid-cols-2">
         <section :class="carte">
-          <b class="text-[15px]">Mon profil administrateur</b>
+          <h2 :class="titreCarte">Mon profil administrateur</h2>
 
           <div class="mt-4 flex flex-wrap items-center gap-4">
             <UiAvatar
@@ -211,7 +212,7 @@ const carte = 'rounded-[14px] border border-ligne-douce bg-white p-6'
         </section>
 
         <section :class="carte">
-          <b class="text-[15px]">Changer le mot de passe</b>
+          <h2 :class="titreCarte">Changer le mot de passe</h2>
           <CompteFormulaireMotDePasse
             class="mt-4"
             robustesse
@@ -225,7 +226,7 @@ const carte = 'rounded-[14px] border border-ligne-douce bg-white p-6'
       </div>
 
       <template #fallback>
-        <p class="mt-5 text-[13.5px] text-discret">Chargement…</p>
+        <p class="mt-[22px] text-[13.5px] text-discret">Chargement…</p>
       </template>
     </Suspense>
   </div>

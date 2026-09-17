@@ -17,9 +17,6 @@ interface ModuleAcquis {
   id: string
   titre: string
   programme: string
-  thematiqueId: string
-  phaseId: string | null
-  formateurId: string
   origine: 'achat' | 'attribution'
   acheteLe: string
   progression: number
@@ -43,85 +40,70 @@ interface Apprenant {
   certificats: CertificatApprenant[]
   persona: Persona | null
   montantPaye: number
-  ville: string
-  secteur: string
-}
-
-interface Choix {
-  phases: { id: string; nom: string }[]
-  thematiques: { id: string; nom: string }[]
-  modules: { id: string; nom: string }[]
-  formateurs: { id: string; nom: string }[]
-  localisations: string[]
-  secteurs: string[]
 }
 
 /**
- * Méga-filtre de l'écran 04 : les dimensions actives deviennent des pilules
- * retirables, les autres se choisissent dans un menu.
- *
- * La maquette en annonce treize. Onze sont servies ; « Chapitre » et
- * « Session » ne le sont pas — la liste des apprenants ne lit ni les
- * visionnages chapitre par chapitre, ni les inscriptions aux sessions. Elles
- * sont dites indisponibles sous le menu plutôt que proposées pour rien.
+ * Filtres combinables de l'écran 04. Un seul objet réactif : la maquette les
+ * dessine comme une bande homogène de pilules, où celles qui portent une
+ * valeur passent en violet plein avec une croix.
  */
-const filtres = reactive<Record<string, string>>({})
+const filtre = reactive({ programme: '', profil: '', acces: '', coaching: '' })
+type CleFiltre = keyof typeof filtre
 
-const { data, refresh } = await useFetch<{ apprenants: Apprenant[]; choix: Choix }>(
-  '/api/admin/apprenants',
-  { query: computed(() => ({ ...filtres })) },
-)
-const apprenants = computed(() => data.value?.apprenants ?? [])
-const choix = computed(() => data.value?.choix)
+const DIMENSIONS: { cle: CleFiltre; etiquette: string; options: { valeur: string; libelle: string }[] }[] = [
+  {
+    cle: 'programme',
+    etiquette: 'Programme',
+    options: [
+      { valeur: '', libelle: 'Programme' },
+      { valeur: 'social-media', libelle: 'Social Média' },
+      { valeur: 'entrepreneurs', libelle: 'Entrepreneurs' },
+    ],
+  },
+  {
+    cle: 'profil',
+    etiquette: 'Profil',
+    options: [
+      { valeur: '', libelle: 'Profil' },
+      { valeur: 'complet', libelle: 'complet (100 %)' },
+      { valeur: 'incomplet', libelle: 'incomplet' },
+    ],
+  },
+  {
+    cle: 'acces',
+    etiquette: 'Accès',
+    options: [
+      { valeur: '', libelle: 'Accès' },
+      { valeur: 'achat', libelle: 'Achat' },
+      { valeur: 'attribution', libelle: 'Attribution admin' },
+    ],
+  },
+  {
+    cle: 'coaching',
+    etiquette: 'Coaching',
+    options: [
+      { valeur: '', libelle: 'Coaching' },
+      { valeur: 'oui', libelle: 'a demandé un coaching privé' },
+      { valeur: 'non', libelle: 'jamais demandé' },
+    ],
+  },
+]
+
+function libelleValeur(cle: CleFiltre, valeur: string) {
+  return DIMENSIONS.find((d) => d.cle === cle)?.options.find((o) => o.valeur === valeur)?.libelle ?? valeur
+}
+
+const { data: apprenants, refresh } = await useFetch<Apprenant[]>('/api/admin/apprenants', {
+  query: computed(() => ({
+    programme: filtre.programme || undefined,
+    profil: filtre.profil || undefined,
+    coaching: filtre.coaching || undefined,
+    acces: filtre.acces || undefined,
+  })),
+})
 const { data: modules } = await useFetch<Module[]>('/api/modules')
 
-const OUI_NON = [{ id: 'oui', nom: 'Oui' }, { id: 'non', nom: 'Non' }]
-
-const DIMENSIONS = computed(() => [
-  { cle: 'programme', libelle: 'Programme', options: [{ id: 'social-media', nom: 'Social Média' }, { id: 'entrepreneurs', nom: 'Entrepreneurs' }] },
-  { cle: 'phase', libelle: 'Phase', options: choix.value?.phases ?? [] },
-  { cle: 'thematique', libelle: 'Thématique', options: choix.value?.thematiques ?? [] },
-  { cle: 'module', libelle: 'Module', options: choix.value?.modules ?? [] },
-  { cle: 'formateur', libelle: 'Formateur', options: choix.value?.formateurs ?? [] },
-  { cle: 'periode', libelle: 'Période', options: [{ id: '7', nom: '7 derniers jours' }, { id: '30', nom: '30 derniers jours' }, { id: '90', nom: '90 derniers jours' }] },
-  { cle: 'localisation', libelle: 'Localisation', options: (choix.value?.localisations ?? []).map((v) => ({ id: v, nom: v })) },
-  { cle: 'secteur', libelle: 'Secteur', options: (choix.value?.secteurs ?? []).map((v) => ({ id: v, nom: v })) },
-  { cle: 'progression', libelle: 'Progression', options: [{ id: 'aucune', nom: 'Pas commencé' }, { id: 'encours', nom: 'En cours' }, { id: 'terminee', nom: 'Terminé' }] },
-  { cle: 'profil', libelle: 'Profil', options: [{ id: 'complet', nom: 'complet (100 %)' }, { id: 'incomplet', nom: 'incomplet' }] },
-  { cle: 'certificat', libelle: 'Certificat', options: OUI_NON },
-  { cle: 'paiement', libelle: 'Paiement', options: OUI_NON },
-  { cle: 'acces', libelle: 'Accès', options: [{ id: 'achat', nom: 'Achat' }, { id: 'attribution', nom: 'Attribution admin' }] },
-  { cle: 'coaching', libelle: 'Coaching', options: OUI_NON },
-])
-
-/** Pilules actives : « Programme : Social Média ✕ ». */
-const pilules = computed(() =>
-  DIMENSIONS.value
-    .filter((d) => filtres[d.cle])
-    .map((d) => ({
-      cle: d.cle,
-      texte: `${d.libelle} : ${d.options.find((o) => o.id === filtres[d.cle])?.nom ?? filtres[d.cle]}`,
-    })),
-)
-const disponibles = computed(() => DIMENSIONS.value.filter((d) => !filtres[d.cle]))
-const menuOuvert = ref(false)
-const dimensionChoisie = ref('')
-const optionsDimension = computed(() => DIMENSIONS.value.find((d) => d.cle === dimensionChoisie.value)?.options ?? [])
-
-function poser(cle: string, valeur: string) {
-  if (valeur) filtres[cle] = valeur
-  dimensionChoisie.value = ''
-  menuOuvert.value = false
-}
-function retirer(cle: string) {
-  delete filtres[cle]
-}
-
 const selection = ref<Apprenant | null>(null)
-/** Le détail — accès, coaching, attestations, attribution — se découvre par le
- *  bouton « Historique » de la fiche ; la maquette n'en montre que le bouton. */
-const historiqueOuvert = ref(false)
-watch(selection, () => { historiqueOuvert.value = false })
 
 // Arrivée depuis une demande de coaching privé : la fiche s'ouvre directement.
 const route = useRoute()
@@ -129,11 +111,40 @@ watch(
   apprenants,
   (liste) => {
     const cible = typeof route.query.utilisateur === 'string' ? route.query.utilisateur : ''
-    if (cible && !selection.value) selection.value = liste.find((a) => a.id === cible) ?? null
+    if (cible && !selection.value) selection.value = liste?.find((a) => a.id === cible) ?? null
   },
   { immediate: true },
 )
-const attribution = reactive({ moduleId: '', motif: '', notifier: true })
+
+/** Initiales de la pastille ronde de la fiche apprenant (écran 04). */
+const initiales = computed(() =>
+  (selection.value?.nom ?? '')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((m) => m.charAt(0).toUpperCase())
+    .join(''),
+)
+
+/** « Achat (2) · Attribution (1) » : un achat et une attribution de l'équipe
+ *  ne pèsent pas la même chose dans les revenus. */
+const origineAcces = computed(() => {
+  const acquis = selection.value?.modulesAcquis ?? []
+  const achats = acquis.filter((m) => m.origine === 'achat').length
+  const attributions = acquis.length - achats
+  const morceaux: string[] = []
+  if (achats) morceaux.push(`Achat (${achats})`)
+  if (attributions) morceaux.push(`Attribution (${attributions})`)
+  return morceaux.join(' · ') || '—'
+})
+
+const coachingEnAttente = computed(
+  () => (selection.value?.coachingPrive ?? []).filter((d) => d.statut === 'en-attente').length,
+)
+
+// --- Attribution d'un accès gratuit (écran 13) ------------------------------
+
+const attribution = reactive({ ouverte: false, moduleId: '', motif: '', notifier: true })
 const message = ref('')
 const erreur = ref('')
 
@@ -149,10 +160,10 @@ async function attribuer() {
       },
     })
     message.value = `Accès attribué à ${selection.value!.nom} — marqué « Attribution admin », apprenant notifié.`
-    attribution.moduleId = ''
-    attribution.motif = ''
+    Object.assign(attribution, { ouverte: false, moduleId: '', motif: '' })
+    const id = selection.value!.id
     await refresh()
-    selection.value = null
+    selection.value = apprenants.value?.find((a) => a.id === id) ?? null
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Attribution impossible.'
   }
@@ -165,6 +176,10 @@ const revocation = reactive({ numero: '', motif: '' })
 
 /** Deux temps : le clic découvre le champ de motif, la confirmation agit. */
 const revocationAcces = reactive({ moduleId: '', motif: '' })
+
+/** L'écran 04 ne montre qu'un bouton « Historique » : les accès, les
+ *  attestations et les demandes de coaching s'y regroupent. */
+const historiqueOuvert = ref(false)
 
 async function agirSurAcces(moduleId: string, action: 'revoquer' | 'retablir') {
   erreur.value = ''
@@ -186,7 +201,7 @@ async function agirSurAcces(moduleId: string, action: 'revoquer' | 'retablir') {
     revocationAcces.moduleId = ''
     revocationAcces.motif = ''
     await refresh()
-    selection.value = apprenants.value.find((a) => a.id === id) ?? null
+    selection.value = apprenants.value?.find((a) => a.id === id) ?? null
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
   }
@@ -194,15 +209,24 @@ async function agirSurAcces(moduleId: string, action: 'revoquer' | 'retablir') {
 
 // --- Ajout d'un apprenant (écran 13) ----------------------------------------
 
-const ajout = reactive({
+/** La maquette demande un seul champ « Nom complet » ; l'API attend un prénom
+ *  et un nom, découpés ici. */
+function decouperNom(complet: string): { prenom: string; nom: string } {
+  const parties = complet.trim().split(/\s+/)
+  if (parties.length < 2) return { prenom: '', nom: complet.trim() }
+  return { prenom: parties[0] ?? '', nom: parties.slice(1).join(' ') }
+}
+
+const AJOUT_VIDE = {
   ouvert: false,
-  prenom: '',
-  nom: '',
+  nomComplet: '',
   email: '',
   whatsapp: '',
+  attribuerEnsuite: true,
   moduleId: '',
   motif: '',
-})
+}
+const ajout = reactive({ ...AJOUT_VIDE })
 const lienDefinition = ref('')
 const erreurAjout = ref('')
 const ajoutEnCours = ref(false)
@@ -211,10 +235,21 @@ async function ajouterApprenant() {
   erreurAjout.value = ''
   lienDefinition.value = ''
   ajoutEnCours.value = true
+  const { prenom, nom } = decouperNom(ajout.nomComplet)
   try {
     const r = await $fetch<{ lienDefinition?: string; moduleAttribue?: string }>(
       '/api/admin/apprenants',
-      { method: 'POST', body: { ...ajout } },
+      {
+        method: 'POST',
+        body: {
+          prenom,
+          nom,
+          email: ajout.email,
+          whatsapp: ajout.whatsapp,
+          moduleId: ajout.attribuerEnsuite ? ajout.moduleId : '',
+          motif: ajout.attribuerEnsuite ? ajout.motif : '',
+        },
+      },
     )
     message.value = r.moduleAttribue
       ? `Compte créé, accès à « ${r.moduleAttribue} » attribué.`
@@ -222,15 +257,7 @@ async function ajouterApprenant() {
     // Aucun envoi n'est branché : le lien est rendu à l'écran pour être
     // transmis à la main.
     lienDefinition.value = r.lienDefinition ?? ''
-    Object.assign(ajout, {
-      ouvert: false,
-      prenom: '',
-      nom: '',
-      email: '',
-      whatsapp: '',
-      moduleId: '',
-      motif: '',
-    })
+    Object.assign(ajout, AJOUT_VIDE)
     await refresh()
   } catch (e) {
     erreurAjout.value = (e as { statusMessage?: string }).statusMessage ?? 'La création a échoué.'
@@ -260,7 +287,7 @@ function exporter() {
       { cle: (a) => a.certificats.length, libelle: 'Attestations' },
       { cle: 'montantPaye', libelle: 'Montant payé (FCFA)' },
     ] satisfies ColonneCsv<Apprenant>[],
-    apprenants.value,
+    apprenants.value ?? [],
   )
 }
 
@@ -290,153 +317,90 @@ async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir
     revocation.motif = ''
     const id = selection.value!.id
     await refresh()
-    selection.value = apprenants.value.find((a) => a.id === id) ?? null
+    selection.value = apprenants.value?.find((a) => a.id === id) ?? null
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
   }
 }
+
+/**
+ * Le `<colgroup>` d'un tableau n'accepte pas l'unité `fr` de la maquette :
+ * `1.4fr 1fr` sur 330 px de colonnes fixes se réécrit en parts calculées.
+ */
+const LARGE_1_4FR = 'calc((100% - 330px) * 0.5833)'
+const LARGE_1FR = 'calc((100% - 330px) * 0.4167)'
+
+const CHAMP = 'w-full rounded-[10px] border-[1.5px] border-ligne px-[13px] py-3 text-[13.5px] font-normal'
+const ETIQUETTE = 'flex flex-col gap-1.5 text-[12.5px] font-bold text-texte'
 </script>
 
 <template>
   <div>
     <div class="flex flex-wrap items-center justify-between gap-4">
       <h1 class="font-title text-[24px] font-light">
-        Apprenants — {{ apprenants.length }} comptes actifs
+        Apprenants — {{ apprenants?.length ?? 0 }} comptes actifs
       </h1>
       <div class="flex flex-wrap gap-2.5">
-        <UiBaseButton taille="sm" variante="contour" @click="exporter">⬇ Exporter la base en CSV</UiBaseButton>
-        <UiBaseButton taille="sm" @click="ajout.ouvert = !ajout.ouvert">
-          {{ ajout.ouvert ? 'Annuler' : '+ Ajouter un apprenant' }}
+        <UiBaseButton taille="sm" variante="contour" @click="exporter">
+          ⬇ Exporter la base en CSV
         </UiBaseButton>
+        <UiBaseButton taille="sm" @click="ajout.ouvert = true">+ Ajouter un apprenant</UiBaseButton>
       </div>
     </div>
-    <p class="mt-1.5 text-[11.5px] text-discret">
-      L’export respecte les filtres actifs (ici : {{ pilules.length }} filtre{{ pilules.length > 1 ? 's' : '' }})
-      — colonnes : identité, contact, programme, progression, paiements, certificats. Action journalisée.
+    <p class="mt-2.5 mb-3.5 text-[11.5px] text-discret">
+      L’export respecte les filtres actifs — colonnes : identité, contact, programme, progression,
+      paiements, certificats. Action journalisée.
     </p>
 
-    <form
-      v-if="ajout.ouvert"
-      class="mt-5 rounded-[14px] border border-ligne-douce bg-white p-5"
-      @submit.prevent="ajouterApprenant"
-    >
-      <h2 class="font-title text-[18px] font-light">Nouvel apprenant</h2>
-      <p class="mt-1 text-[12.5px] text-discret">
-        Le compte naît sans mot de passe utilisable : l’apprenant le choisit par un lien valable
-        trois jours. Aucun envoi n’étant encore branché, le lien s’affiche ici pour être transmis.
-      </p>
-      <div class="mt-4 grid gap-3 sm:grid-cols-2">
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Prénom</span>
-          <input v-model="ajout.prenom" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
-        </label>
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Nom</span>
-          <input v-model="ajout.nom" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
-        </label>
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">E-mail</span>
-          <input v-model="ajout.email" type="email" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
-        </label>
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">WhatsApp <span class="font-normal text-discret">(facultatif)</span></span>
-          <input v-model="ajout.whatsapp" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
-        </label>
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Attribuer un accès <span class="font-normal text-discret">(facultatif)</span></span>
-          <select v-model="ajout.moduleId" class="w-full rounded-[10px] border border-ligne bg-white px-3 py-2.5 text-[14px]">
-            <option value="">Aucun</option>
-            <option v-for="m in modules" :key="m.id" :value="m.id">{{ m.titre }}</option>
-          </select>
-        </label>
-        <label v-if="ajout.moduleId" class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Motif de l’attribution</span>
-          <input v-model="ajout.motif" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
-        </label>
-      </div>
-      <p v-if="erreurAjout" class="mt-3 text-[13.5px] text-erreur">{{ erreurAjout }}</p>
-      <UiBaseButton type="submit" taille="sm" class="mt-4" :disabled="ajoutEnCours">
-        {{ ajoutEnCours ? 'Création…' : 'Créer le compte' }}
-      </UiBaseButton>
-    </form>
+    <!-- Un filtre posé se dessine en violet plein avec sa croix ; les autres
+         restent des pilules blanches à ouvrir. -->
+    <div class="mb-4 flex flex-wrap gap-2 text-[12.5px]">
+      <template v-for="d in DIMENSIONS" :key="d.cle">
+        <button
+          v-if="filtre[d.cle]"
+          class="rounded-full bg-social px-3.5 py-[7px] font-bold text-white"
+          @click="filtre[d.cle] = ''"
+        >
+          {{ d.etiquette }} : {{ libelleValeur(d.cle, filtre[d.cle]) }} ✕
+        </button>
+        <UiFiltrePilule v-else v-model="filtre[d.cle]" :etiquette="d.etiquette" :options="d.options" />
+      </template>
+    </div>
 
-    <p v-if="lienDefinition" class="mt-4 rounded-[10px] border border-alerte bg-alerte-voile p-3 text-[13px] text-alerte">
+    <p v-if="lienDefinition" class="mb-4 rounded-[10px] border border-alerte bg-alerte-voile p-3 text-[13px] text-alerte">
       Lien de définition du mot de passe, à transmettre à l’apprenant (valable 72 h) :
       <span class="mt-1 block font-mono text-[12px] break-all">{{ lienDefinition }}</span>
     </p>
-
-    <p v-if="message" class="mt-4 rounded-[10px] border border-succes bg-succes-voile p-3 text-[13.5px] text-succes">
+    <p v-if="message" class="mb-4 rounded-[10px] border border-succes bg-succes-voile p-3 text-[13.5px] text-succes">
       {{ message }}
     </p>
+    <p v-if="erreur" class="mb-4 rounded-[10px] border border-erreur bg-erreur-voile p-3 text-[13.5px] text-erreur">
+      {{ erreur }}
+    </p>
 
-    <div class="mt-4 flex flex-wrap items-center gap-2 text-[12.5px]">
-      <button
-        v-for="p in pilules"
-        :key="p.cle"
-        class="rounded-full bg-social px-3.5 py-[7px] font-bold text-white"
-        @click="retirer(p.cle)"
-      >
-        {{ p.texte }} ✕
-      </button>
-
-      <div class="relative">
-        <button
-          class="rounded-full border-[1.5px] border-ligne bg-white px-3.5 py-[7px] font-semibold text-texte"
-          :aria-expanded="menuOuvert"
-          @click="menuOuvert = !menuOuvert"
-        >
-          + {{ disponibles.map((d) => d.libelle).join(' · ') }} ▾
-        </button>
-
-        <div
-          v-if="menuOuvert"
-          class="absolute z-20 mt-2 flex w-[320px] flex-col gap-2 rounded-[12px] border border-ligne bg-white p-3 shadow-[0_16px_40px_rgba(23,21,28,.12)]"
-        >
-          <label class="block">
-            <span class="mb-1 block text-[11.5px] font-bold text-discret">Dimension</span>
-            <select v-model="dimensionChoisie" class="w-full rounded-[10px] border border-ligne px-3 py-2 text-[13px]">
-              <option value="">Choisir…</option>
-              <option v-for="d in disponibles" :key="d.cle" :value="d.cle">{{ d.libelle }}</option>
-            </select>
-          </label>
-          <label v-if="dimensionChoisie" class="block">
-            <span class="mb-1 block text-[11.5px] font-bold text-discret">Valeur</span>
-            <select
-              class="w-full rounded-[10px] border border-ligne px-3 py-2 text-[13px]"
-              @change="poser(dimensionChoisie, ($event.target as HTMLSelectElement).value)"
-            >
-              <option value="">Choisir…</option>
-              <option v-for="o in optionsDimension" :key="o.id" :value="o.id">{{ o.nom }}</option>
-            </select>
-          </label>
-          <p class="text-[11.5px] leading-[1.5] text-discret">
-            « Chapitre » et « Session » ne sont pas encore filtrables : cette liste ne lit ni les
-            visionnages chapitre par chapitre, ni les inscriptions aux sessions de coaching.
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <div class="mt-4 grid items-start gap-5 md:grid-cols-2 lg:grid-cols-[1fr_440px]">
-      <!-- Cinq colonnes à largeurs fixes, comme la maquette : l'identité, une
-           barre de progression, puis trois valeurs en texte coloré. -->
+    <div class="grid items-start gap-5 lg:grid-cols-[1fr_440px]">
+      <!-- Largeurs de colonnes de la maquette, écran 04. -->
       <AdminTableauSimple
         :colonnes="['Apprenant', 'Progression', 'Profil', 'Certificat', 'Coaching']"
-        :largeurs="['1.4fr', '1fr', '110px', '110px', '110px']"
-        largeur-min="560px"
+        :largeurs="[LARGE_1_4FR, LARGE_1FR, '110px', '110px', '110px']"
+        largeur-min="700px"
       >
         <tr
           v-for="apprenant in apprenants"
           :key="apprenant.id"
-          class="cursor-pointer align-middle"
           :class="selection?.id === apprenant.id && 'bg-social-neige'"
-          @click="selection = apprenant"
         >
-          <td class="px-5 py-3.5" :class="selection?.id === apprenant.id && 'border-l-[3px] border-social'">
-            <b>{{ apprenant.nom }}</b>
-            <span class="block truncate text-[12px] text-discret">
-              {{ apprenant.email }}<template v-if="apprenant.whatsapp"> · {{ apprenant.whatsapp }}</template>
-            </span>
+          <!-- La ligne sélectionnée porte un filet violet de 3 px à gauche. -->
+          <td
+            class="border-l-[3px] px-5 py-3.5"
+            :class="selection?.id === apprenant.id ? 'border-social' : 'border-transparent'"
+          >
+            <button class="block w-full text-left" @click="selection = apprenant">
+              <b>{{ apprenant.nom }}</b>
+              <span class="block text-[12px] text-discret">
+                {{ apprenant.email }} · {{ apprenant.whatsapp }}
+              </span>
+            </button>
           </td>
           <td class="px-5 py-3.5">
             <span class="flex items-center gap-2">
@@ -450,109 +414,242 @@ async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir
               {{ apprenant.chapitresVus }}/{{ apprenant.chapitresTotal }}
             </span>
           </td>
-          <td class="px-5 py-3.5 font-bold" :class="apprenant.profilPourcent === 100 ? 'text-succes' : 'text-alerte'">
+          <!-- Valeur chiffrée : gras dans la couleur du sens, sans pastille. -->
+          <td
+            class="px-5 py-3.5 font-bold"
+            :class="apprenant.profilPourcent === 100 ? 'text-succes' : 'text-alerte'"
+          >
             {{ apprenant.profilPourcent }} %
           </td>
-          <td class="px-5 py-3.5" :class="apprenant.certificats.length ? 'font-bold text-succes' : 'text-discret'">
-            {{ apprenant.certificats.length ? 'Générée' : '—' }}
+          <td class="px-5 py-3.5">
+            <b v-if="apprenant.certificats.length" class="text-succes">Générée</b>
+            <span v-else class="text-discret">—</span>
           </td>
-          <td
-            class="px-5 py-3.5"
-            :class="apprenant.profilPourcent === 100 ? 'font-bold text-succes' : 'text-discret'"
-          >
-            {{ apprenant.coachingPrive.length ? 'Présent' : apprenant.profilPourcent === 100 ? 'Éligible' : 'Inscrit' }}
+          <td class="px-5 py-3.5">
+            <b v-if="apprenant.coachingPrive.length" class="text-social">
+              {{ apprenant.coachingPrive.length }} demande{{ apprenant.coachingPrive.length > 1 ? 's' : '' }}
+            </b>
+            <span v-else class="text-discret">—</span>
           </td>
-        </tr>
-        <tr v-if="!apprenants.length">
-          <td colspan="5" class="px-5 py-8 text-center text-discret">Aucun apprenant dans ce filtre.</td>
         </tr>
       </AdminTableauSimple>
 
-      <aside v-if="selection" class="h-fit rounded-[14px] border border-ligne-douce bg-white p-6">
+      <!-- Fiche apprenant : contexte de coaching, puis les deux actions. -->
+      <aside v-if="selection" class="h-fit rounded-bloc border border-ligne-douce bg-white p-6">
         <div class="mb-4 flex items-center gap-3.5">
           <span class="grid size-[52px] shrink-0 place-items-center rounded-full bg-social text-[17px] font-extrabold text-white">
-            {{ selection.nom.split(' ').map((m) => m[0]).slice(0, 2).join('') }}
+            {{ initiales }}
           </span>
-          <span class="min-w-0">
-            <b class="block text-[17px]">{{ selection.nom }}</b>
-            <span class="block truncate text-[12.5px] text-discret">
-              Inscrit le {{ selection.inscritLe ? formatDate(selection.inscritLe) : '—' }}<template
-                v-if="selection.ville || selection.pays"
-              > · {{ [selection.ville, selection.pays].filter(Boolean).join(', ') }}</template>
-            </span>
-          </span>
+          <div class="min-w-0">
+            <b class="text-[17px]">{{ selection.nom }}</b>
+            <p class="text-[12.5px] text-discret">
+              Inscrit le {{ selection.inscritLe ? formatDate(selection.inscritLe) : '—' }} ·
+              {{ selection.pays }}
+            </p>
+          </div>
+          <button class="ml-auto shrink-0 text-[12.5px] font-bold text-discret" @click="selection = null">
+            Fermer
+          </button>
         </div>
 
-        <section v-if="selection.persona" class="mb-3.5 rounded-[12px] border border-social-bordure-tendre bg-social-nuage p-4">
-          <p class="surtitre-menu mb-2.5 text-social">Fiche persona — contexte pour le coach</p>
-          <div class="flex flex-col gap-[7px] text-[13px]">
-            <div class="flex justify-between gap-3"><span class="text-discret">Âge</span><b>{{ selection.persona.age }} ans</b></div>
-            <div class="flex justify-between gap-3"><span class="text-discret">Secteur</span><b>{{ selection.persona.secteur }}</b></div>
-            <div class="flex justify-between gap-3"><span class="text-discret">Expérience</span><b>{{ selection.persona.experience }}</b></div>
-            <div class="flex justify-between gap-3"><span class="text-discret">Réseaux gérés</span><b>{{ selection.persona.reseaux }}</b></div>
-            <div class="flex justify-between gap-4"><span class="text-discret">Objectif</span><b class="text-right">{{ selection.persona.objectif }}</b></div>
-          </div>
-          <p v-if="selection.profilPourcent < 100" class="mt-3 rounded-[8px] bg-alerte-voile px-3 py-2.5 text-[12px] text-alerte">
+        <section v-if="selection.persona" class="mb-3.5 rounded-champ border border-social-bordure-tendre bg-social-nuage p-4">
+          <p class="surtitre mb-2.5 text-social">Fiche persona — contexte pour le coach</p>
+          <dl class="flex flex-col gap-[7px] text-[13px]">
+            <div class="flex justify-between gap-4">
+              <dt class="text-discret">Âge</dt><dd class="font-bold">{{ selection.persona.age }} ans</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-discret">Secteur</dt><dd class="font-bold">{{ selection.persona.secteur }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-discret">Expérience</dt><dd class="font-bold">{{ selection.persona.experience }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-discret">Réseaux gérés</dt><dd class="font-bold">{{ selection.persona.reseaux }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-discret">Objectif</dt>
+              <dd class="text-right font-bold">{{ selection.persona.objectif }}</dd>
+            </div>
+          </dl>
+          <p
+            v-if="selection.profilPourcent < 100"
+            class="mt-3 rounded-[8px] bg-alerte-voile px-[11px] py-[9px] text-[12px] text-alerte"
+          >
             Profil à {{ selection.profilPourcent }} % — participation aux sessions de coaching
             bloquée tant que non complété.
           </p>
         </section>
 
-        <div class="flex flex-col gap-2 text-[13px]">
-          <div class="flex justify-between gap-3">
-            <span class="text-discret">Modules achetés</span>
-            <b>{{ selection.modulesAcquis.length }} · {{ formatFcfa(selection.montantPaye) }}</b>
+        <dl class="flex flex-col gap-2 text-[13px]">
+          <div class="flex justify-between gap-4">
+            <dt class="text-discret">Modules achetés</dt>
+            <dd class="font-bold">
+              {{ selection.modulesAcquis.length }} · {{ formatFcfa(selection.montantPaye) }}
+            </dd>
           </div>
-          <div class="flex justify-between gap-3">
-            <span class="text-discret">Origine des accès</span>
-            <b>
-              <template v-if="selection.modulesAcquis.filter((m) => m.origine === 'achat').length">
-                Achat ({{ selection.modulesAcquis.filter((m) => m.origine === 'achat').length }})
-              </template>
-              <template v-if="selection.modulesAcquis.filter((m) => m.origine === 'attribution').length">
-                Attribution ({{ selection.modulesAcquis.filter((m) => m.origine === 'attribution').length }})
-              </template>
-              <template v-if="!selection.modulesAcquis.length">—</template>
-            </b>
+          <div class="flex justify-between gap-4">
+            <dt class="text-discret">Origine des accès</dt>
+            <dd class="font-bold">{{ origineAcces }}</dd>
           </div>
-          <div class="flex justify-between gap-3">
-            <span class="text-discret">Certificats</span>
-            <b>{{ selection.certificats.length }} générée{{ selection.certificats.length > 1 ? 's' : '' }}</b>
+          <div class="flex justify-between gap-4">
+            <dt class="text-discret">Certificats</dt>
+            <dd class="font-bold">{{ selection.certificats.length }} générée(s)</dd>
           </div>
-          <div class="flex justify-between gap-3">
-            <span class="text-discret">Coaching privé</span>
-            <b :class="selection.coachingPrive.some((d) => d.statut === 'en-attente') && 'text-alerte'">
-              {{ selection.coachingPrive.length }} demande{{ selection.coachingPrive.length > 1 ? 's' : '' }}
-              <template v-if="selection.coachingPrive.some((d) => d.statut === 'en-attente')">en attente</template>
-            </b>
+          <div class="flex justify-between gap-4">
+            <dt class="text-discret">Coaching privé</dt>
+            <dd class="font-bold" :class="coachingEnAttente > 0 && 'text-alerte'">
+              <template v-if="coachingEnAttente">{{ coachingEnAttente }} demande(s) en attente</template>
+              <template v-else>{{ selection.coachingPrive.length }} demande(s)</template>
+            </dd>
           </div>
-        </div>
+        </dl>
 
         <div class="mt-4 flex flex-wrap gap-2 text-[12.5px] font-bold">
           <button
-            class="rounded-full border-[1.5px] border-encre px-4 py-2.5 text-encre"
-            @click="attribution.moduleId = attribution.moduleId || (modules?.[0]?.id ?? ''); historiqueOuvert = true"
+            class="rounded-full border-[1.5px] border-encre px-4 py-[9px] text-encre"
+            @click="attribution.ouverte = true"
           >
             Attribuer un accès à un module
           </button>
           <button
-            class="rounded-full border-[1.5px] border-ligne px-4 py-2.5 text-texte"
-            @click="historiqueOuvert = !historiqueOuvert"
+            class="rounded-full border-[1.5px] border-ligne px-4 py-[9px] text-texte"
+            @click="historiqueOuvert = true"
           >
             Historique
           </button>
         </div>
         <p class="mt-2.5 text-[11.5px] leading-[1.5] text-discret">
-          «&nbsp;Attribuer un accès&nbsp;» offre gratuitement une formation à cet apprenant — il est
-          notifié par email + WhatsApp dès l’attribution.
+          « Attribuer un accès » ouvre une fenêtre pour offrir gratuitement une formation à cet
+          apprenant — il est notifié par email + WhatsApp dès l’attribution.
         </p>
+      </aside>
 
-        <div v-if="historiqueOuvert">
-        <!-- Origine des accès : un achat et une attribution de l'équipe ne
-             pèsent pas la même chose dans les revenus. -->
-        <section class="mt-5 rounded-[12px] border border-ligne-claire p-4">
-          <p class="text-[14px] font-bold">Accès et origine</p>
-          <ul v-if="selection.modulesAcquis.length" class="mt-3 space-y-2">
+      <aside v-else class="h-fit rounded-bloc border border-dashed border-ligne bg-white p-10 text-center text-[13.5px] text-discret">
+        Sélectionnez un apprenant pour ouvrir sa fiche.
+      </aside>
+    </div>
+
+    <!-- Écran 13 · Ajouter un apprenant -->
+    <div v-if="ajout.ouvert" class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-encre/50 p-4">
+      <form
+        class="my-6 w-full max-w-[460px] rounded-carte bg-white p-7 shadow-[0_16px_40px_rgba(23,21,28,.12)]"
+        @submit.prevent="ajouterApprenant"
+      >
+        <b class="text-[16px]">Ajouter un apprenant</b>
+        <p class="mt-1.5 mb-4 text-[12.5px] text-discret">
+          Crée le compte manuellement (hors inscription en ligne) — préalable à toute attribution
+          d’accès.
+        </p>
+        <div class="flex flex-col gap-3">
+          <label :class="ETIQUETTE">
+            Nom complet
+            <input v-model="ajout.nomComplet" required :class="CHAMP">
+          </label>
+          <label :class="ETIQUETTE">
+            Email
+            <input v-model="ajout.email" type="email" required :class="CHAMP">
+          </label>
+          <label :class="ETIQUETTE">
+            Numéro WhatsApp
+            <input v-model="ajout.whatsapp" :class="CHAMP">
+          </label>
+          <label class="flex items-center gap-2.5 text-[12.5px] font-semibold text-texte">
+            <input v-model="ajout.attribuerEnsuite" type="checkbox" class="size-4 accent-social">
+            Attribuer un accès à un module juste après la création
+          </label>
+          <template v-if="ajout.attribuerEnsuite">
+            <label :class="ETIQUETTE">
+              Module
+              <select v-model="ajout.moduleId" :class="CHAMP">
+                <option value="">Aucun pour l’instant</option>
+                <option v-for="m in modules" :key="m.id" :value="m.id">{{ m.titre }}</option>
+              </select>
+            </label>
+            <label v-if="ajout.moduleId" :class="ETIQUETTE">
+              Motif (journalisé, obligatoire)
+              <input v-model="ajout.motif" required :class="CHAMP">
+            </label>
+          </template>
+          <p v-if="erreurAjout" class="text-[13px] text-erreur">{{ erreurAjout }}</p>
+          <div class="flex gap-2.5">
+            <UiBaseButton type="submit" taille="sm" class="flex-1" :disabled="ajoutEnCours">
+              {{ ajoutEnCours ? 'Création…' : 'Créer le compte' }}
+            </UiBaseButton>
+            <UiBaseButton taille="sm" variante="contour" class="flex-1" @click="ajout.ouvert = false">
+              Annuler
+            </UiBaseButton>
+          </div>
+          <p class="text-[11.5px] leading-[1.5] text-discret">
+            L’apprenant reçoit un email + WhatsApp d’invitation pour définir son mot de passe et
+            compléter son profil. Compte marqué « Création admin » dans l’historique.
+          </p>
+        </div>
+      </form>
+    </div>
+
+    <!-- Écran 13 · Attribuer un accès gratuit -->
+    <div v-if="attribution.ouverte && selection" class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-encre/50 p-4">
+      <form
+        class="my-6 w-full max-w-[460px] rounded-carte bg-white p-7 shadow-[0_16px_40px_rgba(23,21,28,.12)]"
+        @submit.prevent="attribuer"
+      >
+        <b class="text-[16px]">Attribuer un accès gratuit</b>
+        <p class="mt-1.5 mb-4 text-[12.5px] text-discret">
+          {{ selection.nom }} · l’accès attribué est marqué « Attribution admin » dans l’historique,
+          distinct d’un achat.
+        </p>
+        <div class="flex flex-col gap-3">
+          <label :class="ETIQUETTE">
+            Module
+            <select v-model="attribution.moduleId" required :class="CHAMP">
+              <option value="">Choisir…</option>
+              <option v-for="m in modules" :key="m.id" :value="m.id">{{ m.titre }}</option>
+            </select>
+          </label>
+          <label :class="ETIQUETTE">
+            Motif (journalisé, obligatoire)
+            <input
+              v-model="attribution.motif"
+              required
+              placeholder="Ex : lot concours communauté, geste commercial…"
+              :class="CHAMP"
+            >
+          </label>
+          <label class="flex items-center gap-2.5 text-[12.5px] font-semibold text-texte">
+            <input v-model="attribution.notifier" type="checkbox" class="size-4 accent-social">
+            Notifier l’apprenant par email + WhatsApp dès l’attribution
+          </label>
+          <div class="flex gap-2.5">
+            <UiBaseButton type="submit" taille="sm" variante="sombre" class="flex-1">
+              Attribuer et notifier
+            </UiBaseButton>
+            <UiBaseButton taille="sm" variante="contour" class="flex-1" @click="attribution.ouverte = false">
+              Annuler
+            </UiBaseButton>
+          </div>
+          <p class="border-t border-ligne-claire pt-3 text-[12px] leading-[1.6] text-texte">
+            <b class="text-erreur">Révocation :</b> possible uniquement sur les accès attribués
+            (jamais sur un achat), depuis l’historique. Confirmation en 2 étapes + motif obligatoire
+            + notification à l’apprenant.
+          </p>
+        </div>
+      </form>
+    </div>
+
+    <!-- Historique : accès, attestations et demandes de coaching de l'apprenant -->
+    <div v-if="historiqueOuvert && selection" class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-encre/50 p-4">
+      <div class="my-6 w-full max-w-xl rounded-carte bg-white p-[26px] shadow-[0_16px_40px_rgba(23,21,28,.12)]">
+        <div class="flex items-start justify-between gap-4">
+          <b class="text-[16px]">Historique — {{ selection.nom }}</b>
+          <button class="text-[12.5px] font-bold text-discret" @click="historiqueOuvert = false">
+            Fermer
+          </button>
+        </div>
+
+        <section class="mt-4">
+          <p class="font-sans text-[13.5px] font-bold">Accès et origine</p>
+          <ul v-if="selection.modulesAcquis.length" class="mt-2.5 flex flex-col gap-2">
             <li
               v-for="m in selection.modulesAcquis"
               :key="m.id"
@@ -572,8 +669,8 @@ async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir
                   </p>
                 </div>
                 <button
-                  v-if="revocationAcces.moduleId !== m.id"
-                  class="rounded-[8px] border border-erreur px-3 py-1.5 text-[12.5px] text-erreur hover:bg-[#fdeeee]"
+                  v-if="m.origine === 'attribution' && revocationAcces.moduleId !== m.id"
+                  class="text-[12.5px] font-bold text-erreur"
                   @click="revocationAcces.moduleId = m.id; revocationAcces.motif = ''"
                 >
                   Révoquer
@@ -596,10 +693,10 @@ async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir
                     placeholder="Motif (journalisé, obligatoire)"
                     class="min-w-[200px] flex-1 rounded-[10px] border border-ligne px-3 py-2 text-[13px]"
                   >
-                  <UiBaseButton type="submit" class="!py-2 !text-[13px]">Confirmer</UiBaseButton>
+                  <UiBaseButton type="submit" taille="sm">Confirmer</UiBaseButton>
                   <button
                     type="button"
-                    class="text-[12.5px] text-discret hover:underline"
+                    class="text-[12.5px] text-discret"
                     @click="revocationAcces.moduleId = ''"
                   >
                     Annuler
@@ -610,7 +707,7 @@ async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir
           </ul>
           <p v-else class="mt-2 text-[13px] text-discret">Aucun accès actif.</p>
 
-          <ul v-if="selection.accesRevoques.length" class="mt-3 space-y-2">
+          <ul v-if="selection.accesRevoques.length" class="mt-2.5 flex flex-col gap-2">
             <li
               v-for="a in selection.accesRevoques"
               :key="a.moduleId"
@@ -620,34 +717,20 @@ async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir
               <p class="mt-0.5 text-[12.5px] text-erreur">
                 Révoqué{{ a.revoqueLe ? ` le ${formatDate(a.revoqueLe)}` : '' }} — {{ a.motif }}
               </p>
-              <button class="mt-1.5 text-[12.5px] underline" @click="agirSurAcces(a.moduleId, 'retablir')">
+              <button class="mt-1.5 text-[12.5px] font-bold" @click="agirSurAcces(a.moduleId, 'retablir')">
                 Rétablir
               </button>
             </li>
           </ul>
         </section>
 
-        <section v-if="selection.coachingPrive.length" class="mt-5 rounded-[12px] border border-ligne-claire p-4">
-          <p class="text-[14px] font-bold">Coaching privé</p>
-          <ul class="mt-2 space-y-1.5 text-[13px]">
-            <li v-for="d in selection.coachingPrive" :key="d.id" class="flex flex-wrap justify-between gap-2">
-              <span class="text-texte">{{ formatDate(d.recueLe) }} · {{ d.heures }} h</span>
-              <span class="text-discret">{{ STATUTS_COACHING[d.statut] ?? d.statut }}</span>
-            </li>
-          </ul>
-          <NuxtLink to="/admin/coaching-prive" class="mt-2 inline-block text-[12.5px] text-social underline">
-            Ouvrir les demandes →
-          </NuxtLink>
-        </section>
-
-        <section v-if="selection.certificats.length" class="mt-5 rounded-[12px] border border-ligne-claire p-4">
-          <p class="text-[14px] font-bold">Attestations délivrées</p>
+        <section v-if="selection.certificats.length" class="mt-5">
+          <p class="font-sans text-[13.5px] font-bold">Attestations délivrées</p>
           <p class="mt-1 text-[12.5px] text-discret">
             Révoquer n’efface pas le document — il a pu être imprimé — mais la page publique de
             vérification le déclare non valable. Motif obligatoire, action journalisée.
           </p>
-
-          <ul class="mt-3 space-y-2">
+          <ul class="mt-2.5 flex flex-col gap-2">
             <li
               v-for="attestation in selection.certificats"
               :key="attestation.numero"
@@ -662,14 +745,14 @@ async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir
                 </div>
                 <button
                   v-if="attestation.revoqueLe"
-                  class="rounded-[8px] border border-ligne px-3 py-1.5 text-[12.5px] hover:bg-brume"
+                  class="text-[12.5px] font-bold"
                   @click="agirSurAttestation(attestation.numero, 'retablir')"
                 >
                   Rétablir
                 </button>
                 <button
                   v-else-if="revocation.numero !== attestation.numero"
-                  class="rounded-[8px] border border-erreur px-3 py-1.5 text-[12.5px] text-erreur hover:bg-[#fdeeee]"
+                  class="text-[12.5px] font-bold text-erreur"
                   @click="revocation.numero = attestation.numero; revocation.motif = ''"
                 >
                   Révoquer
@@ -691,12 +774,8 @@ async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir
                   placeholder="Motif (journalisé, obligatoire)"
                   class="min-w-[200px] flex-1 rounded-[10px] border border-ligne px-3 py-2 text-[13px]"
                 >
-                <UiBaseButton type="submit" class="!py-2 !text-[13px]">Confirmer</UiBaseButton>
-                <button
-                  type="button"
-                  class="text-[12.5px] text-discret hover:underline"
-                  @click="revocation.numero = ''"
-                >
+                <UiBaseButton type="submit" taille="sm">Confirmer</UiBaseButton>
+                <button type="button" class="text-[12.5px] text-discret" @click="revocation.numero = ''">
                   Annuler
                 </button>
               </form>
@@ -704,37 +783,19 @@ async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir
           </ul>
         </section>
 
-        <section class="mt-5 rounded-[12px] border border-ligne-claire p-4">
-          <p class="font-bold text-[14px]">Attribuer un accès gratuit</p>
-          <p class="mt-1 text-[12.5px] text-discret">
-            L’accès attribué est marqué « Attribution admin », distinct d’un achat. Motif obligatoire,
-            action journalisée, apprenant notifié.
-          </p>
-          <form class="mt-3 space-y-3" @submit.prevent="attribuer">
-            <select v-model="attribution.moduleId" required class="w-full rounded-[10px] border border-ligne bg-white px-3 py-2.5 text-[14px]">
-              <option value="">Choisir un module…</option>
-              <option v-for="m in modules" :key="m.id" :value="m.id">{{ m.titre }}</option>
-            </select>
-            <input
-              v-model="attribution.motif"
-              required
-              placeholder="Motif (journalisé, obligatoire)"
-              class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]"
-            >
-            <label class="flex items-center gap-2 text-[13px] text-texte">
-              <input v-model="attribution.notifier" type="checkbox">
-              Notifier l’apprenant par e-mail et WhatsApp
-            </label>
-            <p v-if="erreur" class="text-[13px] text-erreur">{{ erreur }}</p>
-            <UiBaseButton type="submit" taille="sm">Attribuer et notifier</UiBaseButton>
-          </form>
+        <section v-if="selection.coachingPrive.length" class="mt-5">
+          <p class="font-sans text-[13.5px] font-bold">Coaching privé</p>
+          <ul class="mt-2 flex flex-col gap-1.5 text-[13px]">
+            <li v-for="d in selection.coachingPrive" :key="d.id" class="flex flex-wrap justify-between gap-2">
+              <span class="text-texte">{{ formatDate(d.recueLe) }} · {{ d.heures }} h</span>
+              <span class="text-discret">{{ STATUTS_COACHING[d.statut] ?? d.statut }}</span>
+            </li>
+          </ul>
+          <NuxtLink to="/admin/coaching-prive" class="mt-2 inline-block text-[12.5px] font-bold">
+            Ouvrir les demandes →
+          </NuxtLink>
         </section>
-        </div>
-      </aside>
-
-      <aside v-else class="h-fit rounded-[14px] border border-dashed border-ligne bg-white p-10 text-center text-[13.5px] text-discret">
-        Sélectionnez un apprenant pour ouvrir sa fiche.
-      </aside>
+      </div>
     </div>
   </div>
 </template>
