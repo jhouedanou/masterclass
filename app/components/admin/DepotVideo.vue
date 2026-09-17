@@ -14,7 +14,7 @@ const props = defineProps<{
   depotEnCours: { nomFichier: string; nbParts: number; parts: unknown[] } | null
 }>()
 
-const emit = defineEmits<{ termine: []; annule: [] }>()
+const emit = defineEmits<{ termine: []; annule: []; mediatheque: [] }>()
 
 const depot = useTeleversementVideo()
 const champ = ref<HTMLInputElement | null>(null)
@@ -110,6 +110,15 @@ const LIBELLE_ETAT: Record<string, string> = {
           >
         </label>
         — upload repris automatiquement en cas de coupure
+      </p>
+      <!-- Le fonds déjà en ligne se propose ici, au moment où l'on s'apprête à
+           déposer : c'est le seul instant où la question « ce fichier n'est-il
+           pas déjà en ligne ? » se pose vraiment. -->
+      <p class="mt-2">
+        ou
+        <button class="font-bold text-social underline" @click="emit('mediatheque')">
+          choisir une vidéo déjà déposée
+        </button>
       </p>
       <p class="mt-1.5 text-[11.5px]">
         Aucun transcodage n’est fait par la plateforme : le fichier est servi tel quel.

@@ -21,6 +21,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{ choisir: [video: VideoMediatheque] }>()
 
+const recherche = ref('')
+const apercu = ref<string | null>(null)
+const renomme = ref<string | null>(null)
+const titre = ref('')
+const erreur = ref('')
+const occupe = ref(false)
+
 interface VideoMediatheque {
   id: string
   cle: string
@@ -34,16 +41,30 @@ interface VideoMediatheque {
   usages: { chapitreId: string; libelle: string; moduleId: string; moduleTitre: string }[]
 }
 
-const { data, pending, refresh } = await useFetch<VideoMediatheque[]>('/api/admin/mediatheque', {
-  default: () => [],
-})
+/**
+ * Chargement au montage plutôt qu'avec un `await useFetch` en tête de `setup`.
+ *
+ * La différence n'est pas cosmétique : un `await` au niveau racine fait de ce
+ * composant un composant asynchrone, et le monter dans une fenêtre déjà
+ * affichée renvoie le `Suspense` de la page à l'état « en attente ». La page se
+ * fige alors, fenêtre vide, sans la moindre erreur en console.
+ */
+const data = ref<VideoMediatheque[]>([])
+const pending = ref(true)
 
-const recherche = ref('')
-const apercu = ref<string | null>(null)
-const renomme = ref<string | null>(null)
-const titre = ref('')
-const erreur = ref('')
-const occupe = ref(false)
+async function refresh() {
+  pending.value = true
+  try {
+    data.value = await $fetch<VideoMediatheque[]>('/api/admin/mediatheque')
+  } catch (e) {
+    erreur.value = messageDErreur(e)
+  } finally {
+    pending.value = false
+  }
+}
+
+onMounted(refresh)
+
 
 const filtrees = computed(() => {
   const q = recherche.value.trim().toLowerCase()

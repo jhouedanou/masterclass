@@ -86,6 +86,25 @@ alter table chapitres
 
 create index chapitres_video_id_idx on chapitres (video_id) where video_id is not null;
 
+-- ---------------------------------------------------------------------------
+-- L'unicité de la clé change de table
+--
+-- `chapitres_video_cle_unique` datait de l'époque où une vidéo appartenait à un
+-- chapitre et à un seul. Elle interdit très exactement ce que la médiathèque
+-- permet : deux chapitres servant le même fichier. La laisser en place faisait
+-- échouer tout rattachement d'une vidéo déjà employée, sur une violation de
+-- contrainte que rien dans le message ne rattachait à la cause.
+--
+-- L'unicité n'est pas perdue pour autant : elle vit désormais sur `videos.cle`,
+-- où elle a son vrai sens — une entrée par objet du stockage. Ici, il ne reste
+-- qu'un index de recherche, que la lecture d'un chapitre par sa clé emprunte.
+-- ---------------------------------------------------------------------------
+
+alter table chapitres drop constraint if exists chapitres_video_cle_unique;
+
+create index if not exists chapitres_video_cle_idx
+  on chapitres (video_cle) where video_cle is not null;
+
 comment on column chapitres.video_id is
   'Entrée de médiathèque servie par ce chapitre. Les colonnes video_cle, video_format, video_duree_secondes, video_nom_fichier et video_taille_octets en sont la copie, tenue à jour au rattachement pour éviter une jointure sur le chemin de lecture.';
 

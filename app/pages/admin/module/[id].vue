@@ -149,7 +149,16 @@ async function appliquer(champs: Record<string, unknown>, options: { silencieux?
 
 const nouveauChapitre = reactive({ libelle: '', titre: '', dureeMinutes: 18 })
 
-async function chapitre(body: Record<string, unknown>) {
+const { annoncer } = useToasts()
+
+/**
+ * Chaque action de la liste des chapitres dit ce qu'elle a fait.
+ *
+ * Le bandeau de succès existant est posé en tête de page : sur un module aux
+ * chapitres à mi-hauteur, on dupliquait et rien ne bougeait là où l'on
+ * regardait. `confirmation` porte la phrase du message, en bas d'écran.
+ */
+async function chapitre(body: Record<string, unknown>, confirmation?: string) {
   erreur.value = ''
   try {
     await $fetch('/api/admin/chapitres', {
@@ -157,9 +166,30 @@ async function chapitre(body: Record<string, unknown>) {
       body: { moduleId: data.value!.module.id, ...body },
     })
     await refresh()
+    if (confirmation) annoncer(confirmation)
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
+    const message = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
+    erreur.value = message
+    annoncer(message, 'erreur')
   }
+}
+
+function ouvrirChapitre(c: { id: string; libelle: string }) {
+  chapitreSelectionne.value = c.id
+  annoncer(`${c.libelle} ouvert dans le panneau de détail, à droite.`)
+}
+
+/**
+ * Retirer un chapitre effaçait tout — textes, transcription, rattachement de la
+ * vidéo — sur un seul clic, sans rien demander. La vidéo, elle, survit
+ * désormais dans la médiathèque ; le reste, non.
+ */
+function retirerChapitre(c: { id: string; libelle: string; titre: string }) {
+  const perdu = [c.libelle, c.titre].filter(Boolean).join(' — ')
+  if (!confirm(`Retirer « ${perdu} » ?\n\nSon texte et sa transcription seront perdus. La vidéo, elle, reste dans la médiathèque.`)) {
+    return
+  }
+  return chapitre({ action: 'supprimer', id: c.id }, `${c.libelle} retiré.`)
 }
 
 async function ajouterChapitre() {
@@ -226,6 +256,28 @@ watchEffect(() => {
 const chapitreCourant = computed(
   () => data.value?.chapitres.find((c) => c.id === chapitreSelectionne.value) ?? null,
 )
+
+/**
+ * La médiathèque s'ouvre ici, et non dans l'un des deux composants qui la
+ * proposent : la zone de dépôt et le panneau du chapitre y mènent tous les
+ * deux, et deux fenêtres pour un même choix finiraient par se contredire.
+ */
+const mediathequeOuverte = ref(false)
+
+async function choisirVideo(video: { id: string }) {
+  erreur.value = ''
+  try {
+    await $fetch('/api/admin/mediatheque/attacher', {
+      method: 'POST',
+      body: { chapitreId: chapitreCourant.value!.id, videoId: video.id },
+    })
+    mediathequeOuverte.value = false
+    await refresh()
+  } catch (e) {
+    const avec = e as { statusMessage?: string; data?: { statusMessage?: string } }
+    erreur.value = avec.data?.statusMessage ?? avec.statusMessage ?? 'Le rattachement a échoué.'
+  }
+}
 
 async function basculerPret() {
   erreur.value = ''
@@ -482,15 +534,15 @@ const champ =
           <div class="flex items-center gap-2 text-[12.5px] font-bold">
             <button class="rounded-[8px] border border-ligne px-2 py-1 font-normal" :disabled="i === 0" aria-label="Monter le chapitre" @click="deplacer(i, -1)">↑</button>
             <button class="rounded-[8px] border border-ligne px-2 py-1 font-normal" :disabled="i === data.chapitres.length - 1" aria-label="Descendre le chapitre" @click="deplacer(i, 1)">↓</button>
-            <button class="ml-1.5 text-social" @click="chapitreSelectionne = c.id">Modifier</button>
+            <button class="ml-1.5 text-social" @click="ouvrirChapitre(c)">Modifier</button>
             <button
               class="text-social"
               title="Copier ce chapitre — textes et transcription, la vidéo restant à redéposer"
-              @click="chapitre({ action: 'dupliquer', id: c.id })"
+              @click="chapitre({ action: 'dupliquer', id: c.id }, `${c.libelle} dupliqué — la vidéo reste à rattacher.`)"
             >
               Dupliquer
             </button>
-            <button class="text-erreur" @click="chapitre({ action: 'supprimer', id: c.id })">Retirer</button>
+            <button class="text-erreur" @click="retirerChapitre(c)">Retirer</button>
           </div>
         </article>
         <p v-if="!data.chapitres.length" class="rounded-[12px] border border-dashed border-ligne-pointillee p-5 text-[13px] text-discret">
@@ -507,6 +559,7 @@ const champ =
           :depot-en-cours="chapitreCourant.depotEnCours"
           @termine="refresh"
           @annule="refresh"
+          @mediatheque="mediathequeOuverte = true"
         />
 
         <AdminChecklistPret :checklist="data.checklist" />
@@ -531,6 +584,7 @@ const champ =
         @modifier="chapitre({ action: 'modifier', id: chapitreCourant!.id, ...$event })"
         @reglages="reglagesModule($event)"
         @rafraichir="refresh"
+        @mediatheque="mediathequeOuverte = true"
       />
     </section>
 
@@ -663,5 +717,35 @@ const champ =
       :titre="data.module.titre"
       :programme="data.module.programme === 'social-media' ? 'Social Média' : 'Entrepreneurs'"
     />
+
+    <!-- Médiathèque. Mêmes classes que les autres fenêtres du back-office :
+         `place-items-center` centre, et `overflow-y-auto` sur le fond laisse
+         défiler un fonds plus haut que l'écran. -->
+    <div
+      v-if="mediathequeOuverte && chapitreCourant"
+      class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-encre/50 p-4"
+      @click.self="mediathequeOuverte = false"
+    >
+      <div class="my-6 w-full max-w-3xl rounded-carte bg-white p-[26px] shadow-[0_16px_40px_rgba(23,21,28,.12)]">
+        <div class="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 class="font-sans text-[16px] font-bold">
+            Choisir une vidéo pour « {{ chapitreCourant.libelle }} »
+          </h2>
+          <button class="text-[13px] text-discret underline" @click="mediathequeOuverte = false">
+            Fermer
+          </button>
+        </div>
+        <p class="mt-1 text-[12.5px] text-discret">
+          Une même vidéo peut servir plusieurs chapitres : la choisir ici ne la copie pas.
+        </p>
+        <div class="mt-4">
+          <AdminMediatheque
+            choisissable
+            :video-id-courante="chapitreCourant.videoId"
+            @choisir="choisirVideo"
+          />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
