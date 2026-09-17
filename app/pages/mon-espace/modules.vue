@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Acces, Formateur, Module, Thematique } from '#shared/types'
+import { compterPlaces } from '#shared/utils/compteurs'
 
 definePageMeta({ layout: 'espace', middleware: 'auth' })
 usePagePrivee('Mes modules')
@@ -64,7 +65,7 @@ function imminente(carte?: Carte) {
         <p v-if="imminente(cartes.get(ligne.moduleId))" class="mt-3 rounded-[10px] bg-alerte-voile px-3 py-2 text-[13px] text-alerte">
           🗓 Session de coaching {{ cartes.get(ligne.moduleId)?.prochaineSession?.date === new Date().toISOString().slice(0, 10) ? 'aujourd’hui' : 'demain' }}
           {{ cartes.get(ligne.moduleId)?.prochaineSession?.heure.replace(':', 'h') }}
-          — {{ Math.max(0, (cartes.get(ligne.moduleId)?.prochaineSession?.places ?? 0) - (cartes.get(ligne.moduleId)?.prochaineSession?.inscrits ?? 0)) }} places restantes
+          — {{ compterPlaces(Math.max(0, (cartes.get(ligne.moduleId)?.prochaineSession?.places ?? 0) - (cartes.get(ligne.moduleId)?.prochaineSession?.inscrits ?? 0))) }} restantes
         </p>
 
         <div class="mt-auto flex items-center justify-between gap-3 pt-4">

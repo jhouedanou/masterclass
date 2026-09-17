@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Formateur, Module, Programme, Thematique } from '#shared/types'
+import type { Formateur, Module, ProgrammePublic, Thematique } from '#shared/types'
 import { dureeSessionEnHeures, PLACES_SESSION } from '#shared/utils/coaching'
 import { compterModules } from '#shared/utils/compteurs'
 
@@ -8,7 +8,7 @@ type ThematiqueGarnie = Thematique & { modules: (Module & { formateur: Formateur
 const route = useRoute()
 const slug = computed(() => String(route.params.slug))
 
-const { data } = await useFetch<{ programme: Programme; thematiques: ThematiqueGarnie[] }>(
+const { data } = await useFetch<{ programme: ProgrammePublic; thematiques: ThematiqueGarnie[] }>(
   () => `/api/programmes/${slug.value}`,
 )
 

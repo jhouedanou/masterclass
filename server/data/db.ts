@@ -73,7 +73,7 @@ export const programmes: Programme[] = [
       motClePrincipal: 'formation social média Abidjan',
       title: 'Programme Social Média | E-Masterclass Big Five',
       metaDescription:
-        'Huit modules de 60 minutes pour renforcer des compétences précises en stratégie, contenu et plateformes Social Media. 10 000 FCFA TTC par module, accès à vie.',
+        '{modules} de 60 minutes pour renforcer des compétences précises en stratégie, contenu et plateformes Social Media. 10 000 FCFA TTC par module, accès à vie.',
       indexable: true,
     },
   },
@@ -96,7 +96,7 @@ export const programmes: Programme[] = [
       motClePrincipal: 'formation entrepreneur Côte d’Ivoire',
       title: 'Programme Entrepreneurs | E-Masterclass Big Five',
       metaDescription:
-        'Dix modules de 60 minutes pour valider une idée, fixer ses prix, vendre et gagner en visibilité. 10 000 FCFA TTC par module, accès à vie.',
+        '{modules} de 60 minutes pour valider une idée, fixer ses prix, vendre et gagner en visibilité. 10 000 FCFA TTC par module, accès à vie.',
       indexable: true,
     },
   },

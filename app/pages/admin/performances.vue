@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { compterModules } from '#shared/utils/compteurs'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Performances — administration')
 
@@ -467,7 +468,7 @@ const ligneVoile = 'flex items-center justify-between gap-3 rounded-[8px] bg-soc
             </div>
             <p v-if="!data.ventesParModule.length" class="py-6 text-center text-discret">Aucune vente sur la période.</p>
             <NuxtLink to="/admin/contenus" class="text-[12.5px] font-bold text-social">
-              Voir les {{ data.modulesDistincts.total }} modules →
+              Voir les {{ compterModules(data.modulesDistincts.total) }} →
             </NuxtLink>
           </div>
         </section>

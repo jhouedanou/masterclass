@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Acces, Formateur, Module, Programme, SessionCoaching, Thematique } from '#shared/types'
+import { compterChapitres, compterPlaces } from '#shared/utils/compteurs'
 
 definePageMeta({ layout: 'espace', middleware: 'auth' })
 
@@ -144,7 +145,7 @@ const LIBELLE_SESSION = (date: string) =>
               {{ LIBELLE_SESSION(data.session.date) }} · {{ data.session.heure }} GMT
             </p>
             <p class="mt-1 text-[13px] text-discret">
-              {{ data.formateur?.nom }} · {{ formatDuree(data.session.dureeMinutes) }} · {{ data.session.places }} places · Zoom
+              {{ data.formateur?.nom }} · {{ formatDuree(data.session.dureeMinutes) }} · {{ compterPlaces(data.session.places) }} · Zoom
             </p>
             <UiBaseButton
               :to="data.completionProfil < 100 ? undefined : (data.session.inscrit ? `/mon-espace/session/${data.session.id}` : '/mon-espace/sessions')"
@@ -169,7 +170,7 @@ const LIBELLE_SESSION = (date: string) =>
         <div class="rounded-carte border border-ligne-douce bg-white p-[22px]">
           <p class="mb-2.5 font-title text-[17px] font-light">Certificat de participation</p>
           <p class="mb-3 text-[13px] leading-[1.6] text-texte">
-            Débloquée automatiquement quand les {{ total }} chapitres sont vus à 100 %.
+            Débloquée automatiquement quand les {{ compterChapitres(total) }} sont vus à 100 %.
             <template v-if="restants > 0">Il vous reste <b>{{ restants }} chapitre{{ restants > 1 ? 's' : '' }}</b>.</template>
             <template v-else>Tous les chapitres sont vus.</template>
           </p>

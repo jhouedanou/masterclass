@@ -1,3 +1,4 @@
+import { DUREE_SESSION_MINUTES, PLACES_SESSION } from '#shared/utils/coaching'
 import type {
   CreneauCoaching,
   DemandeCoachingPrive,
@@ -63,8 +64,8 @@ export async function creerSession(champs: {
       formateur_id: champs.formateurId,
       date_seance: champs.date,
       heure: champs.heure,
-      duree_minutes: champs.dureeMinutes ?? 120,
-      places: champs.places ?? 25,
+      duree_minutes: champs.dureeMinutes ?? DUREE_SESSION_MINUTES,
+      places: champs.places ?? PLACES_SESSION,
       titre: champs.titre ?? null,
       ouverture_salle_minutes: champs.ouvertureSalleMinutes ?? 15,
       enregistrement: champs.enregistrement ?? false,

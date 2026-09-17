@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { interpolerCompteurs } from '#shared/utils/compteurs'
-import type { ContenuBanniere, Programme, SlideBanniere } from '#shared/types'
+import type { ContenuBanniere, ProgrammePublic, SlideBanniere } from '#shared/types'
 
 /**
  * Bannière coulissante — un slide par entrée du bloc CMS « banniere ».
@@ -14,15 +14,9 @@ import type { ContenuBanniere, Programme, SlideBanniere } from '#shared/types'
  * qui reste la seule source du lien, de la couleur et du sous-titre.
  */
 const props = defineProps<{
-  programmes: Programme[]
+  programmes: ProgrammePublic[]
   /** Contenu publié du bloc « banniere ». `null` tant qu'il n'est pas chargé. */
   banniere?: Partial<ContenuBanniere> | null
-  /**
-   * Nombre de modules visibles au catalogue, par slug de programme. Sert à
-   * remplacer le jeton `{modules}` des descriptions : le chiffre annoncé suit
-   * alors le catalogue au lieu d'être figé dans le texte.
-   */
-  modulesParProgramme?: Record<string, number>
 }>()
 
 /** Première moitié du H1 si le CMS ne la fournit pas : la valeur historique. */
@@ -35,7 +29,7 @@ const DUREE_MAX = 30000
 
 type SlideAffiche = {
   cle: string
-  programme: Programme
+  programme: ProgrammePublic
   estSocial: boolean
   surtitre: string
   accroche: string
@@ -56,17 +50,14 @@ const programmeParSlug = computed(
   () => new Map(props.programmes.map((programme) => [programme.slug, programme])),
 )
 
-function depuisProgramme(programme: Programme): SlideAffiche {
+function depuisProgramme(programme: ProgrammePublic): SlideAffiche {
   return {
     cle: programme.id,
     programme,
     estSocial: programme.slug === 'social-media',
     surtitre: programme.surtitreHero,
     accroche: programme.h1Variable,
-    description: interpolerCompteurs(
-      programme.descriptionHero,
-      props.modulesParProgramme?.[programme.slug] ?? 0,
-    ),
+    description: programme.descriptionHero,
     cta: programme.ctaHero,
     imageFond: `/images/hero/${programme.slug}.svg`,
     imageVisuel: null,
@@ -75,7 +66,7 @@ function depuisProgramme(programme: Programme): SlideAffiche {
   }
 }
 
-function composer(slide: SlideBanniere, programme: Programme, rang: number): SlideAffiche {
+function composer(slide: SlideBanniere, programme: ProgrammePublic, rang: number): SlideAffiche {
   const repli = depuisProgramme(programme)
   return {
     ...repli,
@@ -83,10 +74,7 @@ function composer(slide: SlideBanniere, programme: Programme, rang: number): Sli
     cle: `${rang}-${programme.slug}`,
     accroche: texte(slide.accroche) ?? repli.accroche,
     description: texte(slide.description)
-      ? interpolerCompteurs(
-          texte(slide.description)!,
-          props.modulesParProgramme?.[programme.slug] ?? 0,
-        )
+      ? interpolerCompteurs(texte(slide.description)!, { modules: programme.nbModules ?? 0 })
       : repli.description,
     cta: texte(slide.cta) ?? repli.cta,
     imageFond: texte(slide.imageFond) ?? repli.imageFond,

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { compterModules } from '#shared/utils/compteurs'
 definePageMeta({ layout: 'formateur', middleware: 'formateur' })
 usePagePrivee('Espace formateur')
 
@@ -92,7 +93,7 @@ const optionsModules = computed(() => [
       <div class="rounded-[14px] border border-ligne-douce bg-white p-4.5">
         <p class="mb-1.25 text-[12px] text-discret">Complétion moyenne</p>
         <p class="font-title text-[27px] leading-tight font-light">{{ data.completionMoyenne }} %</p>
-        <p class="mt-0.75 text-[11.5px] text-discret">sur vos {{ data.nbModules }} modules</p>
+        <p class="mt-0.75 text-[11.5px] text-discret">sur vos {{ compterModules(data.nbModules) }}</p>
       </div>
       <div class="rounded-[14px] border border-ligne-douce bg-white p-4.5">
         <p class="mb-1.25 text-[12px] text-discret">Présence en session</p>

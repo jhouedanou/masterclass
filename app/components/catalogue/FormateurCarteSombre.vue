@@ -20,7 +20,7 @@ defineProps<{ formateur: Formateur & { nbModules?: number } }>()
       <p class="mt-1 text-[13px] text-[#b9b4c4]">{{ formateur.expertise }}</p>
       <p class="mt-1.5 text-[12.5px] text-[#8f8a9c]">
         {{ formateur.programmePrincipal === 'social-media' ? 'Social Média' : 'Entrepreneurs' }} ·
-        {{ compterModules(formateur.nbModules) }}
+        {{ compterModules(formateur.nbModules ?? 0) }}
       </p>
     </div>
     <NuxtLink

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Formateur, Module, Thematique } from '#shared/types'
+import { compterModules } from '#shared/utils/compteurs'
+import type { Formateur, Module, ProgrammePublic, Thematique } from '#shared/types'
 
 const programme = ref('')
 
@@ -9,10 +10,19 @@ const { data: modules } = await useFetch<
   query: computed(() => ({ programme: programme.value || undefined })),
 })
 
+// `modules` suit le filtre de programme choisi par le visiteur : il ne peut pas
+// servir de total. Les programmes, eux, portent chacun leur décompte — deux
+// lignes de réponse au lieu du catalogue entier.
+const { data: programmes } = await useFetch<ProgrammePublic[]>('/api/programmes')
+const totalCatalogue = computed(() =>
+  (programmes.value ?? []).reduce((total, p) => total + p.nbModules, 0),
+)
+
 usePageSeo({
   titreAuto: 'Tous les modules | E-Masterclass Big Five',
-  descriptionAuto:
-    'Le catalogue complet des 18 modules E-Masterclass Big Five, à 10 000 FCFA TTC l’unité, avec accès à vie et coaching collectif.',
+  descriptionAuto: () =>
+    `Le catalogue complet des ${compterModules(totalCatalogue.value)} E-Masterclass Big Five, ` +
+    'à 10 000 FCFA TTC l’unité, avec accès à vie et coaching collectif.',
   // Le filtre par programme ne change pas l'URL : /modules reste la seule page
   // indexable. Si des URL filtrées sont un jour exposées, les passer en noindex.
   chemin: '/modules',
@@ -54,7 +64,7 @@ useFilAriane(mailles)
           </button>
         </div>
 
-        <p class="mt-6 text-[13px] text-discret">{{ modules?.length ?? 0 }} module(s)</p>
+        <p class="mt-6 text-[13px] text-discret">{{ compterModules(modules?.length ?? 0) }}</p>
 
         <div class="mt-4 grid gap-5.5 sm:grid-cols-2 lg:grid-cols-3">
           <CatalogueModuleCarte

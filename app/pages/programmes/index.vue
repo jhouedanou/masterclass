@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { Formateur, Module, Programme, Thematique } from '#shared/types'
+import { compterModules, compterProgrammes, compterThematiques } from '#shared/utils/compteurs'
+import type { Formateur, Module, ProgrammePublic, Thematique } from '#shared/types'
 
 /** Vue d'ensemble des deux programmes, filtrable par thématique (planche A, écran 02). */
 const route = useRoute()
-const { data: programmes } = await useFetch<Programme[]>('/api/programmes')
+const { data: programmes } = await useFetch<ProgrammePublic[]>('/api/programmes')
 const { data: thematiques } = await useFetch<Thematique[]>('/api/thematiques')
 const { data: modules } = await useFetch<(Module & { formateur?: Formateur | null })[]>('/api/modules')
 
@@ -17,10 +18,17 @@ const modulesAffiches = computed(() =>
 )
 const nomThematique = (id: string) => thematiques.value?.find((t) => t.id === id)?.nom
 
+// La description annonçait « Deux programmes, six thématiques, dix-huit
+// modules » : trois nombres écrits à la main, dont aucun ne suivait le
+// catalogue. Ils se comptent, et n'entrent dans la page qu'une fois comptés.
+const totalModules = computed(() => (modules.value ?? []).filter((m) => m.statut !== 'brouillon').length)
+
 usePageSeo({
   titreAuto: 'Programmes Social Média et Entrepreneurs | E-Masterclass Big Five',
-  descriptionAuto:
-    'Deux programmes, six thématiques, dix-huit modules de 60 minutes à 10 000 FCFA TTC. Choisissez votre univers, puis le module qui répond à votre besoin.',
+  descriptionAuto: () =>
+    `${compterProgrammes(programmes.value?.length ?? 0)}, ${compterThematiques(thematiques.value?.length ?? 0)}, ` +
+    `${compterModules(totalModules.value)} de 60 minutes à 10 000 FCFA TTC. ` +
+    'Choisissez votre univers, puis le module qui répond à votre besoin.',
   chemin: '/programmes',
 })
 const mailles = [{ libelle: 'Accueil', chemin: '/' }, { libelle: 'Programmes' }]
@@ -57,8 +65,8 @@ useFilAriane(mailles)
             </h2>
             <p class="mt-2 mb-4.5 text-[15px] leading-relaxed text-texte">{{ programme.descriptionCarte }}</p>
             <p class="mb-5.5 flex flex-wrap gap-5 text-[14px] text-texte">
-              <span><b class="text-encre">9 modules</b></span>
-              <span><b class="text-encre">3 thématiques</b></span>
+              <span><b class="text-encre">{{ compterModules(programme.nbModules) }}</b></span>
+              <span><b class="text-encre">{{ compterThematiques(programme.nbThematiques) }}</b></span>
               <span><b class="text-encre">Sessions</b> de coaching collectif</span>
             </p>
             <UiBaseButton

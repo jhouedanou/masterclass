@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { Formateur, SessionCoaching, Thematique } from '#shared/types'
+import { dureeSessionEnHeures, PLACES_SESSION } from '#shared/utils/coaching'
+import { compterPlaces } from '#shared/utils/compteurs'
 
 definePageMeta({ layout: 'espace', middleware: 'auth' })
 usePagePrivee('Vos sessions de coaching')
@@ -81,8 +83,8 @@ async function noter(valeurs: { note: number; commentaire: string }) {
   <div>
     <h1 class="text-[30px] font-light">Vos sessions de coaching</h1>
     <p class="mt-2 max-w-[720px] text-[15px] text-texte">
-      Une session de coaching collectif de 2 h par module et par mois, animée par le formateur du
-      module. 25 places par session.
+      Une session de coaching collectif de {{ dureeSessionEnHeures() }} par module et par mois, animée
+      par le formateur du module. {{ compterPlaces(PLACES_SESSION) }} par session.
     </p>
 
     <EspaceVerrouProfil :completion="completion" bouton="Réserver ma place" class="mt-5" />

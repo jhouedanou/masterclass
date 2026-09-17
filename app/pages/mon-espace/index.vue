@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { Formateur, Module, StatutCoachingPrive, Thematique } from '#shared/types'
+import { compterPlaces } from '#shared/utils/compteurs'
+import { dureeSessionEnHeures, PLACES_SESSION } from '#shared/utils/coaching'
 
 definePageMeta({ layout: 'espace', middleware: 'auth' })
 usePagePrivee('Tableau de bord')
@@ -148,7 +150,7 @@ const COULEUR_SURTITRE = {
                 class="mb-2 rounded-[8px] bg-alerte-voile px-2.5 py-2 text-[12px] font-bold text-alerte"
               >
                 🗓 Session de coaching {{ carte.prochaineSession.joursAvant === 0 ? 'aujourd’hui' : 'demain' }}
-                {{ carte.prochaineSession.heure.replace(':', 'h') }} — {{ Math.max(0, carte.prochaineSession.places - carte.prochaineSession.inscrits) }} places restantes
+                {{ carte.prochaineSession.heure.replace(':', 'h') }} — {{ compterPlaces(Math.max(0, carte.prochaineSession.places - carte.prochaineSession.inscrits)) }} restantes
               </p>
               <p class="mb-3 text-[13.5px] text-discret">
                 {{ carte.formateur }} ·
@@ -250,7 +252,8 @@ const COULEUR_SURTITRE = {
             <span class="hidden lg:inline">Vos prochaines sessions de coaching</span>
           </h2>
           <p class="mb-[18px] hidden text-[12.5px] text-nuit-clair lg:block">
-            Sessions de coaching collectif de 2 h · 25 places · rappel 24 h avant par email et WhatsApp
+            Sessions de coaching collectif de {{ dureeSessionEnHeures() }} · {{ compterPlaces(PLACES_SESSION) }} ·
+            rappel 24 h avant par email et WhatsApp
           </p>
           <ul v-if="data.planning.length" class="flex flex-col gap-3">
             <li
