@@ -173,5 +173,9 @@ const perimetre = computed(() => {
         <slot />
       </main>
     </div>
+
+    <!-- Posée une fois pour tout le back-office : chaque écran annonce ses
+         actions par `useToasts()` sans se soucier du rendu. -->
+    <UiToasts />
   </div>
 </template>

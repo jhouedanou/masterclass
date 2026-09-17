@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CandidatureFormateur, Formateur } from '#shared/types'
+import { compterModules } from '#shared/utils/compteurs'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Formateurs — administration')
@@ -15,6 +16,7 @@ type FormateurAdmin = Formateur & {
 
 const { data: formateurs, refresh } = await useFetch<FormateurAdmin[]>('/api/admin/formateurs')
 const message = ref('')
+const { annoncer } = useToasts()
 const erreur = ref('')
 
 /**
@@ -68,6 +70,7 @@ async function enregistrerFiche() {
       body: { action: 'modifier', id: edition.value!.id, ...fiche },
     })
     message.value = `Fiche de ${fiche.nom} enregistrée.`
+    annoncer(`Fiche de ${fiche.nom} enregistrée.`)
     edition.value = null
     await refresh()
   } catch (e) {
@@ -95,6 +98,7 @@ async function deposer(cible: FormateurAdmin) {
       body: { action: 'reordonner', ordre: ids },
     })
     message.value = 'Ordre de la page publique mis à jour.'
+    annoncer('Ordre de la page publique mis à jour.')
     await refresh()
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Réordonnancement impossible.'
@@ -296,7 +300,7 @@ const confirmation = ref('')
         <p class="mt-2.5 mb-3 text-[13px] leading-[1.6] text-texte">
           Son profil disparaît de la page /formateurs et il ne peut plus être choisi pour un
           coaching privé. <b>Impossible si des modules publiés ou des sessions à venir lui sont
-          rattachés</b> — réassignez-les d’abord (ici : {{ suppression.nbModules }} module(s) ·
+          rattachés</b> — réassignez-les d’abord (ici : {{ compterModules(suppression.nbModules) }} ·
           {{ suppression.sessionsAVenir }} session(s)).
         </p>
         <label v-if="suppression.supprimable" class="mb-3.5 flex flex-col gap-1.5 text-[12.5px] font-bold text-texte">

@@ -79,12 +79,15 @@ const historique = computed(() =>
   (data.value?.versions ?? []).filter((v) => v.entiteId === edition.value?.cle),
 )
 
+const { annoncer } = useToasts()
+
 async function restaurer(versionId: string) {
   erreur.value = ''
   try {
     await $fetch('/api/admin/versions', { method: 'POST', body: { versionId } })
     edition.value = null
     await refresh()
+    annoncer('Version restaurée.')
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'La restauration a échoué.'
   }
@@ -107,8 +110,10 @@ async function enregistrer() {
         publieAu: edition.value.publieAu || null,
       },
     })
+    const quoi = edition.value.cle
     edition.value = null
     await refresh()
+    annoncer(`Bloc « ${quoi} » enregistré.`)
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'L’enregistrement a échoué.'
   } finally {
@@ -125,6 +130,7 @@ async function ajouterTemoignage() {
   await $fetch('/api/admin/temoignages', { method: 'POST', body: { action: 'creer', ...nouveau } })
   Object.assign(nouveau, { auteur: '', role: '', texte: '' })
   await refresh()
+  annoncer('Témoignage ajouté.')
 }
 
 async function basculerPublication(t: Temoignage) {
@@ -133,11 +139,13 @@ async function basculerPublication(t: Temoignage) {
     body: { action: 'modifier', id: t.id, publie: !t.publie },
   })
   await refresh()
+  annoncer(t.publie ? `Témoignage de ${t.auteur} retiré du site.` : `Témoignage de ${t.auteur} publié.`)
 }
 
 async function supprimerTemoignage(id: string) {
   await $fetch('/api/admin/temoignages', { method: 'POST', body: { action: 'supprimer', id } })
   await refresh()
+  annoncer('Témoignage supprimé.')
 }
 
 // Écran 15 : filets de 1,5 px, chemise 11/13.

@@ -63,15 +63,30 @@ const { data: formateurs } = await useFetch<Formateur[]>('/api/formateurs')
 const erreur = ref('')
 const enCours = ref(false)
 
-async function appeler(chemin: string, body: Record<string, unknown>) {
+const { annoncer } = useToasts()
+
+/**
+ * Toutes les écritures de l'arbre des contenus passent par ici : y poser le
+ * message évite d'en oublier un au prochain bouton ajouté. `confirmation` le
+ * précise quand l'action mérite mieux qu'un « Enregistré » — un
+ * réordonnancement par glisser-déposer, lui, se voit déjà à l'écran.
+ */
+async function appeler(
+  chemin: string,
+  body: Record<string, unknown>,
+  confirmation: string | null = 'Enregistré.',
+) {
   erreur.value = ''
   enCours.value = true
   try {
     await $fetch(chemin, { method: 'POST', body })
     await refresh()
+    if (confirmation) annoncer(confirmation)
     return true
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'L’enregistrement a échoué.'
+    const souci = (e as { statusMessage?: string }).statusMessage ?? 'L’enregistrement a échoué.'
+    erreur.value = souci
+    annoncer(souci, 'erreur')
     return false
   } finally {
     enCours.value = false
@@ -174,7 +189,11 @@ watch(() => nouveauProgramme.nom, (nom) => {
 })
 async function creerProgramme() {
   if (!nouveauProgramme.nom.trim() || !nouveauProgramme.slug) return
-  const ok = await appeler('/api/admin/programmes', { action: 'creer', ...nouveauProgramme })
+  const ok = await appeler(
+    '/api/admin/programmes',
+    { action: 'creer', ...nouveauProgramme },
+    `Programme « ${nouveauProgramme.nom} » créé.`,
+  )
   if (ok) {
     programmeActif.value = nouveauProgramme.slug
     Object.assign(nouveauProgramme, { nom: '', couleur: '#6d28d9', slug: '' })
@@ -233,7 +252,7 @@ function deposer(cible: ThematiqueArbre) {
   if (depuis < 0 || vers < 0) return
   ids.splice(vers, 0, ...ids.splice(depuis, 1))
   tire.value = ''
-  appeler('/api/admin/thematiques', { action: 'reordonner', phaseId: phase.value.id, ordre: ids })
+  appeler('/api/admin/thematiques', { action: 'reordonner', phaseId: phase.value.id, ordre: ids }, null)
 }
 
 /** Modules : la poignée ⋮⋮ de chaque ligne (écran 02). Le nouvel ordre est
@@ -247,7 +266,7 @@ function deposerModule(cible: ModuleArbre, thematique: ThematiqueArbre) {
   tireModule.value = ''
   if (depuis < 0 || vers < 0) return
   ids.splice(vers, 0, ...ids.splice(depuis, 1))
-  appeler('/api/admin/modules', { action: 'reordonner', ordre: ids })
+  appeler('/api/admin/modules', { action: 'reordonner', ordre: ids }, null)
 }
 
 // --- Vidéos et chapitres ----------------------------------------------------
@@ -258,7 +277,11 @@ const lienChapitre = (moduleId: string, chapitreId: string) =>
   `/admin/module/${moduleId}?onglet=chapitres&chapitre=${chapitreId}`
 
 async function dupliquerChapitre(moduleId: string, chapitreId: string) {
-  await appeler('/api/admin/chapitres', { action: 'dupliquer', moduleId, id: chapitreId })
+  await appeler(
+    '/api/admin/chapitres',
+    { action: 'dupliquer', moduleId, id: chapitreId },
+    'Chapitre dupliqué — la vidéo reste à rattacher.',
+  )
 }
 
 /** La copie d'un module naît en brouillon, sans vidéo : on l'ouvre aussitôt,

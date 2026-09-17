@@ -26,6 +26,7 @@ const estSuperieur = computed(() => data.value?.role === 'admin-superieur')
 const deverrouille = ref(false)
 const motDePasse = ref('')
 const erreur = ref('')
+const { annoncer } = useToasts()
 const succes = ref('')
 const enCours = ref(false)
 
@@ -149,6 +150,7 @@ async function enregistrer() {
 
     await $fetch('/api/admin/tracking', { method: 'PUT', body: corps })
     succes.value = 'Réglages enregistrés. Chaque changement est inscrit au journal.'
+    annoncer('Réglages enregistrés. Chaque changement est inscrit au journal.')
     motDePasse.value = ''
     deverrouille.value = false
     await refresh()

@@ -42,6 +42,7 @@ const ONGLETS = computed(() => [
  *  image sans description n'a rien à faire sur une page publique. */
 const altManquant = computed(() => Boolean(fiche.image) && !fiche.imageAlt.trim())
 const erreur = ref('')
+const { annoncer } = useToasts()
 const succes = ref('')
 const enCours = ref(false)
 
@@ -95,6 +96,7 @@ async function enregistrer(statut?: 'brouillon' | 'publie') {
   succes.value = ''
   if (statut === 'publie' && altManquant.value) {
     erreur.value = 'Texte alternatif obligatoire avant publication : décrivez l’image principale.'
+    annoncer('Texte alternatif obligatoire avant publication : décrivez l’image principale.', 'erreur')
     onglet.value = 'contenu'
     return
   }

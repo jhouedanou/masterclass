@@ -93,6 +93,7 @@ const brouillon = reactive({
   objectifCaMensuel: 0,
 })
 const message = ref('')
+const { annoncer } = useToasts()
 const erreur = ref('')
 
 watchEffect(() => {
@@ -105,6 +106,7 @@ async function enregistrerReglages() {
   try {
     await $fetch('/api/admin/parametres', { method: 'PUT', body: brouillon })
     message.value = 'Répartition enregistrée — modification journalisée.'
+    annoncer('Répartition enregistrée — modification journalisée.')
     reglagesOuverts.value = false
     await refresh()
   } catch (e) {

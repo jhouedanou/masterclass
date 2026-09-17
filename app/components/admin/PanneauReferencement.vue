@@ -48,6 +48,8 @@ watch(
 )
 
 const message = ref('')
+
+const { annoncer } = useToasts()
 const enregistrement = ref(false)
 
 /** Page dont le Title est identique, pour nommer la fiche dans l'alerte. */
@@ -122,6 +124,7 @@ async function enregistrer() {
       body: { id: props.id, seo: { ...brouillon }, confirmationSlug: slugModifie.value },
     })
     message.value = 'Modifications enregistrées.'
+    annoncer('Modifications enregistrées.')
     emit('enregistre')
   } catch (e) {
     message.value = (e as { statusMessage?: string }).statusMessage ?? 'Enregistrement impossible.'

@@ -24,7 +24,6 @@ const mode = ref<'desktop' | 'mobile'>('desktop')
 const lienPartage = ref('')
 const validite = ref(0)
 const erreur = ref('')
-
 /** Lien à durée limitée, pour un formateur qui doit relire son module sans
  *  avoir de compte d'administration. */
 async function engendrerLien() {

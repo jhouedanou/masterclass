@@ -146,6 +146,7 @@ const coachingEnAttente = computed(
 
 const attribution = reactive({ ouverte: false, moduleId: '', motif: '', notifier: true })
 const message = ref('')
+const { annoncer } = useToasts()
 const erreur = ref('')
 
 async function attribuer() {
@@ -160,6 +161,7 @@ async function attribuer() {
       },
     })
     message.value = `Accès attribué à ${selection.value!.nom} — marqué « Attribution admin », apprenant notifié.`
+    annoncer(`Accès attribué à ${selection.value!.nom} — marqué « Attribution admin », apprenant notifié.`)
     Object.assign(attribution, { ouverte: false, moduleId: '', motif: '' })
     const id = selection.value!.id
     await refresh()
