@@ -62,6 +62,48 @@ interface ReponseCommande {
 
 type FeexPayButtonGlobal = {
   init: (conteneur: string, options: Record<string, unknown>) => void
+  /** Le SDK expose de quoi refermer ses propres fenêtres ; il ne le fait pas
+   *  de lui-même une fois le paiement abouti. */
+  hideResultModal?: () => void
+  hidePaymentModal?: () => void
+}
+
+/**
+ * Referme les fenêtres de FeexPay.
+ *
+ * Le SDK appelle bien notre rappel sur un paiement réussi, mais laisse sa
+ * fenêtre de résultat par-dessus la page : le tunnel se terminait derrière un
+ * voile que rien ne permettait d'écarter, et l'achat paraissait bloqué alors
+ * qu'il était déjà confirmé.
+ *
+ * Les deux fonctions publiques d'abord ; le retrait des voiles ensuite, au cas
+ * où une version du SDK les nommerait autrement — nous ne maîtrisons pas ce
+ * fichier, servi par le prestataire et susceptible de changer sans préavis.
+ */
+let minuteurFermeture: ReturnType<typeof setTimeout> | undefined
+
+function fermerFenetresFeexPay() {
+  const passe = () => {
+    const sdk = (window as unknown as { FeexPayButton?: FeexPayButtonGlobal }).FeexPayButton
+    try {
+      sdk?.hideResultModal?.()
+      sdk?.hidePaymentModal?.()
+    } catch {
+      // Une fermeture qui échoue ne doit pas emporter la confirmation.
+    }
+    for (const voile of document.querySelectorAll(
+      '.feexpay-modal-overlay, .feexpay-otp-modal-overlay, .feexpay-result-modal-overlay',
+    )) {
+      voile.remove()
+    }
+  }
+
+  passe()
+  // Seconde passe : le SDK dresse sa fenêtre de succès au moment même où il
+  // nous rappelle, et l'ordre des deux n'est pas garanti. Fermer une seule
+  // fois laisserait le voile en place si elle arrivait après nous.
+  clearTimeout(minuteurFermeture)
+  minuteurFermeture = setTimeout(passe, 400)
 }
 
 const feexpayActif = config.public.feexpayActif
@@ -74,7 +116,10 @@ const CONTENEUR_FEEXPAY = 'feexpay-bouton'
 const commandeEnCours = ref<string | null>(null)
 let minuteurVerification: ReturnType<typeof setTimeout> | undefined
 
-onBeforeUnmount(() => minuteurVerification && clearTimeout(minuteurVerification))
+onBeforeUnmount(() => {
+  if (minuteurVerification) clearTimeout(minuteurVerification)
+  if (minuteurFermeture) clearTimeout(minuteurFermeture)
+})
 
 async function attendreSdk(): Promise<FeexPayButtonGlobal> {
   for (let i = 0; i < 50; i += 1) {
@@ -83,6 +128,15 @@ async function attendreSdk(): Promise<FeexPayButtonGlobal> {
     await new Promise((r) => setTimeout(r, 100))
   }
   throw new Error('Le module de paiement FeexPay ne s’est pas chargé.')
+}
+
+/** L'issue annoncée par le SDK. Un échec déclaré n'a pas à être confirmé
+ *  pendant deux minutes auprès du serveur. */
+function issueDepuisRappel(reponse: unknown): string | null {
+  if (!reponse || typeof reponse !== 'object') return null
+  const r = reponse as Record<string, unknown>
+  const source = (r.data && typeof r.data === 'object' ? r.data : r) as Record<string, unknown>
+  return typeof source.status === 'string' ? source.status.toUpperCase() : null
 }
 
 /** La référence FeexPay dans ce que le SDK rend au rappel, quelle qu'en soit la forme. */
@@ -117,7 +171,19 @@ async function ouvrirFeexPay(parametres: ParametresFeexPay) {
     phone: numeroMobileMoney.value || undefined,
     callback_info: { commande: parametres.customId },
     callback: (reponse: unknown) => {
-      void confirmer(referenceDepuisRappel(reponse))
+      // La fenêtre se referme dans tous les cas : réussite comme échec, la
+      // suite se joue sur notre page.
+      fermerFenetresFeexPay()
+      const issue = issueDepuisRappel(reponse)
+      const reference = referenceDepuisRappel(reponse)
+      // Un échec que le prestataire annonce lui-même n'a pas à être confirmé
+      // pendant deux minutes : il n'y a rien à attendre. Le motif précis reste
+      // celui du serveur quand il en tient un ; ici, seul l'échec est certain.
+      if (issue && issue !== 'SUCCESSFUL' && issue !== 'PENDING') {
+        afficherEchec('erreur-inconnue', ECHECS_PAIEMENT['erreur-inconnue'].message, reference)
+        return
+      }
+      void confirmer(reference)
     },
   })
   // Le SDK rend son propre bouton dans le conteneur : on l'actionne pour
@@ -141,6 +207,7 @@ async function confirmer(referenceFeexPay: string | null, essai = 0) {
     )
     if (reponse.statut === 'confirmee') {
       achat.reference = reponse.reference
+      fermerFenetresFeexPay()
       etat.value = 'succes'
       return
     }
@@ -172,6 +239,7 @@ async function confirmer(referenceFeexPay: string | null, essai = 0) {
 }
 
 function afficherEchec(code: CodeEchecPaiement, texte: string, reference?: string | null, slug?: string) {
+  fermerFenetresFeexPay()
   etat.value = 'echec'
   tentatives.value += 1
   codeEchec.value = code

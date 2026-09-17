@@ -78,12 +78,14 @@ L'identifiant est même entièrement facultatif en VTT, comme ici.
 En SRT il est obligatoire : ce sont les numéros 1, 2, 3…
 
 00:01:25.700 --> 00:01:31.200
-Nous allons donc commencer par là, et &amp; c'est le sujet du chapitre 2.
+C'est le sujet du chapitre 2 : Optimisation du profil.
 
 NOTE
-Les entités HTML (&amp; &lt; &gt; &quot; &#39;) sont décodées : la ligne
-ci-dessus s'affichera avec une esperluette.
+Les entités HTML sont décodées à l'import. Un exportateur écrit souvent
+&amp;amp; là où vous avez dit « et » — dans « Algorithme &amp;amp; Optimisation
+du profil », par exemple. Laissez : l'esperluette ressortira correctement.
 
+NOTE
 Dernier point, celui qui compte le plus : relisez avant d'importer. Une
 transcription automatique se trompe sur les noms propres, les sigles et
 les termes techniques. « 360Brew » ressort souvent en « 360 Brew », en
