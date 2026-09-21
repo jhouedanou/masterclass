@@ -305,9 +305,24 @@ async function servirEcriture(requete, env, url, cors) {
   if (action === 'objet' && requete.method === 'DELETE') {
     // Le dossier peut contenir un flux HLS entier : on retire tout ce qui s'y
     // trouve, pas seulement le MP4.
-    const liste = await env.VIDEOS.list({ prefix: `${cle}/` })
-    await Promise.all(liste.objects.map((o) => env.VIDEOS.delete(o.key)))
-    return json({ supprimes: liste.objects.length }, 200, cors)
+    //
+    // La liste vient par pages de mille au plus, et une échelle complète les
+    // dépasse largement : à six secondes par segment, une vidéo de quarante
+    // minutes en cinq définitions pose deux mille objets. Sans la boucle, mille
+    // d'entre eux disparaissaient et le reste demeurait facturé, sans que rien
+    // ne le signale — le décompte rendu paraissait même rassurant.
+    let supprimes = 0
+    let curseur
+    for (;;) {
+      const liste = await env.VIDEOS.list({ prefix: `${cle}/`, cursor: curseur })
+      if (liste.objects.length) {
+        await Promise.all(liste.objects.map((o) => env.VIDEOS.delete(o.key)))
+        supprimes += liste.objects.length
+      }
+      if (!liste.truncated) break
+      curseur = liste.cursor
+    }
+    return json({ supprimes }, 200, cors)
   }
 
   return new Response('Route de dépôt inconnue', { status: 404, headers: cors })

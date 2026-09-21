@@ -33,13 +33,11 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if (video.format === 'hls') {
-    throw createError({
-      statusCode: 409,
-      statusMessage:
-        'Cette vidéo est un flux transcodé à la main : son dossier contient des centaines de fichiers et se retire en ligne de commande.',
-    })
-  }
+  // Un flux HLS se supprimait autrefois en ligne de commande : le refus datait
+  // de l'époque où « hls » ne désignait que deux démonstrations transcodées à
+  // la main. L'encodage étant devenu la voie normale, ce garde-fou aurait
+  // bloqué l'équipe sur la totalité de son fonds. Le diffuseur sait effacer un
+  // préfixe entier, page par page — c'est ce que fait `supprimerObjet`.
 
   await effacerVideo(id)
   await supprimerObjet(video.cle, admin.id).catch(() => undefined)

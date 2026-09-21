@@ -18,6 +18,13 @@ const props = defineProps<{
    *  Un fichier unique n'offre rien à choisir, et le dire évite de chercher un
    *  réglage qui n'existe pas. */
   adaptative?: boolean
+  /** Définitions que le flux propose vraiment. Vide sur un fichier unique et
+   *  sur la lecture native de Safari : il n'y a alors rien à choisir, et la
+   *  pastille cesse d'être un bouton plutôt que d'en rester un qui n'obéit
+   *  pas. */
+  niveaux?: { index: number; hauteur: number }[]
+  /** Définition imposée par l'apprenant, `-1` quand il laisse faire. */
+  niveauChoisi?: number
   vitesses: number[]
   pleinEcran: boolean
 }>()
@@ -26,9 +33,32 @@ const emit = defineEmits<{
   basculer: []
   seek: [secondes: number]
   pleinEcran: []
+  niveau: [index: number]
 }>()
 
 const vitesse = defineModel<number>('vitesse', { required: true })
+
+/**
+ * Le choix de définition suit la même langue que celui de la vitesse : une
+ * pastille qui avance d'un cran à chaque clic, `Auto` compris. Un menu
+ * déroulant aurait demandé une couche de plus par-dessus la vidéo, là où la
+ * maquette n'en dessine aucune — et il se serait mal tenu en plein écran.
+ */
+const choixQualite = computed(() => [-1, ...(props.niveaux ?? []).map((n) => n.index)])
+
+/** Un seul niveau n'est pas un choix : `Auto` et lui diraient la même chose. */
+const qualiteChoisissable = computed(() => (props.niveaux?.length ?? 0) > 1)
+
+const libelleQualite = computed(() => {
+  const impose = props.niveaux?.find((n) => n.index === props.niveauChoisi)
+  if (impose) return `${impose.hauteur}p`
+  return props.adaptative ? `Auto ${props.qualite}` : props.qualite
+})
+
+function qualiteSuivante() {
+  const i = choixQualite.value.indexOf(props.niveauChoisi ?? -1)
+  emit('niveau', choixQualite.value[(i + 1) % choixQualite.value.length] ?? -1)
+}
 
 const rail = ref<HTMLElement | null>(null)
 const enGlissement = ref(false)
@@ -150,14 +180,28 @@ function vitesseSuivante() {
       >
         {{ vitesse }}×
       </button>
-      <span
-        v-if="qualite"
+      <!-- Le choix n'est un bouton que là où il porte : ailleurs la pastille
+           reste une étiquette, et sans bordure, pour ne plus se confondre avec
+           la pilule de vitesse qui la jouxte — c'est cette ressemblance qui
+           faisait cliquer dessus en vain. -->
+      <button
+        v-if="qualite && qualiteChoisissable"
+        type="button"
         class="rounded-lg border border-white/35 px-2.5 py-1"
+        :aria-label="`Définition : ${libelleQualite}. Changer.`"
+        title="Définition de l’image — « Auto » suit le débit disponible"
+        @click="qualiteSuivante"
+      >
+        {{ libelleQualite }}
+      </button>
+      <span
+        v-else-if="qualite"
+        class="px-1 text-white/60"
         :title="adaptative
           ? 'Qualité adaptée automatiquement au débit'
           : 'Cette vidéo est servie en une seule définition : il n’y a pas de qualité à choisir.'"
       >
-        <template v-if="adaptative">Auto </template>{{ qualite }}
+        {{ libelleQualite }}
       </span>
       <button
         type="button"

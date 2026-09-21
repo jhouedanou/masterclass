@@ -52,7 +52,7 @@ const lecteur = useLecteurVideo({
   position: () => index.value,
   source: () => source.value,
   format: () => autorisation.value?.format ?? null,
-  surFin: () => lancerEnchainement(),
+  surFin: () => terminerChapitre(),
 })
 
 const video = ref<HTMLVideoElement | null>(null)
@@ -161,6 +161,51 @@ const SECONDES_ENCHAINEMENT = 10
 const resteAvantSuivant = ref<number | null>(null)
 let minuteurEnchainement: ReturnType<typeof setInterval> | undefined
 
+/**
+ * Enchaîner est le comportement attendu d'un lecteur de cours : c'est le
+ * réglage par défaut, et le refus seul se retient. « Rester sur ce chapitre »
+ * ne valait que pour un chapitre — refusé trois fois de suite, l'enchaînement
+ * était en fait refusé tout court.
+ */
+const CLE_ENCHAINEMENT = 'emc-enchainement'
+const enchainementActif = ref(true)
+onMounted(() => {
+  try {
+    enchainementActif.value = localStorage.getItem(CLE_ENCHAINEMENT) !== 'non'
+  } catch {
+    /* stockage indisponible : on enchaîne, comme par défaut */
+  }
+})
+
+function reglerEnchainement(actif: boolean) {
+  enchainementActif.value = actif
+  if (!actif) annulerEnchainement()
+  try {
+    localStorage.setItem(CLE_ENCHAINEMENT, actif ? 'oui' : 'non')
+  } catch {
+    /* stockage indisponible : le choix ne vaut que pour cette session */
+  }
+}
+
+/** Vrai quand le module vient d'être terminé — dernier chapitre allé au bout. */
+const moduleTermine = ref(false)
+
+/**
+ * Fin d'un chapitre : le suivant s'enchaîne, ou le module se clôt.
+ *
+ * Sur le dernier chapitre, `lancerEnchainement` retournait sans rien faire et
+ * l'apprenant restait devant une image arrêtée. C'est pourtant le moment le
+ * plus utile du parcours : celui où l'on propose l'attestation et la suite.
+ */
+function terminerChapitre() {
+  if (!chapitreSuivant.value) {
+    moduleTermine.value = true
+    return
+  }
+  if (!enchainementActif.value) return
+  lancerEnchainement()
+}
+
 function annulerEnchainement() {
   if (minuteurEnchainement) clearInterval(minuteurEnchainement)
   minuteurEnchainement = undefined
@@ -176,7 +221,7 @@ function lancerEnchainement() {
     resteAvantSuivant.value -= 1
     if (resteAvantSuivant.value <= 0) {
       annulerEnchainement()
-      allerAuChapitre(index.value + 1)
+      allerAuChapitre(index.value + 1, { lire: true })
     }
   }, 1000)
 }
@@ -189,10 +234,21 @@ onBeforeUnmount(annulerEnchainement)
  *  chapitre sans quitter le lecteur ni perdre le plein écran. */
 const sommaireOuvert = ref(false)
 
-function allerAuChapitre(nouvel: number) {
+/**
+ * Ouvre un chapitre, en disant s'il doit démarrer seul.
+ *
+ * `lire` est un paramètre et non une déduction : c'est le même geste qui sert à
+ * l'enchaînement, au sommaire et au lien de bas de page, et laisser le
+ * comportement dépendre du contexte d'appel finirait par surprendre. Le
+ * sommaire lance la lecture lui aussi — on est dans un lecteur, y choisir un
+ * chapitre veut dire le regarder.
+ */
+function allerAuChapitre(nouvel: number, options?: { lire?: boolean }) {
   if (nouvel < 0 || nouvel >= moduleCourant.value.chapitres.length) return
   annulerEnchainement()
+  moduleTermine.value = false
   sommaireOuvert.value = false
+  if (options?.lire) lecteur.lireDesQuePret()
   index.value = nouvel
 }
 
@@ -386,7 +442,7 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
                   ? 'border-social bg-social/22 text-white'
                   : 'border-transparent text-discret-clair hover:bg-encre-800'"
                 :aria-current="i === index ? 'true' : undefined"
-                @click="allerAuChapitre(i)"
+                @click="allerAuChapitre(i, { lire: true })"
               >
                 <span class="min-w-[22px] font-mono text-[12px]" :class="i === index ? 'text-social-clair' : 'text-discret'">
                   {{ i + 1 }}
@@ -416,7 +472,7 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
             <button
               type="button"
               class="rounded-full bg-social px-5 py-2.5 text-[13.5px] font-extrabold text-white"
-              @click="allerAuChapitre(index + 1)"
+              @click="allerAuChapitre(index + 1, { lire: true })"
             >
               Passer maintenant
             </button>
@@ -428,7 +484,62 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
               Rester sur ce chapitre
             </button>
           </div>
+          <!-- Refuser trois fois de suite, c'est refuser tout court : le choix
+               se retient d'une session à l'autre. -->
+          <button
+            type="button"
+            class="text-[12.5px] text-discret-clair underline underline-offset-2 hover:text-white"
+            @click="reglerEnchainement(false)"
+          >
+            Ne plus enchaîner automatiquement
+          </button>
         </div>
+
+        <!-- Fin de module : le dernier chapitre ne laissait qu'une image
+             arrêtée, alors que c'est ici qu'on propose la suite. -->
+        <div
+          v-if="moduleTermine && source"
+          class="absolute inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-black/80 px-6 text-center backdrop-blur-sm"
+          role="status"
+        >
+          <Icon name="ph:seal-check-fill" class="size-9 text-succes" />
+          <p class="text-[12.5px] tracking-wide text-discret-clair uppercase">Module terminé</p>
+          <p class="font-title text-[22px] font-light text-white">{{ moduleCourant.titre }}</p>
+          <p class="max-w-md text-[13.5px] text-discret-clair">
+            Le temps visionné est enregistré. L’attestation se débloque quand tous les chapitres
+            sont vus.
+          </p>
+          <div class="mt-1 flex flex-wrap items-center justify-center gap-3">
+            <NuxtLink
+              :to="`/mon-espace/module/${moduleCourant.slug}`"
+              class="rounded-full bg-social px-5 py-2.5 text-[13.5px] font-extrabold text-white"
+            >
+              Revenir au module
+            </NuxtLink>
+            <button
+              type="button"
+              class="rounded-full border border-white/35 px-5 py-2.5 text-[13.5px] font-bold text-white"
+              @click="allerAuChapitre(0, { lire: true })"
+            >
+              Revoir depuis le début
+            </button>
+          </div>
+        </div>
+
+        <!-- Lecture refusée par le navigateur : la vidéo est là, c'est le geste
+             qui manque. Sans ce bouton, l'apprenant restait devant une image
+             figée après un enchaînement. -->
+        <button
+          v-if="lecteur.lectureRefusee.value && source && !moduleTermine"
+          type="button"
+          class="absolute inset-0 z-40 grid place-items-center bg-black/45"
+          aria-label="Lancer la lecture"
+          @click="lecteur.lancerLecture()"
+        >
+          <span class="grid size-16 place-items-center rounded-full bg-white/90 text-[26px] text-encre">
+            <Icon name="ph:play-fill" class="size-7" />
+          </span>
+        </button>
 
         <EspaceControlesVideo
           v-if="controlesCustom && source"
@@ -438,6 +549,9 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
           :en-lecture="lecteur.enLecture.value"
           :qualite="lecteur.qualite.value"
           :adaptative="autorisation?.format === 'hls'"
+          :niveaux="lecteur.niveaux.value"
+          :niveau-choisi="lecteur.niveauChoisi.value"
+          @niveau="lecteur.choisirNiveau($event)"
           :vitesses="vitesses"
           :plein-ecran="lecteur.pleinEcran.value"
           @basculer="lecteur.basculerLecture()"
@@ -489,7 +603,7 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
       </section>
 
       <p v-if="chapitreSuivant" class="mx-4 mb-10 text-right lg:mx-8">
-        <button type="button" class="text-[13.5px] font-bold text-social-clair hover:text-white" @click="allerAuChapitre(index + 1)">
+        <button type="button" class="text-[13.5px] font-bold text-social-clair hover:text-white" @click="allerAuChapitre(index + 1, { lire: true })">
           {{ chapitreSuivant.libelle }} →
         </button>
       </p>

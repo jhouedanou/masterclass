@@ -304,6 +304,24 @@ await attendValeur(
   `select enregistrer_visionnage('usr-aya', ${CH(1)}, 9999)`,
 )
 
+// La grâce de 95 % : un chapitre de 31 s atteint à 30 s compte pour 31. Sans
+// elle, un chapitre regardé jusqu'au bout se déclarait une seconde trop court
+// — le relevé part en secondes entières — et les 100 % restaient hors
+// d'atteinte. Le seuil est celui qu'emploie déjà `listerVisionnagesModule`.
+await db.query(
+  `select attribuer_acces('usr-fatou', 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting', 'contrôle du seuil', 'Admin')`,
+)
+await attendValeur(
+  'chapitre vu à 30 s sur 31 → crédité en entier, soit 50 %',
+  50,
+  `select enregistrer_visionnage('usr-fatou', ${CH(0)}, 30)`,
+)
+await attendValeur(
+  'sous le seuil, le temps vu compte tel quel — (31 + 14) / 62 → 73 %',
+  73,
+  `select enregistrer_visionnage('usr-fatou', ${CH(1)}, 14)`,
+)
+
 // --- Contraintes et déclencheurs --------------------------------------------
 
 console.log('\nContraintes')

@@ -231,7 +231,7 @@ defineExpose({ refresh })
               Renommer
             </button>
             <button
-              v-if="!video.usages.length && video.format !== 'hls'"
+              v-if="!video.usages.length"
               class="font-bold text-erreur"
               :disabled="occupe"
               @click="supprimer(video)"

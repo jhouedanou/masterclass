@@ -169,6 +169,63 @@ export async function renommerVideo(id: string, nom: string): Promise<void> {
   )
 }
 
+/**
+ * Passe une vidéo d'une forme à l'autre, et l'annonce à tous ses chapitres.
+ *
+ * C'est le geste qui clôt un encodage : l'objet était un MP4 unique, il est
+ * désormais un flux à plusieurs débits. Deux précautions le rendent sûr.
+ *
+ * D'abord le report. Les colonnes `video_*` du chapitre sont une copie de
+ * l'entrée de médiathèque, tenue à jour au rattachement pour épargner une
+ * jointure sur le chemin de lecture. Ne changer que `videos.format` laisserait
+ * les chapitres réclamer `video.mp4` pendant que la médiathèque annonce un
+ * flux : le lecteur recevrait `fichier`, n'appellerait pas hls.js, et le
+ * multi-débit qu'on vient de produire serait perdu sans un mot.
+ *
+ * Ensuite le contournement de `majVideoChapitre`, qui finit par
+ * `retirerEtatPret`. L'emprunter ferait repasser « à valider » tout chapitre
+ * déjà validé — pour avoir amélioré sa qualité d'image. On écrit donc la seule
+ * colonne qui change.
+ */
+export async function basculerFormatVideo(
+  id: string,
+  format: 'hls' | 'fichier',
+): Promise<{ chapitresReportes: number }> {
+  // Les chapitres d'abord, l'entrée de médiathèque ensuite. Les deux écritures
+  // ne partagent pas de transaction, il faut donc choisir laquelle des deux
+  // moitiés on préfère voir survivre à l'échec de l'autre :
+  //
+  //   · chapitres puis vidéo — les chapitres demandent `master.m3u8`, qui
+  //     existe à ce stade : la lecture est juste, seule la médiathèque affiche
+  //     une forme périmée jusqu'au prochain passage ;
+  //   · vidéo puis chapitres — les chapitres demandent encore `video.mp4`, la
+  //     lecture marche mais sans multi-débit, et rien ne le signale.
+  //
+  // Le second ordre reproduit très exactement la panne que cette fonction
+  // existe pour empêcher.
+  const chapitres = verifier(
+    await supabase()
+      .from('chapitres')
+      .update({ video_format: format } as never)
+      .eq('video_id', id)
+      .select('id'),
+    'report du format aux chapitres',
+  )
+
+  verifierUn(
+    await supabase()
+      .from('videos')
+      .update({ format } as never)
+      .eq('id', id)
+      .select('id')
+      .maybeSingle(),
+    'bascule de format de la vidéo',
+    'Vidéo introuvable',
+  )
+
+  return { chapitresReportes: chapitres.length }
+}
+
 export async function effacerVideo(id: string): Promise<void> {
   verifier(await supabase().from('videos').delete().eq('id', id).select('id'), 'effacement de la vidéo')
 }

@@ -23,11 +23,25 @@ const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..')
 /** Paliers de qualité. Un palier plus haut que la source n'est pas produit :
  *  agrandir une image ne lui ajoute pas de détail, cela ne fait que du poids. */
 const PALIERS = [
-  { hauteur: 240, video: '400k', plafond: '600k', audio: '64k' },
-  { hauteur: 360, video: '800k', plafond: '1200k', audio: '96k' },
-  { hauteur: 480, video: '1400k', plafond: '2100k', audio: '128k' },
-  { hauteur: 720, video: '2800k', plafond: '4200k', audio: '128k' },
+  { hauteur: 240, video: '400k', plafond: '600k', audio: '64k', profil: 'main' },
+  { hauteur: 360, video: '800k', plafond: '1200k', audio: '96k', profil: 'main' },
+  { hauteur: 480, video: '1400k', plafond: '2100k', audio: '128k', profil: 'main' },
+  { hauteur: 720, video: '2800k', plafond: '4200k', audio: '128k', profil: 'main' },
+  // `high` et non `main` : au-delà de 720p, le profil principal prive
+  // l'encodeur des outils qui rendent le débit tenable (CABAC efficace,
+  // transformée 8×8). Tous les appareils visés le lisent depuis longtemps.
+  { hauteur: 1080, video: '5000k', plafond: '7500k', audio: '128k', profil: 'high' },
 ]
+
+/**
+ * Compromis vitesse / débit de libx264.
+ *
+ * `veryfast` tenait tant que le transcodage occupait un poste de travail entre
+ * deux tâches. Il tourne désormais sur un exécutant dédié, où le temps cesse
+ * d'être la ressource rare : `medium` rend une image nettement plus propre au
+ * même plafond, ce qui compte d'autant plus à 1080p.
+ */
+const PRESET = process.env.VIDEO_PRESET || 'medium'
 
 const [source, cle] = process.argv.slice(2)
 
@@ -79,7 +93,8 @@ mkdirSync(sortie, { recursive: true })
 console.log(`\nSource   ${source}`)
 console.log(`Clé      ${cle}`)
 console.log(`Durée    ${Math.floor(dureeSecondes / 60)} min ${dureeSecondes % 60} s`)
-console.log(`Paliers  ${paliers.map((p) => `${p.hauteur}p`).join(' · ')}\n`)
+console.log(`Paliers  ${paliers.map((p) => `${p.hauteur}p`).join(' · ')}`)
+console.log(`Preset   ${PRESET}\n`)
 
 // Une seule passe ffmpeg produit toutes les variantes : la source n'est
 // décodée qu'une fois, ce qui divise d'autant le temps de traitement.
@@ -96,8 +111,8 @@ paliers.forEach((palier, i) => {
     `-b:v:${i}`, palier.video,
     `-maxrate:v:${i}`, palier.plafond,
     `-bufsize:v:${i}`, palier.plafond,
-    `-preset:v:${i}`, 'veryfast',
-    `-profile:v:${i}`, 'main',
+    `-preset:v:${i}`, PRESET,
+    `-profile:v:${i}`, palier.profil,
   )
 })
 

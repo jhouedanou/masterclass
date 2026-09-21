@@ -13,9 +13,17 @@ import type HlsType from 'hls.js'
  * Les manifestes étant déjà réécrits par le diffuseur, les deux reçoivent des
  * URL autorisées sans traitement particulier.
  *
- * Le temps visionné se compte à la montre, pas au curseur : on additionne le
- * temps écoulé pendant la lecture, et une avance rapide n'y ajoute rien. C'est
- * ce qui permet à la progression du module de refléter un visionnage réel.
+ * Le temps visionné se compte en secondes de film vues, pas en secondes
+ * passées devant l'écran : on additionne ce dont le curseur avance pendant la
+ * lecture, et un saut — clavier, rail, ou simple reprise plus loin — n'y ajoute
+ * rien. C'est ce qui permet à la progression du module de refléter un
+ * visionnage réel.
+ *
+ * Le compter à la montre paraissait revenir au même. Il n'en est rien dès que
+ * la vitesse quitte 1× : une heure de cours vue à 2× ne prend qu'une demi-heure
+ * de montre, et se voyait donc créditée de moitié. La barre propose jusqu'à 2×,
+ * si bien que le réglage pénalisait en silence celui qui s'en servait — et que
+ * les cent pour cent devenaient inatteignables.
  */
 export function useLecteurVideo(options: {
   moduleId: () => string
@@ -43,20 +51,54 @@ export function useLecteurVideo(options: {
   const progression = ref<number | null>(null)
   /** Niveau de qualité servi par le streaming adaptatif (« 480p »), affiché « Auto 480p ». */
   const qualite = ref<string | null>(null)
+  /**
+   * Définitions réellement proposées par le flux, de la plus basse à la plus
+   * haute. Vide hors HLS — un fichier unique n'en offre qu'une — et vide aussi
+   * sur la lecture native de Safari, qui choisit seule et n'expose rien.
+   * C'est ce qui permet à la barre de ne montrer un choix que là où il existe.
+   */
+  const niveaux = ref<{ index: number; hauteur: number }[]>([])
+  /** Définition imposée par l'apprenant, `-1` tant qu'il laisse faire. */
+  const niveauChoisi = ref(-1)
   /** Vitesse de lecture. Un ref, et non un réglage à sens unique : la barre de
    *  contrôles de la maquette l'affiche autant qu'elle la change. */
   const vitesse = ref(1)
   /** Suit l'état réel du plein écran : la touche Échap en sort sans passer par
    *  notre bouton, et un booléen basculé à la main mentirait alors. */
   const pleinEcran = ref(false)
+  /**
+   * Vrai quand le navigateur a refusé une lecture que nous avions demandée.
+   *
+   * Cela arrive : onglet passé en arrière-plan, interaction trop ancienne,
+   * réglage d'économie d'énergie. Sans ce témoin, l'apprenant se retrouvait
+   * devant une image figée après un enchaînement, sans rien à cliquer — la
+   * promesse rejetée était avalée par un `catch` muet.
+   */
+  const lectureRefusee = ref(false)
 
   let hls: HlsType | null = null
-  let dernierInstant = 0
+  /** Dernière position *du média* retenue pour le décompte, `null` tant qu'il
+   *  n'y a rien à comparer — à l'arrêt, pendant un déplacement, au chargement. */
+  let dernierePosition: number | null = null
   let secondesEnvoyees = 0
   /** Position à restaurer après un renouvellement d'autorisation : changer la
    *  source d'une balise vidéo remet le curseur à zéro. */
   let repriseApres: number | null = null
   let reprendreLecture = false
+  /** Lecture demandée pour la source qui arrive — enchaînement, ou choix dans
+   *  le sommaire. Distincte de `reprendreLecture`, qui ne sert qu'au
+   *  renouvellement d'autorisation : confondre les deux ferait repartir une
+   *  vidéo que l'apprenant avait mise en pause avant l'expiration. */
+  let lectureDemandee = false
+  /**
+   * Chapitre auquel se rapporte le cumul courant.
+   *
+   * `options.position()` ne peut pas servir au moment de l'envoi : `charger()`
+   * est déclenché par un veilleur qui s'exécute *après* le changement d'index,
+   * si bien que le vidage du compteur porterait les secondes du chapitre qu'on
+   * quitte au crédit de celui qu'on ouvre.
+   */
+  let positionRelevee: number | null = null
 
   /** Toutes les dix secondes vues : assez fréquent pour ne rien perdre d'une
    *  session interrompue, assez rare pour ne pas inonder le serveur. */
@@ -70,7 +112,11 @@ export function useLecteurVideo(options: {
     try {
       const reponse = await $fetch<{ progression: number }>('/api/mon-espace/visionnage', {
         method: 'POST',
-        body: { moduleId: options.moduleId(), position: options.position(), secondesVues: aEnvoyer },
+        body: {
+          moduleId: options.moduleId(),
+          position: positionRelevee ?? options.position(),
+          secondesVues: aEnvoyer,
+        },
       })
       progression.value = reponse.progression
     } catch {
@@ -84,22 +130,54 @@ export function useLecteurVideo(options: {
     const element = video.value
     if (!element) return
 
-    positionSecondes.value = element.currentTime
+    const position = element.currentTime
+    positionSecondes.value = position
+
     if (!element.paused && !element.seeking) {
-      const maintenant = performance.now()
-      if (dernierInstant) {
-        const ecoule = (maintenant - dernierInstant) / 1000
-        // Un écart aberrant signale un onglet mis en veille, pas du visionnage.
-        if (ecoule > 0 && ecoule < 2) secondesVues.value += ecoule
+      if (dernierePosition !== null) {
+        const avance = position - dernierePosition
+        // Le plafond est exprimé en secondes de montre, converties en secondes
+        // de média : à 2×, deux secondes écoulées font quatre secondes de film,
+        // et un plafond fixe aurait rejeté du visionnage parfaitement réel.
+        // Il reste sous les cinq secondes du saut clavier (`avancerDe`), qui
+        // doit continuer d'être refusé.
+        const plafond = 2 * (element.playbackRate || 1)
+        if (avance > 0 && avance < plafond) secondesVues.value += avance
       }
-      dernierInstant = maintenant
+      dernierePosition = position
     } else {
-      dernierInstant = 0
+      dernierePosition = null
     }
 
     if (Math.floor(secondesVues.value) >= secondesEnvoyees + PAS_ENVOI_SECONDES) {
       void envoyerVisionnage()
     }
+  }
+
+  /**
+   * Lance la lecture en traitant le refus plutôt qu'en l'avalant.
+   *
+   * Toutes les relances passent par ici : l'enchaînement, le choix d'un
+   * chapitre, la reprise après renouvellement d'autorisation.
+   */
+  async function lancerLecture() {
+    const element = video.value
+    if (!element) return
+    try {
+      await element.play()
+      lectureRefusee.value = false
+    } catch {
+      // Un refus n'est pas une erreur de chargement : la vidéo est là, c'est
+      // le navigateur qui exige un geste. On le dit, la page offre le bouton.
+      lectureRefusee.value = true
+    }
+  }
+
+  /** Demande que la prochaine source démarre d'elle-même. Posé par l'appelant,
+   *  jamais déduit : un chapitre ouvert depuis la page module ne doit pas
+   *  partir tout seul, celui qui suit un enchaînement doit. */
+  function lireDesQuePret() {
+    lectureDemandee = true
   }
 
   function detruire() {
@@ -154,15 +232,33 @@ export function useLecteurVideo(options: {
   async function charger() {
     const element = video.value
     const source = options.source()
+    // Ce qui a été vu depuis le dernier envoi part maintenant : les compteurs
+    // sont remis à zéro trois lignes plus bas, et jusqu'ici un changement de
+    // chapitre en pleine lecture emportait avec lui jusqu'à dix secondes de
+    // visionnage — plus l'enchaînement marchait, plus il rognait la
+    // progression qu'il est censé faire avancer.
+    await envoyerVisionnage()
     detruire()
     erreur.value = null
+    lectureRefusee.value = false
     erreurRenouvelable.value = false
     positionSecondes.value = 0
     secondesVues.value = 0
     secondesEnvoyees = 0
-    dernierInstant = 0
+    dernierePosition = null
+    niveaux.value = []
+    niveauChoisi.value = -1
+    qualite.value = null
+    // Désormais le cumul se rapporte au chapitre qu'on ouvre.
+    positionRelevee = options.position()
 
-    if (!element || !source) return
+    if (!element || !source) {
+      // La demande meurt avec le chargement qu'elle visait. La laisser vivre
+      // ferait partir tout seul un chargement ultérieur que personne n'a
+      // demandé — au retour d'une autorisation, par exemple.
+      lectureDemandee = false
+      return
+    }
     chargement.value = true
 
     // Un fichier unique se lit sans hls.js : la balise vidéo suffit, et le
@@ -178,6 +274,18 @@ export function useLecteurVideo(options: {
       hls = new Hls({ capLevelToPlayerSize: true, startLevel: -1 })
       hls.loadSource(source)
       hls.attachMedia(element)
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        // Une définition par hauteur : un flux peut porter deux variantes de
+        // même taille à des débits différents, et proposer « 720p » deux fois
+        // dans la barre n'aurait aucun sens pour l'apprenant.
+        const parHauteur = new Map<number, number>()
+        hls?.levels.forEach((niveau, index) => {
+          if (niveau.height && !parHauteur.has(niveau.height)) parHauteur.set(niveau.height, index)
+        })
+        niveaux.value = [...parHauteur.entries()]
+          .sort((a, b) => a[0] - b[0])
+          .map(([hauteur, index]) => ({ index, hauteur }))
+      })
       hls.on(Hls.Events.LEVEL_SWITCHED, (_, donnees) => {
         const niveau = hls?.levels[donnees.level]
         if (niveau?.height) qualite.value = `${niveau.height}p`
@@ -271,6 +379,21 @@ export function useLecteurVideo(options: {
     erreur.value = 'La lecture s’est interrompue. Relancez-la : le fichier est bien en ligne.'
   }
 
+  /**
+   * Impose une définition, ou rend la main au choix automatique avec `-1`.
+   *
+   * `capLevelToPlayerSize` borne le mode automatique à ce que la fenêtre peut
+   * afficher — c'est ce qui évite qu'un téléphone tire du 1080p. Le choix
+   * manuel passe outre : `currentLevel` court-circuite la sélection
+   * automatique, et donc le plafond avec elle. C'est voulu — un réglage qui
+   * n'obéit pas en fenêtre réduite ne se comprendrait pas.
+   */
+  function choisirNiveau(index: number) {
+    if (!hls) return
+    niveauChoisi.value = index
+    hls.currentLevel = index
+  }
+
   function brancher(element: HTMLVideoElement | null) {
     video.value = element
     if (element) void charger()
@@ -305,7 +428,7 @@ export function useLecteurVideo(options: {
   function basculerLecture() {
     const element = video.value
     if (!element) return
-    if (element.paused) void element.play().catch(() => undefined)
+    if (element.paused) void lancerLecture()
     else element.pause()
   }
 
@@ -342,11 +465,13 @@ export function useLecteurVideo(options: {
   const gestionnaires = {
     onPlay: () => {
       enLecture.value = true
-      dernierInstant = performance.now()
+      // Le point de départ est pris ici, et non au premier `timeupdate` : celui-ci
+      // arrive un quart de seconde plus tard, qui serait perdu à chaque reprise.
+      dernierePosition = video.value?.currentTime ?? null
     },
     onPause: () => {
       enLecture.value = false
-      dernierInstant = 0
+      dernierePosition = null
       void envoyerVisionnage()
     },
     onEnded: () => {
@@ -373,9 +498,19 @@ export function useLecteurVideo(options: {
       // l'apprenant en était, et on ne redémarre que si la vidéo tournait.
       if (repriseApres !== null && video.value) {
         video.value.currentTime = repriseApres
-        if (reprendreLecture) void video.value.play().catch(() => undefined)
+        if (reprendreLecture) void lancerLecture()
         repriseApres = null
         reprendreLecture = false
+        // La reprise a tranché pour cette source : elle rejoue si la vidéo
+        // tournait, et pas autrement. Une demande d'enchaînement encore en
+        // attente n'a plus d'objet, et survivrait jusqu'au chargement suivant.
+        lectureDemandee = false
+      } else if (lectureDemandee) {
+        // L'enchaînement s'arrêtait ici : le chapitre suivant se chargeait puis
+        // restait en pause, après un décompte qui venait d'annoncer « Lecture
+        // dans 1 seconde ». Rien ne relançait la balise.
+        lectureDemandee = false
+        void lancerLecture()
       }
     },
     onError: surErreurElement,
@@ -406,5 +541,11 @@ export function useLecteurVideo(options: {
     secondesVues,
     progression,
     qualite,
+    niveaux,
+    niveauChoisi,
+    choisirNiveau,
+    lireDesQuePret,
+    lancerLecture,
+    lectureRefusee,
   }
 }
