@@ -52,6 +52,9 @@ export default defineEventHandler(async (event) => {
       dureeSecondes: duree,
       etat: vu ? 'vu' : secondesVues > 0 ? 'en-cours' : 'a-voir',
       pourcentage: vu ? 100 : duree ? Math.min(99, Math.round((secondesVues / duree) * 100)) : 0,
+      /** Secondes déjà créditées. Le lecteur les reprend à son compte pour que
+       *  le relevé reste un total de chapitre, et non un compte de séance. */
+      secondesVues,
       /** Position de reprise, en secondes : le temps déjà vu, plafonné à la durée. */
       repriseSecondes: vu ? 0 : Math.min(secondesVues, duree),
     }

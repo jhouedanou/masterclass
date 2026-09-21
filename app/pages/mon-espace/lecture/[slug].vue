@@ -19,6 +19,7 @@ const { data, error } = await useFetch<{
     position: number
     etat: 'vu' | 'en-cours' | 'a-voir'
     pourcentage: number
+    secondesVues: number
   }[]
 }>(() => `/api/mon-espace/module/${route.params.slug}`)
 
@@ -61,6 +62,11 @@ const lecteur = useLecteurVideo({
   source: () => source.value,
   format: () => autorisation.value?.format ?? null,
   surFin: () => terminerChapitre(),
+  // Ce que le serveur a déjà crédité pour ce chapitre. Le lecteur repart de
+  // là plutôt que de zéro : la base ne retient que le plus grand relevé reçu,
+  // si bien qu'une reprise plus courte que la première séance ne comptait pour
+  // rien. Un chapitre vu en deux fois plafonnait à sa plus longue moitié.
+  dejaVues: () => data.value?.chapitres.find((c) => c.position === index.value)?.secondesVues ?? 0,
 })
 
 const video = ref<HTMLVideoElement | null>(null)
@@ -199,6 +205,32 @@ function reglerEnchainement(actif: boolean) {
 const moduleTermine = ref(false)
 
 /**
+ * Tous les chapitres vus, attestation méritée.
+ *
+ * La source est la progression renvoyée par le serveur à chaque relevé, et non
+ * le décompte des chapitres affiché par le sommaire : celui-ci part de
+ * l'instantané chargé à l'ouverture de la page, et ne bouge que pour le
+ * chapitre en cours. Un apprenant qui boucle trois chapitres d'affilée sans
+ * recharger aurait donc été déclaré incomplet sur les deux premiers.
+ *
+ * Le repli sur l'accès couvre le cas où rien n'a encore été relevé — un module
+ * déjà terminé qu'on rouvre pour revoir un passage.
+ */
+const moduleComplet = computed(
+  () => (lecteur.progression.value ?? data.value?.acces.progression ?? 0) >= 100,
+)
+
+/**
+ * Le module était-il déjà bouclé en arrivant ?
+ *
+ * Il le faut pour distinguer celui qui vient de le finir de celui qui revient
+ * revoir un passage. Sans cette distinction, chaque chapitre d'une relecture
+ * se serait soldé par des félicitations et un départ vers une attestation déjà
+ * obtenue — l'enchaînement devenait impraticable sur un module terminé.
+ */
+const completALOuverture = (data.value?.acces.progression ?? 0) >= 100
+
+/**
  * Fin d'un chapitre : le suivant s'enchaîne, ou le module se clôt.
  *
  * Sur le dernier chapitre, `lancerEnchainement` retournait sans rien faire et
@@ -206,13 +238,72 @@ const moduleTermine = ref(false)
  * plus utile du parcours : celui où l'on propose l'attestation et la suite.
  */
 function terminerChapitre() {
-  if (!chapitreSuivant.value) {
+  const derniereEtape = !chapitreSuivant.value
+
+  // Le module complet passe avant le chapitre suivant. C'est rarement le
+  // dernier chapitre qui manquait — celui qui reprend un module pour combler
+  // un trou le finit au milieu, et enchaîner l'enverrait vers un chapitre
+  // qu'il a déjà vu au lieu de son attestation. La relecture d'un module déjà
+  // bouclé garde son enchaînement : elle n'a rien débloqué, elle n'est
+  // interrompue qu'au bout du dernier chapitre.
+  if (moduleComplet.value && (derniereEtape || !completALOuverture)) {
+    annulerEnchainement()
+    moduleTermine.value = true
+    lancerRedirectionAttestation()
+    return
+  }
+  if (derniereEtape) {
     moduleTermine.value = true
     return
   }
   if (!enchainementActif.value) return
   lancerEnchainement()
 }
+
+// --- Attestation -------------------------------------------------------------
+
+/**
+ * Huit secondes avant de partir vers l'attestation.
+ *
+ * Le module est fini : laisser l'apprenant sur une image arrêtée lui ferait
+ * chercher lui-même où réclamer son dû. Le décompte est visible et
+ * interruptible — « Rester sur le lecteur » annule tout, pour celui qui veut
+ * revoir un passage avant de s'en aller.
+ */
+const SECONDES_ATTESTATION = 8
+const resteAvantAttestation = ref<number | null>(null)
+let minuteurAttestation: ReturnType<typeof setInterval> | undefined
+
+/**
+ * `?module=` ouvre directement la validation d'identité sur la page des
+ * certificats, sans que l'apprenant ait à retrouver sa ligne dans la liste.
+ * Le module déjà attesté y est simplement affiché : la page ne rouvre la
+ * validation que pour un certificat encore à générer.
+ */
+const cheminAttestation = computed(
+  () => `/mon-espace/certificats?module=${moduleCourant.value.id}`,
+)
+
+function annulerRedirectionAttestation() {
+  if (minuteurAttestation) clearInterval(minuteurAttestation)
+  minuteurAttestation = undefined
+  resteAvantAttestation.value = null
+}
+
+function lancerRedirectionAttestation() {
+  annulerRedirectionAttestation()
+  resteAvantAttestation.value = SECONDES_ATTESTATION
+  minuteurAttestation = setInterval(() => {
+    if (resteAvantAttestation.value === null) return
+    resteAvantAttestation.value -= 1
+    if (resteAvantAttestation.value <= 0) {
+      annulerRedirectionAttestation()
+      void navigateTo(cheminAttestation.value)
+    }
+  }, 1000)
+}
+
+onBeforeUnmount(annulerRedirectionAttestation)
 
 function annulerEnchainement() {
   if (minuteurEnchainement) clearInterval(minuteurEnchainement)
@@ -254,6 +345,9 @@ const sommaireOuvert = ref(false)
 function allerAuChapitre(nouvel: number, options?: { lire?: boolean }) {
   if (nouvel < 0 || nouvel >= moduleCourant.value.chapitres.length) return
   annulerEnchainement()
+  // Rouvrir un chapitre vaut refus du départ vers l'attestation : on ne peut
+  // pas emmener ailleurs quelqu'un qui vient de demander à revoir un passage.
+  annulerRedirectionAttestation()
   moduleTermine.value = false
   sommaireOuvert.value = false
   if (options?.lire) lecteur.lireDesQuePret()
@@ -292,7 +386,7 @@ const avancements = computed<Avancement[]>(() =>
 
     // Le cumul du lecteur ne peut que dépasser celui du serveur, jamais le
     // contredire : la base ne retient que la plus grande valeur.
-    const vues = Math.max(lecteur.secondesVues.value, (repli.pourcentage / 100) * duree)
+    const vues = Math.max(lecteur.secondesCumulees.value, (repli.pourcentage / 100) * duree)
     const part = Math.min(100, Math.round((vues / duree) * 100))
 
     if (repli.etat === 'vu' || vues >= duree * 0.95) return { etat: 'vu', pourcentage: 100 }
@@ -564,48 +658,106 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
         </div>
 
         <!-- Fin de module : le dernier chapitre ne laissait qu'une image
-             arrêtée, alors que c'est ici qu'on propose la suite. -->
+             arrêtée, alors que c'est ici qu'on propose la suite. Deux visages
+             selon ce qui a réellement été vu — des chapitres manquent encore,
+             ou le module est bouclé et l'attestation attend. -->
         <div
           v-if="moduleTermine && source"
           class="absolute inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-black/80 px-6 text-center backdrop-blur-sm"
           role="status"
         >
-          <Icon name="ph:seal-check-fill" class="size-9 text-succes" />
-          <p class="text-[12.5px] tracking-wide text-discret-clair uppercase">Module terminé</p>
-          <p class="font-title text-[22px] font-light text-white">{{ moduleCourant.titre }}</p>
-          <p class="max-w-md text-[13.5px] text-discret-clair">
-            Le temps visionné est enregistré. L’attestation se débloque quand tous les chapitres
-            sont vus.
-          </p>
-          <div class="mt-1 flex flex-wrap items-center justify-center gap-3">
-            <NuxtLink
-              :to="`/mon-espace/module/${moduleCourant.slug}`"
-              class="rounded-full bg-social px-5 py-2.5 text-[13.5px] font-extrabold text-white"
-            >
-              Revenir au module
-            </NuxtLink>
-            <button
-              type="button"
-              class="rounded-full border border-white/35 px-5 py-2.5 text-[13.5px] font-bold text-white"
-              @click="allerAuChapitre(0, { lire: true })"
-            >
-              Revoir depuis le début
-            </button>
-          </div>
+          <template v-if="moduleComplet">
+            <Icon name="ph:confetti-fill" class="size-10 text-succes" />
+            <p class="text-[12.5px] tracking-wide text-succes uppercase">Félicitations</p>
+            <p class="font-title text-[22px] font-light text-white">
+              Vous avez terminé « {{ moduleCourant.titre }} »
+            </p>
+            <p class="max-w-md text-[13.5px] text-discret-clair">
+              Tous les chapitres sont vus. Votre attestation de suivi est prête : il ne reste
+              qu’à confirmer le nom qui y figurera.
+            </p>
+            <div class="mt-1 flex flex-wrap items-center justify-center gap-3">
+              <NuxtLink
+                :to="cheminAttestation"
+                class="rounded-full bg-succes px-5 py-2.5 text-[13.5px] font-extrabold text-white"
+                @click="annulerRedirectionAttestation()"
+              >
+                Obtenir mon attestation
+              </NuxtLink>
+              <button
+                type="button"
+                class="rounded-full border border-white/35 px-5 py-2.5 text-[13.5px] font-bold text-white"
+                @click="annulerRedirectionAttestation()"
+              >
+                Rester sur le lecteur
+              </button>
+            </div>
+            <p v-if="resteAvantAttestation !== null" class="text-[12.5px] text-discret-clair">
+              Ouverture de votre attestation dans {{ resteAvantAttestation }}
+              seconde{{ resteAvantAttestation > 1 ? 's' : '' }}…
+            </p>
+          </template>
+
+          <template v-else>
+            <Icon name="ph:seal-check-fill" class="size-9 text-succes" />
+            <p class="text-[12.5px] tracking-wide text-discret-clair uppercase">Module terminé</p>
+            <p class="font-title text-[22px] font-light text-white">{{ moduleCourant.titre }}</p>
+            <p class="max-w-md text-[13.5px] text-discret-clair">
+              Le temps visionné est enregistré. L’attestation se débloque quand tous les chapitres
+              sont vus.
+            </p>
+            <div class="mt-1 flex flex-wrap items-center justify-center gap-3">
+              <NuxtLink
+                :to="`/mon-espace/module/${moduleCourant.slug}`"
+                class="rounded-full bg-social px-5 py-2.5 text-[13.5px] font-extrabold text-white"
+              >
+                Revenir au module
+              </NuxtLink>
+              <button
+                type="button"
+                class="rounded-full border border-white/35 px-5 py-2.5 text-[13.5px] font-bold text-white"
+                @click="allerAuChapitre(0, { lire: true })"
+              >
+                Revoir depuis le début
+              </button>
+            </div>
+          </template>
         </div>
 
-        <!-- Lecture refusée par le navigateur : la vidéo est là, c'est le geste
-             qui manque. Sans ce bouton, l'apprenant restait devant une image
-             figée après un enchaînement. -->
+        <!-- Bouton de lecture en surimpression, à la manière de Vimeo : toute
+             la surface de l'image lance la vidéo, et pas seulement les trente
+             pixels du bouton de la barre.
+
+             Il se montre dès que la vidéo est à l'arrêt, et non plus seulement
+             quand le navigateur a refusé de démarrer — c'était le seul cas
+             traité, si bien qu'à l'ouverture d'un chapitre l'image restait
+             muette d'intention. Le refus du navigateur n'en devient qu'un cas
+             particulier : vidéo à l'arrêt, bouton présent.
+
+             Il s'efface pendant la lecture : laissé en place, il masquerait
+             l'image et intercepterait les clics destinés aux contrôles.
+
+             `z-10` le range sous la barre de contrôles (`z-20`) et sous le
+             sommaire (`z-30`) : il couvre toute l'image, y compris le rail,
+             et à rang égal c'est l'ordre du gabarit qui trancherait — trop
+             fragile pour un pointeur qu'on doit pouvoir déplacer à l'arrêt.
+
+             Sur mobile il n'y a rien à ajouter : les contrôles natifs, seuls
+             employés là-bas, dessinent déjà leur propre bouton central. -->
         <button
-          v-if="lecteur.lectureRefusee.value && source && !moduleTermine"
+          v-if="source && controlesCustom && !lecteur.enLecture.value && !moduleTermine
+            && resteAvantSuivant === null && !lecteur.erreur.value"
           type="button"
-          class="absolute inset-0 z-40 grid place-items-center bg-black/45"
-          aria-label="Lancer la lecture"
+          class="group absolute inset-0 z-10 grid place-items-center bg-black/35 transition hover:bg-black/45"
+          :aria-label="lecteur.positionSecondes.value > 0 ? 'Reprendre la lecture' : 'Lancer la lecture'"
           @click="lecteur.lancerLecture()"
         >
-          <span class="grid size-16 place-items-center rounded-full bg-white/90 text-[26px] text-encre">
-            <Icon name="ph:play-fill" class="size-7" />
+          <span
+            class="grid size-[72px] place-items-center rounded-full bg-white/90 text-encre shadow-lg transition group-hover:scale-105 group-hover:bg-white"
+          >
+            <!-- Décalé d'un cheveu : un triangle centré sur sa boîte paraît
+                 collé à gauche du cercle qui l'entoure. -->
+            <Icon name="ph:play-fill" class="size-8 translate-x-[2px]" />
           </span>
         </button>
 

@@ -36,6 +36,9 @@ export function useLecteurVideo(options: {
   /** Appelé quand la vidéo arrive au bout. C'est le seul moment où l'on sait
    *  qu'un chapitre est fini, et donc qu'on peut proposer le suivant. */
   surFin?: () => void
+  /** Secondes déjà créditées par le serveur pour le chapitre qui se charge.
+   *  Sans elle, une reprise repart de zéro — voir `creditAcquis`. */
+  dejaVues?: () => number
 }) {
   const video = ref<HTMLVideoElement | null>(null)
   const enLecture = ref(false)
@@ -96,6 +99,23 @@ export function useLecteurVideo(options: {
    *  n'y a rien à comparer — à l'arrêt, pendant un déplacement, au chargement. */
   let dernierePosition: number | null = null
   let secondesEnvoyees = 0
+  /**
+   * Secondes déjà créditées pour ce chapitre avant que la séance ne commence.
+   *
+   * Le relevé est un *total* de chapitre, pas un compte de séance : la base ne
+   * retient que la plus grande valeur reçue (`greatest`). Envoyer les seules
+   * secondes de la séance rendait donc toute reprise stérile — un chapitre de
+   * 13 minutes vu en deux fois, 9 minutes puis 4, restait crédité de 9 : la
+   * seconde séance, plus courte que la première, n'écrasait rien.
+   *
+   * Il ne peut que baisser, jamais monter : un déplacement en arrière le
+   * ramène au point visé, faute de quoi revoir le début d'un chapitre
+   * gonflerait un total déjà acquis. Le `greatest` du serveur protège de cette
+   * baisse — elle ne fait pas reculer ce qui est enregistré.
+   */
+  const creditAcquis = ref(0)
+  /** Point le plus avancé atteint dans le chapitre depuis son chargement. */
+  const positionMax = ref(0)
   /** Position à restaurer après un renouvellement d'autorisation : changer la
    *  source d'une balise vidéo remet le curseur à zéro. */
   let repriseApres: number | null = null
@@ -119,8 +139,27 @@ export function useLecteurVideo(options: {
    *  session interrompue, assez rare pour ne pas inonder le serveur. */
   const PAS_ENVOI_SECONDES = 10
 
-  async function envoyerVisionnage() {
-    const aEnvoyer = Math.floor(secondesVues.value)
+  /**
+   * Relevés enchaînés plutôt que menés de front.
+   *
+   * Une vidéo qui va au bout tire `pause` puis `ended` dans la même bouffée,
+   * et chacun déclenche un relevé. Lancés ensemble, le second trouvait le
+   * compteur déjà réservé par le premier et repartait aussitôt, sans attendre
+   * sa réponse : `progression` gardait la valeur d'avant la fin du chapitre,
+   * juste à l'instant où la page s'en sert pour décider si le module est
+   * bouclé. Enchaînés, le second attend — et n'a le plus souvent plus rien à
+   * envoyer, ce qui est exactement ce qu'on veut de lui.
+   */
+  let fileEnvois: Promise<void> = Promise.resolve()
+
+  function envoyerVisionnage(): Promise<void> {
+    // `relever` ne rejette jamais : la chaîne ne peut pas se rompre.
+    fileEnvois = fileEnvois.then(relever)
+    return fileEnvois
+  }
+
+  async function relever() {
+    const aEnvoyer = Math.floor(secondesCumulees.value)
     if (aEnvoyer <= secondesEnvoyees) return
     secondesEnvoyees = aEnvoyer
 
@@ -141,12 +180,31 @@ export function useLecteurVideo(options: {
     }
   }
 
+  /**
+   * Total vu du chapitre en cours : le crédit déjà acquis plus la séance.
+   *
+   * C'est ce que le relevé envoie, et donc ce que l'écran doit montrer.
+   * `secondesVues` seul ferait retomber la pastille d'un chapitre repris au
+   * niveau de la seule séance en cours, alors que le serveur en sait plus.
+   *
+   * Le total est borné par le point le plus avancé atteint : on ne peut pas
+   * avoir vu plus de secondes distinctes que le curseur n'a parcouru de
+   * chapitre. C'est ce qui empêche le crédit acquis de s'ajouter à des
+   * secondes qui le recouvrent — rouvrir depuis le sommaire un chapitre vu à
+   * moitié le fait repartir de zéro, et sans cette borne les quatre premières
+   * minutes auraient été comptées deux fois.
+   */
+  const secondesCumulees = computed(() =>
+    Math.min(creditAcquis.value + secondesVues.value, positionMax.value),
+  )
+
   function surTemps() {
     const element = video.value
     if (!element) return
 
     const position = element.currentTime
     positionSecondes.value = position
+    if (position > positionMax.value) positionMax.value = position
 
     if (!element.paused && !element.seeking) {
       if (dernierePosition !== null) {
@@ -164,7 +222,10 @@ export function useLecteurVideo(options: {
       dernierePosition = null
     }
 
-    if (Math.floor(secondesVues.value) >= secondesEnvoyees + PAS_ENVOI_SECONDES) {
+    // Comparé au même étalon que `secondesEnvoyees`, qui retient un total de
+    // chapitre : mesurer le pas sur la seule séance retarderait tous les
+    // relevés d'une reprise du montant déjà acquis.
+    if (Math.floor(secondesCumulees.value) >= secondesEnvoyees + PAS_ENVOI_SECONDES) {
       void envoyerVisionnage()
     }
   }
@@ -258,8 +319,12 @@ export function useLecteurVideo(options: {
     lectureRefusee.value = false
     erreurRenouvelable.value = false
     positionSecondes.value = 0
+    positionMax.value = 0
     secondesVues.value = 0
-    secondesEnvoyees = 0
+    creditAcquis.value = Math.max(0, Math.round(options.dejaVues?.() ?? 0))
+    // Le crédit acquis est déjà chez le serveur : le tenir pour envoyé évite
+    // un premier relevé qui ne lui apprendrait rien.
+    secondesEnvoyees = creditAcquis.value
     dernierePosition = null
     niveaux.value = []
     niveauChoisi.value = -1
@@ -426,7 +491,13 @@ export function useLecteurVideo(options: {
     const element = video.value
     if (!element) return
     const duree = element.duration || dureeSecondes.value
-    element.currentTime = duree ? Math.min(Math.max(0, secondes), duree - 0.25) : Math.max(0, secondes)
+    const cible = duree ? Math.min(Math.max(0, secondes), duree - 0.25) : Math.max(0, secondes)
+    element.currentTime = cible
+    // Revenir en arrière rend une partie du crédit acquis : sans cela, revoir
+    // les trois premières minutes d'un chapitre à moitié vu les ajouterait à
+    // un total qui les comptait déjà. Le crédit ne remonte pas quand on saute
+    // en avant — un passage non regardé n'a pas à être payé.
+    creditAcquis.value = Math.min(creditAcquis.value, Math.floor(cible))
   }
 
   /** Déplacement relatif, pour les flèches du clavier. */
@@ -526,9 +597,13 @@ export function useLecteurVideo(options: {
       dernierePosition = null
       void envoyerVisionnage()
     },
-    onEnded: () => {
+    onEnded: async () => {
       enLecture.value = false
-      void envoyerVisionnage()
+      // Le relevé part *avant* de prévenir la page, et on l'attend : c'est lui
+      // qui rend `progression` juste. La page s'en sert pour savoir si le
+      // module est bouclé, et la réponse arrivait après sa décision — le
+      // dernier chapitre se terminait donc toujours sur la progression d'avant.
+      await envoyerVisionnage()
       options.surFin?.()
     },
     onTimeupdate: surTemps,
@@ -595,6 +670,7 @@ export function useLecteurVideo(options: {
     positionSecondes,
     dureeSecondes,
     secondesVues,
+    secondesCumulees,
     progression,
     qualite,
     niveaux,
