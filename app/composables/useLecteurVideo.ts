@@ -63,6 +63,21 @@ export function useLecteurVideo(options: {
   /** Vitesse de lecture. Un ref, et non un réglage à sens unique : la barre de
    *  contrôles de la maquette l'affiche autant qu'elle la change. */
   const vitesse = ref(1)
+  /**
+   * Volume et coupure du son.
+   *
+   * La barre de contrôles remplace les contrôles natifs dès qu'on est sur un
+   * écran large avec une souris : sans ces deux-là, il n'y avait plus aucun
+   * moyen de baisser le son sans passer par le système.
+   *
+   * Le réglage se retient d'un chapitre à l'autre et d'une session à l'autre —
+   * personne ne veut remettre le volume à chaque vidéo. Il vit dans le
+   * navigateur de l'apprenant, pas en base : c'est une commodité, pas une
+   * donnée.
+   */
+  const CLE_VOLUME = 'emc-volume'
+  const volume = ref(1)
+  const muet = ref(false)
   /** Suit l'état réel du plein écran : la touche Échap en sort sans passer par
    *  notre bouton, et un booléen basculé à la main mentirait alors. */
   const pleinEcran = ref(false)
@@ -462,6 +477,43 @@ export function useLecteurVideo(options: {
     if (video.value) video.value.playbackRate = valeur
   })
 
+  /** Le volume se réapplique à chaque nouvelle source : poser un `src` remet la
+   *  balise à ses valeurs par défaut, comme pour `playbackRate`. */
+  function appliquerVolume() {
+    if (!video.value) return
+    video.value.volume = volume.value
+    video.value.muted = muet.value
+  }
+
+  watch([volume, muet], () => {
+    appliquerVolume()
+    try {
+      localStorage.setItem(CLE_VOLUME, JSON.stringify({ volume: volume.value, muet: muet.value }))
+    } catch {
+      /* stockage indisponible : le réglage ne vaut que pour cette session */
+    }
+  })
+
+  onMounted(() => {
+    try {
+      const garde = JSON.parse(localStorage.getItem(CLE_VOLUME) ?? 'null')
+      if (garde && typeof garde.volume === 'number') {
+        volume.value = Math.min(1, Math.max(0, garde.volume))
+        muet.value = Boolean(garde.muet)
+      }
+    } catch {
+      /* réglage illisible : on reste au volume plein */
+    }
+  })
+
+  /** Le son coupé se rallume à un volume audible : rallumer à zéro donnerait
+   *  un bouton qui ne fait rien. */
+  function basculerMuet() {
+    if (!muet.value && volume.value === 0) return
+    muet.value = !muet.value
+    if (!muet.value && volume.value === 0) volume.value = 0.5
+  }
+
   const gestionnaires = {
     onPlay: () => {
       enLecture.value = true
@@ -494,6 +546,7 @@ export function useLecteurVideo(options: {
       // un renouvellement d'autorisation ramenait la vidéo en 1× alors que la
       // barre affichait toujours 1.25×.
       if (video.value) video.value.playbackRate = vitesse.value
+      appliquerVolume()
       // Renouvellement d'autorisation en cours de lecture : on reprend là où
       // l'apprenant en était, et on ne redémarre que si la vidéo tournait.
       if (repriseApres !== null && video.value) {
@@ -531,6 +584,9 @@ export function useLecteurVideo(options: {
     basculerPleinEcran,
     pleinEcran,
     vitesse,
+    volume,
+    muet,
+    basculerMuet,
     gestionnaires,
     enLecture,
     chargement,

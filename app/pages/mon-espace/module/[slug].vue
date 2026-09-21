@@ -52,6 +52,53 @@ function horloge(secondes: number): string {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 }
 
+/**
+ * Vignette du chapitre à reprendre.
+ *
+ * Les autorisations de lecture sont demandées à part, côté client seulement :
+ * elles portent une signature qui expire, et les mêler au module les ferait
+ * mettre en cache avec lui. C'est le même appel que celui de la page de
+ * lecture — il rend déjà l'adresse signée de chaque chapitre.
+ */
+const { data: lecture } = await useFetch<{
+  chapitres: { position: number; url: string | null; format: 'hls' | 'fichier' | null }[]
+}>(() => `/api/mon-espace/lecture/${route.params.slug}`, { server: false })
+
+/** Le chapitre où l'apprenant en est : le premier qui n'est pas vu. Tout vu,
+ *  on revient au début — c'est une relecture, pas une reprise. */
+const chapitreAReprendre = computed(
+  () => data.value!.chapitres.find((c) => c.etat !== 'vu') ?? data.value!.chapitres[0]!,
+)
+
+const autorisationReprise = computed(() =>
+  lecture.value?.chapitres.find((c) => c.position === chapitreAReprendre.value.position),
+)
+
+/**
+ * L'image d'attente, tirée de la vidéo elle-même.
+ *
+ * Un flux transcodé embarque son `poster.jpg`, posé par ffmpeg à la deuxième
+ * seconde — la première est souvent noire. L'adresse s'obtient en changeant le
+ * seul nom de fichier : la signature couvre le dossier, pas ce qu'il contient.
+ *
+ * Un fichier unique n'a pas de poster, et rien côté serveur ne sait en
+ * fabriquer un — c'est le rôle de ffmpeg, qui ne tourne ni dans le diffuseur ni
+ * dans l'application. La balise vidéo s'en charge alors elle-même : le fragment
+ * `#t=2` lui demande la vue de la deuxième seconde, qu'elle obtient en ne
+ * chargeant que l'en-tête et un morceau du fichier.
+ */
+const posterReprise = computed(() => {
+  const autorisation = autorisationReprise.value
+  if (!autorisation?.url || autorisation.format !== 'hls') return null
+  return autorisation.url.replace(/\/[^/?]+(\?)/, '/poster.jpg$1')
+})
+
+const videoReprise = computed(() => {
+  const autorisation = autorisationReprise.value
+  if (!autorisation?.url || autorisation.format !== 'fichier') return null
+  return `${autorisation.url}#t=2`
+})
+
 const LIBELLE_SESSION = (date: string) =>
   new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(`${date}T00:00:00`))
 </script>
@@ -75,22 +122,56 @@ const LIBELLE_SESSION = (date: string) =>
 
     <div class="grid gap-7 lg:grid-cols-[1fr_400px] lg:items-start">
       <div>
-        <!-- Vidéo de bienvenue — ne compte pas dans la progression -->
+        <!-- Le chapitre à reprendre, avec sa propre image : le bloc ne montrait
+             que le motif de marque, si bien qu'un module en cours et un module
+             jamais ouvert se ressemblaient trait pour trait. -->
         <NuxtLink
-          :to="`/mon-espace/lecture/${moduleCourant.slug}?chapitre=0`"
+          :to="`/mon-espace/lecture/${moduleCourant.slug}?chapitre=${chapitreAReprendre.position}${chapitreAReprendre.repriseSecondes ? `&reprise=${Math.floor(chapitreAReprendre.repriseSecondes)}` : ''}`"
           class="group relative mb-5 grid aspect-video w-full place-items-center overflow-hidden rounded-carte bg-encre lg:aspect-auto lg:h-[300px]"
         >
           <img src="/images/brand/pattern.png" alt="" aria-hidden="true" class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[.18]">
+          <!-- `pointer-events-none` et pas de contrôles : c'est une image, pas
+               un lecteur. Le clic doit atteindre le lien qui l'entoure. -->
+          <img
+            v-if="posterReprise"
+            :src="posterReprise"
+            alt=""
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-60 transition group-hover:opacity-75"
+          >
+          <video
+            v-else-if="videoReprise"
+            :src="videoReprise"
+            preload="metadata"
+            muted
+            playsinline
+            tabindex="-1"
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-60 transition group-hover:opacity-75"
+          ></video>
           <span class="relative grid size-[72px] place-items-center rounded-full bg-white text-[24px] text-encre transition group-hover:scale-105">
             <Icon name="ph:play-fill" size="26" />
           </span>
           <span class="absolute top-4 left-5 rounded-[8px] bg-black/40 px-3 py-1.5 text-[13px] font-bold text-white">
-            Vidéo de bienvenue — {{ data.formateur?.nom }}
+            <template v-if="chapitreAReprendre.position === 0 && chapitreAReprendre.etat === 'a-voir'">
+              Vidéo de bienvenue — {{ data.formateur?.nom }}
+            </template>
+            <template v-else>
+              Reprendre — {{ chapitreAReprendre.libelle }}
+            </template>
           </span>
           <span class="pointer-events-none absolute top-4 right-5 text-[12px] text-white/[.22]" aria-hidden="true">
             {{ auth.utilisateur?.prenom }} {{ auth.utilisateur?.nom }} · {{ auth.utilisateur?.email }}
           </span>
-          <span class="absolute bottom-3.5 left-5 text-[11.5px] text-nuit-clair">Ne compte pas dans la progression</span>
+          <span class="absolute bottom-3.5 left-5 text-[11.5px] text-nuit-clair">
+            <template v-if="chapitreAReprendre.position === 0 && chapitreAReprendre.etat === 'a-voir'">
+              Ne compte pas dans la progression
+            </template>
+            <template v-else-if="chapitreAReprendre.repriseSecondes">
+              Reprise à {{ horloge(chapitreAReprendre.repriseSecondes) }}
+            </template>
+            <template v-else>{{ chapitreAReprendre.titre }}</template>
+          </span>
         </NuxtLink>
 
         <!-- Chapitres avec état : la maquette les pose en lignes détachées, et

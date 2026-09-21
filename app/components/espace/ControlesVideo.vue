@@ -37,6 +37,23 @@ const emit = defineEmits<{
 }>()
 
 const vitesse = defineModel<number>('vitesse', { required: true })
+const volume = defineModel<number>('volume', { default: 1 })
+const muet = defineModel<boolean>('muet', { default: false })
+
+/** Trois paliers d'icône : coupé, faible, fort. Une seule icône de haut-parleur
+ *  ne dirait pas d'un coup d'œil si le son est éteint. */
+const iconeVolume = computed(() => {
+  if (muet.value || volume.value === 0) return 'ph:speaker-slash'
+  return volume.value < 0.5 ? 'ph:speaker-low' : 'ph:speaker-high'
+})
+
+/** Glisser la réglette rallume le son : pousser le volume sans entendre serait
+ *  incompréhensible. */
+function surVolume(evenement: Event) {
+  const valeur = Number((evenement.target as HTMLInputElement).value)
+  volume.value = valeur
+  if (valeur > 0) muet.value = false
+}
 
 /**
  * Le choix de définition suit la même langue que celui de la vitesse : une
@@ -172,6 +189,33 @@ function vitesseSuivante() {
         <span aria-hidden="true">{{ enLecture ? '⏸' : '▶' }}</span>
       </button>
       <span class="tabular-nums">{{ temps }}</span>
+
+      <!-- Le son. La barre remplace les contrôles natifs sur écran large : sans
+           ces deux commandes, il ne restait plus aucun moyen de baisser le
+           volume sans passer par le système. La réglette n'apparaît qu'au
+           survol ou au focus, pour ne pas encombrer une barre que la maquette
+           veut sobre. -->
+      <div class="group/son flex items-center gap-2">
+        <button
+          type="button"
+          class="leading-none"
+          :aria-label="muet || volume === 0 ? 'Rétablir le son' : 'Couper le son'"
+          :aria-pressed="muet || volume === 0"
+          @click="muet = !muet"
+        >
+          <Icon :name="iconeVolume" size="18" />
+        </button>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          :value="muet ? 0 : volume"
+          aria-label="Volume"
+          class="h-1 w-0 cursor-pointer appearance-none rounded-full bg-white/30 opacity-0 transition-all duration-200 group-hover/son:w-20 group-hover/son:opacity-100 focus:w-20 focus:opacity-100 [&::-webkit-slider-thumb]:size-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+          @input="surVolume"
+        >
+      </div>
       <button
         type="button"
         class="ml-auto rounded-lg border border-white/35 px-2.5 py-1 font-bold"

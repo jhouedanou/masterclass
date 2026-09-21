@@ -544,6 +544,8 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
         <EspaceControlesVideo
           v-if="controlesCustom && source"
           v-model:vitesse="lecteur.vitesse.value"
+          v-model:volume="lecteur.volume.value"
+          v-model:muet="lecteur.muet.value"
           :position="lecteur.positionSecondes.value"
           :duree="lecteur.dureeSecondes.value || (chapitre?.videoDureeSecondes ?? 0)"
           :en-lecture="lecteur.enLecture.value"
@@ -561,9 +563,9 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
       </div>
 
       <div class="flex flex-wrap items-center justify-between gap-2 px-4 pt-3 text-[12px] text-discret-clair lg:px-8">
-        <span :title="`Temps réellement visionné : ${horloge(lecteur.secondesVues.value)}`">
-          Le temps réel de visionnage est enregistré toutes les 10 s — l’avance rapide ne valide pas
-          la progression.
+        <span :title="`Vidéo réellement parcourue : ${horloge(lecteur.secondesVues.value)}`">
+          Seules les minutes de vidéo réellement parcourues comptent, quelle que soit la vitesse —
+          avancer dans la barre ne valide pas la progression.
         </span>
         <span>Vitesses : {{ vitesses.map((v) => `${v}×`).join(' · ') }}</span>
       </div>
