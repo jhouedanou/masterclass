@@ -463,7 +463,7 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
         <button
           v-if="source && !resteAvantSuivant"
           type="button"
-          class="absolute top-[18px] left-5 z-30 flex items-center gap-2 rounded-full bg-black/55 px-3.5 py-2 text-[12.5px] font-bold text-white backdrop-blur transition hover:bg-black/75"
+          class="absolute top-[18px] left-5 z-40 flex items-center gap-2 rounded-full bg-black/55 px-3.5 py-2 text-[12.5px] font-bold text-white backdrop-blur transition hover:bg-black/75"
           :aria-expanded="sommaireOuvert"
           @click="sommaireOuvert = !sommaireOuvert"
         >
