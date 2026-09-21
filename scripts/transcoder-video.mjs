@@ -70,6 +70,7 @@ function ffprobe(...args) {
 
 let hauteurSource
 let dureeSecondes
+let debitSourceKbit
 try {
   hauteurSource = Number(
     ffprobe('-select_streams', 'v:0', '-show_entries', 'stream=height', '-of', 'csv=p=0'),
@@ -77,14 +78,53 @@ try {
   dureeSecondes = Math.round(
     Number(ffprobe('-show_entries', 'format=duration', '-of', 'csv=p=0')),
   )
+  debitSourceKbit = Math.round(
+    Number(ffprobe('-show_entries', 'format=bit_rate', '-of', 'csv=p=0')) / 1000,
+  )
 } catch {
   console.error('ffprobe indisponible. Installer ffmpeg : brew install ffmpeg')
   process.exit(1)
 }
 
-// Toujours au moins le palier le plus bas, même pour une source minuscule :
-// un flux sans variante n'est pas lisible.
-const paliers = PALIERS.filter((p) => p.hauteur <= hauteurSource)
+const kbit = (valeur) => Number(String(valeur).replace(/k$/, ''))
+
+/**
+ * L'échelle, taillée sur ce que la source contient réellement.
+ *
+ * Deux réductions successives, et l'ordre importe.
+ *
+ * La hauteur d'abord : agrandir une image ne lui ajoute pas de détail, cela ne
+ * fait que du poids.
+ *
+ * Le débit ensuite — mais en **plafonnant**, jamais en écartant. Les montages
+ * du catalogue sortent entre 270 et 600 kbit/s : viser 2 800 kbit en 720p
+ * depuis une telle source ne produit aucun détail supplémentaire, l'encodeur se
+ * contentant de recopier ses propres artefacts dans un fichier cinq fois plus
+ * lourd. Écarter le palier serait pourtant pire : on priverait l'apprenant de
+ * la définition que la source porte vraiment, pour ne lui laisser que du 240p.
+ * Chaque palier est donc ramené au débit de la source quand il le dépasse.
+ *
+ * Reste qu'après ce plafonnement plusieurs paliers se retrouvent au même débit.
+ * Servir 360p, 480p et 720p à 600 kbit chacun n'offre aucun choix au lecteur,
+ * seulement trois fois le même poids : à débit égal, on ne garde que la plus
+ * haute définition, qui est strictement meilleure.
+ */
+const plafonnes = PALIERS.filter((p) => p.hauteur <= hauteurSource).map((p) => {
+  if (!debitSourceKbit) return p
+  const video = Math.min(kbit(p.video), debitSourceKbit)
+  return {
+    ...p,
+    video: `${video}k`,
+    plafond: `${Math.min(kbit(p.plafond), Math.round(debitSourceKbit * 1.5))}k`,
+  }
+})
+
+const parDebit = new Map()
+for (const palier of plafonnes) parDebit.set(kbit(palier.video), palier)
+const paliers = [...parDebit.values()].sort((a, b) => a.hauteur - b.hauteur)
+
+// Toujours au moins un palier, même pour une source minuscule : un flux sans
+// variante n'est pas lisible.
 if (paliers.length === 0) paliers.push(PALIERS[0])
 
 const sortie = join(RACINE, 'medias/hls', cle)
@@ -93,7 +133,11 @@ mkdirSync(sortie, { recursive: true })
 console.log(`\nSource   ${source}`)
 console.log(`Clé      ${cle}`)
 console.log(`Durée    ${Math.floor(dureeSecondes / 60)} min ${dureeSecondes % 60} s`)
-console.log(`Paliers  ${paliers.map((p) => `${p.hauteur}p`).join(' · ')}`)
+console.log(`Source   ${hauteurSource}p · ${debitSourceKbit || '?'} kbit/s`)
+console.log(`Paliers  ${paliers.map((p) => `${p.hauteur}p@${p.video}`).join(' · ')}`)
+if (paliers.length < plafonnes.length) {
+  console.log('         (paliers fondus : à débit égal, seule la plus haute définition est gardée)')
+}
 console.log(`Preset   ${PRESET}\n`)
 
 // Une seule passe ffmpeg produit toutes les variantes : la source n'est

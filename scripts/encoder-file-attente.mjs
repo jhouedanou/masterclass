@@ -33,6 +33,31 @@ import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..')
+
+/**
+ * `.env` du dépôt, quand il y en a un.
+ *
+ * Node ne le lit pas de lui-même, et Nuxt ne le charge que pour l'application :
+ * lancé à la main, l'exécutant ne voyait donc pas `TACHES_CLE` et s'arrêtait
+ * sur une clé manquante alors qu'elle était renseignée deux lignes plus bas
+ * dans le fichier. L'environnement réel l'emporte, pour qu'un conteneur — où
+ * il n'y a pas de `.env` — se configure comme n'importe quel service.
+ */
+for (const ligne of (() => {
+  try {
+    return readFileSync(join(RACINE, '.env'), 'utf8').split('\n')
+  } catch {
+    return []
+  }
+})()) {
+  const separation = ligne.indexOf('=')
+  if (separation < 1 || ligne.trimStart().startsWith('#')) continue
+  const nom = ligne.slice(0, separation).trim()
+  if (!process.env[nom]) {
+    process.env[nom] = ligne.slice(separation + 1).trim().replace(/^['"]|['"]$/g, '')
+  }
+}
+
 const BUCKET = process.env.VIDEO_BUCKET || 'emasterclass-videos'
 const APP = (process.env.APP_URL || 'http://localhost:3000').replace(/\/+$/, '')
 const CLE = process.env.TACHES_CLE || ''
@@ -41,7 +66,19 @@ const BOUCLE = process.argv.includes('--boucle')
 const REPOS_SECONDES = Number(process.env.ENCODAGE_REPOS_SECONDES) || 30
 
 if (!CLE) {
-  console.error('TACHES_CLE manquante : l’exécutant ne peut pas s’authentifier auprès de l’application.')
+  console.error(
+    'TACHES_CLE manquante : l’exécutant ne peut pas s’authentifier auprès de l’application.\n' +
+      'Renseignez-la dans .env, ou dans l’environnement si vous tournez en conteneur.',
+  )
+  process.exit(1)
+}
+
+// ffmpeg n'est pas une dépendance npm : mieux vaut le dire ici, en une ligne,
+// qu'au milieu d'un transcodage à moitié entamé.
+try {
+  execFileSync('ffprobe', ['-version'], { stdio: 'ignore' })
+} catch {
+  console.error('ffprobe introuvable. Installer ffmpeg : brew install ffmpeg')
   process.exit(1)
 }
 
