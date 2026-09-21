@@ -137,6 +137,25 @@ async function enregistrerTitre(video: VideoMediatheque) {
   }
 }
 
+/**
+ * Met une vidéo en file d'encodage.
+ *
+ * Le dépôt le fait tout seul : ce bouton sert au fonds déjà en ligne, déposé
+ * avant que la file n'existe, et à reprendre un travail en échec.
+ */
+async function encoder(video: VideoMediatheque) {
+  occupe.value = true
+  erreur.value = ''
+  try {
+    await $fetch('/api/admin/mediatheque/encoder', { method: 'POST', body: { videoId: video.id } })
+    await refresh()
+  } catch (e) {
+    erreur.value = messageDErreur(e)
+  } finally {
+    occupe.value = false
+  }
+}
+
 async function supprimer(video: VideoMediatheque) {
   // Le refus du serveur nomme les chapitres concernés : le laisser remonter tel
   // quel vaut mieux que de deviner ici ce qu'il sait déjà.
@@ -269,6 +288,16 @@ defineExpose({ refresh })
             </button>
             <button v-if="renomme !== video.id" class="text-discret underline" @click="ouvrirRenommage(video)">
               Renommer
+            </button>
+            <!-- Une vidéo déjà en multi-débit n'a rien à réencoder, et un
+                 travail vivant ne se double pas. -->
+            <button
+              v-if="video.format === 'fichier' && !['en-file', 'encodage'].includes(video.encodage?.statut ?? '')"
+              class="text-discret underline"
+              :disabled="occupe"
+              @click="encoder(video)"
+            >
+              {{ video.encodage?.statut === 'echec' ? 'Relancer l’encodage' : 'Encoder en multi-débit' }}
             </button>
             <button
               v-if="!video.usages.length"

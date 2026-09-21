@@ -110,6 +110,18 @@ export async function reussirTravail(
     'Travail introuvable',
   ) as TravailVideoRow
 
+  // Un travail déjà clos ne se reclôt pas. Sans ce contrôle, un exécutant qui
+  // rend compte après avoir été présumé mort — sa réponse arrive alors que le
+  // travail est reparti en file, voire déclaré en échec — ferait basculer en
+  // multi-débit une vidéo dont le flux n'est pas forcément complet. Même garde
+  // que `cloreTeleversement` sur les dépôts.
+  if (travail.statut !== 'encodage') {
+    throw createError({
+      statusCode: 409,
+      statusMessage: `Ce travail n’est plus en cours (${travail.statut}) : son résultat arrive trop tard.`,
+    })
+  }
+
   const report = await basculerFormatVideo(travail.video_id, 'hls')
 
   verifier(
@@ -149,6 +161,15 @@ export async function echouerTravail(
     'travail d’encodage',
     'Travail introuvable',
   ) as TravailVideoRow
+
+  // Même raison qu'à la réussite : un compte rendu retardataire ne doit pas
+  // faire retomber en file un travail que la reprise a déjà tranché.
+  if (travail.statut !== 'encodage') {
+    throw createError({
+      statusCode: 409,
+      statusMessage: `Ce travail n’est plus en cours (${travail.statut}) : son échec arrive trop tard.`,
+    })
+  }
 
   const definitif = travail.tentatives >= tentativesMax
 
