@@ -394,6 +394,7 @@ export type ChampsProfilFormateur = Partial<
     | 'bio'
     | 'photo'
     | 'photoAlt'
+    | 'signature'
     | 'emailPro'
     | 'whatsapp'
     | 'programmePrincipal'
@@ -412,6 +413,9 @@ export async function majFormateur(
   if (champs.photo !== undefined) colonnes.photo = champs.photo
   // Chaîne vide acceptée : c'est ainsi qu'on efface un texte alternatif.
   if (champs.photoAlt !== undefined) colonnes.photo_alt = champs.photoAlt || null
+  // Même convention pour la griffe : la vider, c'est retirer sa signature des
+  // attestations — le pied retombe sur sa ligne nue.
+  if (champs.signature !== undefined) colonnes.signature = champs.signature || null
   if (champs.emailPro !== undefined) colonnes.email_pro = champs.emailPro
   if (champs.whatsapp !== undefined) colonnes.whatsapp = champs.whatsapp
   // L'écran 11 édite aussi le programme de rattachement et la complétude de la

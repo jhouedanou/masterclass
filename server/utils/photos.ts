@@ -63,6 +63,20 @@ export const SEAU_PORTRAITS: Seau = {
 }
 
 /**
+ * Griffes au pied des attestations : celle de la direction et celle de chaque
+ * formateur. 256 ko suffisent largement — une signature est un trait sur fond
+ * transparent, et celle que l'on trace à la souris sort du canevas sous les
+ * cinquante kilo-octets. Le plafond bas écarte surtout le scan de page entière
+ * déposé par mégarde, qu'on ne verrait qu'écrasé dans un coin du document.
+ */
+export const SEAU_SIGNATURES: Seau = {
+  nom: 'signatures',
+  tailleMax: 256 * 1024,
+  tailleMaxLibelle: '256 ko',
+  creerALaVolee: true,
+}
+
+/**
  * Formats acceptés. Le SVG en est délibérément absent : un SVG est un document
  * qui peut porter du script, et servi depuis une origine publique il
  * exécuterait ce script au nom du visiteur. Le GIF et le BMP sont écartés

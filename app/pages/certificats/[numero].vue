@@ -4,10 +4,13 @@ import type { Certificat } from '#shared/types'
 definePageMeta({ layout: false, middleware: 'auth' })
 
 const route = useRoute()
+type Griffe = { nom: string; image: string }
+
 const { data } = await useFetch<{
   certificat: Certificat
   lienVerification: string
   qrDataUrl: string
+  signatures: { formateur: Griffe; direction: Griffe }
 }>(() => `/api/certificats/${route.params.numero}`)
 
 if (!data.value) {
@@ -18,12 +21,18 @@ const c = computed(() => data.value!.certificat)
 usePagePrivee(`Attestation ${c.value.numero}`)
 
 /**
- * Griffe de la direction : le modèle prévoit une signature manuscrite, mais le
- * fichier n'a pas encore été fourni. La page l'intègre dès qu'il est déposé en
- * /images/brand/signature.png ; en attendant, seule la ligne de signature
- * apparaît.
+ * Les deux griffes du pied de page : le formateur qui a donné le module, la
+ * direction qui délivre l'attestation.
+ *
+ * Elles viennent de la base, où l'administration les dépose. Le gabarit
+ * pointait jusqu'ici vers /images/brand/signature.png, un fichier du dépôt qui
+ * n'a jamais été fourni — il retombait donc sur une ligne nue par un `@error`,
+ * et y remédier demandait un déploiement.
+ *
+ * L'absence reste un état normal : tant que personne n'a signé, la ligne seule
+ * s'imprime, comme aujourd'hui.
  */
-const signatureAbsente = ref(false)
+const signatures = computed(() => [data.value!.signatures.formateur, data.value!.signatures.direction])
 
 /** Une attestation révoquée ne doit plus pouvoir sortir : sans cela, la
  *  révocation ne vaudrait que pour qui pense à vérifier le numéro. */
@@ -132,18 +141,19 @@ onMounted(() => {
             </div>
 
             <div class="flex items-end gap-10">
-              <div class="text-center">
-                <!-- :src dynamique : le fichier n'existe pas encore, un src
-                     statique serait résolu (et refusé) au build. -->
+              <!-- Deux griffes, comme un diplôme. La hauteur réservée est la
+                   même signée ou non : sans elle, le pied de page remonterait
+                   dès qu'une signature manque, et deux attestations du même
+                   module ne se superposeraient plus à l'impression. -->
+              <div v-for="griffe in signatures" :key="griffe.nom" class="text-center">
                 <img
-                  v-if="!signatureAbsente"
-                  :src="'/images/brand/signature.png'"
+                  v-if="griffe.image"
+                  :src="griffe.image"
                   alt=""
-                  class="mx-auto h-12 w-auto"
-                  @error="signatureAbsente = true"
+                  class="mx-auto h-12 w-auto object-contain"
                 >
-                <div class="mx-auto w-40 border-t border-encre/50" :class="signatureAbsente ? 'mt-12' : 'mt-1'" />
-                <p class="mt-1.5 text-[12px] font-bold text-encre">Direction E-Masterclass Big Five</p>
+                <div class="mx-auto w-40 border-t border-encre/50" :class="griffe.image ? 'mt-1' : 'mt-12'" />
+                <p class="mt-1.5 text-[12px] font-bold text-encre">{{ griffe.nom }}</p>
               </div>
 
               <div class="text-center">

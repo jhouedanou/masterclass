@@ -17,6 +17,7 @@ import type {
   Persona,
   Programme,
   SeoFields,
+  ReglagesAttestation,
   SessionCoaching,
   SujetSession,
   Thematique,
@@ -50,6 +51,7 @@ import type {
   TransactionRow,
   ReferentielRow,
   UtilisateurRow,
+  ReglagesAttestationRow,
 } from './types'
 import type { EntreeReferentiel } from '#shared/utils/referentiels'
 import { SEAU_PHOTOS_PROFIL, urlPhoto } from '../utils/photos'
@@ -169,6 +171,7 @@ export function versFormateur(row: FormateurRow): Formateur {
     programmePrincipal: row.programme_principal,
     photo: row.photo,
     photoAlt: row.photo_alt || undefined,
+    signature: row.signature || undefined,
     ficheComplete: row.fiche_complete,
     coachingPriveFcfaHeure: row.coaching_prive_fcfa_heure,
     position: row.position,
@@ -523,6 +526,10 @@ export function versReglagesFinanciers(row: ReglagesFinanciersRow): ReglagesFina
     objectifInscriptionsMensuel: Number(row.objectif_inscriptions_mensuel),
     objectifCaMensuel: Number(row.objectif_ca_mensuel),
   }
+}
+
+export function versReglagesAttestation(row: ReglagesAttestationRow): ReglagesAttestation {
+  return { signature: row.signature, signataire: row.signataire }
 }
 
 export interface ReglagesSeo {

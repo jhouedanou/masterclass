@@ -1,4 +1,6 @@
 import QRCode from 'qrcode'
+import { lireReglagesAttestation } from '../../database/administration'
+import { trouverFormateur, trouverModule } from '../../database/catalogue'
 import { trouverCertificat } from '../../database/commerce'
 import { exigerUtilisateur } from '../../utils/session'
 
@@ -23,5 +25,30 @@ export default defineEventHandler(async (event) => {
   const lienVerification = `${config.public.siteUrl}/verifier/${certificat.numero}`
   const qrDataUrl = await QRCode.toDataURL(lienVerification, { margin: 0, width: 320 })
 
-  return { certificat, lienVerification, qrDataUrl }
+  /**
+   * Les deux griffes du pied de page, résolues à l'affichage et non figées
+   * dans le certificat à sa génération.
+   *
+   * Une attestation délivrée avant qu'une signature n'existe se trouve donc
+   * signée dès que la griffe est déposée. Figer aurait laissé sans recours
+   * tout ce qui a déjà été délivré — et aucune griffe n'existait jusqu'ici.
+   *
+   * Le module est relu pour son formateur : le certificat n'en garde que le
+   * nom, qui ne suffit pas à retrouver la fiche.
+   */
+  const [reglages, moduleCertifie] = await Promise.all([
+    lireReglagesAttestation(),
+    trouverModule(certificat.moduleId),
+  ])
+  const formateur = moduleCertifie ? await trouverFormateur(moduleCertifie.formateurId) : null
+
+  return {
+    certificat,
+    lienVerification,
+    qrDataUrl,
+    signatures: {
+      formateur: { nom: certificat.formateur, image: formateur?.signature ?? '' },
+      direction: { nom: reglages.signataire, image: reglages.signature },
+    },
+  }
 })

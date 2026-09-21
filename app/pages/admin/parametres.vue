@@ -32,6 +32,7 @@ const ONGLETS = [
   { cle: 'acces', libelle: 'Administration des accès' },
   { cle: 'tracking', libelle: 'Tracking & pixels 🔒' },
   { cle: 'referencement', libelle: 'Référencement · règles globales 🔒' },
+  { cle: 'attestations', libelle: 'Attestations' },
   { cle: 'profil', libelle: 'Mon profil' },
 ]
 
@@ -141,6 +142,8 @@ const titreCarte = 'font-sans text-[15px] font-bold'
       <AdminVoletAcces v-if="onglet === 'acces'" class="mt-[22px]" />
 
       <AdminVoletTracking v-else-if="onglet === 'tracking'" class="mt-[22px]" />
+
+      <AdminVoletAttestations v-else-if="onglet === 'attestations'" class="mt-[22px]" />
 
       <div v-else-if="onglet === 'referencement'" class="mt-[22px]">
         <section :class="carte">

@@ -179,6 +179,9 @@ export interface Formateur {
   /** Texte alternatif du portrait, éditable au back-office. Vide, l'affichage
    *  retombe sur un libellé construit sur le nom. */
   photoAlt?: string
+  /** Griffe apposée au pied des attestations de ses modules. Absente tant
+   *  qu'il n'a pas signé : le pied retombe alors sur une ligne nue. */
+  signature?: string
   /** Une fiche incomplète reste non indexable (spec SEO §1). */
   ficheComplete: boolean
   coachingPriveFcfaHeure: number
@@ -342,6 +345,15 @@ export interface Certificat {
   revoqueLe?: string
   /** Motif de la révocation. Interne — jamais renvoyé par la route publique. */
   motifRevocation?: string
+}
+
+/** Pied des attestations : la griffe de la direction et sa légende. Réglage
+ *  unique, comme {@link ReglagesFinanciers}. */
+export interface ReglagesAttestation {
+  /** Adresse publique de l'image. Vide tant que rien n'a été déposé. */
+  signature: string
+  /** Le nom sous la ligne de signature — « Direction E-Masterclass Big Five ». */
+  signataire: string
 }
 
 export interface Commande {

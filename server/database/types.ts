@@ -140,6 +140,7 @@ export type FormateurRow = ColonnesSeo & {
   programme_principal: ProgrammeSlugSql
   photo: string
   photo_alt: string | null
+  signature: string | null
   fiche_complete: boolean
   coaching_prive_fcfa_heure: number
   position: number
@@ -555,6 +556,13 @@ export type ReglagesFinanciersRow = {
   maj_le: string
 }
 
+export type ReglagesAttestationRow = {
+  id: boolean
+  signature: string
+  signataire: string
+  maj_le: string
+}
+
 export type ReglagesSeoRow = {
   id: boolean
   titre_par_defaut: string
@@ -665,6 +673,7 @@ export type Database = {
         | 'cree_le'
         | 'maj_le'
         | 'photo_alt'
+        | 'signature'
         | 'coaching_prive_actif'
         | 'email_pro'
         | 'whatsapp'
@@ -823,6 +832,10 @@ export type Database = {
       journal: Table<EntreeJournalRow, 'id' | 'date_entree' | 'type' | 'objet' | 'ip' | 'diff' | 'notification'>
       reglages_financiers: Table<ReglagesFinanciersRow, 'id' | 'maj_le'>
       reglages_seo: Table<ReglagesSeoRow, 'id' | 'maj_le'>
+      reglages_attestation: Table<
+        ReglagesAttestationRow,
+        'id' | 'signature' | 'signataire' | 'maj_le'
+      >
       redirections: Table<RedirectionRow, 'id' | 'creee_le'>
       erreurs_404: Table<Erreur404Row, 'vues' | 'premiere_le' | 'derniere_le'>
       travaux_video: Table<

@@ -10,12 +10,14 @@ import {
   versFormateur,
   versModule,
   versProgramme,
+  versReglagesAttestation,
   versReglagesFinanciers,
   versReglagesSeo,
   type ReglagesFinanciers,
   type ReglagesSeo,
 } from './mappers'
-import type { ColonnesSeo, ReglagesFinanciersRow } from './types'
+import type { ReglagesAttestation } from '#shared/types'
+import type { ColonnesSeo, ReglagesAttestationRow, ReglagesFinanciersRow } from './types'
 
 /** Back-office : journal, réglages, référencement, recrutement. */
 
@@ -109,6 +111,46 @@ export async function majReglagesFinanciers(
 export async function lireReglagesSeo(): Promise<ReglagesSeo> {
   const row = verifier(await supabase().from('reglages_seo').select('*').single(), 'réglages SEO')
   return versReglagesSeo(row)
+}
+
+// --- Attestations ----------------------------------------------------------
+
+/**
+ * Griffe et légende au pied des attestations.
+ *
+ * Lu à chaque affichage d'attestation, y compris par la page de vérification
+ * publique : c'est une ligne unique et minuscule, et la figer en mémoire
+ * ferait qu'une griffe tout juste déposée n'apparaîtrait qu'au redémarrage
+ * suivant.
+ */
+export async function lireReglagesAttestation(): Promise<ReglagesAttestation> {
+  const row = verifier(
+    await supabase().from('reglages_attestation').select('*').single(),
+    'réglages des attestations',
+  )
+  return versReglagesAttestation(row)
+}
+
+export async function majReglagesAttestation(
+  champs: Partial<ReglagesAttestation>,
+): Promise<ReglagesAttestation> {
+  const colonnes: Partial<ReglagesAttestationRow> = {}
+  // Chaîne vide acceptée pour la griffe : c'est ainsi qu'on la retire.
+  if (champs.signature !== undefined) colonnes.signature = champs.signature
+  if (champs.signataire !== undefined) colonnes.signataire = champs.signataire
+
+  if (!Object.keys(colonnes).length) return lireReglagesAttestation()
+
+  const row = verifier(
+    await supabase()
+      .from('reglages_attestation')
+      .update(colonnes)
+      .eq('id', true)
+      .select('*')
+      .single(),
+    'mise à jour des réglages des attestations',
+  )
+  return versReglagesAttestation(row)
 }
 
 // --- Référencement ---------------------------------------------------------
