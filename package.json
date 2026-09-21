@@ -5,6 +5,10 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "dev:rapide": "NUXT_DEVTOOLS=0 nuxt dev",
+    "prod": "nuxt build && nuxt preview",
+    "prod:construire": "nuxt build",
+    "prod:demarrer": "nuxt preview",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
@@ -16,8 +20,11 @@
     "db:sql": "node scripts/generer-sql-en-ligne.mjs",
     "db:types": "supabase gen types typescript --local > server/database/types.generes.ts",
     "db:verifier": "node scripts/verifier-migrations.mjs",
+    "db:comparer": "node --experimental-strip-types scripts/comparer-base.ts",
+    "db:appliquer": "node --experimental-strip-types scripts/appliquer-sql.ts",
     "video:transcoder": "node scripts/transcoder-video.mjs",
     "video:publier": "node scripts/publier-video.mjs",
+    "video:durees": "node --experimental-strip-types scripts/rattraper-durees-video.mjs",
     "video:verifier": "node --experimental-strip-types scripts/verifier-video.mjs",
     "auth:configurer": "node scripts/configurer-auth-supabase.mjs"
   },

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Formateur, Module, SessionCoaching, Thematique } from '#shared/types'
+import { DUREE_SESSION_MINUTES, dureeSessionEnHeures, PLACES_SESSION } from '#shared/utils/coaching'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Calendrier des sessions — administration')
@@ -74,6 +75,7 @@ const annulation = ref<SessionAdmin | null>(null)
 const motif = ref('')
 const message = ref('')
 
+const { annoncer } = useToasts()
 // --- Relevé de présence -----------------------------------------------------
 
 const presence = ref<SessionAdmin | null>(null)
@@ -123,6 +125,7 @@ async function reporter() {
       body: { id: report.value.id, action: 'reporter', date: nouvelleDate.date, heure: nouvelleDate.heure },
     })
     message.value = `Séance reportée — ${r.notifies} apprenant(s) notifié(s) par email et WhatsApp.`
+    annoncer(`Séance reportée — ${r.notifies} apprenant(s) notifié(s) par email et WhatsApp.`)
     report.value = null
     await refresh()
   } catch (e) {
@@ -137,6 +140,7 @@ async function annuler() {
     body: { id: annulation.value.id, action: 'annuler', motif: motif.value },
   })
   message.value = `Session annulée — ${r.notifies} apprenant(s) notifié(s) par e-mail et WhatsApp.`
+  annoncer(`Session annulée — ${r.notifies} apprenant(s) notifié(s) par e-mail et WhatsApp.`)
   annulation.value = null
   motif.value = ''
   await refresh()
@@ -149,8 +153,8 @@ const DEFAUTS = {
   heure: '19:00',
   fuseau: 'GMT (Abidjan)',
   titre: '',
-  dureeMinutes: 120,
-  places: 25,
+  dureeMinutes: DUREE_SESSION_MINUTES,
+  places: PLACES_SESSION,
   ouvertureSalleMinutes: 15,
   enregistrement: false,
 }
@@ -164,8 +168,8 @@ const modification = ref<SessionAdmin | null>(null)
 const retouche = reactive({
   formateurId: '',
   titre: '',
-  dureeMinutes: 120,
-  places: 25,
+  dureeMinutes: DUREE_SESSION_MINUTES,
+  places: PLACES_SESSION,
   ouvertureSalleMinutes: 15,
   enregistrement: false,
   date: '',
@@ -214,8 +218,10 @@ async function enregistrerModification() {
         body: { id: session.id, action: 'reporter', date: retouche.date, heure: retouche.heure },
       })
       message.value = `Séance reportée — ${r.notifies} apprenant(s) notifié(s) par e-mail et WhatsApp.`
+      annoncer(`Séance reportée — ${r.notifies} apprenant(s) notifié(s) par e-mail et WhatsApp.`)
     } else {
       message.value = 'Séance modifiée.'
+      annoncer('Séance modifiée.')
     }
     modification.value = null
     await refresh()
@@ -250,6 +256,7 @@ async function creer() {
     formulaireOuvert.value = false
     Object.assign(creation, DEFAUTS)
     message.value = 'Session créée. La réunion Zoom a été générée ; le formateur et les inscrits y entrent depuis la plateforme.'
+    annoncer('Session créée. La réunion Zoom a été générée ; le formateur et les inscrits y entrent depuis la plateforme.')
     await refresh()
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Création impossible.'
@@ -346,7 +353,7 @@ async function creer() {
     <aside class="mt-5 rounded-carte border border-ligne-douce bg-white p-[22px] text-[13px] leading-[1.7] text-texte">
       <b class="text-[14px] text-encre">Règles du calendrier (rappel CDC)</b><br>
       Une session par couple thématique–formateur · 10 sessions mensuelles en Phase 1 (5 SM + 5
-      ENT) · 2 h · 25 participants max · jour fixe du mois · visible uniquement des apprenants
+      ENT) · {{ dureeSessionEnHeures() }} · {{ PLACES_SESSION }} participants max · jour fixe du mois · visible uniquement des apprenants
       ayant acheté un module couvert · lien Zoom personnel généré à la demande, jamais affiché en
       clair · rappel automatique 24 h avant par email + WhatsApp.
     </aside>

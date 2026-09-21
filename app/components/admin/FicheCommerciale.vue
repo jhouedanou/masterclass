@@ -30,6 +30,8 @@ if (!data.value) {
 }
 
 const erreur = ref('')
+
+const { annoncer } = useToasts()
 const succes = ref('')
 const enCours = ref(false)
 
@@ -99,6 +101,7 @@ async function enregistrer() {
     await refresh()
     emit('enregistre')
     succes.value = 'Fiche enregistrée.'
+    annoncer('Fiche enregistrée.')
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'L’enregistrement a échoué.'
   } finally {

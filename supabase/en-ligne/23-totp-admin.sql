@@ -4,7 +4,7 @@
 -- FICHIER GÉNÉRÉ : ne pas éditer à la main.
 -- Régénération : npm run db:sql
 --
--- Migration 22 sur 26 · source : 20260925120000_totp_admin.sql
+-- Migration 23 sur 31 · source : 20260925120000_totp_admin.sql
 --
 -- À exécuter dans SQL Editor du projet Supabase, dans l'ordre des numéros.
 -- Ces scripts ne sont pas rejouables : sur une base déjà installée,

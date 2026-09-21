@@ -1,3 +1,4 @@
+import { DUREE_SESSION_MINUTES } from '#shared/utils/coaching'
 import { enregistrerJournal } from '../../database/administration'
 import { listerThematiques, trouverFormateur } from '../../database/catalogue'
 import { creerSession } from '../../database/coaching'
@@ -40,7 +41,7 @@ export default defineEventHandler(async (event) => {
   const zoom = await creerReunion({
     sujet: body.titre?.trim() || `${thematique.nom} — coaching collectif`,
     debutIso: debutSession(body.date, body.heure).toISOString(),
-    dureeMinutes: body.dureeMinutes ?? 120,
+    dureeMinutes: body.dureeMinutes ?? DUREE_SESSION_MINUTES,
     enregistrement: body.enregistrement === true,
   })
   const session = await creerSession({

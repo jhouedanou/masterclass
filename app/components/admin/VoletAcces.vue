@@ -74,6 +74,7 @@ const creation = reactive({
   sections: [] as SectionAdmin[],
 })
 const erreur = ref('')
+const { annoncer } = useToasts()
 const message = ref('')
 const enCours = ref(false)
 
@@ -175,6 +176,7 @@ async function reinitialiserTotp(compte: { id: string; nom: string; email: strin
   try {
     await $fetch('/api/admin/totp-reinitialiser', { method: 'POST', body: { utilisateurId: compte.id } })
     message.value = `Double authentification réinitialisée pour ${compte.email} — modification journalisée.`
+    annoncer(`Double authentification réinitialisée pour ${compte.email} — modification journalisée.`)
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Réinitialisation impossible.'
   } finally {

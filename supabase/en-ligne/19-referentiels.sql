@@ -4,7 +4,7 @@
 -- FICHIER GÉNÉRÉ : ne pas éditer à la main.
 -- Régénération : npm run db:sql
 --
--- Migration 18 sur 26 · source : 20260922120000_referentiels.sql
+-- Migration 19 sur 31 · source : 20260922120000_referentiels.sql
 --
 -- À exécuter dans SQL Editor du projet Supabase, dans l'ordre des numéros.
 -- Ces scripts ne sont pas rejouables : sur une base déjà installée,

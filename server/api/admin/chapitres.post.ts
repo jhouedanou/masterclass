@@ -1,5 +1,6 @@
 import {
   creerChapitre,
+  dupliquerChapitre,
   listerChapitres,
   majChapitre,
   reordonnerChapitres,
@@ -11,7 +12,7 @@ import { exigerSection } from '../../utils/session'
 export default defineEventHandler(async (event) => {
   await exigerSection(event, 'modules-chapitres')
   const body = await readBody<{
-    action: 'creer' | 'modifier' | 'supprimer' | 'reordonner'
+    action: 'creer' | 'modifier' | 'supprimer' | 'reordonner' | 'dupliquer'
     moduleId: string
     id?: string
     libelle?: string
@@ -39,6 +40,13 @@ export default defineEventHandler(async (event) => {
         titre: body.titre,
         dureeMinutes: body.dureeMinutes,
       })
+      break
+
+    // La copie reprend le texte et la transcription, jamais le fichier vidéo :
+    // deux chapitres ne peuvent pas partager la même clé de dépôt.
+    case 'dupliquer':
+      if (!body.id) throw createError({ statusCode: 422, statusMessage: 'Chapitre non précisé' })
+      await dupliquerChapitre(body.id, { moduleId: body.moduleId })
       break
 
     case 'supprimer':

@@ -2,6 +2,7 @@
 import type { Formateur } from '#shared/types'
 
 import type { ProgrammeSlug } from '#shared/types'
+import { compterModules } from '#shared/utils/compteurs'
 
 type FormateurListe = Formateur & {
   nbModules: number
@@ -88,7 +89,7 @@ useFilAriane(mailles)
               <button :class="BASCULE" :aria-expanded="true" @click="deplie = ''">Replier ▴</button>
             </div>
             <p class="mb-2.5 text-[13.5px] font-bold" :class="teinte(formateur.programmePrincipal)">
-              {{ formateur.expertise }} · {{ formateur.nbModules }} modules
+              {{ formateur.expertise }} · {{ compterModules(formateur.nbModules) }}
             </p>
             <p class="mb-3.5 text-[14px] leading-[1.65] text-texte">{{ formateur.bio }}</p>
             <ul class="flex flex-wrap gap-2 text-[12.5px]">
@@ -142,7 +143,7 @@ useFilAriane(mailles)
               {{ formateur.expertise }}
             </p>
             <p class="text-[12.5px] text-discret">
-              {{ formateur.nbModules }} modules · Coaching privé :
+              {{ compterModules(formateur.nbModules) }} · Coaching privé :
               {{ formatFcfa(formateur.coachingPriveFcfaHeure) }} par heure
             </p>
           </div>

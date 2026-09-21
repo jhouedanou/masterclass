@@ -3,14 +3,14 @@ import type {
   ContenuBanniere,
   Formateur,
   Module,
-  Programme,
-  ProgrammeSlug,
+  ProgrammePublic,
   Thematique,
 } from '#shared/types'
+import { compterModules, compterThematiques } from '#shared/utils/compteurs'
 
 type ThematiqueGarnie = Thematique & { modules: (Module & { formateur: Formateur | null })[] }
 
-const { data: programmes } = await useFetch<Programme[]>('/api/programmes')
+const { data: programmes } = await useFetch<ProgrammePublic[]>('/api/programmes')
 
 // Bloc CMS de la bannière : facultatif par construction, donc chargé sans bloquer
 // la page. Tant qu'il manque — brouillon, hors fenêtre de publication ou route en
@@ -22,20 +22,17 @@ const { data: banniere } = useFetch<{ cle: string, contenu: Partial<ContenuBanni
 const { data: formateurs } = await useFetch<(Formateur & { nbModules: number })[]>('/api/formateurs')
 
 // Les repères chiffrés de la maquette — « 18 modules », « 9 modules », « 3
-// thématiques » — étaient écrits en dur et mentaient dès qu'un module
-// changeait de statut. Le catalogue publié les donne.
-const { data: catalogue } = await useFetch<{ programme: ProgrammeSlug, thematiqueId: string }[]>(
-  '/api/modules',
+// thématiques » — étaient écrits en dur et mentaient dès qu'un module changeait
+// de statut. Chaque programme porte désormais ses décomptes : la page les lit
+// au lieu de les recalculer, sans quoi l'accueil et /programmes finissent par
+// annoncer deux nombres différents pour la même chose — ce qui est arrivé.
+const nbModulesTotal = computed(() =>
+  (programmes.value ?? []).reduce((total, p) => total + p.nbModules, 0),
 )
-const nbModulesTotal = computed(() => catalogue.value?.length ?? 0)
-function reperes(slug: ProgrammeSlug) {
-  const siens = (catalogue.value ?? []).filter((m) => m.programme === slug)
-  return { modules: siens.length, thematiques: new Set(siens.map((m) => m.thematiqueId)).size }
-}
 
 const selection = ref<'social-media' | 'entrepreneurs'>('social-media')
 const { data: programmeSelectionne } = await useFetch<{
-  programme: Programme
+  programme: ProgrammePublic
   thematiques: ThematiqueGarnie[]
 }>(() => `/api/programmes/${selection.value}`)
 
@@ -98,7 +95,7 @@ useJsonLd({
     <!-- bandeau sous le hero -->
     <div class="border-b border-ligne-claire bg-fond-clair">
       <div class="conteneur flex flex-wrap gap-x-7 gap-y-2 py-4.5 text-[14px] text-texte">
-        <span><b class="text-encre">{{ nbModulesTotal }} modules</b><span class="hidden lg:inline"> disponibles</span></span>
+        <span><b class="text-encre">{{ compterModules(nbModulesTotal) }}</b><span class="hidden lg:inline"> disponibles</span></span>
         <span><b class="text-encre">10 000 FCFA TTC</b><span class="hidden lg:inline"> par module</span></span>
         <span><b class="text-encre">Accès à vie</b><span class="hidden lg:inline"> après l’achat</span></span>
       </div>
@@ -132,12 +129,12 @@ useJsonLd({
             </p>
             <!-- Tablette (planche A, écran 11) : carte courte, une ligne de repères et un lien. -->
             <p class="mb-5.5 flex flex-wrap gap-5 text-[14px] text-texte lg:hidden">
-              {{ reperes(programme.slug).modules }} modules ·
-              {{ reperes(programme.slug).thematiques }} thématiques · sessions de coaching collectif
+              {{ compterModules(programme.nbModules) }} ·
+              {{ compterThematiques(programme.nbThematiques) }} · sessions de coaching collectif
             </p>
             <p class="mb-5.5 hidden flex-wrap gap-5 text-[14px] text-texte lg:flex">
-              <span><b class="text-encre">{{ reperes(programme.slug).modules }} modules</b></span>
-              <span><b class="text-encre">{{ reperes(programme.slug).thematiques }} thématiques</b></span>
+              <span><b class="text-encre">{{ compterModules(programme.nbModules) }}</b></span>
+              <span><b class="text-encre">{{ compterThematiques(programme.nbThematiques) }}</b></span>
               <span><b class="text-encre">Sessions</b> de coaching collectif</span>
             </p>
             <NuxtLink

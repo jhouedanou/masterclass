@@ -12,6 +12,7 @@
  * la CLI, mais elle attrape tout ce qui relève du SQL lui-même.
  */
 import { PGlite } from '@electric-sql/pglite'
+import * as donnees from '../server/data/db.ts'
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
@@ -61,19 +62,29 @@ try {
   process.exit(1)
 }
 
+/**
+ * Comptes attendus, lus dans la source du jeu de données plutôt que saisis.
+ *
+ * Écrits à la main, ils dérivaient à chaque ajout éditorial : un chapitre de
+ * plus et le contrôle échouait sans que rien ne soit cassé, jusqu'à ce que le
+ * bruit fasse ignorer un échec qui, lui, comptait. Ce qu'on veut vérifier n'a
+ * jamais été « soixante-douze chapitres », mais « le seed a tout porté ».
+ */
 const ATTENDUS = {
-  programmes: 2,
-  phases: 2,
-  thematiques: 6,
-  formateurs: 7,
-  modules: 18,
-  chapitres: 72,
-  utilisateurs: 9,
-  acces: 2,
-  sessions_coaching: 3,
-  articles: 5,
-  demandes_coaching_prive: 3,
-  historique_coaching_prive: 6,
+  programmes: donnees.programmes.length,
+  phases: donnees.phases.length,
+  thematiques: donnees.thematiques.length,
+  formateurs: donnees.formateurs.length,
+  modules: donnees.modules.length,
+  chapitres: donnees.modules.flatMap((m) => m.chapitres).length,
+  utilisateurs: donnees.utilisateurs.length,
+  acces: donnees.acces.length,
+  sessions_coaching: donnees.sessionsCoaching.length,
+  articles: donnees.articles.length,
+  demandes_coaching_prive: donnees.demandesCoachingPrive.length,
+  historique_coaching_prive: donnees.historiqueCoachingPrive.length,
+  // Deux tables de réglages à ligne unique : le nombre est la règle, pas une
+  // donnée éditoriale.
   reglages_financiers: 1,
   reglages_seo: 1,
 }
@@ -82,6 +93,23 @@ for (const [table, attendu] of Object.entries(ATTENDUS)) {
   if (rows[0].n === attendu) succes(`${table} — ${attendu} lignes`)
   else echec(`${table} — ${rows[0].n} lignes, ${attendu} attendues`)
 }
+
+/**
+ * Les deux chemins d'installation — migrations puis seed d'un côté, fichiers de
+ * `supabase/en-ligne` de l'autre — doivent aboutir au même contenu. On compare
+ * donc les deux bases l'une à l'autre plutôt que chacune à des nombres écrits
+ * ici, qui ne disaient rien de l'égalité cherchée et vieillissaient au premier
+ * chapitre ajouté.
+ *
+ * Le relevé se prend maintenant, avant que les assertions d'erreur qui suivent
+ * ne laissent des transactions avortées derrière elles.
+ */
+const COMPTAGE = `select (select count(*) from modules)::int    as modules,
+                         (select count(*) from chapitres)::int  as chapitres,
+                         (select count(*) from articles)::int   as articles,
+                         (select count(*) from formateurs)::int as formateurs`
+
+const { rows: parMigrations } = await db.query(COMPTAGE)
 
 // --- Aides d'assertion -----------------------------------------------------
 
@@ -199,21 +227,21 @@ console.log('\nattribuer_acces')
 await attendErreur(
   'motif absent',
   'EM422',
-  `select attribuer_acces('usr-fatou', 'mod-instagram-formats-et-croissance', '   ', 'Admin')`,
+  `select attribuer_acces('usr-fatou', 'mod-linkedin-algorithme-et-optimisation-du-profil', '   ', 'Admin')`,
 )
 await attendErreur(
   'apprenant inconnu',
   'EM404',
-  `select attribuer_acces('usr-inconnu', 'mod-instagram-formats-et-croissance', 'lot', 'Admin')`,
+  `select attribuer_acces('usr-inconnu', 'mod-linkedin-algorithme-et-optimisation-du-profil', 'lot', 'Admin')`,
 )
 await db.query(
-  `select attribuer_acces('usr-fatou', 'mod-instagram-formats-et-croissance', 'lot concours', 'Fatou Diarra')`,
+  `select attribuer_acces('usr-fatou', 'mod-linkedin-algorithme-et-optimisation-du-profil', 'lot concours', 'Fatou Diarra')`,
 )
 await attendValeur(
   'accès ouvert',
   1,
   `select count(*)::int from acces
-    where utilisateur_id = 'usr-fatou' and module_id = 'mod-instagram-formats-et-croissance'`,
+    where utilisateur_id = 'usr-fatou' and module_id = 'mod-linkedin-algorithme-et-optimisation-du-profil'`,
 )
 await attendValeur(
   'action journalisée dans la même transaction',
@@ -224,7 +252,7 @@ await attendValeur(
 await attendErreur(
   'accès déjà détenu',
   'EM409',
-  `select attribuer_acces('usr-fatou', 'mod-instagram-formats-et-croissance', 'encore', 'Admin')`,
+  `select attribuer_acces('usr-fatou', 'mod-linkedin-algorithme-et-optimisation-du-profil', 'encore', 'Admin')`,
 )
 
 // --- Relevé du temps visionné ------------------------------------------------
@@ -314,11 +342,11 @@ await attendErreur(
 )
 
 const avant = (
-  await db.query(`select maj_le from modules where id = 'mod-instagram-formats-et-croissance'`)
+  await db.query(`select maj_le from modules where id = 'mod-linkedin-algorithme-et-optimisation-du-profil'`)
 ).rows[0].maj_le
-await db.query(`update modules set titre = titre where id = 'mod-instagram-formats-et-croissance'`)
+await db.query(`update modules set titre = titre where id = 'mod-linkedin-algorithme-et-optimisation-du-profil'`)
 const apres = (
-  await db.query(`select maj_le from modules where id = 'mod-instagram-formats-et-croissance'`)
+  await db.query(`select maj_le from modules where id = 'mod-linkedin-algorithme-et-optimisation-du-profil'`)
 ).rows[0].maj_le
 if (+apres > +avant) succes('maj_le rafraîchi à la mise à jour')
 else echec('maj_le inchangé après une mise à jour')
@@ -406,7 +434,7 @@ await attendErreur(
 await db.query(
   `insert into demandes_coaching_prive
      (id, utilisateur_id, apprenant, module_id, formateur_id, besoins, disponibilites, creneaux, heures)
-   values ('dcp-900', 'usr-aya', 'Awa Koné', 'mod-instagram-formats-et-croissance', 'for-waffo',
+   values ('dcp-900', 'usr-aya', 'Awa Koné', 'mod-linkedin-algorithme-et-optimisation-du-profil', 'for-waffo',
            'Test', 'Test', '[]'::jsonb, 2)`,
 )
 await db.query(
@@ -766,6 +794,49 @@ await enLigne.exec(`
 const fichiersEnLigne = readdirSync(join(RACINE, 'supabase/en-ligne'))
   .filter((f) => /^\d/.test(f))
   .sort()
+
+// --- Correspondance avec les migrations --------------------------------------
+//
+// Rejouer ces fichiers prouve qu'ils tiennent debout ensemble, pas qu'ils
+// disent la même chose que les migrations. Une migration ajoutée sans
+// régénération passait donc inaperçue — et ne partait jamais en ligne. C'est
+// arrivé : `debit_routes_publiques` n'a jamais eu de fichier, la table de
+// comptage manque en production, et le plafond des routes publiques y est muet
+// depuis, `limiterDebit` avalant l'erreur pour ne pas fermer les formulaires.
+//
+// La comparaison porte sur la ligne « source : » que l'en-tête généré écrit, et
+// non sur les numéros : ceux-ci se décalent dès qu'une migration s'intercale.
+
+const migrationsAttendues = readdirSync(join(RACINE, 'supabase/migrations'))
+  .filter((f) => f.endsWith('.sql'))
+  .sort()
+
+const sourcesEnLigne = new Map()
+for (const fichier of fichiersEnLigne) {
+  if (fichier === '99-donnees.sql') continue
+  const tete = readFileSync(join(RACINE, 'supabase/en-ligne', fichier), 'utf8').slice(0, 2000)
+  const source = tete.match(/source\s*:\s*(\S+\.sql)/)?.[1]
+  if (source) sourcesEnLigne.set(source, fichier)
+  else echec(`${fichier} — en-tête sans « source : », impossible de le rattacher à une migration`)
+}
+
+for (const migration of migrationsAttendues) {
+  if (sourcesEnLigne.has(migration)) continue
+  echec(
+    `${migration} n'a aucun fichier dans supabase/en-ligne — il ne partira jamais sur la base hébergée (npm run db:sql)`,
+  )
+}
+
+for (const [source, fichier] of sourcesEnLigne) {
+  if (migrationsAttendues.includes(source)) continue
+  echec(`${fichier} cite ${source}, qui n'existe plus dans supabase/migrations`)
+}
+
+if (sourcesEnLigne.size === migrationsAttendues.length && sourcesEnLigne.size) {
+  const manquant = migrationsAttendues.some((m) => !sourcesEnLigne.has(m))
+  if (!manquant) succes(`${migrationsAttendues.length} migrations, autant de fichiers d'installation`)
+}
+
 for (const fichier of fichiersEnLigne) {
   const chemin = join(RACINE, 'supabase/en-ligne', fichier)
   try {
@@ -797,15 +868,15 @@ else echec(`rattrapage : ${apresRattrapage[0].pourvus} comptes pourvus, 8 attend
 if (apresRattrapage[0].aya === 'scrypt$deja$choisi') succes('rattrapage : mot de passe existant préservé')
 else echec('rattrapage : un mot de passe existant a été écrasé')
 
-const { rows: controle } = await enLigne.query(
-  `select (select count(*) from modules)::int as modules,
-          (select count(*) from chapitres)::int as chapitres,
-          (select count(*) from articles)::int as articles`,
-)
-if (controle[0].modules === 18 && controle[0].chapitres === 72 && controle[0].articles === 5) {
-  succes('contenu identique à celui des migrations')
+const { rows: parInstallation } = await enLigne.query(COMPTAGE)
+
+if (JSON.stringify(parMigrations[0]) === JSON.stringify(parInstallation[0])) {
+  succes(`contenu identique à celui des migrations — ${JSON.stringify(parInstallation[0])}`)
 } else {
-  echec(`contenu divergent : ${JSON.stringify(controle[0])}`)
+  echec(
+    `contenu divergent — migrations ${JSON.stringify(parMigrations[0])}, ` +
+      `installation ${JSON.stringify(parInstallation[0])}`,
+  )
 }
 
 await enLigne.close()

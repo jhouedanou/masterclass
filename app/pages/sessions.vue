@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Formateur, SessionCoaching, Thematique } from '#shared/types'
+import { dureeSessionEnHeures, PLACES_SESSION } from '#shared/utils/coaching'
 
 const { data: sessions } = await useFetch<
   (SessionCoaching & { thematique: Thematique | null; formateur: Formateur | null })[]
@@ -7,8 +8,7 @@ const { data: sessions } = await useFetch<
 
 usePageSeo({
   titreAuto: 'Calendrier des sessions de coaching | E-Masterclass Big Five',
-  descriptionAuto:
-    'Les sessions de coaching collectif sont organisées par thématique, durent 2 heures et accueillent 25 apprenants.',
+  descriptionAuto: `Les sessions de coaching collectif sont organisées par thématique, durent ${dureeSessionEnHeures()} et accueillent ${PLACES_SESSION} apprenants.`,
   chemin: '/sessions',
 })
 
@@ -24,7 +24,8 @@ useFilAriane(mailles)
         <UiSurtitre ton="social" taille="section">Coaching collectif</UiSurtitre>
         <h1 class="mt-3 text-[42px] font-medium">Calendrier des sessions</h1>
         <p class="mt-4 max-w-[760px] text-[17px] leading-relaxed text-texte">
-          Les sessions sont organisées par thématique, durent 2 heures et accueillent 25 apprenants.
+          Les sessions sont organisées par thématique, durent {{ dureeSessionEnHeures() }} et accueillent
+          {{ PLACES_SESSION }} apprenants.
           L’accès à un module de la thématique ouvre l’accès à sa session, une fois la fiche
           apprenant complétée.
         </p>

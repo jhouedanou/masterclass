@@ -25,6 +25,9 @@ export function useLecteurVideo(options: {
    *  l'extension de l'URL : celle-ci porte une chaîne de requête, et la règle
    *  deviendrait implicite le jour où elle changerait. */
   format: () => 'hls' | 'fichier' | null
+  /** Appelé quand la vidéo arrive au bout. C'est le seul moment où l'on sait
+   *  qu'un chapitre est fini, et donc qu'on peut proposer le suivant. */
+  surFin?: () => void
 }) {
   const video = ref<HTMLVideoElement | null>(null)
   const enLecture = ref(false)
@@ -241,10 +244,31 @@ export function useLecteurVideo(options: {
       return
     }
 
-    // Le fichier est bien là et l'autorisation tient : c'est donc le codec que
-    // le navigateur ne sait pas décoder.
-    erreur.value =
-      'Cette vidéo n’est pas lisible par votre navigateur — signalez-le à l’équipe en précisant votre appareil.'
+    // Le contrôle vient de réussir : le fichier est là et l'autorisation tient.
+    // On en concluait que le navigateur ne savait pas décoder le format — et on
+    // envoyait l'apprenant signaler un problème d'appareil pour une vidéo
+    // parfaitement standard, alors que la requête précédente avait simplement
+    // échoué en route (un 503 du diffuseur, une coupure, une plage refusée).
+    //
+    // Ce que le contrôle prouve, c'est l'inverse : au moment où il s'exécute,
+    // tout va bien. L'échec était donc passager, et la bonne réponse est de
+    // proposer une reprise plutôt que d'accuser l'appareil.
+    //
+    // Le codec n'est mis en cause que si le navigateur le dit lui-même —
+    // `MEDIA_ERR_SRC_NOT_SUPPORTED` et `MEDIA_ERR_DECODE` sont les deux seuls
+    // cas où il l'affirme.
+    const code = video.value?.error?.code
+    const formatEnCause =
+      code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || code === MediaError.MEDIA_ERR_DECODE
+
+    if (formatEnCause) {
+      erreur.value =
+        'Cette vidéo n’est pas lisible par votre navigateur — signalez-le à l’équipe en précisant votre appareil.'
+      return
+    }
+
+    erreurRenouvelable.value = true
+    erreur.value = 'La lecture s’est interrompue. Relancez-la : le fichier est bien en ligne.'
   }
 
   function brancher(element: HTMLVideoElement | null) {
@@ -328,11 +352,19 @@ export function useLecteurVideo(options: {
     onEnded: () => {
       enLecture.value = false
       void envoyerVisionnage()
+      options.surFin?.()
     },
     onTimeupdate: surTemps,
     onLoadedmetadata: () => {
       chargement.value = false
       dureeSecondes.value = video.value?.duration ?? 0
+      // Un MP4 n'a qu'une définition, et hls.js — seul à renseigner `qualite`
+      // jusqu'ici — n'entre pas en jeu pour lui. Sans cette ligne, le lecteur
+      // annonçait « Auto 480p » sur un fichier en 1080p, par un repli écrit en
+      // dur dans les contrôles.
+      if (options.format() === 'fichier' && video.value?.videoHeight) {
+        qualite.value = `${video.value.videoHeight}p`
+      }
       // Poser une nouvelle source remet `playbackRate` à 1 : sans cette ligne,
       // un renouvellement d'autorisation ramenait la vidéo en 1× alors que la
       // barre affichait toujours 1.25×.

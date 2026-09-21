@@ -18,10 +18,6 @@ interface ChapitreControle {
   nbLignesScript: number
 }
 
-/** La durée annoncée sur la fiche est éditoriale ; on tolère un écart, mais
- *  pas un module de trente minutes vendu pour une heure. */
-const TOLERANCE_DUREE = 0.15
-
 export interface Checklist {
   pret: boolean
   manques: string[]
@@ -39,7 +35,6 @@ export function checklistPret(moduleCourant: Module, chapitres: ChapitreControle
   const avecScript = chapitres.filter((c) => c.nbLignesScript > 0).length
   const secondes = chapitres.reduce((somme, c) => somme + (c.videoDureeSecondes ?? 0), 0)
   const dureeMinutes = Math.round(secondes / 60)
-  const cible = moduleCourant.dureeMinutes
 
   const manques: string[] = []
   if (!chapitres.length) manques.push('au moins un chapitre')
@@ -51,14 +46,11 @@ export function checklistPret(moduleCourant: Module, chapitres: ChapitreControle
   }
   if (!moduleCourant.promesse) manques.push('la promesse')
   if (!moduleCourant.pourquoi) manques.push('le « pourquoi »')
-  // La durée ne se contrôle qu'une fois toutes les vidéos en place : sur un
-  // module à moitié filmé, l'écart est attendu et le signaler serait du bruit.
-  if (avecVideo === chapitres.length && chapitres.length > 0) {
-    const ecart = Math.abs(dureeMinutes - cible) / cible
-    if (ecart > TOLERANCE_DUREE) {
-      manques.push(`une durée proche de ${cible} min (actuellement ${dureeMinutes} min)`)
-    }
-  }
+  // Plus de contrôle d'écart entre durée annoncée et durée filmée : la durée
+  // du module est désormais la somme de ses chapitres, calculée à chaque
+  // changement. Comparer un nombre à lui-même ne pouvait que produire du bruit
+  // — et, tant que les dix-huit modules annonçaient soixante minutes par
+  // défaut, un reproche que rien dans l'interface ne permettait de satisfaire.
 
   return {
     pret: manques.length === 0,
@@ -68,7 +60,7 @@ export function checklistPret(moduleCourant: Module, chapitres: ChapitreControle
       avecVideo,
       avecScript,
       dureeMinutes,
-      dureeCibleMinutes: cible,
+      dureeCibleMinutes: moduleCourant.dureeMinutes,
     },
   }
 }

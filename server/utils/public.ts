@@ -1,4 +1,5 @@
-import type { Chapitre, Formateur, Module } from '#shared/types'
+import { interpolerCompteurs, type Compteurs } from '#shared/utils/compteurs'
+import type { Chapitre, Formateur, Module, Programme, ProgrammePublic, SeoFields } from '#shared/types'
 
 /**
  * Projections servies aux routes publiques.
@@ -68,5 +69,62 @@ export function modulePublic(module: Module): ModulePublic {
       videoFormat: c.videoFormat,
       scriptFormat: c.scriptFormat,
     })),
+  }
+}
+
+/**
+ * Un programme tel qu'une page publique en a besoin : ses textes portent des
+ * décomptes, et un décompte n'est juste qu'au moment où il est servi.
+ *
+ * « Choisissez parmi 9 modules » a été écrit une fois dans la base. Le jour où
+ * un module a changé de programme, les deux phrases ont menti sans que rien ne
+ * le signale. Les textes gardent donc un jeton — `{modules}`, `{thematiques}` —
+ * et c'est ici qu'il devient un nombre, une fois, pour toutes les pages.
+ *
+ * L'administration passe par ses propres routes : son éditeur continue de voir
+ * le jeton, sans quoi le nombre du jour se figerait à la première sauvegarde.
+ */
+function seoInterpole(seo: SeoFields, compteurs: Compteurs): SeoFields {
+  const interpoler = (valeur?: string) =>
+    valeur === undefined ? undefined : interpolerCompteurs(valeur, compteurs)
+  return {
+    ...seo,
+    title: interpoler(seo.title),
+    metaDescription: interpoler(seo.metaDescription),
+    ogTitle: interpoler(seo.ogTitle),
+    ogDescription: interpoler(seo.ogDescription),
+  }
+}
+
+/**
+ * Ce qu'un programme pèse réellement, brouillons exclus comme partout sur le
+ * public. Les formateurs sont ceux qui interviennent dans le programme, pas
+ * ceux qui l'ont pour rattachement principal : c'est le nombre que la page
+ * annonce.
+ */
+export function compteursProgramme(
+  slug: string,
+  modules: Pick<Module, 'programme' | 'statut' | 'thematiqueId' | 'formateurId'>[],
+  thematiques: { programme: string }[],
+): Compteurs {
+  const siens = modules.filter((m) => m.programme === slug && m.statut !== 'brouillon')
+  return {
+    modules: siens.length,
+    thematiques: thematiques.filter((t) => t.programme === slug).length,
+    formateurs: new Set(siens.map((m) => m.formateurId)).size,
+  }
+}
+
+export function programmePublic(programme: Programme, compteurs: Compteurs): ProgrammePublic {
+  const interpoler = (valeur: string) => interpolerCompteurs(valeur, compteurs)
+  return {
+    ...programme,
+    descriptionHero: interpoler(programme.descriptionHero),
+    descriptionProgramme: interpoler(programme.descriptionProgramme),
+    descriptionCarte: interpoler(programme.descriptionCarte),
+    seo: seoInterpole(programme.seo, compteurs),
+    nbModules: compteurs.modules ?? 0,
+    nbThematiques: compteurs.thematiques ?? 0,
+    nbFormateurs: compteurs.formateurs ?? 0,
   }
 }

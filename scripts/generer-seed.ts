@@ -222,9 +222,38 @@ inserer(
   'Modules — 9 par programme',
 )
 
+/**
+ * La médiathèque avant les chapitres : un chapitre qui porte une clé vidéo doit
+ * désigner l'entrée correspondante, et la contrainte `chapitres_video_id_requis`
+ * le vérifie dès l'insertion. Une entrée par clé distincte — la même vidéo peut
+ * servir plusieurs chapitres, c'est tout l'objet de la médiathèque.
+ *
+ * Le titre vaut la clé, faute de mieux : ces vidéos n'ont pas été déposées
+ * depuis l'administration, elles n'ont donc pas de nom de fichier d'origine.
+ */
+const videosSeed = new Map<string, { format: string; dureeSecondes: number | null }>()
+for (const m of modules) {
+  for (const c of m.chapitres) {
+    if (!c.videoCle || videosSeed.has(c.videoCle)) continue
+    videosSeed.set(c.videoCle, {
+      format: c.videoFormat ?? 'fichier',
+      dureeSecondes: c.videoDureeSecondes ?? null,
+    })
+  }
+}
+
+inserer(
+  'videos',
+  'cle, nom, nom_fichier, format, duree_secondes',
+  [...videosSeed].map(([cle, v]) =>
+    [txt(cle), txt(cle), txt(cle), txt(v.format), num(v.dureeSecondes)].join(', '),
+  ),
+  'Médiathèque — une entrée par vidéo, réutilisable par plusieurs chapitres',
+)
+
 inserer(
   'chapitres',
-  'module_id, position, libelle, titre, duree_minutes, script, video_cle, video_duree_secondes, video_format, script_format',
+  'module_id, position, libelle, titre, duree_minutes, script, video_cle, video_id, video_duree_secondes, video_format, script_format',
   modules.flatMap((m) =>
     m.chapitres.map((c, i) =>
       [
@@ -235,6 +264,9 @@ inserer(
         num(c.dureeMinutes),
         json(c.script ?? []),
         txt(c.videoCle),
+        // Sous-requête plutôt qu'un identifiant en dur : les entrées de
+        // médiathèque tirent le leur au sort à l'insertion.
+        c.videoCle ? `(select id from videos where cle = ${txt(c.videoCle)})` : 'null',
         num(c.videoDureeSecondes),
         txt(c.videoFormat),
         txt(c.scriptFormat),
@@ -242,6 +274,20 @@ inserer(
     ),
   ),
   'Chapitres — position 0 pour l’introduction',
+)
+
+/**
+ * La durée d'un module se déduit de ses chapitres, ici comme à l'exécution.
+ * L'écrire en dur dans les modules donnerait une base neuve déjà fausse : les
+ * fiches annonceraient une durée que les vidéos ne tiennent pas.
+ */
+blocs.push(
+  `-- Durée des modules : la somme de leurs chapitres, jamais un chiffre saisi\n` +
+    `update modules m set duree_minutes = greatest(1, round(t.secondes / 60.0))\n` +
+    `  from (select module_id,\n` +
+    `               sum(coalesce(video_duree_secondes, coalesce(duree_minutes, 0) * 60)) as secondes\n` +
+    `          from chapitres group by module_id) t\n` +
+    ` where t.module_id = m.id;`,
 )
 
 // Une empreinte par compte : chacune porte son propre sel.

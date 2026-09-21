@@ -25,12 +25,21 @@ import type {
 } from '#shared/types'
 
 /**
- * Contenu éditorial de référence, calé sur la maquette Claude Design.
+ * Jeu de données d'installation, calé sur la maquette Claude Design.
  *
- * Ce fichier n'est plus une couche de persistance : l'application lit et écrit
- * en base via `server/database/`. Il reste la source du contenu — 18 modules et
- * leurs chapitres, fiches formateurs, articles, comptes de démonstration — tant
- * qu'aucun back-office ne permet de le saisir.
+ * Ce fichier ne dit pas ce que contient la plateforme aujourd'hui : il dit avec
+ * quoi une base neuve démarre. Le contenu éditorial courant — intitulés,
+ * chapitres, vidéos, mises en vente — se pilote dans l'administration, qui
+ * écrit directement en base. L'application lit la base via `server/database/`,
+ * jamais ce fichier.
+ *
+ * Il n'y a donc pas lieu d'y reporter une correction de contenu : elle se fait
+ * dans l'administration. Pour un apport en volume — un tournage entier, une
+ * arborescence revue — passer par un fichier `supabase/rattrapage-*.sql`.
+ *
+ * `npm run db:comparer` confronte ce fichier à la base en ligne et liste les
+ * écarts. Un écart est attendu dès que l'administration a servi ; il devient
+ * suspect quand il porte sur une structure que personne n'a touchée.
  *
  * Il alimente `supabase/seed.sql` : après toute modification, régénérer avec
  *   npm run db:seed:generer && npm run db:sql
@@ -53,7 +62,7 @@ export const programmes: Programme[] = [
     surtitreHero: 'Programme Social Média',
     h1Variable: 'Restez dans la course.',
     descriptionHero:
-      'Choisissez parmi 9 modules de 60 minutes pour renforcer des compétences précises en stratégie, contenu et plateformes Social Media. Accès à vie et sessions de coaching collectif.',
+      'Choisissez parmi {modules} de 60 minutes pour renforcer des compétences précises en stratégie, contenu et plateformes Social Media. Accès à vie et sessions de coaching collectif.',
     ctaHero: 'Découvrir le programme Social Média',
     descriptionProgramme:
       'Des modules indépendants conçus pour les Social Media Managers, Community Managers et professionnels de la communication qui souhaitent actualiser leurs pratiques et renforcer des compétences ciblées.',
@@ -64,7 +73,7 @@ export const programmes: Programme[] = [
       motClePrincipal: 'formation social média Abidjan',
       title: 'Programme Social Média | E-Masterclass Big Five',
       metaDescription:
-        'Neuf modules de 60 minutes pour renforcer des compétences précises en stratégie, contenu et plateformes Social Media. 10 000 FCFA TTC par module, accès à vie.',
+        '{modules} de 60 minutes pour renforcer des compétences précises en stratégie, contenu et plateformes Social Media. 10 000 FCFA TTC par module, accès à vie.',
       indexable: true,
     },
   },
@@ -76,7 +85,7 @@ export const programmes: Programme[] = [
     surtitreHero: 'Programme Entrepreneurs',
     h1Variable: 'Soyez à jour.',
     descriptionHero:
-      'Choisissez parmi 9 modules de 60 minutes pour renforcer les compétences utiles au développement de votre activité : valider une idée, fixer vos prix, vendre et gagner en visibilité.',
+      'Choisissez parmi {modules} de 60 minutes pour renforcer les compétences utiles au développement de votre activité : valider une idée, fixer vos prix, vendre et gagner en visibilité.',
     ctaHero: 'Découvrir le programme Entrepreneurs',
     descriptionProgramme:
       'Des modules indépendants conçus pour les entrepreneurs en activité ou en lancement qui souhaitent renforcer des compétences pratiques et faire évoluer leur activité.',
@@ -87,7 +96,7 @@ export const programmes: Programme[] = [
       motClePrincipal: 'formation entrepreneur Côte d’Ivoire',
       title: 'Programme Entrepreneurs | E-Masterclass Big Five',
       metaDescription:
-        'Neuf modules de 60 minutes pour valider une idée, fixer ses prix, vendre et gagner en visibilité. 10 000 FCFA TTC par module, accès à vie.',
+        '{modules} de 60 minutes pour valider une idée, fixer ses prix, vendre et gagner en visibilité. 10 000 FCFA TTC par module, accès à vie.',
       indexable: true,
     },
   },
@@ -229,18 +238,27 @@ function scriptType(titre: string): LigneScript[] {
   ]
 }
 
+/** Minutes réservées à l'introduction ; le reste se partage entre chapitres. */
+const DUREE_INTRODUCTION_MINUTES = 6
+
 function chapitres(...titres: string[]): Chapitre[] {
+  // Le nombre de chapitres varie d'un module à l'autre (3 à 5 selon
+  // l'arborescence pédagogique) : la durée estimée se répartit à parts égales
+  // sur le temps restant, pour que le total annoncé tienne les 60 minutes.
+  const dureeChapitre = Math.round(
+    (DUREE_MODULE_MINUTES - DUREE_INTRODUCTION_MINUTES) / titres.length,
+  )
   return [
     {
       libelle: 'Introduction',
-      titre: 'Présentation du module et de votre formateur',
-      dureeMinutes: 6,
+      titre: 'Présentation, contexte et objectifs du module',
+      dureeMinutes: DUREE_INTRODUCTION_MINUTES,
       script: scriptType('la présentation du module'),
     },
     ...titres.map((titre, i) => ({
       libelle: `Chapitre ${i + 1}`,
       titre,
-      dureeMinutes: 18,
+      dureeMinutes: dureeChapitre,
       script: scriptType(titre),
     })),
   ]
@@ -279,6 +297,10 @@ const VIDEOS: Record<string, Record<number, { cle: string; dureeSecondes: number
     0: { cle: 'demo-accroches-ch01', dureeSecondes: 31 },
     1: { cle: 'demo-accroches-ch02', dureeSecondes: 31 },
   },
+
+  // Les vidéos des tournages ne figurent pas ici : elles sont déposées depuis
+  // l'administration, qui forge elle-même la clé du flux. Les deux entrées
+  // ci-dessus sont des démonstrations antérieures au back-office.
 }
 
 function moduleComplet(b: Brouillon): Module {
@@ -328,36 +350,6 @@ function moduleComplet(b: Brouillon): Module {
 export const modules: Module[] = [
   // ---------- Social Média ----------
   moduleComplet({
-    slug: 'comprendre-le-business-du-client',
-    numero: 1,
-    titre: 'Comprendre le business du client',
-    programme: 'social-media',
-    thematiqueId: 'th-sm-fondations',
-    formateurId: 'for-declercq',
-    promesse:
-      'Apprenez à lire l’activité d’une marque avant de produire le moindre contenu, pour proposer une stratégie qui sert ses objectifs.',
-    pourquoi:
-      'Un contenu peut être soigné et régulier sans rien apporter à l’entreprise qui le publie. Ce module vous donne la grille de lecture qui permet de comprendre un modèle économique, ses marges et ses priorités, puis d’en déduire ce que le social media doit réellement produire.',
-    pourQui: [
-      'Vous gérez les réseaux sociaux d’une marque ou de plusieurs clients.',
-      'Vos recommandations sont difficiles à défendre en réunion.',
-      'Vous souhaitez relier vos contenus aux objectifs commerciaux.',
-    ],
-    prerequis: 'Aucun prérequis particulier.',
-    chapitres: chapitres(
-      'Lire un modèle économique en quinze minutes',
-      'Identifier les priorités commerciales du client',
-      'Traduire ces priorités en objectifs social media',
-    ),
-    acquis: [
-      'analyser le modèle économique d’une marque ;',
-      'identifier ses priorités commerciales ;',
-      'formuler des objectifs social media alignés.',
-    ],
-    livrable:
-      'Une fiche de cadrage client réutilisable pour chaque nouvelle marque ou chaque nouveau projet.',
-  }),
-  moduleComplet({
     slug: 'plan-daction-social-media-strategie-et-ciblage',
     numero: 2,
     titre: 'Plan d’action social media : Stratégie & Ciblage',
@@ -375,14 +367,17 @@ export const modules: Module[] = [
     ],
     prerequis: 'Aucun prérequis particulier.',
     chapitres: chapitres(
-      'Diagnostic : où en est réellement le compte',
-      'Définir une cible et ses points de friction',
-      'Formuler trois axes stratégiques défendables',
+      'Diagnostic',
+      'Objectifs mesurables',
+      'Construire la stratégie',
+      'Les Tactiques',
+      'Mesure & Budget',
     ),
     acquis: [
-      'poser un diagnostic factuel ;',
-      'définir une cible exploitable ;',
-      'construire un plan d’action argumenté.',
+      'poser un diagnostic factuel en cinq analyses ;',
+      'fixer des objectifs mesurables de notoriété, d’engagement, de conversion et de fidélisation ;',
+      'choisir ses plateformes, ses piliers éditoriaux et son ton ;',
+      'déployer des tactiques concrètes et arbitrer organique contre payant.',
     ],
     livrable: 'Un plan d’action social media sur une page, prêt à être présenté.',
   }),
@@ -404,21 +399,21 @@ export const modules: Module[] = [
     ],
     prerequis: 'Avoir défini une cible et des axes stratégiques.',
     chapitres: chapitres(
-      'Choisir ses piliers et ses formats',
-      'Calibrer un rythme soutenable',
-      'Alimenter une banque d’idées qui se recharge',
+      'Stratégie du calendrier éditorial',
+      'Construire son calendrier en 30 jours',
+      'Présenter son plan à un décideur',
     ),
     acquis: [
-      'construire un planning éditorial mensuel ;',
-      'choisir des formats adaptés à ses moyens ;',
-      'anticiper la production de contenu.',
+      'poser la stratégie qui structure son calendrier éditorial ;',
+      'construire un calendrier sur trente jours ;',
+      'présenter son plan à un décideur.',
     ],
-    livrable: 'Un planning éditorial mensuel complété et une banque d’idées de départ.',
+    livrable: 'Un calendrier éditorial de trente jours et la trame pour le présenter à un décideur.',
   }),
   moduleComplet({
     slug: 'formules-de-redaction-persuasive',
     numero: 4,
-    titre: 'Formules de rédaction persuasive',
+    titre: 'Formules de rédaction persuasive & adapt. plateforme',
     programme: 'social-media',
     thematiqueId: 'th-sm-copywriting',
     formateurId: 'for-othniel',
@@ -433,14 +428,14 @@ export const modules: Module[] = [
     ],
     prerequis: 'Aucun prérequis particulier.',
     chapitres: chapitres(
-      'Les structures de message qui fonctionnent',
-      'Adapter une formule à son secteur',
-      'Réécrire : le passage qui fait la différence',
+      'Fondements de la persuasion rédactionnelle',
+      'Adapter sa rédaction aux plateformes',
+      'Les formules de rédaction incontournables',
     ),
     acquis: [
-      'utiliser plusieurs structures de rédaction ;',
-      'adapter une formule à son contexte ;',
-      'réécrire un texte de façon méthodique.',
+      'appuyer un message sur les ressorts de la persuasion ;',
+      'adapter un même contenu au format de chaque plateforme ;',
+      'appliquer les formules de rédaction incontournables.',
     ],
     livrable: 'Un carnet de formules annotées et adaptées à votre activité.',
   }),
@@ -547,33 +542,33 @@ export const modules: Module[] = [
     livrable: 'Une séquence de prospection en cinq messages, prête à personnaliser.',
   }),
   moduleComplet({
-    slug: 'instagram-formats-et-croissance',
+    slug: 'linkedin-algorithme-et-optimisation-du-profil',
     numero: 8,
-    titre: 'Instagram : formats et croissance',
+    titre: 'LinkedIn : Algorithme & Optimisation du profil',
     programme: 'social-media',
     thematiqueId: 'th-sm-plateformes',
     formateurId: 'for-nontondji',
     promesse:
-      'Choisissez les formats Instagram qui font réellement progresser un compte, et abandonnez les autres.',
+      'Comprenez le moteur de distribution de LinkedIn, puis réglez votre profil pour qu’il travaille en votre faveur à chaque publication.',
     pourquoi:
-      'Chaque format Instagram sert un objectif différent. Ce module cartographie les formats disponibles, leur coût de production et leur effet mesuré sur la croissance.',
+      'Depuis 360Brew, LinkedIn ne distribue plus les publications selon les mêmes règles : le profil est lu en même temps que le post. Ce module explique la nouvelle logique de distribution, puis transforme cette compréhension en réglages concrets et en un plan d’action 48h.',
     pourQui: [
-      'Vous animez un compte Instagram professionnel.',
-      'Votre croissance stagne malgré la régularité.',
-      'Vous hésitez entre les formats.',
+      'Vous publiez sur LinkedIn sans comprendre pourquoi la portée varie.',
+      'Votre profil reçoit des visites qui ne débouchent sur rien.',
+      'Vous voulez agir vite, sans refondre toute votre présence.',
     ],
-    prerequis: 'Disposer d’un compte professionnel Instagram.',
+    prerequis: 'Disposer d’un profil LinkedIn actif.',
     chapitres: chapitres(
-      'Cartographie des formats et de leur usage',
-      'Produire un format court efficace au téléphone',
-      'Lire ses statistiques et arbitrer',
+      '360Brew et la Nouvelle logique de distribution',
+      'Optimisation du profil, votre passeport algorithmique',
+      'Plan d’action 48h & Q&R',
     ),
     acquis: [
-      'choisir un format selon son objectif ;',
-      'produire un format court au téléphone ;',
-      'lire les statistiques de son compte.',
+      'comprendre le moteur de distribution avant de vouloir le nourrir ;',
+      'régler chaque bloc du profil que l’algorithme lit avec vos posts ;',
+      'dérouler un plan d’action en 48h.',
     ],
-    livrable: 'Un plan de production hebdomadaire calibré sur vos moyens.',
+    livrable: 'Un profil LinkedIn optimisé bloc par bloc et un plan d’action 48h.',
   }),
   moduleComplet({
     slug: 'publicite-sociale-lancer-sa-premiere-campagne',
@@ -886,6 +881,36 @@ export const modules: Module[] = [
       'installer une routine de revue.',
     ],
     livrable: 'Un tableau de bord d’une page, complété avec vos propres données.',
+  }),
+  moduleComplet({
+    slug: 'comprendre-le-business-du-client',
+    numero: 10,
+    titre: 'Comprendre le business du client',
+    programme: 'entrepreneurs',
+    thematiqueId: 'th-ent-fondations',
+    formateurId: 'for-declercq',
+    promesse:
+      'Apprenez à lire une entreprise avant de lui proposer quoi que ce soit : son modèle, son histoire et ce qui la fait vivre.',
+    pourquoi:
+      'On propose souvent une solution avant d’avoir compris l’activité qu’elle est censée servir. Ce module donne la grille de lecture qui permet de comprendre un modèle économique, ses marges et ses priorités, puis d’en déduire ce dont l’entreprise a réellement besoin.',
+    pourQui: [
+      'Vous vendez une prestation à des entreprises.',
+      'Vos recommandations sont difficiles à défendre en réunion.',
+      'Vous souhaitez relier vos propositions aux objectifs commerciaux du client.',
+    ],
+    prerequis: 'Aucun prérequis particulier.',
+    chapitres: chapitres(
+      'Comprendre avant de créer',
+      'L’entreprise et son modèle',
+      'L’histoire de l’entreprise',
+    ),
+    acquis: [
+      'analyser le modèle économique d’une entreprise ;',
+      'identifier ses priorités commerciales ;',
+      'formuler une proposition alignée sur ses objectifs.',
+    ],
+    livrable:
+      'Une fiche de cadrage client réutilisable pour chaque nouvelle entreprise ou chaque nouveau projet.',
   }),
 ]
 
@@ -1271,7 +1296,7 @@ export const transactions: Transaction[] = [
   {
     reference: 'FP-2609-0410',
     utilisateurId: 'usr-fatou',
-    moduleId: 'mod-instagram-formats-et-croissance',
+    moduleId: 'mod-linkedin-algorithme-et-optimisation-du-profil',
     moyen: 'Visa',
     montant: PRIX_MODULE_FCFA,
     statut: 'echouee',
@@ -1327,9 +1352,9 @@ export const demandesCoachingPrive: DemandeCoachingPrive[] = [
     id: 'dcp-003',
     utilisateurId: 'usr-fatou',
     apprenant: 'Fatou Bamba',
-    moduleId: 'mod-instagram-formats-et-croissance',
+    moduleId: 'mod-linkedin-algorithme-et-optimisation-du-profil',
     formateurId: 'for-waffo',
-    besoins: 'Construire une présence Instagram pour ma marque de cosmétiques.',
+    besoins: 'Optimiser mon profil LinkedIn pour ma marque de cosmétiques.',
     disponibilites: 'Mercredi après-midi.',
     creneaux: [{ date: '2026-09-30', debut: '14:00', fin: '15:00' }],
     heures: 1,

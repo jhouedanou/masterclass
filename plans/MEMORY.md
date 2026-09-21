@@ -1,0 +1,1 @@
+- [Fidélité maquettes — avancement](fidelite-maquettes-avancement.md) — lots 0/A commités, B écrit non commité (bug Pinia), D et C restants ; plan dans ~/.claude/plans/ok-refaisons-un-tour-snazzy-hoare.md

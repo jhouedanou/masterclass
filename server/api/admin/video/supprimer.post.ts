@@ -1,6 +1,5 @@
 import { enregistrerJournal } from '../../../database/administration'
 import { majVideoChapitre, trouverChapitre } from '../../../database/catalogue'
-import { supprimerObjet } from '../../../utils/video'
 import { exigerSection } from '../../../utils/session'
 
 /**
@@ -30,12 +29,12 @@ export default defineEventHandler(async (event) => {
 
   await majVideoChapitre(chapitreId, {
     videoCle: null,
+    videoId: null,
     videoFormat: null,
     videoDureeSecondes: null,
     videoNomFichier: null,
     videoTailleOctets: null,
   })
-  await supprimerObjet(chapitre.video_cle, admin.id).catch(() => undefined)
 
   await enregistrerJournal(
     `${admin.prenom} ${admin.nom}`,

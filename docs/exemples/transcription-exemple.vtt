@@ -1,0 +1,92 @@
+WEBVTT
+
+NOTE
+Exemple de transcription — E-Masterclass Big Five
+Module 8 · LinkedIn : Algorithme & Optimisation du profil
+Chapitre 1 · 360Brew et la Nouvelle logique de distribution
+
+Ce fichier sert de modèle. Il est volontairement court : une vraie
+transcription de chapitre en fait dix à vingt fois plus.
+
+Ce que l'import attend :
+  · un fichier .srt ou .vtt, 1 Mo au maximum ;
+  · une ligne de temps par réplique, portant la flèche « --> » ;
+  · du texte en dessous.
+Tout le reste est facultatif. Les blocs NOTE comme celui-ci sont ignorés.
+
+Ce que l'import fait ensuite : il regroupe les répliques en passages de
+lecture. Une réplique de sous-titre dure deux à cinq secondes ; affichées
+telles quelles sous la vidéo, elles seraient illisibles. Le regroupement
+s'arrête sur une fin de phrase, un changement de voix, ou au bout d'une
+vingtaine de secondes. Vous n'avez donc pas à découper vous-même.
+
+Les horodatages de fin ne sont pas conservés : seul le début de chaque
+passage sert à la navigation. Inutile de les ajuster au millième.
+
+1
+00:00:00.000 --> 00:00:04.200
+<v Maurice Nontondji>Avant de parler de ce qu'il faut publier,
+
+2
+00:00:04.200 --> 00:00:09.600
+<v Maurice Nontondji>il faut comprendre ce qui décide de la diffusion.
+
+NOTE
+La balise <v Nom> est facultative. Quand elle est là, un changement de
+locuteur coupe le passage : c'est utile sur les chapitres à deux voix,
+une session de questions-réponses par exemple.
+
+3
+00:00:09.600 --> 00:00:15.100
+En 2025, LinkedIn a remplacé son moteur de recommandation par 360Brew.
+
+4
+00:00:15.100 --> 00:00:21.400
+Ce n'est pas une mise à jour de l'ancien : c'est un modèle de langage
+
+5
+00:00:21.400 --> 00:00:26.800
+qui lit votre publication et votre profil <i>en même temps</i>.
+
+NOTE
+Les balises de mise en forme — <i>, <b>, <c.jaune> — sont retirées à
+l'import. Vous pouvez les laisser : elles ne gênent pas.
+
+6
+00:00:27.000 --> 00:00:33.500
+La conséquence est directe. Un même texte, publié depuis deux profils
+
+7
+00:00:33.500 --> 00:00:39.900
+différents, n'atteint pas le même nombre de personnes.
+
+reprise-apres-demo
+00:01:12.000 --> 00:01:18.300 align:start position:10%
+Reprenons sur l'exemple que je viens de vous montrer.
+
+NOTE
+Deux détails illustrés ci-dessus, tous deux facultatifs :
+  · un identifiant de réplique peut être un mot plutôt qu'un numéro ;
+  · les réglages de placement après le second horodatage sont ignorés.
+
+00:01:18.300 --> 00:01:25.700
+Le profil n'est plus une carte de visite. C'est le contexte que
+l'algorithme lit avant de décider quoi faire de votre publication.
+
+NOTE
+L'identifiant est même entièrement facultatif en VTT, comme ici.
+En SRT il est obligatoire : ce sont les numéros 1, 2, 3…
+
+00:01:25.700 --> 00:01:31.200
+C'est le sujet du chapitre 2 : Optimisation du profil.
+
+NOTE
+Les entités HTML sont décodées à l'import. Un exportateur écrit souvent
+&amp;amp; là où vous avez dit « et » — dans « Algorithme &amp;amp; Optimisation
+du profil », par exemple. Laissez : l'esperluette ressortira correctement.
+
+NOTE
+Dernier point, celui qui compte le plus : relisez avant d'importer. Une
+transcription automatique se trompe sur les noms propres, les sigles et
+les termes techniques. « 360Brew » ressort souvent en « 360 Brew », en
+« 360 brou », voire en « 360 bruit ».

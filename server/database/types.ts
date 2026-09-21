@@ -181,6 +181,19 @@ export type ModuleRow = ColonnesSeo & {
   maj_le: string
 }
 
+export type VideoRow = {
+  id: string
+  cle: string
+  nom: string
+  nom_fichier: string
+  taille_octets: number | null
+  duree_secondes: number | null
+  format: 'hls' | 'fichier'
+  depose_par: string | null
+  depose_le: string
+  maj_le: string
+}
+
 export type ChapitreRow = {
   id: string
   module_id: string
@@ -190,6 +203,7 @@ export type ChapitreRow = {
   duree_minutes: number | null
   script: { temps: string; texte: string }[]
   video_cle: string | null
+  video_id: string | null
   video_duree_secondes: number | null
   video_format: 'hls' | 'fichier' | null
   video_nom_fichier: string | null
@@ -663,12 +677,23 @@ export type Database = {
         | 'filigrane_actif'
         | 'telechargement_bloque'
       >
+      videos: Table<
+        VideoRow,
+        | 'id'
+        | 'taille_octets'
+        | 'duree_secondes'
+        | 'format'
+        | 'depose_par'
+        | 'depose_le'
+        | 'maj_le'
+      >
       chapitres: Table<
         ChapitreRow,
         | 'id'
         | 'duree_minutes'
         | 'script'
         | 'video_cle'
+        | 'video_id'
         | 'video_duree_secondes'
         | 'video_format'
         | 'video_nom_fichier'

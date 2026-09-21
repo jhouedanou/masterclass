@@ -28,6 +28,8 @@ const dejaPris = computed(
   () => !!clePrevue.value && data.value.some((e) => e.categorie === categorie.value && e.cle === clePrevue.value),
 )
 
+const { annoncer } = useToasts()
+
 async function agir(action: () => Promise<unknown>, succes: string) {
   erreur.value = ''
   message.value = ''
@@ -35,8 +37,11 @@ async function agir(action: () => Promise<unknown>, succes: string) {
     await action()
     message.value = succes
     await refresh()
+    annoncer(succes)
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Opération impossible.'
+    const souci = (e as { statusMessage?: string }).statusMessage ?? 'Opération impossible.'
+    erreur.value = souci
+    annoncer(souci, 'erreur')
   }
 }
 

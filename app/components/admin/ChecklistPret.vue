@@ -30,7 +30,10 @@ const marque = (fait: boolean) => (fait ? '✓' : '')
       {{ marque(checklist.details.avecVideo === checklist.details.chapitres && checklist.details.chapitres > 0) }} ·
       scripts {{ checklist.details.avecScript }}/{{ checklist.details.chapitres }}
       {{ marque(checklist.details.avecScript === checklist.details.chapitres && checklist.details.chapitres > 0) }} ·
-      durée {{ checklist.details.dureeMinutes }}/{{ checklist.details.dureeCibleMinutes }} min
+      <!-- Une seule durée : celle des vidéos déposées, qui est aussi celle que
+           le module annonce. Le rapport « filmé / annoncé » n'avait de sens que
+           lorsque les deux pouvaient diverger. -->
+      {{ checklist.details.dureeMinutes }} min filmées
     </p>
     <p v-if="!checklist.pret" class="mt-1.5">
       Il manque encore {{ checklist.manques.join(', ') }}.

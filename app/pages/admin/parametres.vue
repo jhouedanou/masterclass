@@ -36,6 +36,8 @@ const ONGLETS = [
 ]
 
 const message = ref('')
+
+const { annoncer } = useToasts()
 const erreur = ref('')
 const enCours = ref(false)
 
@@ -82,6 +84,7 @@ async function enregistrerProfil() {
     })
     await auth.rafraichir()
     message.value = 'Profil enregistré.'
+    annoncer('Profil enregistré.')
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Enregistrement impossible.'
   } finally {
@@ -101,6 +104,7 @@ async function deposerPhoto(fichier: File | null | undefined) {
     await $fetch('/api/mon-espace/compte/photo', { method: 'POST', body: corps })
     await auth.rafraichir()
     message.value = 'Photo enregistrée.'
+    annoncer('Photo enregistrée.')
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Dépôt impossible.'
   } finally {

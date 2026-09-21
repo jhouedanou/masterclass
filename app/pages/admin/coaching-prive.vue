@@ -68,6 +68,7 @@ watch(
 )
 const TARIF_HORAIRE = 50_000
 const message = ref('')
+const { annoncer } = useToasts()
 const erreur = ref('')
 const envoi = ref(false)
 
@@ -88,6 +89,7 @@ async function agir(demande: Demande, action: Action, extra: Record<string, unkn
   try {
     await $fetch('/api/admin/coaching-prive', { method: 'PATCH', body: { id: demande.id, action, ...extra } })
     message.value = `Demande ${demande.id} mise à jour.`
+    annoncer(`Demande ${demande.id} mise à jour.`)
     modale.value = null
     await refresh()
   } catch (e) {

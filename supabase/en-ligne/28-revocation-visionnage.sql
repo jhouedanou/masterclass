@@ -1,4 +1,18 @@
--- 30 · Révocation de `enregistrer_visionnage`
+-- ---------------------------------------------------------------------------
+-- E-Masterclass Big Five — revocation visionnage
+--
+-- FICHIER GÉNÉRÉ : ne pas éditer à la main.
+-- Régénération : npm run db:sql
+--
+-- Migration 28 sur 31 · source : 20260930120000_revocation_visionnage.sql
+--
+-- À exécuter dans SQL Editor du projet Supabase, dans l'ordre des numéros.
+-- Ces scripts ne sont pas rejouables : sur une base déjà installée,
+-- n'exécutez que les fichiers dont le numéro vous manque.
+-- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- Révocation de `enregistrer_visionnage`
 --
 -- La sécurité au niveau des lignes est activée sur toutes les tables sans
 -- aucune politique : la clé publiable (`anon`) ne doit rien pouvoir faire, et

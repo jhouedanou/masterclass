@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import type { Formateur, Module, Programme, Thematique } from '#shared/types'
+import type { Formateur, Module, ProgrammePublic, Thematique } from '#shared/types'
 import { dureeSessionEnHeures, PLACES_SESSION } from '#shared/utils/coaching'
+import { compterModules } from '#shared/utils/compteurs'
 
 type ThematiqueGarnie = Thematique & { modules: (Module & { formateur: Formateur | null })[] }
 
 const route = useRoute()
 const slug = computed(() => String(route.params.slug))
 
-const { data } = await useFetch<{ programme: Programme; thematiques: ThematiqueGarnie[] }>(
+const { data } = await useFetch<{ programme: ProgrammePublic; thematiques: ThematiqueGarnie[] }>(
   () => `/api/programmes/${slug.value}`,
 )
 
@@ -33,7 +34,7 @@ const reperes = computed(() => {
   // Un prix unique s'annonce tel quel ; plusieurs, on annonce le plus bas.
   const prixAffiche = prix.length === 1 ? formatFcfa(prix[0]!, true) : `à partir de ${formatFcfa(Math.min(...prix), true)}`
   return [
-    { valeur: `${modules.length} module${modules.length > 1 ? 's' : ''}`, suite: 'disponibles' },
+    { valeur: compterModules(modules.length), suite: 'disponibles' },
     { valeur: prixAffiche, suite: 'par module' },
     { valeur: 'Accès à vie', suite: 'après l’achat' },
     {

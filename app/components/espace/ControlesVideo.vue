@@ -14,6 +14,10 @@ const props = defineProps<{
   duree: number
   enLecture: boolean
   qualite: string | null
+  /** Vrai quand la qualité s'adapte au débit — c'est-à-dire en HLS seulement.
+   *  Un fichier unique n'offre rien à choisir, et le dire évite de chercher un
+   *  réglage qui n'existe pas. */
+  adaptative?: boolean
   vitesses: number[]
   pleinEcran: boolean
 }>()
@@ -146,8 +150,14 @@ function vitesseSuivante() {
       >
         {{ vitesse }}×
       </button>
-      <span class="rounded-lg border border-white/35 px-2.5 py-1" title="Qualité adaptée automatiquement au débit">
-        Auto {{ qualite ?? '480p' }}
+      <span
+        v-if="qualite"
+        class="rounded-lg border border-white/35 px-2.5 py-1"
+        :title="adaptative
+          ? 'Qualité adaptée automatiquement au débit'
+          : 'Cette vidéo est servie en une seule définition : il n’y a pas de qualité à choisir.'"
+      >
+        <template v-if="adaptative">Auto </template>{{ qualite }}
       </span>
       <button
         type="button"

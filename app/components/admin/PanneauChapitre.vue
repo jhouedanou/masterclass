@@ -6,6 +6,7 @@ interface ChapitreDetail {
   dureeMinutes: number | null
   nbLignesScript: number
   videoCle: string | null
+  videoId: string | null
   videoFormat: 'hls' | 'fichier' | null
   videoNomFichier: string | null
   videoDureeSecondes: number | null
@@ -20,13 +21,24 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  modifier: [champs: { titre?: string; dureeMinutes?: number }]
+  modifier: [champs: { libelle?: string; titre?: string; dureeMinutes?: number }]
   reglages: [champs: { filigraneActif?: boolean; telechargementBloque?: boolean }]
   rafraichir: []
+  /** La médiathèque s'ouvre au niveau de la page : la zone de dépôt l'ouvre
+   *  aussi, et deux fenêtres pour un même choix se contrediraient. */
+  mediatheque: []
 }>()
 
 const titre = ref(props.chapitre.titre)
 watch(() => props.chapitre.titre, (v) => (titre.value = v))
+
+// Le libellé (« Chapitre 3 ») et la durée annoncée se posaient à la création
+// et ne se reprenaient plus : seul le titre était modifiable ici.
+const libelle = ref(props.chapitre.libelle)
+watch(() => props.chapitre.libelle, (v) => (libelle.value = v))
+
+const duree = ref<number | null>(props.chapitre.dureeMinutes)
+watch(() => props.chapitre.dureeMinutes, (v) => (duree.value = v))
 
 const importEnCours = ref(false)
 const messageScript = ref('')
@@ -90,6 +102,36 @@ const etiquette = 'mb-1.5 block text-[12.5px] font-bold'
         >
       </label>
 
+      <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+        <label class="block">
+          <span :class="etiquette">Libellé</span>
+          <input
+            v-model="libelle"
+            placeholder="Chapitre 1"
+            :class="champ"
+            @blur="libelle !== chapitre.libelle && emit('modifier', { libelle })"
+          >
+        </label>
+        <label class="block">
+          <span :class="etiquette">Durée annoncée (min)</span>
+          <!-- Dès qu'une vidéo est là, elle fait foi : le champ montre sa durée
+               et ne se saisit plus. Avant le tournage il reste une estimation,
+               et c'est à ce moment-là qu'il sert. -->
+          <input
+            v-model.number="duree"
+            type="number"
+            min="1"
+            :class="[champ, chapitre.videoDureeSecondes ? 'bg-fond-voile text-discret' : '']"
+            :readonly="!!chapitre.videoDureeSecondes"
+            :title="chapitre.videoDureeSecondes ? 'Déduite de la durée de la vidéo déposée.' : ''"
+            @blur="!chapitre.videoDureeSecondes && duree !== chapitre.dureeMinutes && duree && emit('modifier', { dureeMinutes: duree })"
+          >
+          <span v-if="chapitre.videoDureeSecondes" class="mt-1 block text-[11.5px] text-discret">
+            Déduite de la vidéo.
+          </span>
+        </label>
+      </div>
+
       <div>
         <p :class="etiquette">Vidéo</p>
         <div
@@ -110,8 +152,24 @@ const etiquette = 'mb-1.5 block text-[12.5px] font-bold'
           </button>
         </div>
         <p v-else class="text-[13px] text-discret">Aucune vidéo déposée.</p>
+
+        <!-- Le fonds déjà en ligne avant le glisser-déposer : redéposer un
+             fichier qui existe le paie deux fois, en temps de montée comme en
+             stockage. -->
+        <button
+          class="mt-2 text-[12px] font-bold text-social underline"
+          @click="emit('mediatheque')"
+        >
+          Choisir une vidéo déjà déposée…
+        </button>
         <p v-if="chapitre.videoFormat === 'hls'" class="mt-1.5 text-[11.5px] text-discret">
           Flux transcodé à la main : il se retire en ligne de commande, pas ici.
+        </p>
+        <!-- Remplacer, c'est redéposer : le dépôt qui suit écrase la vidéo en
+             place, et l'ancienne n'est effacée qu'une fois la nouvelle écrite. -->
+        <p v-else-if="chapitre.videoCle" class="mt-1.5 text-[11.5px] text-discret">
+          Pour la remplacer, choisissez-en une autre ci-dessus ou déposez un nouveau fichier&nbsp;:
+          l’ancienne retourne à la médiathèque, elle n’est pas effacée.
         </p>
       </div>
 
@@ -168,5 +226,6 @@ const etiquette = 'mb-1.5 block text-[12.5px] font-bold'
         quatre heures de validité. C’est le filigrane qui rend une rediffusion attribuable.
       </p>
     </div>
+
   </aside>
 </template>

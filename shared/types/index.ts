@@ -78,6 +78,16 @@ export interface Programme {
   seo: SeoFields
 }
 
+/**
+ * Programme tel que le servent les routes publiques : ses décomptes
+ * l'accompagnent, et ses textes en sont déjà garnis (`server/utils/public.ts`).
+ */
+export interface ProgrammePublic extends Programme {
+  nbModules: number
+  nbThematiques: number
+  nbFormateurs: number
+}
+
 export interface LigneScript {
   /** Timecode « mm:ss » — cliquable pour déplacer la lecture. */
   temps: string

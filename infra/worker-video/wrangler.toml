@@ -8,7 +8,10 @@
 #
 # ⚠ Les routes de dépôt (/_televersement/*) n'existent que dans les versions
 # déployées après septembre 2026. Sans redéploiement, l'ouverture d'un
-# téléversement depuis l'administration échoue en 404.
+# téléversement depuis l'administration échoue sur « Le diffuseur a refusé
+# l'opération "ouvrir" — Méthode non autorisée » : le POST ne trouve pas la
+# route et retombe sur le garde-fou lecture seule, qui répond 405. Le remède
+# est `npx wrangler deploy` depuis ce dossier, rien dans l'application.
 #
 # À poser une fois sur le seau, faute de quoi les parts d'un dépôt abandonné
 # restent facturées indéfiniment — c'est le filet de dernier recours derrière
@@ -26,7 +29,7 @@ compatibility_date = "2026-01-01"
 # Origines autorisées à lire les vidéos depuis un navigateur. Sans cette liste,
 # le lecteur du site se voit refuser la réponse par le navigateur lui-même.
 [vars]
-ORIGINES_AUTORISEES = "https://masterclass-jhouedanous-projects.vercel.app,http://localhost:3000,http://localhost:3001"
+ORIGINES_AUTORISEES = "https://masterclass-omega-five.vercel.app,https://masterclass-jhouedanous-projects.vercel.app,http://localhost:3000,http://localhost:3001"
 
 [[r2_buckets]]
 binding = "VIDEOS"

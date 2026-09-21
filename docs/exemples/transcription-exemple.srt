@@ -1,0 +1,46 @@
+1
+00:00:00,000 --> 00:00:04,200
+Avant de parler de ce qu'il faut publier,
+
+2
+00:00:04,200 --> 00:00:09,600
+il faut comprendre ce qui décide de la diffusion.
+
+3
+00:00:09,600 --> 00:00:15,100
+En 2025, LinkedIn a remplacé son moteur
+de recommandation par 360Brew.
+
+4
+00:00:15,100 --> 00:00:21,400
+Ce n'est pas une mise à jour de l'ancien :
+c'est un modèle de langage
+
+5
+00:00:21,400 --> 00:00:26,800
+qui lit votre publication et votre profil
+en même temps.
+
+6
+00:00:27,000 --> 00:00:33,500
+La conséquence est directe. Un même texte,
+publié depuis deux profils différents,
+
+7
+00:00:33,500 --> 00:00:39,900
+n'atteint pas le même nombre de personnes.
+
+8
+00:01:12,000 --> 00:01:18,300
+Reprenons sur l'exemple
+que je viens de vous montrer.
+
+9
+00:01:18,300 --> 00:01:25,700
+Le profil n'est plus une carte de visite.
+C'est le contexte que l'algorithme lit
+
+10
+00:01:25,700 --> 00:01:31,200
+avant de décider quoi faire
+de votre publication.

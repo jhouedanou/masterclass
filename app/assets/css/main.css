@@ -137,6 +137,30 @@
     color: var(--color-entrepreneurs);
   }
 
+  /* Le navigateur ne met la main que sur les liens : un `<button>`, un
+     `<select>` ou un `<summary>` gardent la flèche, et rien ne distingue plus
+     ce qui se clique de ce qui se lit. La règle rétablit l'usage partout d'un
+     coup, plutôt qu'une classe oubliée un écran sur trois.
+
+     `a[href]` et non `a` : une ancre sans destination n'est pas un lien. */
+  a[href],
+  button,
+  summary,
+  select,
+  [role='button'],
+  [role='tab'],
+  label:has(input:not([disabled])),
+  label:has(select:not([disabled])) {
+    cursor: pointer;
+  }
+
+  /* Ce qui est hors d'usage doit le dire au survol, pas seulement à l'œil. */
+  button:disabled,
+  select:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
   :focus-visible {
     outline: 2px solid var(--color-social);
     outline-offset: 2px;
