@@ -111,6 +111,18 @@ async function generer() {
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
+          <!-- Revoir le module reste ouvert quel que soit l'état de
+               l'attestation, y compris révoquée : le retrait du document ne
+               retire pas l'accès au cours, que seul `revoqueLe` sur l'accès
+               lui-même ferme. -->
+          <UiBaseButton
+            v-if="ligne.acces.module && ligne.etat !== 'non-commence'"
+            :to="`/mon-espace/module/${ligne.acces.module.slug}`"
+            taille="sm"
+            variante="contour"
+          >
+            Revoir le module
+          </UiBaseButton>
           <span
             v-if="ligne.certificat?.revoqueLe"
             class="rounded-full bg-[#fdeeee] px-3 py-1.5 text-[12px] font-bold text-erreur"

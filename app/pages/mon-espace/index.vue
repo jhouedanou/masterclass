@@ -185,14 +185,22 @@ const COULEUR_SURTITRE = {
             >
               Voir la session
             </UiBaseButton>
-            <UiBaseButton
-              v-else-if="carte.progression === 100"
-              :to="carte.certificat ? `/certificats/${carte.certificat}` : '/mon-espace/certificats'"
-              taille="sm"
-              variante="succes"
-            >
-              Mon certificat
-            </UiBaseButton>
+            <!-- Module terminé : le certificat d'abord, mais pas seul. Ce
+                 bouton était la seule issue de la carte, si bien qu'aller
+                 revoir un chapitre demandait de repasser par le catalogue —
+                 un module achevé n'est pas un module fermé. -->
+            <div v-else-if="carte.progression === 100" class="flex shrink-0 flex-col items-stretch gap-2">
+              <UiBaseButton
+                :to="carte.certificat ? `/certificats/${carte.certificat}` : '/mon-espace/certificats'"
+                taille="sm"
+                variante="succes"
+              >
+                Mon certificat
+              </UiBaseButton>
+              <UiBaseButton :to="`/mon-espace/module/${carte.slug}`" taille="sm" variante="contour">
+                Revoir le module
+              </UiBaseButton>
+            </div>
             <UiBaseButton v-else :to="`/mon-espace/module/${carte.slug}`" taille="sm" variante="sombre">
               {{ carte.progression > 0 ? 'Continuer' : 'Commencer' }}
             </UiBaseButton>
