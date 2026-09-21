@@ -12,6 +12,14 @@ const { data, error } = await useFetch<{
   formateur: Formateur | null
   thematique: Thematique | null
   programme: Programme | null
+  /** Avancement chapitre par chapitre. La route le rendait déjà — la page de
+   *  lecture était seule à ne pas s'en servir, et son sommaire n'affichait
+   *  donc que des durées, là où la fiche du module montre l'avancement. */
+  chapitres: {
+    position: number
+    etat: 'vu' | 'en-cours' | 'a-voir'
+    pourcentage: number
+  }[]
 }>(() => `/api/mon-espace/module/${route.params.slug}`)
 
 if (!data.value) {
@@ -255,6 +263,43 @@ function allerAuChapitre(nouvel: number, options?: { lire?: boolean }) {
 // Changer de chapitre par un autre chemin coupe aussi le décompte.
 watch(index, annulerEnchainement)
 
+/**
+ * Avancement d'un chapitre, tel que le sommaire l'affiche.
+ *
+ * Les valeurs viennent du serveur, sauf pour le chapitre en cours : celui-là se
+ * recalcule à la volée sur le cumul du lecteur. Sans cela, la pastille du
+ * chapitre qu'on est en train de regarder resterait figée sur ce qu'elle valait
+ * à l'ouverture de la page, ce qui est précisément le seul endroit où
+ * l'apprenant s'attend à la voir bouger.
+ *
+ * Le seuil de 95 % est celui du serveur (`listerVisionnagesModule`) et celui de
+ * la base : une seconde manque toujours à l'appel en fin de vidéo, le relevé
+ * partant en secondes entières.
+ */
+type Avancement = { etat: 'vu' | 'en-cours' | 'a-voir'; pourcentage: number }
+
+const avancements = computed<Avancement[]>(() =>
+  moduleCourant.value.chapitres.map((_, position) => {
+    const serveur = data.value?.chapitres.find((c) => c.position === position)
+    const repli: Avancement = serveur
+      ? { etat: serveur.etat, pourcentage: serveur.pourcentage }
+      : { etat: 'a-voir', pourcentage: 0 }
+
+    if (position !== index.value) return repli
+
+    const duree = lecteur.dureeSecondes.value || (chapitre.value?.videoDureeSecondes ?? 0)
+    if (!duree) return repli
+
+    // Le cumul du lecteur ne peut que dépasser celui du serveur, jamais le
+    // contredire : la base ne retient que la plus grande valeur.
+    const vues = Math.max(lecteur.secondesVues.value, (repli.pourcentage / 100) * duree)
+    const part = Math.min(100, Math.round((vues / duree) * 100))
+
+    if (repli.etat === 'vu' || vues >= duree * 0.95) return { etat: 'vu', pourcentage: 100 }
+    return { etat: part > 0 ? 'en-cours' : 'a-voir', pourcentage: part }
+  }),
+)
+
 /** Durée d'un chapitre, telle qu'annoncée : le sommaire doit se lire avant
  *  d'ouvrir la vidéo, donc sans attendre ses métadonnées. */
 function dureeChapitre(c: { videoDureeSecondes?: number | null; dureeMinutes?: number | null }): string {
@@ -444,12 +489,35 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
                 :aria-current="i === index ? 'true' : undefined"
                 @click="allerAuChapitre(i, { lire: true })"
               >
-                <span class="min-w-[22px] font-mono text-[12px]" :class="i === index ? 'text-social-clair' : 'text-discret'">
-                  {{ i + 1 }}
+                <!-- Le numéro cède la place à l'avancement dès qu'il y en a
+                     un : c'est la convention de la fiche du module, et le
+                     numéro se lit de toute façon dans l'ordre de la liste. -->
+                <span
+                  class="min-w-[26px] shrink-0 font-mono text-[12px]"
+                  :class="avancements[i]!.etat === 'vu'
+                    ? 'text-succes'
+                    : i === index ? 'text-social-clair' : 'text-discret'"
+                >
+                  <template v-if="avancements[i]!.etat === 'vu'">✓</template>
+                  <template v-else-if="avancements[i]!.etat === 'en-cours'">{{ avancements[i]!.pourcentage }}%</template>
+                  <template v-else>{{ i + 1 }}</template>
                 </span>
                 <span class="min-w-0 flex-1">
                   <span class="block text-[13.5px] font-bold">{{ c.libelle }}</span>
                   <span class="block truncate text-[12.5px] font-normal opacity-80">{{ c.titre }}</span>
+                  <!-- Un filet fin plutôt qu'un second chiffre : le sommaire se
+                       parcourt d'un coup d'œil par-dessus la vidéo. -->
+                  <span
+                    v-if="avancements[i]!.etat !== 'a-voir'"
+                    class="mt-1.5 block h-[3px] overflow-hidden rounded-full bg-white/15"
+                    aria-hidden="true"
+                  >
+                    <span
+                      class="block h-full rounded-full"
+                      :class="avancements[i]!.etat === 'vu' ? 'bg-succes' : 'bg-social'"
+                      :style="{ width: `${avancements[i]!.pourcentage}%` }"
+                    />
+                  </span>
                 </span>
                 <span class="shrink-0 font-mono text-[11.5px] text-discret">{{ dureeChapitre(c) }}</span>
               </button>
