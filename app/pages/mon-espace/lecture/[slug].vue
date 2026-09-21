@@ -630,14 +630,6 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
         />
       </div>
 
-      <div class="flex flex-wrap items-center justify-between gap-2 px-4 pt-3 text-[12px] text-discret-clair lg:px-8">
-        <span :title="`Vidéo réellement parcourue : ${horloge(lecteur.secondesVues.value)}`">
-          Seules les minutes de vidéo réellement parcourues comptent, quelle que soit la vitesse —
-          avancer dans la barre ne valide pas la progression.
-        </span>
-        <span>Vitesses : {{ vitesses.map((v) => `${v}×`).join(' · ') }}</span>
-      </div>
-
       <!-- Le script passe sous la vidéo, sur toute la largeur : c'est la
            disposition de la maquette, et elle laisse respirer les passages. -->
       <section class="mx-4 mt-5 mb-8 rounded-bloc bg-encre px-5 py-5 lg:mx-8 lg:px-7 lg:py-6">
