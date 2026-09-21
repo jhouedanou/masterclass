@@ -25,6 +25,7 @@
     "video:transcoder": "node scripts/transcoder-video.mjs",
     "video:publier": "node scripts/publier-video.mjs",
     "video:durees": "node --experimental-strip-types scripts/rattraper-durees-video.mjs",
+    "video:encoder": "node scripts/encoder-file-attente.mjs",
     "video:verifier": "node --experimental-strip-types scripts/verifier-video.mjs",
     "auth:configurer": "node scripts/configurer-auth-supabase.mjs"
   },

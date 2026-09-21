@@ -39,7 +39,27 @@ interface VideoMediatheque {
   deposeLe: string
   url: string
   usages: { chapitreId: string; libelle: string; moduleId: string; moduleTitre: string }[]
+  /** État du transcodage vers le multi-débit, `null` si aucun travail n'a
+   *  jamais été mis en file pour cette vidéo. */
+  encodage: {
+    statut: 'en-file' | 'encodage' | 'termine' | 'echec'
+    tentatives: number
+    paliers: string[] | null
+    erreur: string | null
+  } | null
 }
+
+/**
+ * Ce que l'équipe doit lire d'un coup d'œil : une vidéo fraîchement déposée
+ * reste un fichier unique tant que l'exécutant ne l'a pas reprise, et un échec
+ * doit se voir — une file qu'on ne regarde pas est une file qui ne se vide pas.
+ */
+const ETATS_ENCODAGE = {
+  'en-file': { texte: 'En attente d’encodage', classe: 'bg-alerte-voile text-alerte' },
+  encodage: { texte: 'Encodage en cours…', classe: 'bg-social/20 text-social' },
+  termine: { texte: 'Multi-débit', classe: 'bg-succes-voile text-succes' },
+  echec: { texte: 'Encodage en échec', classe: 'bg-erreur/15 text-erreur' },
+} as const
 
 /**
  * Chargement au montage plutôt qu'avec un `await useFetch` en tête de `setup`.
@@ -209,6 +229,26 @@ defineExpose({ refresh })
               déposée le {{ leJour(video.deposeLe) }}
               <template v-if="video.nomFichier !== video.nom"> · {{ video.nomFichier }}</template>
               <template v-if="video.format === 'hls'"> · flux transcodé</template>
+            </p>
+
+            <p v-if="video.encodage" class="mt-1.5 flex flex-wrap items-center gap-2">
+              <span
+                class="rounded-full px-2.5 py-[3px] text-[10.5px] font-bold"
+                :class="ETATS_ENCODAGE[video.encodage.statut].classe"
+              >
+                {{ ETATS_ENCODAGE[video.encodage.statut].texte }}
+              </span>
+              <span v-if="video.encodage.paliers?.length" class="text-[11.5px] text-discret">
+                {{ video.encodage.paliers.join(' · ') }}
+              </span>
+              <span
+                v-else-if="video.encodage.statut === 'echec'"
+                class="text-[11.5px] text-discret"
+                :title="video.encodage.erreur ?? ''"
+              >
+                après {{ video.encodage.tentatives }} tentative(s) — la vidéo reste lisible en une
+                seule définition
+              </span>
             </p>
 
             <p v-if="video.usages.length" class="mt-1 text-[11.5px] text-discret">

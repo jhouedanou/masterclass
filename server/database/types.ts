@@ -194,6 +194,21 @@ export type VideoRow = {
   maj_le: string
 }
 
+export type TravailVideoRow = {
+  id: string
+  video_id: string
+  cle: string
+  statut: 'en-file' | 'encodage' | 'termine' | 'echec'
+  tentatives: number
+  paliers: string[] | null
+  duree_secondes: number | null
+  octets: number | null
+  erreur: string | null
+  pris_le: string | null
+  cree_le: string
+  maj_le: string
+}
+
 export type ChapitreRow = {
   id: string
   module_id: string
@@ -810,6 +825,19 @@ export type Database = {
       reglages_seo: Table<ReglagesSeoRow, 'id' | 'maj_le'>
       redirections: Table<RedirectionRow, 'id' | 'creee_le'>
       erreurs_404: Table<Erreur404Row, 'vues' | 'premiere_le' | 'derniere_le'>
+      travaux_video: Table<
+        TravailVideoRow,
+        | 'id'
+        | 'statut'
+        | 'tentatives'
+        | 'paliers'
+        | 'duree_secondes'
+        | 'octets'
+        | 'erreur'
+        | 'pris_le'
+        | 'cree_le'
+        | 'maj_le'
+      >
       blocs_vitrine: Table<BlocVitrineRow, 'statut' | 'contenu' | 'publie_du' | 'publie_au' | 'maj_le' | 'maj_par'>
       temoignages: Table<TemoignageRow, 'id' | 'cree_le' | 'position' | 'publie'>
       reglages_tracking: Table<ReglagesTrackingRow, 'id' | 'maj_le' | 'maj_par'>
@@ -826,6 +854,10 @@ export type Database = {
       enregistrer_erreur_404: {
         Args: { p_chemin: string }
         Returns: undefined
+      }
+      prendre_travail_video: {
+        Args: { p_minutes_abandon?: number; p_tentatives_max?: number }
+        Returns: { id: string; video_id: string; cle: string; tentatives: number }[]
       }
       enregistrer_visionnage: {
         Args: { p_utilisateur_id: string; p_chapitre_id: string; p_secondes_vues: number }

@@ -322,6 +322,78 @@ await attendValeur(
   `select enregistrer_visionnage('usr-fatou', ${CH(1)}, 14)`,
 )
 
+// --- File d'encodage ---------------------------------------------------------
+
+console.log('\nFile d’encodage')
+
+await db.query(
+  `insert into videos (cle, nom, nom_fichier, format)
+   values ('travail-essai', 'Essai', 'essai.mp4', 'fichier')
+   on conflict (cle) do nothing`,
+)
+const VIDEO = `(select id from videos where cle = 'travail-essai')`
+
+await db.query(`insert into travaux_video (video_id, cle) values (${VIDEO}, 'travail-essai')`)
+
+await attendErreur(
+  'un seul travail vivant par vidéo',
+  '23505',
+  `insert into travaux_video (video_id, cle) values (${VIDEO}, 'travail-essai')`,
+)
+
+await attendValeur(
+  'la prise saisit le travail en attente',
+  'travail-essai',
+  `select cle from prendre_travail_video()`,
+)
+await attendValeur(
+  'le travail saisi passe en encodage',
+  'encodage',
+  `select statut from travaux_video where cle = 'travail-essai'`,
+)
+await attendValeur(
+  'une seconde prise ne rend rien — la file est vide',
+  0,
+  `select count(*)::int from prendre_travail_video()`,
+)
+
+// Un exécutant disparu : le travail dort « en encodage » et doit revenir.
+await db.query(
+  `update travaux_video set pris_le = now() - interval '3 hours' where cle = 'travail-essai'`,
+)
+await attendValeur(
+  'un travail abandonné retourne à la file',
+  'travail-essai',
+  `select cle from prendre_travail_video(60, 3)`,
+)
+
+// Le plafond de tentatives : sans lui, un fichier inencodable reprend sa place
+// indéfiniment et la file ne se vide jamais.
+await db.query(
+  `update travaux_video set tentatives = 3, pris_le = now() - interval '3 hours'
+    where cle = 'travail-essai'`,
+)
+await attendValeur(
+  'au-delà du plafond, la reprise rend la main',
+  0,
+  `select count(*)::int from prendre_travail_video(60, 3)`,
+)
+await attendValeur(
+  'et le travail est déclaré en échec',
+  'echec',
+  `select statut from travaux_video where cle = 'travail-essai'`,
+)
+
+// L'effacement et le décompte tiennent en deux instructions : dans une seule,
+// la suppression en cascade et la lecture partagent le même instantané, et le
+// contrôle verrait encore la ligne qu'il vient de faire disparaître.
+await db.query(`delete from videos where cle = 'travail-essai'`)
+await attendValeur(
+  'effacer la vidéo emporte ses travaux',
+  0,
+  `select count(*)::int from travaux_video where cle = 'travail-essai'`,
+)
+
 // --- Contraintes et déclencheurs --------------------------------------------
 
 console.log('\nContraintes')

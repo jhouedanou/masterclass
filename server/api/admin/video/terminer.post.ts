@@ -1,5 +1,6 @@
 import { enregistrerJournal } from '../../../database/administration'
 import { majVideoChapitre, trouverChapitre } from '../../../database/catalogue'
+import { mettreEnFile } from '../../../database/encodage'
 import { inscrireVideo } from '../../../database/mediatheque'
 import { cloreTeleversement, trouverTeleversement } from '../../../database/video'
 import { lireDureeDepuisStockage, terminerDepot } from '../../../utils/video'
@@ -69,6 +70,16 @@ export default defineEventHandler(async (event) => {
   })
   await cloreTeleversement(uploadId, 'termine')
 
+  // Le fichier part à l'encodage, et le chapitre n'attend pas : il est lisible
+  // dès maintenant en `fichier`, et passera de lui-même au flux à plusieurs
+  // débits quand l'exécutant aura fini. Un encodage qui échoue laisse donc un
+  // chapitre lisible, pas un chapitre mort.
+  //
+  // L'échec de la mise en file ne fait pas échouer le dépôt : les octets sont
+  // arrivés, le chapitre fonctionne, et la file se relance à la main depuis la
+  // médiathèque.
+  const travail = await mettreEnFile(video.id, suivi.cle).catch(() => null)
+
   // La vidéo que ce chapitre servait jusqu'ici n'est pas effacée : elle reste
   // à la médiathèque, d'où elle se rattache ailleurs ou se supprime
   // délibérément. Un dépôt de remplacement ne détruit donc plus rien.
@@ -80,5 +91,10 @@ export default defineEventHandler(async (event) => {
     { type: 'contenu', objet: suivi.chapitreId },
   )
 
-  return { cle: suivi.cle, dureeSecondes, tailleOctets: fini.taille }
+  return {
+    cle: suivi.cle,
+    dureeSecondes,
+    tailleOctets: fini.taille,
+    encodageEnFile: Boolean(travail),
+  }
 })

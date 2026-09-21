@@ -33,6 +33,9 @@ server/database/types.generes.ts
 # vivent sur le stockage d'objets, pas dans l'historique Git.
 medias/sources
 medias/hls
+# Dépôt tiré puis transcodé par l'exécutant d'encodage, effacé après chaque
+# travail — il ne survit à un plantage que le temps de la passe suivante.
+medias/atelier
 docs/Comptes-de-test-E-Masterclass.xlsx
 docs/email-testeurs.md
 

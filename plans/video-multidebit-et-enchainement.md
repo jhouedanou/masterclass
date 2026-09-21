@@ -333,17 +333,43 @@ côté client, et rend le lecteur cohérent tout de suite : il passe devant.
 
 | Lot | Contenu | Dépend de |
 |---|---|---|
-| **1 — Enchaînement** | drapeau `lireDesQuePret()` + point d'appel explicite ; refus de `play()` traité ; vidage du compteur avant changement d'index | — |
-| **2 — Fin de module & préférence** | surimpression de fin de module ; « Ne plus enchaîner » en `localStorage` | 1 |
-| **3 — Échelle 1080p** | palier 1080p + `profil` par palier dans `transcoder-video.mjs` ; arbitrage du `preset` | — |
-| **4 — Bascule de format sûre** | `update` ciblé de `video_format` sur tous les chapitres d'une vidéo, **sans** `retirerEtatPret` ; suppression d'un préfixe HLS depuis la médiathèque (points ①②④) | 3 |
-| **5 — Pipeline d'encodage** | migration `travaux_video` ; mise en file à la fin de `terminer.post.ts` (là où `videoFormat: 'fichier'` est écrit aujourd'hui) ; exécutant ; état visible dans l'administration | 4, **et la décision 2.1** |
+| ~~**1 — Enchaînement**~~ **fait** (`ec8f822`) | `lireDesQuePret()` posé par l'appelant et consommé à `loadedmetadata` ; refus de `play()` relevé par un bouton en surimpression ; le cumul part avant la remise à zéro, rattaché au chapitre qu'il quitte | — |
+| ~~**2 — Fin de module & préférence**~~ **fait** (`ec8f822`) | surimpression de fin de module ; « Ne plus enchaîner » retenu en `localStorage` | 1 |
+| ~~**3 — Échelle 1080p**~~ **fait** (`ec8f822`) | palier 1080p en profil `high`, `profil` devenu champ de palier, preset `medium` réglable par `VIDEO_PRESET` | — |
+| ~~**4 — Bascule de format sûre**~~ **fait** (`ec8f822`) | `basculerFormatVideo` reporte le format à tous les chapitres, sans `retirerEtatPret`, chapitres écrits **avant** la vidéo ; refus de suppression HLS levé ; la boucle de pagination du Worker corrigée — `list()` plafonne à mille objets, une échelle complète en pose deux mille | 3 |
+| **5 — Pipeline d'encodage** — **écrit, jamais exécuté** | migration `20261005120000_file_encodage.sql` (table + `prendre_travail_video` en `skip locked`) ; `server/database/encodage.ts` ; mise en file dans `terminer.post.ts` ; routes `/api/taches/encodage/{prendre,terminer,echouer}` sous `TACHES_CLE` ; `scripts/encoder-file-attente.mjs` ; état affiché dans la médiathèque | 4 |
 | **6 — Sélecteur de qualité** | ~~paliers exposés, pilule dans la barre, masquage `fichier` + Safari natif~~ — **fait le 21/09/2026** : `niveaux`/`niveauChoisi`/`choisirNiveau()` dans le composable, pilule cyclante dans la barre, étiquette inerte quand il n'y a rien à choisir. Vérifié au navigateur : le choix de 240p envoie bien tous les segments sur cette variante. Sans effet tant que les vidéos restent des MP4 uniques. | 3 |
 
 Les lots 1 à 4 ne demandent aucune décision d'infrastructure et peuvent partir
 tout de suite. Le lot 5 attend la réponse à 2.1.
 
 ---
+
+## 4 bis. Mettre l'exécutant en service
+
+Le lot 5 est écrit et vérifié en base, **mais il n'a jamais tourné** : il lui
+faut une machine, et cette machine n'existe pas encore. Ce qu'elle demande :
+
+- **ffmpeg et ffprobe** dans le `PATH` ;
+- les **identifiants R2 de wrangler** — `CLOUDFLARE_API_TOKEN`, ou un
+  `wrangler login` — puisque l'exécutant lit le dépôt et repose le flux
+  directement dans le seau. Faire transiter deux mille segments par le plan de
+  contrôle du Worker, conçu pour un objet en plusieurs parts, n'aurait pas de
+  sens ;
+- **`APP_URL` et `TACHES_CLE`**, la même clé partagée que la purge des comptes.
+  L'exécutant n'est pas un administrateur connecté, c'est un processus : il ne
+  reçoit que l'identifiant du travail et la clé du dossier.
+
+Puis, sur cette machine :
+
+```
+npm run video:encoder            # une passe, puis sortie — pour un cron
+npm run video:encoder -- --boucle  # tourne en continu — pour un conteneur
+```
+
+Le premier essai devrait porter sur **une vidéo déjà en ligne**, remise en file
+à la main, et non sur un dépôt neuf : l'échec se constate alors sans bloquer
+personne, le chapitre restant lisible dans sa forme d'origine tout du long.
 
 ## 5. Décisions prises — 21/09/2026
 
