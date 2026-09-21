@@ -45,3 +45,6 @@ yarn.lock
 .wrangler
 # Rushs vidéo des modules — jamais versionnés
 /MODULES VIDEOS/
+
+# Secrets d'environnement — aucune variante ne part au dépôt
+.env*

@@ -19,7 +19,7 @@
     "db:seed:generer": "node --experimental-strip-types scripts/generer-seed.ts",
     "db:sql": "node scripts/generer-sql-en-ligne.mjs",
     "db:types": "supabase gen types typescript --local > server/database/types.generes.ts",
-    "db:verifier": "node scripts/verifier-migrations.mjs",
+    "db:verifier": "node --experimental-strip-types scripts/verifier-migrations.mjs",
     "db:comparer": "node --experimental-strip-types scripts/comparer-base.ts",
     "db:appliquer": "node --experimental-strip-types scripts/appliquer-sql.ts",
     "video:transcoder": "node scripts/transcoder-video.mjs",
