@@ -577,6 +577,16 @@ const pastilleModule = 'rounded-full px-2 py-[3px] text-[10.5px] font-bold'
         <p class="surtitre-menu text-discret">
           Module {{ numeroModule(moduleSelectionne.numero) }} — trois objets indépendants
         </p>
+        <!-- L'éditeur complet n'était joignable que par de petits liens au fil
+             des cartes : la recette ne l'a pas trouvé (ADM-06). -->
+        <UiBaseButton
+          :to="`/admin/module/${moduleSelectionne.id}`"
+          taille="sm"
+          variante="sombre"
+          class="mt-3 w-full justify-center"
+        >
+          Ouvrir l’éditeur du module
+        </UiBaseButton>
 
         <div class="mt-1.5 flex flex-col gap-3">
           <section class="rounded-[12px] border border-ligne-douce p-4">
@@ -681,16 +691,20 @@ const pastilleModule = 'rounded-full px-2 py-[3px] text-[10.5px] font-bold'
             </div>
             <p class="mt-2 text-[12.5px] leading-[1.6] text-texte">
               {{ formatFcfa(moduleSelectionne.prixFcfa) }}<template v-if="moduleSelectionne.offreOuverteLe"> ·
-              ouverte le {{ dateCourte(moduleSelectionne.offreOuverteLe) }}</template>. Ouverture
-              bloquée tant que fiche non publiée ou module non «&nbsp;Prêt&nbsp;». Fermer l’offre ne
-              retire jamais les accès acquis.
+              ouverte le {{ dateCourte(moduleSelectionne.offreOuverteLe) }}</template>. L’offre ne
+              s’ouvre pas sans promesse, sans «&nbsp;pourquoi&nbsp;» et sans au moins un chapitre.
+              Fermer l’offre ne retire jamais les accès acquis.
             </p>
+            <div class="mt-2.5 flex flex-wrap gap-2 text-[12px] font-bold">
+              <NuxtLink :to="`/admin/module/${moduleSelectionne.id}?onglet=offre`">Gérer l’offre et le prix</NuxtLink>
+            </div>
           </section>
         </div>
       </aside>
 
       <aside v-else class="rounded-[14px] border border-dashed border-ligne bg-white p-10 text-center text-[13.5px] text-discret">
-        Sélectionnez un module pour voir sa fiche, son contenu et son offre.
+        Cliquez sur un module dans la liste pour voir sa fiche, son contenu et son offre, puis
+        ouvrir son éditeur.
       </aside>
     </div>
   </div>

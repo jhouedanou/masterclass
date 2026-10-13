@@ -211,17 +211,14 @@ async function agirSurAcces(moduleId: string, action: 'revoquer' | 'retablir') {
 
 // --- Ajout d'un apprenant (écran 13) ----------------------------------------
 
-/** La maquette demande un seul champ « Nom complet » ; l'API attend un prénom
- *  et un nom, découpés ici. */
-function decouperNom(complet: string): { prenom: string; nom: string } {
-  const parties = complet.trim().split(/\s+/)
-  if (parties.length < 2) return { prenom: '', nom: complet.trim() }
-  return { prenom: parties[0] ?? '', nom: parties.slice(1).join(' ') }
-}
+// La maquette ne prévoyait qu'un champ « Nom complet », découpé au premier
+// espace : un nom d'un seul mot laissait le prénom vide et l'API refusait la
+// création (recette du 13/10, ADM-12). Prénom et nom sont donc saisis à part.
 
 const AJOUT_VIDE = {
   ouvert: false,
-  nomComplet: '',
+  prenom: '',
+  nom: '',
   email: '',
   whatsapp: '',
   attribuerEnsuite: true,
@@ -237,15 +234,14 @@ async function ajouterApprenant() {
   erreurAjout.value = ''
   lienDefinition.value = ''
   ajoutEnCours.value = true
-  const { prenom, nom } = decouperNom(ajout.nomComplet)
   try {
     const r = await $fetch<{ lienDefinition?: string; moduleAttribue?: string }>(
       '/api/admin/apprenants',
       {
         method: 'POST',
         body: {
-          prenom,
-          nom,
+          prenom: ajout.prenom,
+          nom: ajout.nom,
           email: ajout.email,
           whatsapp: ajout.whatsapp,
           moduleId: ajout.attribuerEnsuite ? ajout.moduleId : '',
@@ -262,7 +258,8 @@ async function ajouterApprenant() {
     Object.assign(ajout, AJOUT_VIDE)
     await refresh()
   } catch (e) {
-    erreurAjout.value = (e as { statusMessage?: string }).statusMessage ?? 'La création a échoué.'
+    const r = e as { statusMessage?: string; data?: { statusMessage?: string } }
+    erreurAjout.value = r.data?.statusMessage ?? r.statusMessage ?? 'La création a échoué.'
   } finally {
     ajoutEnCours.value = false
   }
@@ -544,10 +541,16 @@ const ETIQUETTE = 'flex flex-col gap-1.5 text-[12.5px] font-bold text-texte'
           d’accès.
         </p>
         <div class="flex flex-col gap-3">
-          <label :class="ETIQUETTE">
-            Nom complet
-            <input v-model="ajout.nomComplet" required :class="CHAMP">
-          </label>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <label :class="ETIQUETTE">
+              Prénom
+              <input v-model="ajout.prenom" required autocomplete="off" :class="CHAMP">
+            </label>
+            <label :class="ETIQUETTE">
+              Nom
+              <input v-model="ajout.nom" required autocomplete="off" :class="CHAMP">
+            </label>
+          </div>
           <label :class="ETIQUETTE">
             Email
             <input v-model="ajout.email" type="email" required :class="CHAMP">

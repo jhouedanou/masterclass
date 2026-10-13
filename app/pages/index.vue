@@ -95,7 +95,7 @@ useJsonLd({
     <!-- bandeau sous le hero -->
     <div class="border-b border-ligne-claire bg-fond-clair">
       <div class="conteneur flex flex-wrap gap-x-7 gap-y-2 py-4.5 text-[14px] text-texte">
-        <span><b class="text-encre">{{ compterModules(nbModulesTotal) }}</b><span class="hidden lg:inline"> disponibles</span></span>
+        <NuxtLink to="/modules" class="hover:underline"><b class="text-encre">{{ compterModules(nbModulesTotal) }}</b><span class="hidden lg:inline"> disponibles</span></NuxtLink>
         <span><b class="text-encre">10 000 FCFA TTC</b><span class="hidden lg:inline"> par module</span></span>
         <span><b class="text-encre">Accès à vie</b><span class="hidden lg:inline"> après l’achat</span></span>
       </div>
@@ -152,6 +152,12 @@ useJsonLd({
               Découvrir le programme {{ programme.nom }}
             </UiBaseButton>
           </article>
+        </div>
+        <!-- Point d'entrée explicite vers le catalogue complet (recette, VIT-11). -->
+        <div class="mt-8 text-center">
+          <UiBaseButton to="/modules" variante="contour">
+            Voir les {{ compterModules(nbModulesTotal) }}
+          </UiBaseButton>
         </div>
       </div>
     </section>

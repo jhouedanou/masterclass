@@ -315,7 +315,11 @@ export interface PreferencesNotifications {
   email: boolean
   whatsapp: boolean
   rappelsSessions: boolean
+  /** Nouveaux modules des programmes suivis. */
   nouveautes: boolean
+  /** Offres et actualités. Absente des comptes antérieurs au 13/10/2026, qui
+   *  n'avaient qu'un interrupteur pour les deux : elle reprend alors `nouveautes`. */
+  offres?: boolean
 }
 
 export interface Acces {

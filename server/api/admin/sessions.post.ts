@@ -1,4 +1,4 @@
-import { DUREE_SESSION_MINUTES } from '#shared/utils/coaching'
+import { DUREE_SESSION_MINUTES, PLACES_SESSION } from '#shared/utils/coaching'
 import { enregistrerJournal } from '../../database/administration'
 import { listerThematiques, trouverFormateur } from '../../database/catalogue'
 import { creerSession } from '../../database/coaching'
@@ -9,8 +9,13 @@ import { creerReunion, debutSession } from '../../utils/zoom'
  * Planification d'une session. La réunion Zoom est créée à la validation —
  * intégration à brancher ; le lien n'est jamais affiché en clair aux apprenants.
  *
- * L'unicité « une session par thématique et par date » est portée par un index
- * partiel : deux planifications simultanées ne peuvent plus se doubler.
+ * L'unicité « une session par couple thématique–formateur et par mois » est
+ * portée par un index partiel : deux planifications simultanées ne peuvent pas
+ * se doubler.
+ *
+ * Le format est celui du modèle économique — deux heures, vingt-cinq places —
+ * et n'est pas négociable depuis l'écran : le corps de la requête n'en décide
+ * pas.
  */
 export default defineEventHandler(async (event) => {
   const admin = await exigerSection(event, 'calendrier-sessions')
@@ -19,8 +24,6 @@ export default defineEventHandler(async (event) => {
     formateurId: string
     date: string
     heure: string
-    dureeMinutes?: number
-    places?: number
     titre?: string
     ouvertureSalleMinutes?: number
     enregistrement?: boolean
@@ -41,7 +44,7 @@ export default defineEventHandler(async (event) => {
   const zoom = await creerReunion({
     sujet: body.titre?.trim() || `${thematique.nom} — coaching collectif`,
     debutIso: debutSession(body.date, body.heure).toISOString(),
-    dureeMinutes: body.dureeMinutes ?? DUREE_SESSION_MINUTES,
+    dureeMinutes: DUREE_SESSION_MINUTES,
     enregistrement: body.enregistrement === true,
   })
   const session = await creerSession({
@@ -50,8 +53,8 @@ export default defineEventHandler(async (event) => {
     formateurId: body.formateurId,
     date: body.date,
     heure: body.heure,
-    dureeMinutes: body.dureeMinutes,
-    places: body.places,
+    dureeMinutes: DUREE_SESSION_MINUTES,
+    places: PLACES_SESSION,
     titre: body.titre?.trim() || undefined,
     ouvertureSalleMinutes: body.ouvertureSalleMinutes,
     enregistrement: body.enregistrement === true,

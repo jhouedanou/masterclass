@@ -140,7 +140,7 @@ async function generer() {
             Obtenir mon certificat
           </UiBaseButton>
           <span v-else-if="ligne.etat === 'en-progression'" class="rounded-full bg-alerte-voile px-3 py-1.5 text-[12px] font-bold text-alerte">
-            En progression
+            En progression · {{ Math.round(ligne.acces.progression) }} %
           </span>
         </div>
       </article>

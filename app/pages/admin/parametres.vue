@@ -3,7 +3,7 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Paramètres — administration')
 
 /**
- * Écran 20 : quatre volets.
+ * Écran 20 : six volets, listés dans `VOLETS_PARAMETRES`.
  *
  * Les trois premiers rendent l'écran qui fait le travail, ils ne s'y contentent
  * plus de renvoyer — c'est ce que montre la maquette, et c'est aussi ce qui
@@ -27,14 +27,23 @@ const { data } = await useFetch<{
   role: string
 }>('/api/admin/parametres')
 
-const onglet = ref('profil')
-const ONGLETS = [
-  { cle: 'acces', libelle: 'Administration des accès' },
-  { cle: 'tracking', libelle: 'Tracking & pixels 🔒' },
-  { cle: 'referencement', libelle: 'Référencement · règles globales 🔒' },
-  { cle: 'attestations', libelle: 'Attestations' },
-  { cle: 'profil', libelle: 'Mon profil' },
-]
+// Le volet ouvert suit `?volet=` : la barre latérale pointe directement sur
+// chacun, et un lien copié rouvre le même volet.
+const route = useRoute()
+const router = useRouter()
+const voletsVisibles = computed(() =>
+  VOLETS_PARAMETRES.filter((v) => !v.section || auth.voitSection(v.section)),
+)
+const ONGLETS = computed(() =>
+  voletsVisibles.value.map((v) => ({ cle: v.cle, libelle: v.verrou ? `${v.libelle} 🔒` : v.libelle })),
+)
+const onglet = computed<string>({
+  get: () => {
+    const demande = route.query.volet
+    return voletsVisibles.value.some((v) => v.cle === demande) ? (demande as string) : VOLET_PARAMETRES_DEFAUT
+  },
+  set: (volet) => router.replace({ query: { ...route.query, volet } }),
+})
 
 const message = ref('')
 
@@ -144,6 +153,8 @@ const titreCarte = 'font-sans text-[15px] font-bold'
       <AdminVoletTracking v-else-if="onglet === 'tracking'" class="mt-[22px]" />
 
       <AdminVoletAttestations v-else-if="onglet === 'attestations'" class="mt-[22px]" />
+
+      <AdminVoletFinancier v-else-if="onglet === 'financier'" class="mt-[22px] max-w-[760px]" />
 
       <div v-else-if="onglet === 'referencement'" class="mt-[22px]">
         <section :class="carte">

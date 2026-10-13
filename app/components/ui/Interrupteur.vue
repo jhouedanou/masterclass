@@ -25,9 +25,12 @@ const emit = defineEmits<{ 'update:modelValue': [valeur: boolean] }>()
       :class="modelValue ? 'bg-whatsapp' : 'bg-gris-perle'"
       @click="emit('update:modelValue', !modelValue)"
     >
+      <!-- `left-0` ancre la pastille au bord gauche de la piste : sans lui, sa
+           position de départ suivait le centrage du contenu du bouton et la
+           pastille débordait de la piste une fois allumée (recette, APP-07). -->
       <span
-        class="absolute top-0.5 size-[18px] rounded-full bg-white shadow transition-transform"
-        :class="modelValue ? 'translate-x-5' : 'translate-x-0.5'"
+        class="absolute top-0.5 left-0 size-[18px] rounded-full bg-white shadow transition-transform"
+        :class="modelValue ? 'translate-x-[20px]' : 'translate-x-[2px]'"
       />
     </button>
   </label>

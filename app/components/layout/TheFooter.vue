@@ -27,6 +27,7 @@ const { reinitialiser } = useConsentement()
         <p class="mb-1 font-title text-[15px] font-light text-encre">Programmes</p>
         <NuxtLink to="/programmes/social-media">Social Média</NuxtLink>
         <NuxtLink to="/programmes/entrepreneurs">Entrepreneurs</NuxtLink>
+        <NuxtLink to="/modules">Tous les modules</NuxtLink>
         <NuxtLink to="/sessions">Calendrier des sessions</NuxtLink>
       </nav>
 
@@ -36,6 +37,7 @@ const { reinitialiser } = useConsentement()
         <NuxtLink to="/devenir-formateur">Devenir formateur</NuxtLink>
         <NuxtLink to="/blog">Blog</NuxtLink>
         <NuxtLink to="/contact">Contact &amp; FAQ</NuxtLink>
+        <NuxtLink to="/verifier">Vérifier une attestation</NuxtLink>
         <NuxtLink to="/mon-espace">Mon espace</NuxtLink>
       </nav>
 

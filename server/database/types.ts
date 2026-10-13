@@ -251,6 +251,7 @@ export type UtilisateurRow = {
     whatsapp: boolean
     rappelsSessions: boolean
     nouveautes: boolean
+    offres?: boolean
   }
   supprime_le: string | null
   suppression_prevue_le: string | null

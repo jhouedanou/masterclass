@@ -45,23 +45,38 @@ async function changerWhatsapp() {
 }
 
 // --- Notifications : trois interrupteurs (planche B, écran 11) -------------
-const preferences = reactive<PreferencesNotifications>({
-  email: true,
-  whatsapp: true,
-  rappelsSessions: true,
-  nouveautes: false,
-  ...(auth.utilisateur?.preferencesNotifications ?? {}),
+// « Offres et actualités » avait d'abord partagé la préférence `nouveautes`
+// avec « Nouveaux modules » : couper l'un des deux interrupteurs ne
+// s'enregistrait pas tant que l'autre restait allumé (recette du 13/10, APP-07).
+// Chacun a désormais la sienne ; un compte ancien hérite de `nouveautes`.
+const enregistrees = auth.utilisateur?.preferencesNotifications
+const preferences = reactive<Required<PreferencesNotifications>>({
+  email: enregistrees?.email ?? true,
+  whatsapp: enregistrees?.whatsapp ?? true,
+  rappelsSessions: enregistrees?.rappelsSessions ?? true,
+  nouveautes: enregistrees?.nouveautes ?? false,
+  offres: enregistrees?.offres ?? enregistrees?.nouveautes ?? false,
 })
-/** « Nouveaux modules de mes programmes » et « Offres et actualités » partagent la préférence `nouveautes`. */
-const nouveauxModules = ref(preferences.nouveautes)
-const offres = ref(preferences.nouveautes)
 const messagePreferences = ref('')
-watch([() => preferences.rappelsSessions, nouveauxModules, offres], async () => {
-  preferences.nouveautes = nouveauxModules.value || offres.value
-  await $fetch('/api/mon-espace/compte/notifications', { method: 'PUT', body: { ...preferences } })
-  await auth.rafraichir()
-  messagePreferences.value = 'Préférences enregistrées.'
-})
+const erreurPreferences = ref('')
+let effacement: ReturnType<typeof setTimeout> | undefined
+watch(
+  () => [preferences.rappelsSessions, preferences.nouveautes, preferences.offres],
+  async () => {
+    clearTimeout(effacement)
+    messagePreferences.value = ''
+    erreurPreferences.value = ''
+    try {
+      await $fetch('/api/mon-espace/compte/notifications', { method: 'PUT', body: { ...preferences } })
+      await auth.rafraichir()
+      messagePreferences.value = 'Préférences enregistrées.'
+      effacement = setTimeout(() => (messagePreferences.value = ''), 3000)
+    } catch {
+      erreurPreferences.value = 'Enregistrement impossible. Réessayez dans un instant.'
+    }
+  },
+)
+onBeforeUnmount(() => clearTimeout(effacement))
 
 // --- Suppression -------------------------------------------------------------
 const suppression = ref(false)
@@ -130,10 +145,11 @@ const suppression = ref(false)
       <h2 class="font-title text-[19px] font-light">Notifications</h2>
       <div class="mt-2 divide-y divide-ligne-claire">
         <UiInterrupteur v-model="preferences.rappelsSessions" libelle="Rappels de session de coaching (email + WhatsApp)" />
-        <UiInterrupteur v-model="nouveauxModules" libelle="Nouveaux modules de mes programmes" />
-        <UiInterrupteur v-model="offres" libelle="Offres et actualités E-Masterclass Big Five" />
+        <UiInterrupteur v-model="preferences.nouveautes" libelle="Nouveaux modules de mes programmes" />
+        <UiInterrupteur v-model="preferences.offres" libelle="Offres et actualités E-Masterclass Big Five" />
       </div>
-      <p v-if="messagePreferences" class="mt-2 text-[13px] text-succes">{{ messagePreferences }}</p>
+      <p v-if="messagePreferences" role="status" class="mt-2 text-[13px] text-succes">{{ messagePreferences }}</p>
+      <p v-if="erreurPreferences" role="alert" class="mt-2 text-[13px] text-erreur">{{ erreurPreferences }}</p>
     </section>
 
     <section class="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-erreur/40 bg-white p-5">

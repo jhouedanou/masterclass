@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Formateur, Module, SessionCoaching, Thematique } from '#shared/types'
-import { DUREE_SESSION_MINUTES, dureeSessionEnHeures, PLACES_SESSION } from '#shared/utils/coaching'
+import { dureeSessionEnHeures, PLACES_SESSION } from '#shared/utils/coaching'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Calendrier des sessions — administration')
@@ -153,8 +153,6 @@ const DEFAUTS = {
   heure: '19:00',
   fuseau: 'GMT (Abidjan)',
   titre: '',
-  dureeMinutes: DUREE_SESSION_MINUTES,
-  places: PLACES_SESSION,
   ouvertureSalleMinutes: 15,
   enregistrement: false,
 }
@@ -168,7 +166,6 @@ const modification = ref<SessionAdmin | null>(null)
 const retouche = reactive({
   formateurId: '',
   titre: '',
-  dureeMinutes: DUREE_SESSION_MINUTES,
   places: PLACES_SESSION,
   ouvertureSalleMinutes: 15,
   enregistrement: false,
@@ -183,7 +180,6 @@ function ouvrirModification(session: SessionAdmin) {
   Object.assign(retouche, {
     formateurId: session.formateurId,
     titre: session.titre ?? '',
-    dureeMinutes: session.dureeMinutes,
     places: session.places,
     ouvertureSalleMinutes: session.ouvertureSalleMinutes,
     enregistrement: session.enregistrement,
@@ -204,7 +200,6 @@ async function enregistrerModification() {
         action: 'modifier',
         formateurId: retouche.formateurId,
         titre: retouche.titre,
-        dureeMinutes: retouche.dureeMinutes,
         places: retouche.places,
         ouvertureSalleMinutes: retouche.ouvertureSalleMinutes,
         enregistrement: retouche.enregistrement,
@@ -352,7 +347,7 @@ async function creer() {
     <!-- Règles du calendrier (rappel CDC), sous le tableau comme la maquette. -->
     <aside class="mt-5 rounded-carte border border-ligne-douce bg-white p-[22px] text-[13px] leading-[1.7] text-texte">
       <b class="text-[14px] text-encre">Règles du calendrier (rappel CDC)</b><br>
-      Une session par couple thématique–formateur · 10 sessions mensuelles en Phase 1 (5 SM + 5
+      Une session par mois et par couple thématique–formateur · 10 sessions mensuelles en Phase 1 (5 SM + 5
       ENT) · {{ dureeSessionEnHeures() }} · {{ PLACES_SESSION }} participants max · jour fixe du mois · visible uniquement des apprenants
       ayant acheté un module couvert · lien Zoom personnel généré à la demande, jamais affiché en
       clair · rappel automatique 24 h avant par email + WhatsApp.
@@ -432,11 +427,12 @@ async function creer() {
         </label>
         <label class="flex flex-col gap-[5px] text-[12px] font-bold">
           Durée
-          <input v-model.number="creation.dureeMinutes" type="number" min="30" step="15" required class="w-full rounded-[10px] border-[1.5px] border-ligne px-[13px] py-[11px] text-[13px] bg-fond-clair">
+          <!-- Format du modèle économique : affiché, jamais saisi (planche C, écran 03). -->
+          <input :value="dureeSessionEnHeures()" readonly aria-readonly="true" tabindex="-1" class="w-full cursor-not-allowed rounded-[10px] border-[1.5px] border-ligne px-[13px] py-[11px] text-[13px] bg-fond-clair text-discret">
         </label>
         <label class="flex flex-col gap-[5px] text-[12px] font-bold">
           Capacité
-          <input v-model.number="creation.places" type="number" min="1" required class="w-full rounded-[10px] border-[1.5px] border-ligne px-[13px] py-[11px] text-[13px] bg-fond-clair">
+          <input :value="`${PLACES_SESSION} places`" readonly aria-readonly="true" tabindex="-1" class="w-full cursor-not-allowed rounded-[10px] border-[1.5px] border-ligne px-[13px] py-[11px] text-[13px] bg-fond-clair text-discret">
         </label>
         <label class="flex flex-col gap-[5px] text-[12px] font-bold">
           Ouverture de la salle
@@ -488,10 +484,6 @@ async function creer() {
             </select>
           </label>
           <label class="block">
-            <span class="mb-1.5 block text-[13px] font-bold">Durée (minutes)</span>
-            <input v-model.number="retouche.dureeMinutes" type="number" min="30" step="15" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
-          </label>
-          <label class="block">
             <span class="mb-1.5 block text-[13px] font-bold">Date</span>
             <input v-model="retouche.date" type="date" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
           </label>
@@ -505,10 +497,11 @@ async function creer() {
               v-model.number="retouche.places"
               type="number"
               :min="modification.inscrits || 1"
+              :max="PLACES_SESSION"
               class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]"
             >
             <span class="mt-1 block text-[12px] text-discret">
-              Pas en dessous des {{ modification.inscrits }} déjà inscrits.
+              Entre les {{ modification.inscrits }} déjà inscrits et {{ PLACES_SESSION }} places.
             </span>
           </label>
           <label class="block">
