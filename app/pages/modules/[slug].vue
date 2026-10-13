@@ -71,10 +71,22 @@ const inclus = computed(() => {
   ]
 })
 
+/** La couverture, sauf si son format ne passe pas les réseaux sociaux. */
+const partageable = computed(() =>
+  moduleCourant.value.image && !/\.webp(\?|$)/i.test(moduleCourant.value.image)
+    ? moduleCourant.value.image
+    : undefined,
+)
+
 usePageSeo({
   // Gabarit automatique du Title module (spec SEO §4).
   titreAuto: `${moduleCourant.value.titre} | E-Masterclass Big Five`,
   descriptionAuto: moduleCourant.value.promesse,
+  // La couverture fait aussi l'aperçu de partage : c'est pour cela qu'elle est
+  // demandée en 1200 × 630. Le WebP en est écarté — Facebook et LinkedIn ne le
+  // rendent pas de façon fiable en `og:image`, et une vignette absente vaut
+  // moins que la vignette par défaut du site.
+  imageAuto: partageable.value,
   seo: moduleCourant.value.seo,
 })
 
@@ -258,8 +270,8 @@ function acheter() {
             :class="social ? 'rayures-visuel-social' : 'rayures-visuel-entrepreneurs'"
           >
             <NuxtImg
-              :src="`/images/modules/${moduleCourant.programme}.svg`"
-              :alt="`Visuel du module ${moduleCourant.titre}`"
+              :src="moduleCourant.image || `/images/modules/${moduleCourant.programme}.svg`"
+              :alt="moduleCourant.imageAlt || `Visuel du module ${moduleCourant.titre}`"
               width="360"
               height="170"
               class="size-full object-cover"

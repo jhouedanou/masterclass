@@ -174,6 +174,8 @@ export type ModuleRow = ColonnesSeo & {
   date_lancement: string | null
   prix_masque: boolean
   points_forts: string[]
+  image: string | null
+  image_alt: string | null
   video_intro_cle: string | null
   pret_le: string | null
   filigrane_actif: boolean
@@ -696,6 +698,8 @@ export type Database = {
         | 'date_lancement'
         | 'prix_masque'
         | 'points_forts'
+        | 'image'
+        | 'image_alt'
         | 'video_intro_cle'
         | 'pret_le'
         | 'filigrane_actif'

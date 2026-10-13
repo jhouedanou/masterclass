@@ -152,6 +152,12 @@ export interface Module {
   prixMasque: boolean
   /** Section « Points forts » de la fiche commerciale (bloc 7). */
   pointsForts: string[]
+  /** Couverture du module, 1200 × 630 : fiche, carte du catalogue et image de
+   *  partage. Vide, la fiche retombe sur le visuel générique du programme. */
+  image?: string
+  /** Texte alternatif de la couverture. Vide, un libellé est construit sur le
+   *  titre — une image muette exclut les lecteurs d'écran. */
+  imageAlt?: string
   /** Vidéo de bienvenue : ne compte pas dans la progression. */
   videoIntroCle?: string
   /** Horodatage du « Marquer Prêt » (planche C, écran 09). Un module prêt est

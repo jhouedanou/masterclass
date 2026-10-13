@@ -614,6 +614,8 @@ export async function majModule(
       | 'dateLancement'
       | 'prixMasque'
       | 'pointsForts'
+      | 'image'
+      | 'imageAlt'
       | 'videoIntroCle'
       | 'pretLe'
       | 'filigraneActif'
@@ -637,6 +639,10 @@ export async function majModule(
   if (champs.dateLancement !== undefined) colonnes.date_lancement = champs.dateLancement
   if (champs.prixMasque !== undefined) colonnes.prix_masque = champs.prixMasque
   if (champs.pointsForts !== undefined) colonnes.points_forts = champs.pointsForts
+  // Une chaîne vide vaut « retirer la couverture », pas « chaîne vide » : la
+  // colonne est nullable et l'affichage teste l'absence, pas la longueur.
+  if (champs.image !== undefined) colonnes.image = champs.image || null
+  if (champs.imageAlt !== undefined) colonnes.image_alt = champs.imageAlt || null
   if (champs.videoIntroCle !== undefined) colonnes.video_intro_cle = champs.videoIntroCle ?? null
   if (champs.pretLe !== undefined) colonnes.pret_le = champs.pretLe
   if (champs.filigraneActif !== undefined) colonnes.filigrane_actif = champs.filigraneActif
