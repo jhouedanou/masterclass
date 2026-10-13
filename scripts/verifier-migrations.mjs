@@ -415,10 +415,10 @@ await attendErreur(
   `update sessions_coaching set presents = places + 1 where id = 'ses-002'`,
 )
 await attendErreur(
-  'deux sessions même thématique et même date',
+  'deux sessions du même couple thématique–formateur dans le même mois',
   '23505',
   `insert into sessions_coaching (thematique_id, programme, formateur_id, date_seance, heure)
-   values ('th-sm-copywriting', 'social-media', 'for-othniel', '2026-09-19', '20:00')`,
+   values ('th-ent-fondations', 'entrepreneurs', 'for-declercq', '2026-09-27', '19:00')`,
 )
 await attendErreur(
   'e-mail en doublon, casse ignorée',

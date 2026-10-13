@@ -80,39 +80,11 @@ function exporter() {
 
 // --- Répartition et frais ---------------------------------------------------
 //
-// Ces pourcentages commandent tout ce que l'écran affiche : les lire à côté du
-// résultat évite d'avoir à s'en souvenir, et c'est la raison pour laquelle ils
-// ont quitté l'écran Paramètres.
+// Ces pourcentages commandent tout ce que l'écran affiche. Ils se règlent dans
+// Paramètres › Paramètres financiers ; le même volet s'ouvre ici, à côté des
+// chiffres qu'il commande.
 
 const reglagesOuverts = ref(false)
-const brouillon = reactive({
-  fraisPaiementPourcent: 0,
-  partBigFivePourcent: 0,
-  partFormateurPourcent: 0,
-  objectifInscriptionsMensuel: 0,
-  objectifCaMensuel: 0,
-})
-const message = ref('')
-const { annoncer } = useToasts()
-const erreur = ref('')
-
-watchEffect(() => {
-  if (data.value) Object.assign(brouillon, data.value.reglages)
-})
-
-async function enregistrerReglages() {
-  erreur.value = ''
-  message.value = ''
-  try {
-    await $fetch('/api/admin/parametres', { method: 'PUT', body: brouillon })
-    message.value = 'Répartition enregistrée — modification journalisée.'
-    annoncer('Répartition enregistrée — modification journalisée.')
-    reglagesOuverts.value = false
-    await refresh()
-  } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Enregistrement impossible.'
-  }
-}
 
 const optionsMois = computed(() => [
   { valeur: '', libelle: '🗓 Date : depuis le début' },
@@ -145,8 +117,6 @@ const optionsPays = computed(() => [
   ...(data.value?.paysDisponibles ?? []).filter(Boolean).map((x) => ({ valeur: x!, libelle: x! })),
 ])
 
-const champ =
-  'w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px] focus:border-social focus:outline-none disabled:bg-fond-clair'
 // Écarts de la maquette (écran 21) : carte de contenu à 22 px, titre de carte en
 // Mulish gras 15 px, tableau interne encadré d'un filet clair.
 const carte = 'rounded-[14px] border border-ligne-douce bg-white p-[22px]'
@@ -177,47 +147,12 @@ const enTeteInterne =
       </span>
     </div>
 
-    <p v-if="message" class="mt-4 rounded-[10px] border border-succes bg-succes-voile px-4 py-3 text-[14px] text-succes">{{ message }}</p>
-    <p v-if="erreur" class="mt-4 rounded-[10px] border border-erreur bg-erreur-voile px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>
 
-    <form
-      v-if="reglagesOuverts && auth.estAdminSuperieur"
-      class="mt-4 rounded-[14px] border-[1.5px] border-social bg-white p-[22px]"
-      @submit.prevent="enregistrerReglages"
-    >
-      <h2 :class="titreCarte">Répartition et frais</h2>
-      <p class="mt-1 text-[12.5px] text-discret">
-        Ces pourcentages commandent tous les chiffres de cet écran. Réservé à l’administrateur
-        principal, et journalisé.
-      </p>
-      <div class="mt-4 grid gap-4 sm:grid-cols-2">
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Frais de paiement FeexPay (%)</span>
-          <input v-model.number="brouillon.fraisPaiementPourcent" type="number" min="0" max="20" :class="champ">
-        </label>
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Part Big Five (%)</span>
-          <input v-model.number="brouillon.partBigFivePourcent" type="number" min="0" max="100" :class="champ">
-        </label>
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Part formateur (%)</span>
-          <input v-model.number="brouillon.partFormateurPourcent" type="number" min="0" max="100" :class="champ">
-          <span class="mt-1 block text-[12px] text-discret">Les deux parts doivent totaliser 100 %.</span>
-        </label>
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-bold">Objectif d’inscriptions / mois</span>
-          <input v-model.number="brouillon.objectifInscriptionsMensuel" type="number" min="0" :class="champ">
-        </label>
-        <label class="block sm:col-span-2">
-          <span class="mb-1.5 block text-[13px] font-bold">Objectif de CA / mois (FCFA)</span>
-          <input v-model.number="brouillon.objectifCaMensuel" type="number" min="0" :class="champ">
-        </label>
-      </div>
-      <div class="mt-4 flex gap-2">
-        <UiBaseButton type="submit" taille="sm">Enregistrer</UiBaseButton>
+    <AdminVoletFinancier v-if="reglagesOuverts" class="mt-4" @enregistre="refresh">
+      <template #actions>
         <UiBaseButton variante="contour" taille="sm" @click="reglagesOuverts = false">Fermer</UiBaseButton>
-      </div>
-    </form>
+      </template>
+    </AdminVoletFinancier>
 
     <div class="mt-5 grid gap-[14px] sm:grid-cols-2 lg:grid-cols-5">
       <AdminCarteIndicateur
@@ -292,14 +227,12 @@ const enTeteInterne =
           Les sessions de coaching collectives sont incluses dans le prix des modules — leur revenu
           est porté par la ligne Modules. Pourcentages Big Five / formateur :
           <b class="text-encre">{{ data.reglages.partBigFivePourcent }} % / {{ data.reglages.partFormateurPourcent }} %</b>,
-          <!-- La maquette ne montre pas de bouton de réglage : c'est la mention
-               elle-même qui ouvre le formulaire, pour l'admin principal seul. -->
-          <button
-            v-if="auth.estAdminSuperieur"
-            class="text-inherit hover:underline"
-            @click="reglagesOuverts = !reglagesOuverts"
-          >paramétrables par l’admin principal</button>
-          <template v-else>paramétrables par l’admin principal</template>
+          <!-- La maquette n'en faisait qu'une mention cliquable, que la recette
+               n'a pas trouvée (ACH-12) : c'est désormais un lien explicite. -->
+          paramétrables par l’admin principal —
+          <button class="font-bold text-social hover:underline" @click="reglagesOuverts = !reglagesOuverts">
+            {{ auth.estAdminSuperieur ? 'régler la répartition et les frais' : 'voir les paramètres' }}
+          </button>
           (modification journalisée).
         </p>
       </section>

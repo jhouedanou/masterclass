@@ -43,6 +43,14 @@ export async function trouverSession(id: string): Promise<SessionCoaching | null
   return row ? versSessionCoaching(row) : null
 }
 
+/** Réponse à une violation de `sessions_coaching_couple_mois_idx`. */
+function sessionDejaPlanifiee() {
+  return createError({
+    statusCode: 409,
+    statusMessage: 'Une session existe déjà ce mois-ci pour ce couple thématique–formateur',
+  })
+}
+
 export async function creerSession(champs: {
   thematiqueId: string
   programme: ProgrammeSlugSql
@@ -77,14 +85,9 @@ export async function creerSession(champs: {
     .select('*')
     .single()
 
-  // L'index unique partiel porte la règle « une seule session par thématique et
-  // par date, annulations exclues » ; on lui rend son message d'origine.
-  if (error?.code === '23505') {
-    throw createError({
-      statusCode: 409,
-      statusMessage: 'Une session existe déjà pour cette thématique à cette date',
-    })
-  }
+  // L'index unique partiel porte la règle « une seule session par couple
+  // thématique–formateur et par mois, annulations exclues ».
+  if (error?.code === '23505') throw sessionDejaPlanifiee()
   if (error) throw traduireErreur(error, 'création de session')
 
   return versSessionCoaching(data)
@@ -128,16 +131,16 @@ export async function majSession(
   }
   if (champs.enregistrement !== undefined) colonnes.enregistrement = champs.enregistrement
 
-  const row = verifierUn(
-    await supabase()
-      .from('sessions_coaching')
-      .update(colonnes as never)
-      .eq('id', id)
-      .select('*')
-      .maybeSingle(),
-    'modification de session',
-    'Session introuvable',
-  )
+  // Changer de formateur peut faire tomber la séance sur un couple déjà
+  // planifié ce mois-ci.
+  const reponse = await supabase()
+    .from('sessions_coaching')
+    .update(colonnes as never)
+    .eq('id', id)
+    .select('*')
+    .maybeSingle()
+  if (reponse.error?.code === '23505') throw sessionDejaPlanifiee()
+  const row = verifierUn(reponse, 'modification de session', 'Session introuvable')
   return versSessionCoaching(row)
 }
 
@@ -166,11 +169,10 @@ export async function reporterSession(
   const actuelle = await trouverSession(id)
   if (actuelle && quand.date && quand.date !== actuelle.date) champs.reportee_de = actuelle.reporteeDe ?? actuelle.date
 
-  const row = verifierUn(
-    await supabase().from('sessions_coaching').update(champs).eq('id', id).select('*').maybeSingle(),
-    'report de session',
-    'Session introuvable',
-  )
+  // Un report d'un mois sur l'autre peut rejoindre une séance du même couple.
+  const reponse = await supabase().from('sessions_coaching').update(champs).eq('id', id).select('*').maybeSingle()
+  if (reponse.error?.code === '23505') throw sessionDejaPlanifiee()
+  const row = verifierUn(reponse, 'report de session', 'Session introuvable')
   return versSessionCoaching(row)
 }
 

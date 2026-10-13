@@ -227,6 +227,8 @@ export function versModule(row: ModuleRow, chapitres: ChapitreRow[] = []): Modul
     dateLancement: row.date_lancement,
     prixMasque: row.prix_masque,
     pointsForts: row.points_forts ?? [],
+    image: optionnel(row.image),
+    imageAlt: optionnel(row.image_alt),
     videoIntroCle: optionnel(row.video_intro_cle),
     pretLe: row.pret_le,
     filigraneActif: row.filigrane_actif,

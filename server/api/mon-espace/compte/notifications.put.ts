@@ -18,6 +18,8 @@ export default defineEventHandler(async (event) => {
     whatsapp: typeof body.whatsapp === 'boolean' ? body.whatsapp : actuelles.whatsapp,
     rappelsSessions: typeof body.rappelsSessions === 'boolean' ? body.rappelsSessions : actuelles.rappelsSessions,
     nouveautes: typeof body.nouveautes === 'boolean' ? body.nouveautes : actuelles.nouveautes,
+    offres:
+      typeof body.offres === 'boolean' ? body.offres : (actuelles.offres ?? actuelles.nouveautes),
   }
   return await majPreferencesNotifications(utilisateur.id, preferences)
 })

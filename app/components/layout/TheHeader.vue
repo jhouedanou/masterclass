@@ -13,6 +13,8 @@ const liens = [
   { libelle: 'Accueil', chemin: '/', couleur: '' },
   { libelle: 'Social Média', chemin: '/programmes/social-media', couleur: 'text-social' },
   { libelle: 'Entrepreneurs', chemin: '/programmes/entrepreneurs', couleur: 'text-entrepreneurs' },
+  // Le catalogue complet n'avait aucune entrée depuis la navigation (recette, VIT-11).
+  { libelle: 'Modules', chemin: '/modules', couleur: '' },
   { libelle: 'Formateurs', chemin: '/formateurs', couleur: '' },
   { libelle: 'Blog', chemin: '/blog', couleur: '' },
   { libelle: 'Contact & FAQ', chemin: '/contact', couleur: '' },
@@ -22,23 +24,25 @@ const liens = [
 <template>
   <header class="border-b border-ligne-claire bg-white">
     <div class="conteneur flex items-center justify-between gap-6" :class="accueil ? 'py-[18px]' : 'py-3.5'">
-      <NuxtLink to="/" aria-label="E-Masterclass Big Five — accueil">
+      <NuxtLink to="/" aria-label="E-Masterclass Big Five — accueil" class="shrink-0">
         <img
           src="/images/brand/logo.png"
           alt="E-Masterclass Programme | Big Five"
           class="block w-auto"
-          :class="accueil ? 'h-[46px] lg:h-[58px]' : 'h-9'"
+          :class="accueil ? 'h-[46px] xl:h-[58px]' : 'h-9'"
           width="260"
           height="58"
         >
       </NuxtLink>
 
-      <nav aria-label="Navigation principale" class="flex items-center gap-8 text-[15px] font-semibold">
+      <!-- Sept entrées depuis l'ajout de « Modules » : sous 1280 px, l'écart,
+           le corps et le logo se resserrent pour tenir sur une ligne. -->
+      <nav aria-label="Navigation principale" class="flex items-center gap-4 text-[14px] font-semibold xl:gap-8 xl:text-[15px]">
         <NuxtLink
           v-for="lien in liens"
           :key="lien.chemin"
           :to="lien.chemin"
-          class="hidden border-b-2 border-transparent pb-[3px] hover:opacity-70 lg:inline"
+          class="hidden border-b-2 border-transparent pb-[3px] whitespace-nowrap hover:opacity-70 lg:inline"
           :class="lien.couleur || 'text-encre'"
           exact-active-class="lien-actif"
           :active-class="lien.chemin === '/' ? '' : 'lien-actif'"
@@ -48,7 +52,7 @@ const liens = [
         <!-- Tablette (planche A, écran 11) : le pavé « Mon espace » reste visible à côté du burger. -->
         <NuxtLink
           :to="auth.estConnecte ? '/mon-espace' : '/connexion'"
-          class="hidden rounded-full bg-encre px-[22px] py-[11px] text-[14px] font-bold text-white hover:bg-encre-800 md:inline-flex"
+          class="hidden rounded-full bg-encre px-[22px] py-[11px] text-[14px] font-bold whitespace-nowrap text-white hover:bg-encre-800 md:inline-flex"
         >
           Mon espace
         </NuxtLink>

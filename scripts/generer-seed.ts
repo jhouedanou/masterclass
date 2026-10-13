@@ -191,7 +191,7 @@ inserer(
   'modules',
   `id, slug, numero, titre, programme, thematique_id, formateur_id, promesse, pourquoi, ` +
     `pour_qui, prerequis, acquis, livrable, faq, duree_minutes, prix_fcfa, statut, ` +
-    `publie_le, date_lancement, prix_masque, points_forts, pret_le, ${COLONNES_SEO}`,
+    `publie_le, date_lancement, prix_masque, points_forts, image, image_alt, pret_le, ${COLONNES_SEO}`,
   modules.map((m) =>
     [
       txt(m.id),
@@ -215,6 +215,8 @@ inserer(
       txt(m.dateLancement),
       bool(m.prixMasque),
       tableau(m.pointsForts),
+      txt(m.image),
+      txt(m.imageAlt),
       txt(m.pretLe),
       seo(m.seo),
     ].join(', '),

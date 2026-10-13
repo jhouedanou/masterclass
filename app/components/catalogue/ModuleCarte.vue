@@ -31,35 +31,57 @@ const large = computed(() => props.variante === 'programme')
 
 <template>
   <article
-    class="flex flex-col border"
+    class="flex flex-col overflow-hidden border"
     :class="[
       social ? 'border-ligne-douce' : 'border-entrepreneurs-bordure',
-      large ? 'gap-3 rounded-[14px] p-6' : 'gap-2.5 rounded-[12px] p-[22px]',
+      large ? 'rounded-[14px]' : 'rounded-[12px]',
     ]"
   >
-    <div class="flex items-start justify-between gap-3">
-      <p class="text-[12px] font-bold tracking-[0.1em] uppercase" :class="teinte">
-        Module {{ numeroModule(module.numero) }}<template v-if="thematiqueNom"> · {{ thematiqueNom }}</template>
-      </p>
-      <span
-        v-if="possede"
-        class="shrink-0 rounded-full bg-succes-voile px-2.5 py-1 text-[11px] font-bold text-succes"
-      >
-        Vous y avez accès
-      </span>
-      <span
-        v-else-if="statutVisible"
-        class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold"
-        :class="
-          module.statut === 'disponible'
-            ? large
-              ? 'bg-succes-pale text-whatsapp'
-              : 'bg-succes-voile text-succes'
-            : 'bg-alerte-voile text-alerte'
-        "
-      >
-        {{ module.statut === 'disponible' ? 'Disponible' : module.statut === 'annonce' ? 'Bientôt disponible' : 'À venir' }}
-      </span>
+    <!-- La couverture ne s'affiche que si le module en a une : les cartes d'un
+         catalogue à moitié illustré sont plus disparates qu'un catalogue nu. -->
+    <NuxtLink
+      v-if="module.image"
+      :to="`/modules/${module.slug}`"
+      class="block aspect-[1200/630] overflow-hidden bg-fond-voile"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <NuxtImg
+        :src="module.image"
+        :alt="module.imageAlt || `Couverture du module ${module.titre}`"
+        width="600"
+        height="315"
+        loading="lazy"
+        class="size-full object-cover"
+      />
+    </NuxtLink>
+    <div
+      class="flex flex-1 flex-col"
+      :class="large ? 'gap-3 p-6' : 'gap-2.5 p-[22px]'"
+    >
+      <div class="flex items-start justify-between gap-3">
+        <p class="text-[12px] font-bold tracking-[0.1em] uppercase" :class="teinte">
+          Module {{ numeroModule(module.numero) }}<template v-if="thematiqueNom"> · {{ thematiqueNom }}</template>
+        </p>
+        <span
+          v-if="possede"
+          class="shrink-0 rounded-full bg-succes-voile px-2.5 py-1 text-[11px] font-bold text-succes"
+        >
+          Vous y avez accès
+        </span>
+        <span
+          v-else-if="statutVisible"
+          class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold"
+          :class="
+            module.statut === 'disponible'
+              ? large
+                ? 'bg-succes-pale text-whatsapp'
+                : 'bg-succes-voile text-succes'
+              : 'bg-alerte-voile text-alerte'
+          "
+        >
+          {{ module.statut === 'disponible' ? 'Disponible' : module.statut === 'annonce' ? 'Bientôt disponible' : 'À venir' }}
+        </span>
     </div>
 
     <h3 class="font-title leading-[1.3] font-light" :class="large ? 'text-[20px]' : 'text-[18px]'">
@@ -89,5 +111,6 @@ const large = computed(() => props.variante === 'programme')
     >
       Découvrir le module<template v-if="fleche"> →</template>
     </NuxtLink>
+    </div>
   </article>
 </template>

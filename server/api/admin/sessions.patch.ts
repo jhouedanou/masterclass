@@ -1,3 +1,4 @@
+import { PLACES_SESSION } from '#shared/utils/coaching'
 import { enregistrerJournal } from '../../database/administration'
 import { listerThematiques } from '../../database/catalogue'
 import {
@@ -15,8 +16,11 @@ import { debutSession, modifierReunion, supprimerReunion } from '../../utils/zoo
  * Annulation, report ou modification.
  *
  * Les deux premières touchent l'apprenant : ses inscrits sont notifiés par
- * e-mail et WhatsApp. La troisième ne change que des réglages internes — durée,
- * capacité, ouverture de la salle — et ne dérange personne.
+ * e-mail et WhatsApp. La troisième ne change que des réglages internes —
+ * formateur, capacité, ouverture de la salle — et ne dérange personne.
+ *
+ * La durée n'en fait plus partie : le modèle économique fixe deux heures, et la
+ * capacité ne dépasse jamais vingt-cinq places.
  */
 export default defineEventHandler(async (event) => {
   const admin = await exigerSection(event, 'calendrier-sessions')
@@ -28,7 +32,6 @@ export default defineEventHandler(async (event) => {
     heure?: string
     formateurId?: string
     titre?: string
-    dureeMinutes?: number
     places?: number
     ouvertureSalleMinutes?: number
     enregistrement?: boolean
@@ -45,10 +48,15 @@ export default defineEventHandler(async (event) => {
   // Une modification de réglages ne prévient personne : rien de ce qu'elle
   // touche n'est visible de l'apprenant avant la séance.
   if (action === 'modifier') {
+    if (body.places !== undefined && body.places > PLACES_SESSION) {
+      throw createError({
+        statusCode: 422,
+        statusMessage: `Une session compte au plus ${PLACES_SESSION} places.`,
+      })
+    }
     const session = await majSession(id, {
       formateurId: body.formateurId,
       titre: body.titre,
-      dureeMinutes: body.dureeMinutes,
       places: body.places,
       ouvertureSalleMinutes: body.ouvertureSalleMinutes,
       enregistrement: body.enregistrement,

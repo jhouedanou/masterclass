@@ -80,14 +80,19 @@ function imminente(carte?: Carte) {
           >
             Voir la session
           </UiBaseButton>
-          <UiBaseButton
-            v-else-if="ligne.progression === 100"
-            :to="cartes.get(ligne.moduleId)?.certificat ? `/certificats/${cartes.get(ligne.moduleId)?.certificat}` : '/mon-espace/certificats'"
-            taille="sm"
-            variante="sombre"
-          >
-            Mon certificat
-          </UiBaseButton>
+          <!-- Module terminé : on peut le revoir autant qu'on veut (recette, APP-03). -->
+          <span v-else-if="ligne.progression === 100" class="flex flex-wrap justify-end gap-2">
+            <UiBaseButton :to="`/mon-espace/module/${ligne.module?.slug}`" taille="sm" variante="contour">
+              Revoir
+            </UiBaseButton>
+            <UiBaseButton
+              :to="cartes.get(ligne.moduleId)?.certificat ? `/certificats/${cartes.get(ligne.moduleId)?.certificat}` : '/mon-espace/certificats'"
+              taille="sm"
+              variante="sombre"
+            >
+              Mon certificat
+            </UiBaseButton>
+          </span>
           <UiBaseButton v-else :to="`/mon-espace/module/${ligne.module?.slug}`" taille="sm">
             {{ ligne.progression > 0 ? 'Continuer' : 'Commencer' }}
           </UiBaseButton>

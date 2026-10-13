@@ -63,6 +63,18 @@ export const SEAU_PORTRAITS: Seau = {
 }
 
 /**
+ * Couvertures des modules, publiées sur la fiche, sur la carte du catalogue et
+ * en image de partage. Même plafond que les portraits : une image de 1200 × 630
+ * bien exportée pèse deux à trois cents kilo-octets, le plafond n'écarte que le
+ * fichier sorti d'un appareil photo sans retouche.
+ */
+export const SEAU_COUVERTURES: Seau = {
+  nom: 'couvertures',
+  tailleMax: 2 * 1024 * 1024,
+  tailleMaxLibelle: '2 Mo',
+}
+
+/**
  * Griffes au pied des attestations : celle de la direction et celle de chaque
  * formateur. 256 ko suffisent largement — une signature est un trait sur fond
  * transparent, et celle que l'on trace à la souris sort du canevas sous les

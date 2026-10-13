@@ -47,6 +47,7 @@ const fiche = reactive({
   prerequis: '',
   pointsForts: '',
   formateurId: '',
+  imageAlt: '',
   statut: 'brouillon' as Module['statut'],
   dateLancement: '',
   prixMasque: false,
@@ -64,6 +65,7 @@ watchEffect(() => {
     pourQui: m.pourQui.join('\n'),
     prerequis: m.prerequis,
     pointsForts: m.pointsForts.join('\n'),
+    imageAlt: m.imageAlt ?? '',
     formateurId: m.formateurId,
     statut: m.statut,
     dateLancement: m.dateLancement ?? '',
@@ -72,6 +74,55 @@ watchEffect(() => {
 })
 
 const lignes = (v: string) => v.split('\n').map((l) => l.trim()).filter(Boolean)
+
+// --- Couverture -------------------------------------------------------------
+//
+// Le dépôt passe par sa propre route : un fichier ne voyage pas dans le corps
+// JSON de la fiche, et l'image doit être en place avant l'enregistrement du
+// reste — sans quoi un envoi échoué laisserait le formulaire croire le
+// contraire. Le texte alternatif, lui, est un champ de la fiche comme un autre.
+const couverture = ref<HTMLInputElement | null>(null)
+const envoiCouverture = ref(false)
+
+async function deposerCouverture(evenement: Event) {
+  const fichier = (evenement.target as HTMLInputElement).files?.[0]
+  if (!fichier) return
+  erreur.value = ''
+  envoiCouverture.value = true
+  try {
+    const corps = new FormData()
+    corps.append('image', fichier)
+    await $fetch(`/api/admin/module/${data.value!.module.id}/couverture`, {
+      method: 'POST',
+      body: corps,
+    })
+    await refresh()
+    emit('enregistre')
+    annoncer('Couverture déposée.')
+  } catch (e) {
+    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Le dépôt a échoué.'
+  } finally {
+    envoiCouverture.value = false
+    // Sans cela, redéposer le même fichier après une erreur n'émettrait aucun
+    // évènement : la valeur de l'input n'aurait pas changé.
+    if (couverture.value) couverture.value.value = ''
+  }
+}
+
+async function retirerCouverture() {
+  erreur.value = ''
+  envoiCouverture.value = true
+  try {
+    await $fetch(`/api/admin/module/${data.value!.module.id}/couverture`, { method: 'DELETE' })
+    await refresh()
+    emit('enregistre')
+    annoncer('Couverture retirée.')
+  } catch (e) {
+    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Le retrait a échoué.'
+  } finally {
+    envoiCouverture.value = false
+  }
+}
 
 async function enregistrer() {
   erreur.value = ''
@@ -90,6 +141,7 @@ async function enregistrer() {
         pourQui: lignes(fiche.pourQui),
         prerequis: fiche.prerequis,
         pointsForts: lignes(fiche.pointsForts),
+        imageAlt: fiche.imageAlt,
         formateurId: fiche.formateurId,
         statut: fiche.statut,
         // Une date de lancement n'a de sens qu'en mode Annonce ; la laisser
@@ -171,6 +223,58 @@ const STATUTS: { valeur: Module['statut']; titre: string; suite: string }[] = [
           <p :class="surtitre">Bloc 1 · Titre du module</p>
           <input v-model="fiche.titre" class="mt-2" :class="champ">
           <p :class="aide">Titre affiché en H1 sur la fiche publique.</p>
+        </section>
+
+        <section :class="bloc">
+          <p :class="surtitre">Bloc 1b · Couverture</p>
+          <div class="mt-2 flex flex-wrap items-start gap-4">
+            <div
+              class="flex h-[95px] w-[180px] shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-ligne-douce bg-fond-voile"
+            >
+              <img
+                v-if="data?.module.image"
+                :src="data.module.image"
+                :alt="data.module.imageAlt || `Couverture du module ${data.module.titre}`"
+                class="size-full object-cover"
+              >
+              <span v-else class="px-3 text-center text-[11.5px] text-discret">Aucune couverture</span>
+            </div>
+            <div class="min-w-[220px] flex-1">
+              <div class="flex flex-wrap gap-2">
+                <UiBaseButton variante="contour" :disabled="envoiCouverture" @click="couverture?.click()">
+                  {{ envoiCouverture ? 'Envoi…' : data?.module.image ? 'Remplacer' : 'Déposer une image' }}
+                </UiBaseButton>
+                <UiBaseButton
+                  v-if="data?.module.image"
+                  variante="contour"
+                  :disabled="envoiCouverture"
+                  @click="retirerCouverture"
+                >
+                  Retirer
+                </UiBaseButton>
+              </div>
+              <input
+                ref="couverture"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                class="sr-only"
+                @change="deposerCouverture"
+              >
+              <label class="mt-2.5 block" for="couverture-alt">
+                <span :class="etiquette">Texte alternatif</span>
+                <input id="couverture-alt" v-model="fiche.imageAlt" :class="champ">
+              </label>
+              <p :class="aide">
+                <b>1200 × 630</b>, 2 Mo au maximum. Sert la fiche, la carte du catalogue et
+                l’aperçu de partage. Sans couverture, la fiche retombe sur le visuel du programme.
+              </p>
+              <p :class="aide">
+                <b>JPEG de préférence</b>, ou PNG. Le WebP est accepté et s’affiche très bien sur
+                le site, mais Facebook et LinkedIn ne le rendent pas en aperçu de partage : une
+                couverture WebP laisse alors la vignette par défaut du site.
+              </p>
+            </div>
+          </div>
         </section>
 
         <section :class="bloc">

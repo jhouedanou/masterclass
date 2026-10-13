@@ -69,6 +69,7 @@ const { data: lecture } = await useFetch<{
 const chapitreAReprendre = computed(
   () => data.value!.chapitres.find((c) => c.etat !== 'vu') ?? data.value!.chapitres[0]!,
 )
+const toutVu = computed(() => data.value!.chapitres.every((c) => c.etat === 'vu'))
 
 const autorisationReprise = computed(() =>
   lecture.value?.chapitres.find((c) => c.position === chapitreAReprendre.value.position),
@@ -155,6 +156,9 @@ const LIBELLE_SESSION = (date: string) =>
           <span class="absolute top-4 left-5 rounded-[8px] bg-black/40 px-3 py-1.5 text-[13px] font-bold text-white">
             <template v-if="chapitreAReprendre.position === 0 && chapitreAReprendre.etat === 'a-voir'">
               Vidéo de bienvenue — {{ data.formateur?.nom }}
+            </template>
+            <template v-else-if="toutVu">
+              Revoir le module — {{ chapitreAReprendre.libelle }}
             </template>
             <template v-else>
               Reprendre — {{ chapitreAReprendre.libelle }}

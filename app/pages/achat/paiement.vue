@@ -6,15 +6,52 @@ definePageMeta({ middleware: 'auth' })
 const achat = useAchatStore()
 const auth = useAuthStore()
 const config = useRuntimeConfig()
-/** Numéro Mobile Money saisi sur mobile (planche A, 04c), transmis à la fenêtre FeexPay. */
+/** Numéro Mobile Money ou Wave (planche A, 04c), transmis à la fenêtre FeexPay. */
 const numeroMobileMoney = ref(auth.utilisateur?.whatsapp ?? '')
 
+/**
+ * Chaque moyen porte ses propres consignes. La recette du 13/10 (ACH-05) a
+ * relevé que Wave et Djamo se comportaient en tout point comme Mobile Money :
+ * même absence d'explication, même message « validez sur votre téléphone ».
+ * `numero` : le moyen se règle depuis un numéro, saisi ici et transmis à
+ * FeexPay pour pré-remplir sa fenêtre.
+ */
 const moyens = [
-  { valeur: 'mobile-money', libelle: 'Mobile Money', detail: 'Orange, MTN, Moov' },
-  { valeur: 'wave', libelle: 'Wave', detail: 'Paiement par QR ou numéro' },
-  { valeur: 'djamo', libelle: 'Djamo', detail: 'Carte et compte Djamo' },
-  { valeur: 'visa', libelle: 'Visa', detail: 'Carte bancaire internationale' },
+  {
+    valeur: 'mobile-money',
+    libelle: 'Mobile Money',
+    detail: 'Orange Money, MTN MoMo ou Moov Money',
+    numero: 'Numéro Mobile Money',
+    consigne: 'Une demande de paiement arrive sur votre téléphone : validez-la avec votre code secret.',
+    attente: 'Validez la demande de paiement sur votre téléphone avec votre code secret Mobile Money, puis revenez ici.',
+  },
+  {
+    valeur: 'wave',
+    libelle: 'Wave',
+    detail: 'Depuis votre application Wave',
+    numero: 'Numéro Wave',
+    consigne: 'Scannez le QR code affiché par FeexPay avec l’application Wave, ou validez la notification reçue sur votre numéro Wave.',
+    attente: 'Ouvrez l’application Wave, validez le paiement, puis revenez ici.',
+  },
+  {
+    valeur: 'djamo',
+    libelle: 'Djamo',
+    detail: 'Carte ou compte Djamo',
+    numero: null,
+    consigne: 'Saisissez les informations de votre carte Djamo dans la fenêtre FeexPay, puis confirmez dans l’application Djamo si elle vous le demande.',
+    attente: 'Confirmez le paiement dans l’application Djamo si une demande s’affiche, puis revenez ici.',
+  },
+  {
+    valeur: 'visa',
+    libelle: 'Visa',
+    detail: 'Carte bancaire Visa ou Mastercard',
+    numero: null,
+    consigne: 'Saisissez les informations de votre carte dans la fenêtre sécurisée FeexPay. Votre banque peut demander une confirmation (3-D Secure).',
+    attente: 'Confirmez le paiement auprès de votre banque si elle vous le demande, puis revenez ici.',
+  },
 ] as const
+
+const moyenChoisi = computed(() => moyens.find((m) => m.valeur === achat.moyen) ?? moyens[0])
 
 /** Les états du tunnel (spec §8) : attente, vérification, succès, échec,
  *  nouvelle tentative et changement de moyen s'enchaînent depuis « choix ».
@@ -168,7 +205,8 @@ async function ouvrirFeexPay(parametres: ParametresFeexPay) {
     email: parametres.email,
     first_name: parametres.prenom,
     last_name: parametres.nom,
-    phone: numeroMobileMoney.value || undefined,
+    // Le numéro n'a de sens que pour un moyen qui se règle par numéro.
+    phone: (moyenChoisi.value.numero && numeroMobileMoney.value) || undefined,
     callback_info: { commande: parametres.customId },
     callback: (reponse: unknown) => {
       // La fenêtre se referme dans tous les cas : réussite comme échec, la
@@ -360,14 +398,17 @@ function changerDeMoyen() {
           :class="achat.moyen === moyen.valeur ? 'border-2 border-social text-encre' : 'border-[1.5px] border-ligne text-texte'"
         >
           <input v-model="achat.moyen" type="radio" :value="moyen.valeur" class="sr-only">
-          <span :title="moyen.detail">{{ moyen.libelle }}</span>
+          <span class="block">{{ moyen.libelle }}</span>
+          <span class="mt-1 block text-[12px] font-normal text-discret">{{ moyen.detail }}</span>
         </label>
       </div>
 
-      <!-- Mobile / PWA (planche A, écran 04c) : le numéro Mobile Money est saisi avant de payer ;
-           il pré-remplit la fenêtre FeexPay. -->
-      <label v-if="achat.moyen === 'mobile-money'" class="mb-3.5 block lg:hidden">
-        <span class="mb-1.5 block text-[13px] font-bold text-encre">Numéro Mobile Money</span>
+      <!-- Planche A, écran 04c : le numéro est saisi avant de payer et
+           pré-remplit la fenêtre FeexPay. D'abord réservé au mobile et au seul
+           Mobile Money, il vaut aussi pour Wave et sur tous les écrans. -->
+      <p class="mb-3.5 text-[13.5px] leading-[1.55] text-texte">{{ moyenChoisi.consigne }}</p>
+      <label v-if="moyenChoisi.numero" class="mb-3.5 block">
+        <span class="mb-1.5 block text-[13px] font-bold text-encre">{{ moyenChoisi.numero }}</span>
         <UiChampTelephone v-model="numeroMobileMoney" :pays="auth.utilisateur?.pays" />
       </label>
 
@@ -375,8 +416,7 @@ function changerDeMoyen() {
         {{ etat === 'echec' ? 'Réessayer le paiement' : `Payer ${formatFcfa(montant, true)}` }}
       </UiBaseButton>
       <p class="rounded-[12px] border border-alerte-bordure bg-alerte-pale p-3.5 text-[13px] leading-[1.55] text-alerte-fonce">
-        ⚠ <b>Ne fermez pas cette page</b> avant la confirmation du paiement. Les paiements Mobile Money
-        peuvent nécessiter une validation sur votre téléphone.
+        ⚠ <b>Ne fermez pas cette page</b> avant la confirmation du paiement.
       </p>
       <p class="mt-3 text-center text-[12.5px] text-discret">
         Le règlement est traité par FeexPay. L’interface de paiement est fournie par le prestataire.
@@ -397,7 +437,7 @@ function changerDeMoyen() {
       </p>
       <p class="mt-3 text-[15px] text-texte">{{ message || 'Merci de patienter quelques instants.' }}</p>
       <p class="mt-4 text-[13px] text-alerte">
-        ⚠ Validez la demande de paiement sur votre téléphone puis revenez ici. Ne fermez pas la page.
+        ⚠ {{ moyenChoisi.attente }} Ne fermez pas la page.
       </p>
     </div>
 

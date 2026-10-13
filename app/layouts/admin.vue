@@ -45,13 +45,31 @@ const tousLesLiens: Lien[] = [
   { libelle: 'Performances', chemin: '/admin/performances', icone: 'ph:chart-line-up', section: 'performances-marketing' },
   { libelle: 'Revenus', chemin: '/admin/revenus', icone: 'ph:currency-circle-dollar', section: 'statistiques-performance' },
   { libelle: 'Historique & versions', chemin: '/admin/historique', icone: 'ph:clock-counter-clockwise', section: 'historique-versions' },
-  // « Tracking & pixels » et « Administration des accès » sont deux volets de
-  // Paramètres (écran 20) : ils n'ont plus d'entrée de premier niveau.
+  // « Paramètres » se déplie sur ses volets (accès, tracking, référencement,
+  // attestations, financier, profil) : voir `voletsParametres` plus bas.
   { libelle: 'Paramètres', chemin: '/admin/parametres', icone: 'ph:sliders', section: null },
   { libelle: 'Transactions & paiements', chemin: '/admin/transactions', icone: 'ph:lock-key', section: 'transactions-paiements', restreint: true },
 ]
 
 const liens = computed(() => tousLesLiens.filter((l) => !l.section || auth.voitSection(l.section)))
+
+/**
+ * Sous-menu de « Paramètres ». La recette du 13/10 cherchait Accès, Tracking et
+ * les paramètres financiers dans le menu, où rien ne les signalait (ADM-20,
+ * ADM-21, ADM-26). Chaque volet a donc son entrée ; le groupe est ouvert
+ * d'office sur l'écran Paramètres.
+ */
+const route = useRoute()
+const CHEMIN_PARAMETRES = '/admin/parametres'
+const voletsParametres = computed(() =>
+  VOLETS_PARAMETRES.filter((v) => !v.section || auth.voitSection(v.section)),
+)
+const surParametres = computed(() => route.path === CHEMIN_PARAMETRES)
+const parametresOuverts = ref(surParametres.value)
+watch(surParametres, (sur) => {
+  if (sur) parametresOuverts.value = true
+})
+const voletActif = computed(() => (route.query.volet as string | undefined) ?? VOLET_PARAMETRES_DEFAUT)
 
 /**
  * Rail tablette (écran 17) : la maquette n'y garde que cinq entrées de
@@ -104,21 +122,59 @@ const perimetre = computed(() => {
       </div>
 
       <nav aria-label="Navigation d’administration" class="flex flex-col gap-0.5 px-3 py-3.5 text-[13.5px] font-semibold">
-        <NuxtLink
-          v-for="lien in liens"
-          :key="lien.chemin"
-          :to="lien.chemin"
-          class="flex items-center gap-2 rounded-[8px] px-3 py-2.5 hover:bg-encre-800 hover:text-white"
-          :class="lien.restreint ? 'text-discret' : 'text-gris-perle'"
-          active-class="bg-social text-white"
-        >
-          <span class="flex-1">{{ lien.libelle }}</span>
-          <span
-            v-if="badges[lien.chemin]"
-            class="rounded-full bg-social px-1.5 py-0.5 text-[10.5px] font-bold text-white"
-          >{{ badges[lien.chemin] }}</span>
-          <span v-if="lien.restreint" aria-hidden="true" class="text-[12px]">🔒</span>
-        </NuxtLink>
+        <template v-for="lien in liens" :key="lien.chemin">
+          <!-- Paramètres : un groupe dépliable, un lien par volet. -->
+          <div v-if="lien.chemin === CHEMIN_PARAMETRES">
+            <button
+              type="button"
+              class="flex w-full items-center gap-2 rounded-[8px] px-3 py-2.5 text-left hover:bg-encre-800 hover:text-white"
+              :class="surParametres ? 'text-white' : 'text-gris-perle'"
+              :aria-expanded="parametresOuverts"
+              aria-controls="sous-menu-parametres"
+              @click="parametresOuverts = !parametresOuverts"
+            >
+              <span class="flex-1">{{ lien.libelle }}</span>
+              <Icon
+                name="ph:caret-down"
+                size="14"
+                class="transition-transform"
+                :class="parametresOuverts && 'rotate-180'"
+                aria-hidden="true"
+              />
+            </button>
+            <ul
+              v-show="parametresOuverts"
+              id="sous-menu-parametres"
+              class="mt-0.5 ml-3 flex flex-col gap-0.5 border-l border-nuit-filet pl-2"
+            >
+              <li v-for="volet in voletsParametres" :key="volet.cle">
+                <NuxtLink
+                  :to="{ path: CHEMIN_PARAMETRES, query: { volet: volet.cle } }"
+                  class="flex items-center gap-2 rounded-[8px] px-3 py-2 text-[13px] hover:bg-encre-800 hover:text-white"
+                  :class="surParametres && voletActif === volet.cle ? 'bg-social text-white' : 'text-gris-perle'"
+                  :aria-current="surParametres && voletActif === volet.cle ? 'page' : undefined"
+                >
+                  <span class="flex-1">{{ volet.libelle }}</span>
+                  <span v-if="volet.verrou && !auth.estAdminSuperieur" aria-hidden="true" class="text-[11px]">🔒</span>
+                </NuxtLink>
+              </li>
+            </ul>
+          </div>
+          <NuxtLink
+            v-else
+            :to="lien.chemin"
+            class="flex items-center gap-2 rounded-[8px] px-3 py-2.5 hover:bg-encre-800 hover:text-white"
+            :class="lien.restreint ? 'text-discret' : 'text-gris-perle'"
+            active-class="bg-social text-white"
+          >
+            <span class="flex-1">{{ lien.libelle }}</span>
+            <span
+              v-if="badges[lien.chemin]"
+              class="rounded-full bg-social px-1.5 py-0.5 text-[10.5px] font-bold text-white"
+            >{{ badges[lien.chemin] }}</span>
+            <span v-if="lien.restreint" aria-hidden="true" class="text-[12px]">🔒</span>
+          </NuxtLink>
+        </template>
       </nav>
 
       <div class="mt-auto border-t border-nuit-filet px-5 py-4 text-[12px] text-discret-clair">
