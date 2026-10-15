@@ -57,18 +57,28 @@ function ajouter() {
   }, 'Valeur ajoutée — modification journalisée.')
 }
 
+/**
+ * La réponse du PATCH n'est pas lue : la liste est relue après coup. La
+ * renvoyer telle quelle à `agir` obligeait le contrôle des types à comparer le
+ * type déduit des routes de `$fetch` à `Promise<unknown>`, et il débordait
+ * (TS2321, recette du 15/10, EXP-03).
+ */
+async function modifier(body: { id: string; libelle?: string; actif?: boolean }) {
+  await $fetch('/api/admin/referentiels', { method: 'PATCH', body })
+}
+
 function renommer(entree: EntreeReferentiel, libelle: string) {
   const propre = libelle.trim()
   if (!propre || propre === entree.libelle) return
   return agir(
-    () => $fetch('/api/admin/referentiels', { method: 'PATCH', body: { id: entree.id, libelle: propre } }),
+    () => modifier({ id: entree.id, libelle: propre }),
     'Intitulé mis à jour sur toutes les fiches — modification journalisée.',
   )
 }
 
 function basculerActif(entree: EntreeReferentiel) {
   return agir(
-    () => $fetch('/api/admin/referentiels', { method: 'PATCH', body: { id: entree.id, actif: !entree.actif } }),
+    () => modifier({ id: entree.id, actif: !entree.actif }),
     entree.actif
       ? 'Valeur retirée du formulaire. Les fiches qui la portent sont intactes.'
       : 'Valeur réactivée.',

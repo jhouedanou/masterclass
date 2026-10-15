@@ -84,7 +84,8 @@ export default defineEventHandler(async (event) => {
         return {
           ...t,
           apprenant: u ? `${u.prenom} ${u.nom}` : '—',
-          module: modules.find((m) => m.id === t.moduleId)?.titre ?? '—',
+          // Sans module, la transaction règle une séance de coaching privé.
+          module: t.moduleId ? (modules.find((m) => m.id === t.moduleId)?.titre ?? '—') : 'Coaching privé',
           motif: MOTIFS_ECHEC.find((m) => m.code === motifDe(t))?.libelle ?? '',
           suite: suites.get(t.reference) ?? null,
         }

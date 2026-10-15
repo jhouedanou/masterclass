@@ -381,7 +381,9 @@ export interface Commande {
 export interface Transaction {
   reference: string
   utilisateurId: string
-  moduleId: string
+  /** Vide pour le paiement d'une séance de coaching privé : la commande
+   *  désigne alors la demande réglée. */
+  moduleId: string | null
   moyen: 'Orange Money' | 'MTN Money' | 'Moov Money' | 'Wave' | 'Djamo' | 'Visa'
   montant: number
   statut: 'reussie' | 'echouee' | 'en-attente'

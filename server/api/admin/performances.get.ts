@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
     listerConnexionsReussies(`${debutMois < DEBUT_PERIODE_PRECEDENTE() ? debutMois : DEBUT_PERIODE_PRECEDENTE()}T00:00:00Z`),
   ])
 
-  const moduleDe = (id: string) => modules.find((m) => m.id === id)
+  const moduleDe = (id: string | null) => modules.find((m) => m.id === id)
   const modulesRetenus = new Set(
     modules
       .filter((m) => !filtreProgramme || m.programme === filtreProgramme)
@@ -73,7 +73,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const transactions = toutesTransactions
-    .filter((t) => modulesRetenus.has(t.moduleId))
+    // Ventes de modules : une séance de coaching privé n'a pas de module.
+    .filter((t) => t.moduleId !== null && modulesRetenus.has(t.moduleId))
     .filter((t) => !filtrePays || paysDe(t.utilisateurId) === filtrePays)
     .filter((t) => !filtreAppareil || appareilDe.get(t.utilisateurId) === filtreAppareil)
 

@@ -166,18 +166,24 @@ export async function lireStatutFeexPay(reference: string): Promise<TransactionF
 }
 
 /**
- * Retrouve une transaction du jour par notre référence de commande, quand le
+ * Retrouve une transaction par notre référence de commande, quand le
  * navigateur n'a pas pu remonter la référence FeexPay (fenêtre fermée avant
- * le rappel, rechargement de la page…).
+ * le rappel, rechargement de la page…). L'historique est lu depuis la veille,
+ * ou depuis le jour de la commande quand elle est plus ancienne : la relance
+ * planifiée repasse sur des commandes de plusieurs jours.
  */
-export async function rechercherParCommandeFeexPay(customId: string): Promise<TransactionFeexPay | null> {
+export async function rechercherParCommandeFeexPay(
+  customId: string,
+  creeeLe?: string,
+): Promise<TransactionFeexPay | null> {
   const { shopId } = configFeexPay()
   const jour = (d: Date) => d.toISOString().slice(0, 10)
   const hier = new Date(Date.now() - 24 * 3600 * 1000)
+  const depuis = creeeLe && new Date(creeeLe) < hier ? new Date(creeeLe) : hier
   const brut = await appeler('/api/transactions/history', {
     method: 'POST',
     body: {
-      start_date: jour(hier),
+      start_date: jour(depuis),
       end_date: jour(new Date()),
       shop: shopId,
       type: 'ALL',
@@ -396,7 +402,9 @@ export async function rapprocherCommande(
 
   const modules = commande.moduleIds.length
     ? commande.moduleIds
-    : (await transactionsDeCommande(commande.reference)).map((t) => t.moduleId)
+    : (await transactionsDeCommande(commande.reference))
+        .map((t) => t.moduleId)
+        .filter((id): id is string => id !== null)
   await ouvrirAcces(commande.utilisateurId, modules)
 
   return { statut: 'confirmee', commande: { ...commande, statut: 'confirmee' } }
@@ -452,7 +460,7 @@ export async function verifierEtRapprocher(
 
   let transaction: TransactionFeexPay | null = null
   if (referenceFeexPay) transaction = await lireStatutFeexPay(referenceFeexPay)
-  if (!transaction) transaction = await rechercherParCommandeFeexPay(commande.reference)
+  if (!transaction) transaction = await rechercherParCommandeFeexPay(commande.reference, commande.creeeLe)
   if (!transaction) return { statut: 'attente', commande }
 
   return await rapprocherCommande(commande, transaction)

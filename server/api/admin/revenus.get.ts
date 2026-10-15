@@ -64,7 +64,8 @@ export default defineEventHandler(async (event) => {
           .map((m) => m.id),
       )
 
-      const ventes = reussies.filter((t) => siens.has(t.moduleId))
+      // Le coaching privé est compté plus bas, par ses demandes.
+      const ventes = reussies.filter((t) => t.moduleId !== null && siens.has(t.moduleId))
       const caModules = filtrePrive === 'uniquement' ? 0 : ventes.reduce((somme, t) => somme + t.montant, 0)
 
       // Le coaching privé est porté par le formateur ; le collectif est inclus

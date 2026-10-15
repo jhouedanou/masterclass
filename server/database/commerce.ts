@@ -20,7 +20,7 @@ export async function listerTransactions(): Promise<Transaction[]> {
 export async function enregistrerTransaction(champs: {
   reference: string
   utilisateurId: string
-  moduleId: string
+  moduleId: string | null
   moyen: MoyenTransactionSql
   montant: number
   statut: 'reussie' | 'echouee' | 'en-attente'
@@ -347,6 +347,32 @@ export async function trouverCommande(reference: string): Promise<Commande | nul
     'détail de la commande',
   )
   return versCommande(row, lignes.map((l) => l.module_id))
+}
+
+/**
+ * Commandes que FeexPay n'a pas encore tranchées (`attente`, `verification`),
+ * les plus anciennes d'abord : la relance planifiée les repasse une à une.
+ */
+export async function listerCommandesEnCours(): Promise<Commande[]> {
+  const rows = verifier(
+    await supabase()
+      .from('commandes')
+      .select('*')
+      .in('statut', ['attente', 'verification'])
+      .order('creee_le', { ascending: true }),
+    'commandes en cours',
+  )
+  if (!rows.length) return []
+  const lignes = verifier(
+    await supabase()
+      .from('commandes_modules')
+      .select('commande_reference, module_id')
+      .in('commande_reference', rows.map((r) => r.reference)),
+    'détail des commandes',
+  )
+  return rows.map((row) =>
+    versCommande(row, lignes.filter((l) => l.commande_reference === row.reference).map((l) => l.module_id)),
+  )
 }
 
 export async function changerStatutCommande(

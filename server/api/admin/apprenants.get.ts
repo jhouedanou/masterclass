@@ -131,8 +131,10 @@ export default defineEventHandler(async (event) => {
           audience: libellesPaires(persona.audience, referentiels),
           clients: separerCles(persona.clients).join(', '),
         },
+        // Affiché à côté des modules achetés : la séance de coaching privé
+        // (transaction sans module) n'y entre pas.
         montantPaye: transactions
-          .filter((t) => t.utilisateurId === u.id && t.statut === 'reussie')
+          .filter((t) => t.utilisateurId === u.id && t.statut === 'reussie' && t.moduleId !== null)
           .reduce((somme, t) => somme + t.montant, 0),
         ville: persona?.ville ?? '',
         secteur: persona?.secteur ?? '',

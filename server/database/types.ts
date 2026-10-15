@@ -444,7 +444,7 @@ export type CommandeModuleRow = {
 export type TransactionRow = {
   reference: string
   utilisateur_id: string
-  module_id: string
+  module_id: string | null
   moyen: MoyenTransactionSql
   montant: number
   statut: StatutTransactionSql

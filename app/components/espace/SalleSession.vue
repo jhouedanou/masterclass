@@ -211,7 +211,7 @@ function envoyerChat() {
         </p>
         <p v-if="erreurEntree" class="mt-3 text-[13.5px] text-[#ff6b6b]" role="alert">{{ erreurEntree }}</p>
         <p v-if="zoom.etat.value === 'erreur'" class="mt-3 text-[13.5px] text-[#ff6b6b]" role="alert">{{ zoom.message.value }}</p>
-        <UiBaseButton class="mt-6" taille="lg" :disabled="!data.salle.ouverte && data.role !== 'hote'" @click="entrer">
+        <UiBaseButton class="mt-6" taille="lg" :disabled="!data.salle.ouverte && (data.role !== 'hote' || terminee)" @click="entrer">
           {{ data.role === 'hote' ? 'Démarrer la session' : 'Entrer dans la salle' }}
         </UiBaseButton>
         <p class="mt-6 text-[12.5px] text-[#8f8a9c]">

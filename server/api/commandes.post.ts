@@ -119,6 +119,18 @@ export default defineEventHandler(async (event) => {
       demandeCoachingId: demande.id,
       total,
     })
+    // Une ligne sans module : sans elle, la séance payée manquait à l'écran
+    // Transactions et au rapprochement avec le relevé FeexPay (PRI-08).
+    // `rapprocherCommande` la clôt comme celles d'un achat de modules.
+    await enregistrerTransaction({
+      reference: `${commande.reference}-coaching`,
+      utilisateurId: utilisateur.id,
+      moduleId: null,
+      moyen: MOYENS[moyenCommande] ?? 'Orange Money',
+      montant: total,
+      statut: feexpay.mode === 'simulation' ? 'reussie' : 'en-attente',
+      commandeReference: commande.reference,
+    })
     if (feexpay.mode === 'simulation') {
       await changerStatutDemandeCoachingPrive(demande.id, {
         statut: 'payee',

@@ -369,6 +369,8 @@ export default defineNuxtConfig({
     scheduledTasks: {
       // Chaque nuit à 3 h : suppression définitive des comptes échus et rappel J-3.
       '0 3 * * *': ['comptes:purger', 'video:purger'],
+      // Toutes les heures : commandes restées en attente, revérifiées chez FeexPay.
+      '0 * * * *': ['commandes:relancer'],
     },
     // Les runtimes de ces modules doivent être inlinés : laissés externes, le
     // build de production émet des imports relatifs qui sortent du projet.

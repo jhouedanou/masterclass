@@ -50,7 +50,8 @@ export default defineEventHandler(async (event) => {
   const modulesDuProgramme = new Set(
     modules.filter((m) => !programme || m.programme === programme).map((m) => m.id),
   )
-  const retenues = transactions.filter((t) => modulesDuProgramme.has(t.moduleId))
+  // Ventes de modules : une séance de coaching privé n'a pas de module.
+  const retenues = transactions.filter((t) => t.moduleId !== null && modulesDuProgramme.has(t.moduleId))
 
   // Les objectifs du back-office sont mensuels : sans filtre de mois, les
   // compteurs comparés portent sur les trente derniers jours.
@@ -62,6 +63,7 @@ export default defineEventHandler(async (event) => {
 
   const ventesParModule = new Map<string, number>()
   for (const t of periode.filter((x) => x.statut === 'reussie')) {
+    if (!t.moduleId) continue
     ventesParModule.set(t.moduleId, (ventesParModule.get(t.moduleId) ?? 0) + 1)
   }
 

@@ -620,7 +620,11 @@ CRON_SECRET='…'    # même valeur, lue par le planificateur Vercel
 ```
 
 Le plan Hobby limite à deux tâches et à un déclenchement par jour, à une heure approchée : l'horaire
-`0 3 * * *` est une intention, pas une garantie. Déclenchement manuel :
+`0 3 * * *` est une intention, pas une garantie. La seconde tâche, `/api/taches/commandes` à 4 h,
+revérifie chez FeexPay les commandes restées en attente (`server/tasks/commerce/relancer.ts`) :
+payées, elles sont confirmées et leurs accès ouverts ; inconnues de FeexPay après 24 h, elles sont
+closes en échec « délai dépassé ». Sur un serveur Node, Nitro la lance toutes les heures. Les deux
+tâches occupent les deux places du plan Hobby. Déclenchement manuel :
 
 ```bash
 curl -X POST https://<site>/api/taches/purger -H "Authorization: Bearer $TACHES_CLE"
