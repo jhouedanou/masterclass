@@ -5,10 +5,11 @@ Bonjour,
 Voici le point de la recette du 15 octobre. La plateforme est en ligne à son adresse définitive : https://emasterclass.bigfive.solutions/
 
 Sur 50 cas vérifiés :
-- **30 sont validés** ;
+- **31 sont validés** ;
 - **10 attendent une action de votre part ou de FeexPay** ;
-- **9 sont à revérifier en ligne** après le déploiement de ce soir ;
-- **1 reste ouvert** : les mots de passe de démonstration.
+- **9 sont à revérifier en ligne** après le déploiement de ce soir.
+
+Aucun défaut n'est plus ouvert côté développement.
 
 Le classeur de recette détaillé, avec une capture par point, est joint à ce message.
 
@@ -25,7 +26,7 @@ Le classeur de recette détaillé, avec une capture par point, est joint à ce m
 
 1. **FeexPay — Wave.** FeexPay refuse Wave tant que la « Clé agrégée Wave » n'est pas activée (tableau de bord FeexPay, onglet Configuration). Si l'option n'est pas disponible, il faut la demander au support FeexPay. En attendant, Wave apparaît « Bientôt disponible » sur le site.
 2. **FeexPay — carte (Visa, Mastercard, Djamo).** Le dossier de conformité carte (KYC) est resté en brouillon. Il faut le compléter et le soumettre dans le tableau de bord FeexPay. À savoir : FeexPay peut retenir une partie de chaque paiement par carte pendant 180 jours, pour couvrir les litiges.
-3. **Sécurité.** Six comptes, dont l'administrateur principal cossi@bigfiveabidjan.com, acceptent encore le mot de passe de démonstration. Une procédure de renouvellement est prête : nous la lançons avec vous, puis chaque titulaire reçoit son nouveau mot de passe.
+3. **Mots de passe.** Les mots de passe de démonstration des six comptes concernés, dont l'administrateur principal cossi@bigfiveabidjan.com, ont été renouvelés le 15/10. Chaque titulaire reçoit le sien et le change à sa première connexion (Paramètres › Mot de passe).
 4. **E-mails.** Dans Cloudflare, ne garder qu'un seul enregistrement DMARC sur _dmarc.bigfive.solutions. Deux coexistent aujourd'hui : supprimer « v=DMARC1; p=none; ». Vérifier aussi que la boîte contact@bigfiveabidjan.com existe : c'est elle qui reçoit le formulaire de contact.
 5. **Contenus.**
    - Textes juridiques validés : CGU, CGV, mentions légales, confidentialité, cookies.
@@ -62,12 +63,12 @@ Vérifications faites le 15/10 au soir sur la base en ligne, sans écriture en b
 | N° | Défaut | État | Cas |
 |---|---|---|---|
 | D1 | /admin/apprenants répondait une erreur 500 | Corrigé (27d835b), vérifié | ADM-12 à retester, ADM-14 OK |
-| D2 | Mots de passe de démonstration encore actifs | Script prêt, à lancer | SEC-11 KO |
+| D2 | Mots de passe de démonstration encore actifs | Renouvelés le 15/10, vérifié | SEC-11 OK |
 | D3 | Séance passée affichée « EN DIRECT · 621 h » | Corrigé (27d835b, 2bc3bcc), vérifié | COL-05 OK |
 
 **D1.** Une fusion de branches avait gardé une API qui renvoie `{ apprenants, choix }` alors que l'écran attendait une simple liste. L'écran ne retient plus que `apprenants`, ce qui répare aussi l'export CSV. Vérifié : liste de 10 comptes, fiche, historique, export (10 lignes, 13 colonnes), formulaire avec Prénom et Nom séparés. Reste à créer un apprenant de test. Captures : ADM-12 (avant) et ADM-12-corrige (après).
 
-**D2.** Six comptes sur sept acceptent encore le mot de passe commun du jeu de données : cossi@, jeremie.declercq@, houefa@bigfiveabidjan.com, editeur@ et formateur@bigfive.ci, aya@example.ci. Seul jeanluc@ a été changé. Le mot de passe n'apparaît plus dans le README ni dans le TODO. Procédure, depuis un poste dont le `.env` pointe sur la base en ligne :
+**D2.** Six comptes sur sept acceptaient encore le mot de passe commun du jeu de données : cossi@, jeremie.declercq@, houefa@bigfiveabidjan.com, editeur@ et formateur@bigfive.ci, aya@example.ci. Ils ont été renouvelés le 15/10 au soir, et un nouveau contrôle en lecture seule confirme qu'aucun compte n'accepte plus ce mot de passe. Il n'apparaît plus non plus dans le README ni dans le TODO. Procédure suivie, depuis un poste dont le `.env` pointe sur la base en ligne :
 
 ```bash
 npm run auth:renouveler
@@ -76,7 +77,7 @@ npm run auth:renouveler -- --appliquer
 
 1. Le premier appel ne fait que lire : il liste les comptes concernés.
 2. Le second tire un mot de passe aléatoire de 24 caractères par compte, l'enregistre haché, puis l'affiche **une seule fois** dans le terminal, sans rien écrire sur le disque.
-3. Il faut ensuite reporter chaque mot de passe dans un gestionnaire, le transmettre à son titulaire, remplacer `NUXT_SESSION_PASSWORD` sur Vercel et redéployer, pour fermer les sessions déjà ouvertes.
+3. Reporter chaque mot de passe dans un gestionnaire et le transmettre à son titulaire. **Reste à faire :** remplacer `NUXT_SESSION_PASSWORD` sur Vercel et redéployer, pour fermer les sessions déjà ouvertes.
 
 **D3.** Le badge ne comparait l'heure qu'au début de la séance. La séance passée affiche désormais « TERMINÉE · 19 septembre à 20:00 », avec un bouton d'entrée grisé, y compris pour l'hôte. Captures : COL-05-seance-passee (avant) et COL-05-corrige (après).
 
