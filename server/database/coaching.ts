@@ -43,11 +43,36 @@ export async function trouverSession(id: string): Promise<SessionCoaching | null
   return row ? versSessionCoaching(row) : null
 }
 
-/** Réponse à une violation de `sessions_coaching_couple_mois_idx`. */
-function sessionDejaPlanifiee() {
+/**
+ * Réponse à une violation de `sessions_coaching_couple_mois_idx`. Le message
+ * nomme la séance qui bloque : « une session existe déjà » laissait croire à un
+ * défaut quand l'administrateur pensait l'avoir annulée alors qu'il l'avait
+ * reportée (recette du 15/10).
+ */
+async function sessionDejaPlanifiee(couple: { thematiqueId: string; formateurId: string; date: string; sauf?: string }) {
+  const mois = couple.date.slice(0, 7)
+  const debut = `${mois}-01`
+  const [annee, m] = mois.split('-').map(Number) as [number, number]
+  const fin = m === 12 ? `${annee + 1}-01-01` : `${annee}-${String(m + 1).padStart(2, '0')}-01`
+  let requete = supabase()
+    .from('sessions_coaching')
+    .select('id, date_seance, heure, statut')
+    .eq('thematique_id', couple.thematiqueId)
+    .eq('formateur_id', couple.formateurId)
+    .neq('statut', 'annulee')
+    .gte('date_seance', debut)
+    .lt('date_seance', fin)
+    .order('date_seance')
+    .limit(1)
+  if (couple.sauf) requete = requete.neq('id', couple.sauf)
+  const { data } = await requete
+  const bloquante = data?.[0]
+  const detail = bloquante
+    ? ` : la séance du ${new Date(`${bloquante.date_seance}T12:00:00Z`).toLocaleDateString('fr-FR', { timeZone: 'UTC' })} à ${String(bloquante.heure).slice(0, 5)} (${bloquante.statut === 'planifiee' ? 'planifiée' : bloquante.statut}). Annulez-la ou reportez-la à un autre mois, ou choisissez un autre formateur`
+    : ''
   return createError({
     statusCode: 409,
-    statusMessage: 'Une session existe déjà ce mois-ci pour ce couple thématique–formateur',
+    statusMessage: `Une session existe déjà ce mois-ci pour ce couple thématique–formateur${detail}.`,
   })
 }
 
@@ -87,7 +112,9 @@ export async function creerSession(champs: {
 
   // L'index unique partiel porte la règle « une seule session par couple
   // thématique–formateur et par mois, annulations exclues ».
-  if (error?.code === '23505') throw sessionDejaPlanifiee()
+  if (error?.code === '23505') {
+    throw await sessionDejaPlanifiee({ thematiqueId: champs.thematiqueId, formateurId: champs.formateurId, date: champs.date })
+  }
   if (error) throw traduireErreur(error, 'création de session')
 
   return versSessionCoaching(data)
@@ -139,7 +166,17 @@ export async function majSession(
     .eq('id', id)
     .select('*')
     .maybeSingle()
-  if (reponse.error?.code === '23505') throw sessionDejaPlanifiee()
+  if (reponse.error?.code === '23505') {
+    const actuelle = await trouverSession(id)
+    if (actuelle) {
+      throw await sessionDejaPlanifiee({
+        thematiqueId: actuelle.thematiqueId,
+        formateurId: champs.formateurId ?? actuelle.formateurId,
+        date: actuelle.date,
+        sauf: id,
+      })
+    }
+  }
   const row = verifierUn(reponse, 'modification de session', 'Session introuvable')
   return versSessionCoaching(row)
 }
@@ -171,7 +208,14 @@ export async function reporterSession(
 
   // Un report d'un mois sur l'autre peut rejoindre une séance du même couple.
   const reponse = await supabase().from('sessions_coaching').update(champs).eq('id', id).select('*').maybeSingle()
-  if (reponse.error?.code === '23505') throw sessionDejaPlanifiee()
+  if (reponse.error?.code === '23505' && actuelle) {
+    throw await sessionDejaPlanifiee({
+      thematiqueId: actuelle.thematiqueId,
+      formateurId: actuelle.formateurId,
+      date: quand.date ?? actuelle.date,
+      sauf: id,
+    })
+  }
   const row = verifierUn(reponse, 'report de session', 'Session introuvable')
   return versSessionCoaching(row)
 }
