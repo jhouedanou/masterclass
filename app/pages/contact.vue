@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { feexpayCarteActive } = useRuntimeConfig().public
+
 const groupesFaq = [
   {
     titre: 'Achat et paiement',
@@ -14,8 +16,9 @@ const groupesFaq = [
       },
       {
         question: 'Quels moyens de paiement sont acceptés ?',
-        reponse:
-          'Le paiement s’effectue via FeexPay avec les moyens proposés au moment de la commande, notamment Mobile Money, Djamo, Wave et Visa.',
+        reponse: `Le paiement s’effectue via FeexPay avec les moyens proposés au moment de la commande, notamment ${
+          feexpayCarteActive ? 'Mobile Money, Djamo, Wave et Visa' : 'Mobile Money et Wave'
+        }.`,
       },
       {
         question: 'Quand mon module devient-il accessible ?',

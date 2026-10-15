@@ -27,6 +27,7 @@ export default defineEventHandler(async (event) => {
     const module = modulesP.find((m) => m.id === demande.moduleId)
     const ressourcesP = module ? await listerRessources(module.id) : []
     const debutP = new Date()
+    const finP = new Date(debutP.getTime() + demande.heures * 3_600_000)
     return {
       session: null,
       demande,
@@ -36,7 +37,13 @@ export default defineEventHandler(async (event) => {
       participants: [{ id: demande.utilisateurId, nom: demande.apprenant }],
       ressources: ressourcesP.map((r) => ({ titre: r.titre, url: r.url, format: r.format })),
       role: hoteP || adminP ? 'hote' : 'participant',
-      salle: { ouverte: demande.statut === 'payee', ouverture: debutP.toISOString(), fermeture: new Date(debutP.getTime() + demande.heures * 3_600_000).toISOString(), debut: debutP.toISOString() },
+      salle: {
+        ouverte: demande.statut === 'payee',
+        ouverture: debutP.toISOString(),
+        fermeture: finP.toISOString(),
+        debut: debutP.toISOString(),
+        fin: finP.toISOString(),
+      },
     }
   }
 
@@ -72,6 +79,14 @@ export default defineEventHandler(async (event) => {
     participants: inscrits.map((u) => ({ id: u.id, nom: `${u.prenom} ${u.nom[0] ?? ''}.` })),
     ressources: ressources.map((r) => ({ titre: r.titre, url: r.url, format: r.format })),
     role: hote || admin ? 'hote' : 'participant',
-    salle: { ouverte, ouverture: ouverture.toISOString(), fermeture: fermeture.toISOString(), debut: debut.toISOString() },
+    // `fin` : fin prévue de la séance. `fermeture` la suit de trente minutes de
+    // battement ; l'écran cesse d'afficher « En direct » dès la fin prévue.
+    salle: {
+      ouverte,
+      ouverture: ouverture.toISOString(),
+      fermeture: fermeture.toISOString(),
+      debut: debut.toISOString(),
+      fin: new Date(debut.getTime() + session.dureeMinutes * 60_000).toISOString(),
+    },
   }
 })

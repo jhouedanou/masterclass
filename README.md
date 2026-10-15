@@ -56,8 +56,20 @@ explicite.
 | Administrateur de contenu | `editeur@bigfive.ci` |
 | Administrateurs supérieurs | `jeanluc@bigfiveabidjan.com` · `cossi@bigfiveabidjan.com` · `jeremie.declercq@bigfiveabidjan.com` · `houefa@bigfiveabidjan.com` |
 
-Mot de passe commun : **`Masterclass2026!`** — défini par le seed, à changer avant toute mise en
-ligne publique.
+Le seed leur donne un mot de passe commun, qui n'est plus publié ici : il figure dans
+`scripts/generer-seed.ts`, pour une base locale. Sur une base en ligne, il doit être remplacé :
+
+```bash
+npm run auth:renouveler                  # lecture seule : quels comptes l'acceptent encore
+npm run auth:renouveler -- --appliquer   # tire un mot de passe aléatoire par compte concerné
+```
+
+Le second appel écrit sur la base désignée par `.env`. Chaque nouveau mot de passe est imprimé une
+seule fois dans le terminal, rien n'est écrit sur disque : le reporter dans un gestionnaire de mots
+de passe avant de fermer la fenêtre, puis le transmettre à son titulaire, qui le changera depuis
+« Paramètres ». `--emails a@x,b@y` restreint la liste ; un compte dont le mot de passe a déjà
+changé n'est pas touché, sauf avec `--tous`. Les sessions ouvertes restent valides jusqu'à leur
+expiration : remplacer `NUXT_SESSION_PASSWORD` sur l'hébergement pour les fermer toutes.
 
 ## Authentification
 

@@ -123,6 +123,9 @@ export default defineNuxtConfig({
       // Le tunnel charge le SDK FeexPay seulement quand le prestataire est branché.
       feexpayActif: (process.env.FEEXPAY_MODE || 'simulation') !== 'simulation',
       feexpaySdkUrl: `${(process.env.FEEXPAY_BASE_URL || 'https://api-v2.feexpay.me').replace(/\/$/, '')}/feexpay-javascript-sdk/index.js`,
+      // Visa et Djamo passent par la carte, que FeexPay refuse tant que le KYC
+      // carte de la boutique n'est pas validé : masqués sauf mention contraire.
+      feexpayCarteActive: process.env.FEEXPAY_CARTE_ACTIVE === 'true',
       // La salle Zoom charge le Meeting SDK seulement quand Zoom est branché.
       zoomActif: (process.env.ZOOM_MODE || 'simulation') === 'live',
     },
