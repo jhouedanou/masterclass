@@ -49,7 +49,7 @@ function dateLisible(valeur = ''): string {
 const CLES = [
   'prenom', 'code', 'validiteMinutes', 'validiteHeures', 'lien', 'statut', 'formateur', 'creneau',
   'montant', 'heures', 'motif', 'thematique', 'date', 'heure', 'module', 'jours', 'nom', 'email',
-  'whatsapp', 'sujet', 'reference', 'message',
+  'whatsapp', 'sujet', 'reference', 'message', 'moyen', 'numero',
 ] as const
 type Variables = Record<(typeof CLES)[number], string>
 
@@ -149,6 +149,28 @@ function corps(modele: ModeleNotification, variables: Record<string, string>, si
       return [
         { p: `${v.formateur} demande l’activation du coaching privé sur son profil.` },
         { bouton: 'Ouvrir les formateurs', lien: `${site}/admin/formateurs` },
+      ]
+    // `module` porte les titres achetés, déjà entre guillemets (une commande
+    // peut en compter plusieurs) ; sans module, elle réglait une séance de
+    // coaching privé.
+    case 'achat-confirme':
+      return [
+        { p: v.module
+          ? `Votre paiement est confirmé : vous avez maintenant accès à ${v.module}.`
+          : `Votre paiement est confirmé : votre séance de coaching privé${v.formateur ? ` avec ${v.formateur}` : ''} est réglée.` },
+        ...(!v.module && v.creneau ? [{ p: `Créneau : ${v.creneau}.` }] : []),
+        { p: `Montant : ${Number(v.montant).toLocaleString('fr-FR')} FCFA${v.moyen ? ` · ${v.moyen}` : ''}.` },
+        { p: `Référence de commande : ${v.reference}. Gardez-la pour toute question sur ce paiement.` },
+        v.module
+          ? { bouton: 'Ouvrir mes modules', lien: `${espace}/modules` }
+          : { bouton: 'Voir ma séance', lien: `${espace}/coaching-prive` },
+      ]
+    case 'attestation-delivree':
+      return [
+        { p: `Félicitations : votre attestation de participation${v.module ? ` au module « ${v.module} »` : ''} est délivrée.` },
+        { p: `Numéro : ${v.numero}` },
+        { bouton: 'Voir mon attestation', lien: `${site}/certificats/${encodeURIComponent(v.numero)}` },
+        { p: `Toute personne à qui vous la présentez peut en vérifier l’authenticité à cette adresse : ${site}/verifier/${encodeURIComponent(v.numero)}` },
       ]
   }
 }

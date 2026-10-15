@@ -382,3 +382,23 @@ export async function changerStatutCommande(
   const { error } = await supabase().from('commandes').update({ statut }).eq('reference', reference)
   if (error) throw traduireErreur(error, 'statut de la commande')
 }
+
+/**
+ * Passe la commande à `confirmee` et dit si cet appel a fait la transition.
+ * Le webhook et le retour navigateur rapprochent parfois la même commande en
+ * même temps : la condition sur le statut fait qu'un seul des deux l'emporte
+ * (Postgres réévalue le filtre après le verrou de ligne), et donc qu'un seul
+ * envoie la confirmation d'achat.
+ */
+export async function confirmerCommande(reference: string): Promise<boolean> {
+  const rows = verifier(
+    await supabase()
+      .from('commandes')
+      .update({ statut: 'confirmee' })
+      .eq('reference', reference)
+      .neq('statut', 'confirmee')
+      .select('reference'),
+    'confirmation de la commande',
+  )
+  return rows.length > 0
+}

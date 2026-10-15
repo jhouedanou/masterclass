@@ -1,14 +1,17 @@
 import type { CodeEchecPaiement, Commande } from '#shared/types'
-import { ouvrirAcces } from '../database/comptes'
+import { trouverFormateur, trouverModule } from '../database/catalogue'
+import { ouvrirAcces, trouverUtilisateur } from '../database/comptes'
 import { changerStatutDemandeCoachingPrive, trouverDemandeCoachingPrive } from '../database/coaching'
 import {
   changerStatutCommande,
   cloreTransactionsCommande,
+  confirmerCommande,
   transactionsDeCommande,
   trouverCommande,
   trouverTransactionParPrestataire,
 } from '../database/commerce'
 import type { MoyenTransactionSql } from '../database/types'
+import { notifierCompte } from './notifications'
 
 /**
  * FeexPay (docs.feexpay.me) : encaissement Mobile Money, Wave et carte.
@@ -384,7 +387,8 @@ export async function rapprocherCommande(
     reseau: reseau ?? undefined,
     moyen: moyenDepuisReseau(reseau) ?? undefined,
   })
-  await changerStatutCommande(commande.reference, 'confirmee')
+  const premiereConfirmation = await confirmerCommande(commande.reference)
+  const confirmee: Commande = { ...commande, statut: 'confirmee' }
 
   // Séance de coaching privé (« Accepter et payer », planche B, 10) : le
   // paiement confirme la demande ; il n'y a aucun module à ouvrir.
@@ -397,7 +401,8 @@ export async function rapprocherCommande(
         commentaire: `Paiement confirmé (commande ${commande.reference}).`,
       })
     }
-    return { statut: 'confirmee', commande: { ...commande, statut: 'confirmee' } }
+    if (premiereConfirmation) await confirmerAchat(confirmee, [], moyenDepuisReseau(reseau))
+    return { statut: 'confirmee', commande: confirmee }
   }
 
   const modules = commande.moduleIds.length
@@ -407,7 +412,42 @@ export async function rapprocherCommande(
         .filter((id): id is string => id !== null)
   await ouvrirAcces(commande.utilisateurId, modules)
 
-  return { statut: 'confirmee', commande: { ...commande, statut: 'confirmee' } }
+  if (premiereConfirmation) await confirmerAchat(confirmee, modules, moyenDepuisReseau(reseau))
+  return { statut: 'confirmee', commande: confirmee }
+}
+
+/**
+ * E-mail de confirmation d'achat (recette ACH-10), une fois les accès ouverts.
+ * Ne lève jamais : le paiement est acquis, un e-mail manqué ne doit pas faire
+ * échouer la confirmation renvoyée au navigateur ou au webhook.
+ */
+async function confirmerAchat(commande: Commande, moduleIds: string[], moyen: string | null): Promise<void> {
+  try {
+    const acheteur = await trouverUtilisateur(commande.utilisateurId)
+    if (!acheteur) return
+    const variables: Record<string, string> = {
+      prenom: acheteur.prenom,
+      montant: String(commande.total),
+      reference: commande.reference,
+      moyen: moyen ?? '',
+    }
+    if (moduleIds.length) {
+      const titres = (await Promise.all(moduleIds.map(trouverModule)))
+        .filter((m) => m !== null)
+        .map((m) => `« ${m.titre} »`)
+      variables.module = titres.length > 1
+        ? `${titres.slice(0, -1).join(', ')} et ${titres.at(-1)}`
+        : (titres[0] ?? 'votre module')
+    } else if (commande.demandeCoachingId) {
+      const demande = await trouverDemandeCoachingPrive(commande.demandeCoachingId)
+      const formateur = demande ? await trouverFormateur(demande.formateurId) : null
+      variables.formateur = formateur?.nom ?? ''
+      variables.creneau = demande?.creneau ?? ''
+    }
+    await notifierCompte(acheteur, 'achat-confirme', variables)
+  } catch (erreur) {
+    console.error('[notification] confirmation d’achat non envoyée', commande.reference, (erreur as Error)?.message ?? erreur)
+  }
 }
 
 /**

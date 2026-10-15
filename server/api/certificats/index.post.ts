@@ -1,5 +1,6 @@
-import { delivrerCertificat } from '../../database/commerce'
+import { delivrerCertificat, listerCertificatsUtilisateur } from '../../database/commerce'
 import { confirmerIdentiteCertificat, majProfilUtilisateur } from '../../database/comptes'
+import { notifierCompte } from '../../utils/notifications'
 import { exigerUtilisateur } from '../../utils/session'
 
 /**
@@ -10,7 +11,10 @@ import { exigerUtilisateur } from '../../utils/session'
  *
  * Le numéro EMBF-<programme>-<année>-<séquence> est tiré d'une séquence
  * Postgres : deux délivrances simultanées ne peuvent plus produire le même.
- * L'opération est idempotente — redemander son certificat le renvoie.
+ * L'opération est idempotente — redemander son certificat le renvoie. L'e-mail
+ * de l'attestation (recette ATT-09) ne part qu'à la première délivrance : deux
+ * demandes simultanées ne peuvent pas en créer deux, la seconde se heurte à
+ * l'unicité (apprenant, module) de la table.
  */
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerUtilisateur(event)
@@ -29,7 +33,15 @@ export default defineEventHandler(async (event) => {
       pays: utilisateur.pays,
     })
   }
+  const dejaDelivre = (await listerCertificatsUtilisateur(utilisateur.id)).some((c) => c.moduleId === moduleId)
   const certificat = await delivrerCertificat(utilisateur.id, moduleId)
   await confirmerIdentiteCertificat(utilisateur.id, moduleId)
+  if (!dejaDelivre) {
+    await notifierCompte(utilisateur, 'attestation-delivree', {
+      prenom: prenomConfirme,
+      module: certificat.titreModule,
+      numero: certificat.numero,
+    })
+  }
   return certificat
 })

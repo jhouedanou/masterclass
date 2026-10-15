@@ -3,7 +3,8 @@
  *
  * La plateforme prévoit plusieurs envois (code de vérification à la connexion
  * admin, lien de réinitialisation, invitation d'un formateur, suivi d'une
- * demande de coaching privé, sessions annulées ou reportées) mais aucun
+ * demande de coaching privé, sessions annulées ou reportées, confirmation
+ * d'achat, attestation délivrée) mais aucun
  * fournisseur n'est encore retenu : ni compte e-mail transactionnel, ni
  * WhatsApp Business.
  *
@@ -37,6 +38,8 @@ export type ModeleNotification =
   | 'paiement-verification'
   | 'alerte-lancement'
   | 'activation-coaching-demandee'
+  | 'achat-confirme'
+  | 'attestation-delivree'
 
 export interface Notification {
   canal: CanalNotification
@@ -69,6 +72,8 @@ export const SUJETS: Record<ModeleNotification, string> = {
   'paiement-verification': 'Votre paiement est en cours de vérification',
   'alerte-lancement': 'Le module que vous attendiez est disponible',
   'activation-coaching-demandee': 'Un formateur demande l’activation du coaching privé',
+  'achat-confirme': 'Votre paiement est confirmé',
+  'attestation-delivree': 'Votre attestation de participation est prête',
 }
 
 const piloteConsole: PiloteNotifications = {
