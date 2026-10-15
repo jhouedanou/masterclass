@@ -67,7 +67,7 @@ vidéos de démonstration tournent déjà de bout en bout.
 
 ### Envoi d'e-mails — demande un accès DNS
 - [ ] Ouvrir un compte (Brevo, Resend, Postmark, ou le SMTP de l'hébergeur)
-- [ ] Authentifier le domaine `bigfive.ci` : SPF, DKIM, DMARC dans la zone DNS
+- [ ] Authentifier le domaine `bigfiveabidjan.com` : SPF, DKIM, DMARC dans la zone DNS
 - [ ] Récupérer la clé d'API et fixer l'adresse d'expédition
       (ex. `ne-pas-repondre@bigfive.ci`)
 

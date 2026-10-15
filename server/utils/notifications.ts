@@ -10,9 +10,12 @@
  * Tout passe donc par `notifier()`, qui délègue à un pilote choisi par la
  * configuration. Le pilote `console` écrit le message dans la sortie du
  * serveur — c'est ce qui permet de dérouler les parcours en développement.
- * Brancher un fournisseur consistera à ajouter un pilote ici, sans toucher aux
+ * Le pilote `resend` envoie les e-mails par l'API Resend, avec les gabarits de
+ * `gabaritsEmail.ts` ; un autre fournisseur s'ajoute ici, sans toucher aux
  * points d'appel.
  */
+
+import { composerEmail } from './gabaritsEmail'
 
 export type CanalNotification = 'email' | 'whatsapp'
 
@@ -77,12 +80,52 @@ const piloteConsole: PiloteNotifications = {
   },
 }
 
+/**
+ * Resend (resend.com) : les e-mails partent par son API, depuis l'adresse
+ * `SMTP_EXPEDITEUR` d'un domaine vérifié chez Resend. Aucun pilote WhatsApp
+ * n'existe encore : ces messages sont signalés sans leurs variables, qui
+ * peuvent porter un lien de réinitialisation ou un code.
+ */
+const piloteResend: PiloteNotifications = {
+  async envoyer(n) {
+    if (n.canal !== 'email') {
+      console.info(`[notification/${n.canal}] non envoyée (aucun pilote WhatsApp) · ${n.modele} → ${n.a}`)
+      return
+    }
+    const config = useRuntimeConfig()
+    const { sujet, texte, html } = composerEmail(
+      n.modele,
+      n.variables,
+      config.public.siteUrl.replace(/\/$/, ''),
+      config.contactDestinataire,
+    )
+    await $fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${config.resendApiKey}` },
+      body: {
+        from: `${config.emailNom} <${config.emailExpediteur}>`,
+        to: [n.a],
+        subject: sujet,
+        text: texte,
+        html,
+        // Le message de contact se répond directement à son auteur.
+        ...(n.modele === 'contact-message' && n.variables.email ? { reply_to: n.variables.email } : {}),
+      },
+    })
+  },
+}
+
 function pilote(): PiloteNotifications {
-  const nom = useRuntimeConfig().notificationsDriver
+  const config = useRuntimeConfig()
+  const nom = config.notificationsDriver
   switch (nom) {
     case 'console':
     case '':
     case undefined:
+      return piloteConsole
+    case 'resend':
+      if (config.resendApiKey && config.emailExpediteur) return piloteResend
+      console.error('[notification] pilote resend sans RESEND_API_KEY ou SMTP_EXPEDITEUR, sortie console utilisée')
       return piloteConsole
     default:
       // Un pilote inconnu ne doit pas faire échouer le parcours métier : on
@@ -102,7 +145,9 @@ export async function notifier(notification: Notification): Promise<void> {
   try {
     await pilote().envoyer(notification)
   } catch (erreur) {
-    console.error('[notification] échec d’envoi', notification.modele, erreur)
+    // Seul le motif est journalisé : la requête porte les variables du message.
+    const motif = (erreur as { data?: { message?: string }; message?: string })
+    console.error('[notification] échec d’envoi', notification.modele, motif?.data?.message ?? motif?.message ?? erreur)
   }
 }
 

@@ -57,7 +57,7 @@ export default defineEventHandler(async (event) => {
   // Le message est transmis à l'équipe et un accusé part à l'expéditeur.
   await notifier({
     canal: 'email',
-    a: 'contact@bigfive.ci',
+    a: useRuntimeConfig().contactDestinataire,
     modele: 'contact-message',
     variables: {
       nom,

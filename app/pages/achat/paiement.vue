@@ -94,7 +94,7 @@ interface ParametresFeexPay {
   montant: number
   customId: string
   description: string
-  cas: 'MOBILE' | 'CARD' | ''
+  cas: 'MOBILE' | 'WALLET' | 'CARD' | ''
   email: string
   prenom: string
   nom: string
@@ -279,6 +279,13 @@ async function ouvrirFeexPay(parametres: ParametresFeexPay) {
     last_name: parametres.nom,
     // Le numéro n'a de sens que pour un moyen qui se règle par numéro.
     phone: (moyenChoisi.value.numero && numeroMobileMoney.value) || undefined,
+    // La fenêtre s'ouvre sur la Côte d'Ivoire et le seul réseau choisi ici :
+    // sans ce filtre, elle part du Bénin et le client doit tout choisir à
+    // nouveau (recette du 15/10).
+    networks:
+      parametres.cas === 'MOBILE' ? { 'Côte d\'Ivoire': ['MTN', 'ORANGE', 'MOOV'] }
+        : parametres.cas === 'WALLET' ? { 'Côte d\'Ivoire': ['WAVE'] }
+          : undefined,
     callback_info: { commande: parametres.customId },
     // La carte ne se règle pas dans la fenêtre : le SDK envoie le client sur
     // la page hébergée de FeexPay, d'où le prestataire le ramène ici. Le
