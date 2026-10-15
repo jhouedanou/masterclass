@@ -335,11 +335,14 @@ async function ouvrirFeexPay(parametres: ParametresFeexPay) {
       fermerFenetresFeexPay()
       const issue = issueDepuisRappel(reponse)
       const reference = referenceDepuisRappel(reponse)
-      // Un échec que le prestataire annonce lui-même n'a pas à être confirmé
-      // pendant deux minutes : il n'y a rien à attendre. Le motif précis reste
-      // celui du serveur quand il en tient un ; ici, seul l'échec est certain.
+      // Un échec annoncé par le SDK : avec sa référence, le serveur lit le motif
+      // chez FeexPay, le traduit (« LOW_BALANCE… » → solde insuffisant) et
+      // trace la transaction en échec — sans lui, elle restait « en attente »
+      // et l'écran disait seulement « erreur chez le prestataire » (recette du
+      // 15/10). Sans référence, rien à vérifier : l'échec est affiché tel quel.
       if (issue && issue !== 'SUCCESSFUL' && issue !== 'PENDING') {
-        afficherEchec('erreur-inconnue', ECHECS_PAIEMENT['erreur-inconnue'].message, reference)
+        if (reference) void confirmer(reference)
+        else afficherEchec('erreur-inconnue', ECHECS_PAIEMENT['erreur-inconnue'].message, null)
         return
       }
       void confirmer(reference)
