@@ -27,7 +27,8 @@
     "video:durees": "node --experimental-strip-types scripts/rattraper-durees-video.mjs",
     "video:encoder": "node scripts/encoder-file-attente.mjs",
     "video:verifier": "node --experimental-strip-types scripts/verifier-video.mjs",
-    "auth:configurer": "node scripts/configurer-auth-supabase.mjs"
+    "auth:configurer": "node scripts/configurer-auth-supabase.mjs",
+    "auth:renouveler": "node --experimental-strip-types scripts/renouveler-mots-de-passe.ts"
   },
   "dependencies": {
     "@nuxt/fonts": "^0.14.0",

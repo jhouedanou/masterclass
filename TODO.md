@@ -152,7 +152,8 @@ npm run build            # build de production
 npm run db:seed:generer && npm run db:sql
 ```
 
-**Comptes de démonstration** — mot de passe commun `Masterclass2026!` :
+**Comptes de démonstration** — mot de passe commun du seed (voir `scripts/generer-seed.ts`),
+à remplacer sur toute base en ligne avec `npm run auth:renouveler` (voir README) :
 `jeanluc@`, `cossi@`, `jeremie.declercq@` et `houefa@bigfiveabidjan.com` (administrateurs
 supérieurs) · `editeur@bigfive.ci` (droits partiels) · `formateur@bigfive.ci` ·
 `aya@example.ci` (apprenante, 2 modules et 1 attestation).

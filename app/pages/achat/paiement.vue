@@ -6,6 +6,7 @@ definePageMeta({ middleware: 'auth' })
 const achat = useAchatStore()
 const auth = useAuthStore()
 const config = useRuntimeConfig()
+const route = useRoute()
 /** Numéro Mobile Money ou Wave (planche A, 04c), transmis à la fenêtre FeexPay. */
 const numeroMobileMoney = ref(auth.utilisateur?.whatsapp ?? '')
 
@@ -38,6 +39,7 @@ const moyens = [
     libelle: 'Djamo',
     detail: 'Carte ou compte Djamo',
     numero: null,
+    carte: true,
     consigne: 'Saisissez les informations de votre carte Djamo dans la fenêtre FeexPay, puis confirmez dans l’application Djamo si elle vous le demande.',
     attente: 'Confirmez le paiement dans l’application Djamo si une demande s’affiche, puis revenez ici.',
   },
@@ -46,12 +48,18 @@ const moyens = [
     libelle: 'Visa',
     detail: 'Carte bancaire Visa ou Mastercard',
     numero: null,
+    carte: true,
     consigne: 'Saisissez les informations de votre carte dans la fenêtre sécurisée FeexPay. Votre banque peut demander une confirmation (3-D Secure).',
     attente: 'Confirmez le paiement auprès de votre banque si elle vous le demande, puis revenez ici.',
   },
 ] as const
 
-const moyenChoisi = computed(() => moyens.find((m) => m.valeur === achat.moyen) ?? moyens[0])
+/** Visa et Djamo se règlent par carte : FeexPay la refuse tant que le KYC
+ *  carte de la boutique n'est pas validé (`FEEXPAY_CARTE_ACTIVE`). */
+const moyensProposes = moyens.filter((m) => !('carte' in m) || config.public.feexpayCarteActive)
+if (!moyensProposes.some((m) => m.valeur === achat.moyen)) achat.moyen = 'mobile-money'
+
+const moyenChoisi = computed(() => moyensProposes.find((m) => m.valeur === achat.moyen) ?? moyens[0])
 
 /** Les états du tunnel (spec §8) : attente, vérification, succès, échec,
  *  nouvelle tentative et changement de moyen s'enchaînent depuis « choix ».
@@ -188,7 +196,71 @@ function referenceDepuisRappel(reponse: unknown): string | null {
   return null
 }
 
+// --- Retour de la page hébergée (carte) -------------------------------------
+
+/** Clé de l'achat mis de côté le temps du détour par FeexPay. */
+const CLE_ACHAT_EN_COURS = 'achat-en-cours'
+
+function urlRetour(commande: string, issue?: 'echec') {
+  const url = new URL('/achat/paiement', window.location.origin)
+  url.searchParams.set('retour', commande)
+  if (issue) url.searchParams.set('issue', issue)
+  return url.toString()
+}
+
+/**
+ * Le store d'achat ne survit pas au départ vers FeexPay : la page est
+ * rechargée au retour. L'achat est donc mis de côté dans l'onglet (le
+ * sessionStorage suit l'onglet, même après un passage sur un autre site) pour
+ * que l'écran de succès mène au bon module et que « Réessayer » fonctionne.
+ */
+function mettreAchatDeCote(commande: string) {
+  try {
+    sessionStorage.setItem(
+      CLE_ACHAT_EN_COURS,
+      JSON.stringify({ commande, module: achat.module, seance: achat.seance, moyen: achat.moyen }),
+    )
+  } catch {
+    // Stockage indisponible (navigation privée) : le retour mènera à l'espace.
+  }
+}
+
+function reprendreAchatMisDeCote(commande: string) {
+  try {
+    const brut = sessionStorage.getItem(CLE_ACHAT_EN_COURS)
+    const mis = brut ? JSON.parse(brut) : null
+    if (mis?.commande !== commande) return
+    if (mis.seance) achat.definirSeance(mis.seance)
+    else if (mis.module) achat.definir(mis.module)
+    if (moyens.some((m) => m.valeur === mis.moyen)) achat.moyen = mis.moyen
+  } catch {
+    // Rien à reprendre : la vérification se fait sur la seule référence.
+  }
+}
+
+/** FeexPay ne documente pas les paramètres qu'il ajoute au retour : on prend
+ *  sa référence sous les noms usuels, sinon la recherche par commande suffit. */
+function referenceDepuisRetour(): string | null {
+  const query = route.query
+  for (const cle of ['reference', 'transaction_id', 'transactionId', 'ref']) {
+    const v = query[cle]
+    if (typeof v === 'string' && v) return v
+  }
+  return null
+}
+
+function reprendreApresRedirection() {
+  const { retour, issue } = route.query
+  if (typeof retour !== 'string' || !retour) return
+  reprendreAchatMisDeCote(retour)
+  commandeEnCours.value = retour
+  void confirmer(referenceDepuisRetour(), 0, issue === 'echec')
+}
+
+onMounted(reprendreApresRedirection)
+
 async function ouvrirFeexPay(parametres: ParametresFeexPay) {
+  mettreAchatDeCote(parametres.customId)
   etat.value = 'feexpay'
   message.value = 'La fenêtre de paiement FeexPay s’ouvre.'
   await nextTick()
@@ -208,6 +280,12 @@ async function ouvrirFeexPay(parametres: ParametresFeexPay) {
     // Le numéro n'a de sens que pour un moyen qui se règle par numéro.
     phone: (moyenChoisi.value.numero && numeroMobileMoney.value) || undefined,
     callback_info: { commande: parametres.customId },
+    // La carte ne se règle pas dans la fenêtre : le SDK envoie le client sur
+    // la page hébergée de FeexPay, d'où le prestataire le ramène ici. Le
+    // rappel `callback` ne sera donc jamais appelé : c'est le retour sur ces
+    // adresses qui relance la vérification (`reprendreApresRedirection`).
+    callback_url: urlRetour(parametres.customId),
+    error_callback_url: urlRetour(parametres.customId, 'echec'),
     callback: (reponse: unknown) => {
       // La fenêtre se referme dans tous les cas : réussite comme échec, la
       // suite se joue sur notre page.
@@ -234,7 +312,7 @@ async function ouvrirFeexPay(parametres: ParametresFeexPay) {
 
 /** Vérification serveur, relancée toutes les trois secondes tant que FeexPay
  *  n'a pas tranché (deux minutes au plus). */
-async function confirmer(referenceFeexPay: string | null, essai = 0) {
+async function confirmer(referenceFeexPay: string | null, essai = 0, echecAnnonce = false) {
   if (!commandeEnCours.value) return
   etat.value = 'verification'
   message.value = 'Nous vérifions votre paiement auprès de FeexPay.'
@@ -246,7 +324,18 @@ async function confirmer(referenceFeexPay: string | null, essai = 0) {
     if (reponse.statut === 'confirmee') {
       achat.reference = reponse.reference
       fermerFenetresFeexPay()
+      try {
+        sessionStorage.removeItem(CLE_ACHAT_EN_COURS)
+      } catch {
+        // Sans stockage, rien à effacer.
+      }
       etat.value = 'succes'
+      return
+    }
+    // Retour par l'adresse d'échec de la page carte : le serveur n'a pas
+    // encore le motif, mais il n'y a rien à attendre pendant deux minutes.
+    if (echecAnnonce) {
+      afficherEchec('carte-refusee', ECHECS_PAIEMENT['carte-refusee'].message, referenceFeexPay)
       return
     }
     if (essai < 40) {
@@ -388,11 +477,11 @@ function changerDeMoyen() {
         </div>
       </div>
 
-      <!-- Quatre pavés égaux, le moyen retenu cerné d'un trait de 2 px : la
+      <!-- Des pavés égaux (quatre, deux sans la carte), le moyen retenu cerné d'un trait de 2 px : la
            maquette ne montre ni bouton radio ni sous-titre. -->
       <div class="mb-4.5 grid grid-cols-2 gap-3">
         <label
-          v-for="moyen in moyens"
+          v-for="moyen in moyensProposes"
           :key="moyen.valeur"
           class="cursor-pointer rounded-[12px] p-4 text-center text-[14px] font-bold"
           :class="achat.moyen === moyen.valeur ? 'border-2 border-social text-encre' : 'border-[1.5px] border-ligne text-texte'"
@@ -466,13 +555,13 @@ function changerDeMoyen() {
         Référence {{ achat.reference }}
       </p>
       <UiBaseButton
-        :to="seance ? '/mon-espace/coaching-prive' : `/mon-espace/module/${achat.module?.slug}`"
+        :to="seance ? '/mon-espace/coaching-prive' : achat.module ? `/mon-espace/module/${achat.module.slug}` : '/mon-espace'"
         class="mt-5 w-full"
         variante="sombre"
         taille="lg"
         @click="achat.vider()"
       >
-        {{ seance ? 'Voir ma séance' : 'Accéder à mon module' }}
+        {{ seance ? 'Voir ma séance' : achat.module ? 'Accéder à mon module' : 'Accéder à mon espace' }}
       </UiBaseButton>
     </div>
   </div>

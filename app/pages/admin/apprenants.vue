@@ -93,13 +93,17 @@ function libelleValeur(cle: CleFiltre, valeur: string) {
   return DIMENSIONS.find((d) => d.cle === cle)?.options.find((o) => o.valeur === valeur)?.libelle ?? valeur
 }
 
-const { data: apprenants, refresh } = await useFetch<Apprenant[]>('/api/admin/apprenants', {
+// L'API renvoie `{ apprenants, choix }` (listes du méga-filtre) : l'écran ne
+// lit que la liste. Typer la réponse en `Apprenant[]` laissait le `v-for`
+// parcourir les clés de l'objet, et la page tombait en 500 (retest du 15/10).
+const { data: apprenants, refresh } = await useFetch('/api/admin/apprenants', {
   query: computed(() => ({
     programme: filtre.programme || undefined,
     profil: filtre.profil || undefined,
     coaching: filtre.coaching || undefined,
     acces: filtre.acces || undefined,
   })),
+  transform: (r) => (r.apprenants ?? []) as Apprenant[],
 })
 const { data: modules } = await useFetch<Module[]>('/api/modules')
 

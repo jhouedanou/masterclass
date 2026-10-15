@@ -75,6 +75,16 @@ export default defineEventHandler(async (event) => {
     demandeId?: string
   }>(event)
 
+  // Visa et Djamo se règlent par carte, que FeexPay refuse tant que le KYC
+  // carte de la boutique n'est pas validé : le tunnel ne les propose pas, et
+  // une commande forgée ne doit pas ouvrir une fenêtre vouée à l'échec.
+  if ((moyen === 'visa' || moyen === 'djamo') && !useRuntimeConfig().public.feexpayCarteActive) {
+    throw createError({
+      statusCode: 422,
+      statusMessage: 'Le paiement par carte n’est pas encore disponible. Choisissez Mobile Money ou Wave.',
+    })
+  }
+
   // --- Séance de coaching privé --------------------------------------------
   if (demandeId) {
     const demande = await trouverDemandeCoachingPrive(demandeId)

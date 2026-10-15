@@ -27,7 +27,7 @@ const { data, error } = await useFetch<{
   participants: { id: string; nom: string }[]
   ressources: { titre: string; url: string; format: string }[]
   role: 'hote' | 'participant'
-  salle: { ouverte: boolean; ouverture: string; fermeture: string; debut: string }
+  salle: { ouverte: boolean; ouverture: string; fermeture: string; debut: string; fin: string }
 }>(() => `/api/mon-espace/session/${props.id}`)
 
 if (!data.value) {
@@ -51,7 +51,11 @@ const racine = ref<HTMLElement | null>(null)
 const autorisation = ref<Awaited<ReturnType<typeof demanderAutorisation>> | null>(null)
 const erreurEntree = ref('')
 
-/** Chrono « ● EN DIRECT · 00:42:17 » depuis le début prévu. */
+/**
+ * Chrono « ● EN DIRECT · 00:42:17 » depuis le début prévu, jusqu'à la fin
+ * prévue. Passé celle-ci, l'écran affiche « Terminée » : une séance du 19/09
+ * ouverte le 15/10 s'annonçait « En direct · 621 h » (retest du 15/10).
+ */
 const maintenant = ref(Date.now())
 let horloge: ReturnType<typeof setInterval> | undefined
 onMounted(() => (horloge = setInterval(() => (maintenant.value = Date.now()), 1000)))
@@ -59,9 +63,20 @@ onBeforeUnmount(() => {
   if (horloge) clearInterval(horloge)
   void zoom.quitter()
 })
-const enDirect = computed(() => maintenant.value >= new Date(data.value!.salle.debut).getTime())
+const debutPrevu = computed(() => new Date(data.value!.salle.debut).getTime())
+const finPrevue = computed(() => new Date(data.value!.salle.fin).getTime())
+const terminee = computed(() => maintenant.value >= finPrevue.value)
+const enDirect = computed(() => maintenant.value >= debutPrevu.value && !terminee.value)
+const finLisible = computed(() =>
+  new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).format(
+    new Date(data.value!.salle.fin),
+  ),
+)
+const fermetureLisible = computed(() =>
+  new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(data.value!.salle.fermeture)),
+)
 const chrono = computed(() => {
-  const ecart = Math.max(0, Math.floor((maintenant.value - new Date(data.value!.salle.debut).getTime()) / 1000))
+  const ecart = Math.max(0, Math.floor((maintenant.value - debutPrevu.value) / 1000))
   const h = String(Math.floor(ecart / 3600)).padStart(2, '0')
   const m = String(Math.floor((ecart % 3600) / 60)).padStart(2, '0')
   const s = String(ecart % 60).padStart(2, '0')
@@ -173,7 +188,8 @@ function envoyerChat() {
           class="rounded-full px-3 py-1.5 font-mono text-[12px] font-bold"
           :class="enDirect ? 'bg-[#3a1f22] text-[#ff6b6b]' : 'bg-encre-800 text-[#b9b4c4]'"
         >
-          ● {{ enDirect ? 'EN DIRECT' : 'À VENIR' }} · {{ chrono }}
+          <template v-if="terminee">TERMINÉE · {{ finLisible }}</template>
+          <template v-else>● {{ enDirect ? 'EN DIRECT' : 'À VENIR' }} · {{ chrono }}</template>
         </span>
         <NuxtLink :to="retour" class="hidden text-[13.5px] text-[#b9b4c4] hover:text-white lg:inline">{{ libelleRetour }}</NuxtLink>
       </div>
@@ -184,7 +200,11 @@ function envoyerChat() {
       <div class="w-full max-w-lg rounded-carte bg-encre-800 p-8 text-center">
         <p class="font-title text-[24px] font-light">{{ data.role === 'hote' ? 'Démarrer la session' : 'Rejoindre la session' }}</p>
         <p class="mt-3 text-[14px] text-[#b9b4c4]">
-          <template v-if="data.salle.ouverte || data.role === 'hote'">
+          <template v-if="terminee && data.salle.ouverte">
+            La séance s’est terminée à l’heure prévue ; la salle reste ouverte jusqu’à {{ fermetureLisible }}.
+          </template>
+          <template v-else-if="terminee">Cette séance s’est terminée le {{ finLisible }}.</template>
+          <template v-else-if="data.salle.ouverte || data.role === 'hote'">
             La salle est ouverte. Micro et caméra vous seront demandés à l’entrée ; vous ne quittez pas la plateforme.
           </template>
           <template v-else>La salle ouvre 15 minutes avant le début, à {{ ouvertureLisible }}.</template>

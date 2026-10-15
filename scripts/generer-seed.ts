@@ -92,8 +92,8 @@ const COLONNES_SEO =
 /**
  * Mot de passe unique des comptes de démonstration. Il est haché ici, à la
  * génération : le seed ne contient jamais de mot de passe en clair. À changer
- * impérativement avant toute mise en ligne publique — il est écrit dans le
- * README et sur l'écran de connexion.
+ * impérativement avant toute mise en ligne publique : `npm run auth:renouveler`
+ * (scripts/renouveler-mots-de-passe.ts).
  */
 const MOT_DE_PASSE_DEMO = 'Masterclass2026!'
 

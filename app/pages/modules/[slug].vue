@@ -362,7 +362,7 @@ function acheter() {
             </UiBaseButton>
 
             <p class="text-center text-[12.5px] text-discret">
-              Mobile Money · Djamo · Wave · Visa — via FeexPay
+              {{ config.public.feexpayCarteActive ? 'Mobile Money · Djamo · Wave · Visa' : 'Mobile Money · Wave' }} — via FeexPay
             </p>
           </template>
 
