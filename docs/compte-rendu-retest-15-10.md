@@ -1,107 +1,83 @@
-# Compte rendu — défauts D1 à D3 du retest du 15/10/2026
+**Objet :** E-Masterclass Big Five — compte rendu de recette du 15/10/2026
 
-Classeur : « Recette E-Masterclass BigFive — clôture 15-10.xlsx », onglet « En attente client »,
-partie 2. Vérifications faites le 15/10 au soir, en local, sur la base Supabase en ligne
-(mêmes données que la production), connecté en administrateur. Aucune écriture en base.
+Bonjour,
+
+Voici le point de la recette du 15 octobre. La plateforme est en ligne à son adresse définitive : https://emasterclass.bigfive.solutions/
+
+Sur 50 cas vérifiés :
+- **30 sont validés** ;
+- **10 attendent une action de votre part ou de FeexPay** ;
+- **9 sont à revérifier en ligne** après le déploiement de ce soir ;
+- **1 reste ouvert** : les mots de passe de démonstration.
+
+Le classeur de recette détaillé, avec une capture par point, est joint à ce message.
+
+## Ce qui fonctionne, vérifié en réel le 15/10
+
+- **Paiement Mobile Money.** Un paiement Orange Money et un paiement MTN de 200 F ont réussi. Les commandes ont été confirmées, et les modules se sont ouverts automatiquement dans l'espace de l'acheteur. Moov est également ouvert.
+- **Refus de paiement.** Le client voit un message clair, par exemple « Solde insuffisant ou plafond atteint », et chaque échec est tracé dans l'administration.
+- **Zoom.** Chaque session de coaching créée dans l'administration génère automatiquement sa réunion sur le compte Zoom de Big Five, avec salle d'attente.
+- **E-mails.** Ils partent par Resend depuis ne-pas-repondre@bigfive.solutions : la réinitialisation du mot de passe a été délivrée, et l'avis d'annulation de session est parti.
+- **Domaine et vidéos.** Le site, le sitemap, le QR code des attestations et la lecture sécurisée des vidéos fonctionnent sur le domaine définitif, en HTTPS.
+- **Administration.** La page de gestion des apprenants s'affiche de nouveau, export compris. Une séance passée s'affiche « Terminée » au lieu de « En direct ».
+
+## Ce qui attend Big Five
+
+1. **FeexPay — Wave.** FeexPay refuse Wave tant que la « Clé agrégée Wave » n'est pas activée (tableau de bord FeexPay, onglet Configuration). Si l'option n'est pas disponible, il faut la demander au support FeexPay. En attendant, Wave apparaît « Bientôt disponible » sur le site.
+2. **FeexPay — carte (Visa, Mastercard, Djamo).** Le dossier de conformité carte (KYC) est resté en brouillon. Il faut le compléter et le soumettre dans le tableau de bord FeexPay. À savoir : FeexPay peut retenir une partie de chaque paiement par carte pendant 180 jours, pour couvrir les litiges.
+3. **Sécurité.** Six comptes, dont l'administrateur principal cossi@bigfiveabidjan.com, acceptent encore le mot de passe de démonstration. Une procédure de renouvellement est prête : nous la lançons avec vous, puis chaque titulaire reçoit son nouveau mot de passe.
+4. **E-mails.** Dans Cloudflare, ne garder qu'un seul enregistrement DMARC sur _dmarc.bigfive.solutions. Deux coexistent aujourd'hui : supprimer « v=DMARC1; p=none; ». Vérifier aussi que la boîte contact@bigfiveabidjan.com existe : c'est elle qui reçoit le formulaire de contact.
+5. **Contenus.**
+   - Textes juridiques validés : CGU, CGV, mentions légales, confidentialité, cookies.
+   - Vidéos des modules : 15 chapitres sur 72 sont en ligne.
+   - Publication des 15 modules encore en brouillon.
+   - Griffe de signature de la direction, pour les attestations.
+   - Biographies des formateurs.
+6. **Mesure d'audience.** Fournir les identifiants Google Analytics 4 et Google Tag Manager, et déclarer le domaine dans la Search Console.
+7. **Paiements de test.** Rembourser les deux paiements de 200 F depuis la console FeexPay, puis remettre les prix des modules à leur valeur.
+
+**À confirmer avec FeexPay :** leur fenêtre de paiement ajoute des frais de 1,7 % à 3,2 % selon le réseau, à la charge du client.
+
+## Ce que nous faisons ce soir et ensuite
+
+- **Ce soir :** deux mises à jour de la base, puis la mise en ligne des derniers développements :
+  - l'e-mail de confirmation d'achat ;
+  - l'envoi de l'attestation par e-mail ;
+  - la relance automatique des commandes restées en attente ;
+  - les paiements de coaching privé dans les transactions ;
+  - le verrouillage des droits de la base.
+- **Ensuite :** vérifier ces points en ligne, puis tester l'entrée dans la salle Zoom (formateur et apprenant), ainsi que le report et l'annulation d'une session.
+
+Je reste disponible pour en parler.
+
+Cordialement,
+Jean-Luc Houédanou
+
+---
+
+## Annexe technique — défauts D1 à D3
+
+Vérifications faites le 15/10 au soir sur la base en ligne, sans écriture en base. Détail dans le classeur, onglet « En attente client », partie 2.
 
 | N° | Défaut | État | Cas |
 |---|---|---|---|
-| D1 | /admin/apprenants répond 500 | Corrigé (27d835b), vérifié | ADM-12 à retester · ADM-14 OK |
-| D2 | Mot de passe de démonstration encore actif | Script prêt, à lancer par Big Five | SEC-11 KO |
+| D1 | /admin/apprenants répondait une erreur 500 | Corrigé (27d835b), vérifié | ADM-12 à retester, ADM-14 OK |
+| D2 | Mots de passe de démonstration encore actifs | Script prêt, à lancer | SEC-11 KO |
 | D3 | Séance passée affichée « EN DIRECT · 621 h » | Corrigé (27d835b, 2bc3bcc), vérifié | COL-05 OK |
 
-## D1 — /admin/apprenants en erreur 500
+**D1.** Une fusion de branches avait gardé une API qui renvoie `{ apprenants, choix }` alors que l'écran attendait une simple liste. L'écran ne retient plus que `apprenants`, ce qui répare aussi l'export CSV. Vérifié : liste de 10 comptes, fiche, historique, export (10 lignes, 13 colonnes), formulaire avec Prénom et Nom séparés. Reste à créer un apprenant de test. Captures : ADM-12 (avant) et ADM-12-corrige (après).
 
-**Constat.** « Cannot read properties of undefined (reading 'length') » à
-`app/pages/admin/apprenants.vue:502`. Création et export d'apprenants inaccessibles.
-
-**Cause.** Une fusion de branches a gardé l'API `server/api/admin/apprenants.get.ts`, qui renvoie
-`{ apprenants, choix }`, et repris un écran qui attend une simple liste. L'écran forçait ce type
-(`useFetch<Apprenant[]>`), si bien que le contrôle des types ne voyait rien. Le `v-for` parcourait
-donc les clés de l'objet : la liste elle-même, puis `choix`, sans `coachingPrive`.
-
-**Correctif.** L'écran ne retient que `apprenants` de la réponse (`transform`). L'export CSV, qui
-recevait le même objet, est réparé du même coup.
-
-**Vérifié.**
-- Liste des 10 comptes affichée, sans erreur dans la console.
-- Fiche d'un apprenant, avec « Coaching privé : 0 demande(s) ».
-- Fenêtre « Historique ».
-- Export CSV : 10 lignes, 13 colonnes.
-- Formulaire « Ajouter un apprenant », avec Prénom et Nom séparés.
-
-**Reste.** Créer un apprenant de test (ADM-12). Ce test n'a pas été rejoué, pour ne pas écrire
-dans la base de production.
-
-Captures : `ADM-12.png` (avant, onglet Captures ligne 547), `ADM-12-corrige.png` (après,
-ligne 575).
-
-## D2 — Mots de passe de démonstration
-
-**Constat.** Lecture du 15/10 sur la base en ligne : 6 comptes sur 7 acceptent encore le mot de
-passe commun du jeu de données.
-- cossi@bigfiveabidjan.com (administrateur principal)
-- jeremie.declercq@bigfiveabidjan.com
-- houefa@bigfiveabidjan.com
-- editeur@bigfive.ci
-- formateur@bigfive.ci
-- aya@example.ci
-
-Seul jeanluc@ a été changé.
-
-**Fait.**
-- Le mot de passe n'apparaît plus dans le README ni dans le TODO. Il reste dans l'historique git et
-  dans les commentaires des migrations déjà appliquées.
-- Nouveau script `scripts/renouveler-mots-de-passe.ts`.
-
-**Procédure.** À lancer par Big Five, depuis un poste dont le `.env` pointe sur la base en ligne :
+**D2.** Six comptes sur sept acceptent encore le mot de passe commun du jeu de données : cossi@, jeremie.declercq@, houefa@bigfiveabidjan.com, editeur@ et formateur@bigfive.ci, aya@example.ci. Seul jeanluc@ a été changé. Le mot de passe n'apparaît plus dans le README ni dans le TODO. Procédure, depuis un poste dont le `.env` pointe sur la base en ligne :
 
 ```bash
 npm run auth:renouveler
 npm run auth:renouveler -- --appliquer
 ```
 
-1. Le premier appel ne fait que lire : il dit quels comptes acceptent encore le mot de passe.
-2. Le second tire un mot de passe aléatoire de 24 caractères par compte concerné, l'enregistre
-   haché, le relit pour contrôle, puis l'affiche **une seule fois** dans le terminal. Rien n'est
-   écrit sur disque.
-3. Reporter chaque mot de passe dans un gestionnaire, puis le transmettre à son titulaire, qui le
-   changera depuis « Paramètres ».
-4. Remplacer `NUXT_SESSION_PASSWORD` sur Vercel, puis redéployer : les sessions déjà ouvertes
-   restent sinon valides jusqu'à 30 jours.
+1. Le premier appel ne fait que lire : il liste les comptes concernés.
+2. Le second tire un mot de passe aléatoire de 24 caractères par compte, l'enregistre haché, puis l'affiche **une seule fois** dans le terminal, sans rien écrire sur le disque.
+3. Il faut ensuite reporter chaque mot de passe dans un gestionnaire, le transmettre à son titulaire, remplacer `NUXT_SESSION_PASSWORD` sur Vercel et redéployer, pour fermer les sessions déjà ouvertes.
 
-Options :
-- `--emails a@x,b@y` restreint la liste des comptes.
-- Un compte déjà changé n'est pas touché, sauf avec `--tous`.
+**D3.** Le badge ne comparait l'heure qu'au début de la séance. La séance passée affiche désormais « TERMINÉE · 19 septembre à 20:00 », avec un bouton d'entrée grisé, y compris pour l'hôte. Captures : COL-05-seance-passee (avant) et COL-05-corrige (après).
 
-Le compte apprenant de démonstration aya@example.ci peut aussi être supprimé plutôt que renouvelé.
-
-## D3 — Séance passée affichée « En direct »
-
-**Constat.** ses-002 (19/09, 18:00–20:00 UTC) s'affichait « EN DIRECT · 621 h » sur
-`/mon-espace/session/ses-002`.
-
-**Cause.** Le badge ne comparait l'heure qu'au début de la séance, jamais à sa fin.
-
-**Correctif.**
-- L'API `server/api/mon-espace/session/[id].get.ts` renvoie la fin prévue (`salle.fin` = début +
-  durée).
-- La salle (`app/components/espace/SalleSession.vue`) affiche « TERMINÉE · 19 septembre à 20:00 »
-  et « Cette séance s'est terminée le 19 septembre à 20:00 ».
-- Dans les 30 minutes de battement après la fin, l'écran indique que la salle reste ouverte.
-
-**Vérifié.** Badge et message corrects. Le bouton d'entrée est grisé, y compris pour le formateur
-et l'administrateur : avant la retouche (2bc3bcc), l'hôte pouvait encore « Démarrer » une séance
-passée.
-
-Captures : `COL-05-seance-passee.png` (avant, ligne 1136), `COL-05-corrige.png` (après,
-ligne 1105).
-
-## Contrôles
-
-- `npm run typecheck` : 0 erreur au 15/10 au soir. Les 5 erreurs TS2321 de `Referentiels.vue`,
-  antérieures à ces correctifs, ont été levées par 2bc3bcc (D7).
-- Les captures « après » sont recadrées : aucune coordonnée d'apprenant n'y figure.
-- Le classeur a été réenregistré avec openpyxl, sans LibreOffice pour le recalculer. Excel
-  recalcule les compteurs de la Synthèse à l'ouverture ; un aperçu rapide (Quick Look) peut les
-  montrer vides.
+**Contrôles.** `npm run typecheck` passe sans aucune erreur le 15/10 au soir. Les compteurs de la Synthèse du classeur se recalculent à l'ouverture dans Excel ; un aperçu rapide peut les montrer vides.
