@@ -1,6 +1,5 @@
 import { enregistrerJournal } from '../../database/administration'
 import { demanderActivationCoachingPrive, trouverFormateur } from '../../database/catalogue'
-import { ORGANISATION } from '#shared/utils/contact'
 import { notifier } from '../../utils/notifications'
 import { exigerFormateur } from '../../utils/session'
 
@@ -31,7 +30,7 @@ export default defineEventHandler(async (event) => {
 
   await notifier({
     canal: 'email',
-    a: ORGANISATION.email,
+    a: useRuntimeConfig().contactDestinataire,
     modele: 'activation-coaching-demandee',
     variables: { formateur: formateur.nom, id: formateur.id },
   })

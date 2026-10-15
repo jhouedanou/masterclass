@@ -46,11 +46,14 @@ function referenceFeexPay(): string {
   return `FP-${jour}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`
 }
 
-/** Type de fenêtre FeexPay selon le moyen choisi ; vide = tous les moyens. */
-const CAS_FEEXPAY: Record<string, 'MOBILE' | 'CARD' | ''> = {
+/** Onglet de la fenêtre FeexPay selon le moyen choisi, pour que le client n'ait
+ *  pas à choisir une seconde fois. Le SDK range Wave (Côte d'Ivoire) parmi les
+ *  portefeuilles (`WALLET`), pas parmi les réseaux Mobile Money ; Djamo se
+ *  règle par sa carte. Vide = tous les moyens. */
+const CAS_FEEXPAY: Record<string, 'MOBILE' | 'WALLET' | 'CARD' | ''> = {
   'mobile-money': 'MOBILE',
-  wave: '',
-  djamo: '',
+  wave: 'WALLET',
+  djamo: 'CARD',
   visa: 'CARD',
 }
 
