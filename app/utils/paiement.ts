@@ -16,9 +16,10 @@ export const ECHECS_PAIEMENT: Record<
   }
 > = {
   'solde-insuffisant': {
-    titre: 'Solde insuffisant',
-    message: 'Solde insuffisant sur votre compte Mobile Money. Aucune somme n’a été débitée.',
-    conseil: 'Rechargez votre compte ou choisissez un autre moyen de paiement, puis réessayez.',
+    titre: 'Solde insuffisant ou plafond atteint',
+    message:
+      'Votre opérateur a refusé le paiement : solde insuffisant (frais compris), plafond atteint ou compte non autorisé à payer un marchand. Aucune somme n’a été débitée.',
+    conseil: 'Rechargez votre compte ou vérifiez auprès de votre opérateur qu’il peut payer un marchand, puis réessayez. Vous pouvez aussi utiliser un autre numéro.',
     action: 'changer-moyen',
   },
   'delai-depasse': {
@@ -59,7 +60,7 @@ export const ECHECS_PAIEMENT: Record<
   },
   'erreur-inconnue': {
     titre: 'Paiement non abouti',
-    message: 'Une erreur est survenue chez le prestataire.',
+    message: 'FeexPay n’a pas pu traiter ce paiement. Aucun accès n’est ouvert tant que le paiement n’est pas confirmé.',
     conseil: 'Si un montant a été débité, contactez-nous avec votre référence.',
     action: 'contacter',
   },

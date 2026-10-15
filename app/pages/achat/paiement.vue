@@ -54,17 +54,25 @@ const moyens = [
   },
 ] as const
 
-/** Visa et Djamo se règlent par carte : FeexPay la refuse tant que le KYC
- *  carte de la boutique n'est pas validé (`FEEXPAY_CARTE_ACTIVE`). Wave attend
- *  son activation sur le compte marchand (`FEEXPAY_WAVE_ACTIVE`). */
-const moyensProposes = moyens.filter(
-  (m) =>
-    (!('carte' in m) || config.public.feexpayCarteActive) &&
-    (m.valeur !== 'wave' || config.public.feexpayWaveActive),
-)
-if (!moyensProposes.some((m) => m.valeur === achat.moyen)) achat.moyen = 'mobile-money'
+/** Les quatre moyens restent affichés. Un moyen que FeexPay n'a pas encore
+ *  ouvert sur le compte (Wave : `FEEXPAY_WAVE_ACTIVE` ; Visa et Djamo, par
+ *  carte : `FEEXPAY_CARTE_ACTIVE`) dit pourquoi au lieu de disparaître, et
+ *  renvoie vers le Mobile Money. Le serveur refuse de toute façon de l'ouvrir. */
+const moyensProposes = moyens
+if (!moyens.some((m) => m.valeur === achat.moyen)) achat.moyen = 'mobile-money'
 
-const moyenChoisi = computed(() => moyensProposes.find((m) => m.valeur === achat.moyen) ?? moyens[0])
+const moyenChoisi = computed(() => moyens.find((m) => m.valeur === achat.moyen) ?? moyens[0])
+
+function indisponibilite(valeur: string): string | null {
+  if (valeur === 'wave' && !config.public.feexpayWaveActive) {
+    return 'Wave n’est pas encore ouvert sur notre compte de paiement : FeexPay doit activer Wave pour Big Five. En attendant, payez par Mobile Money (Orange, MTN ou Moov).'
+  }
+  if ((valeur === 'visa' || valeur === 'djamo') && !config.public.feexpayCarteActive) {
+    return 'Le paiement par carte (Visa, Mastercard, Djamo) est en cours d’activation : FeexPay valide le dossier carte de Big Five. En attendant, payez par Mobile Money (Orange, MTN ou Moov).'
+  }
+  return null
+}
+const indisponible = computed(() => indisponibilite(achat.moyen))
 
 /** Les états du tunnel (spec §8) : attente, vérification, succès, échec,
  *  nouvelle tentative et changement de moyen s'enchaînent depuis « choix ».
@@ -187,7 +195,9 @@ function surveillerCadreVide() {
       gardeCadre?.disconnect()
       afficherEchec(
         'erreur-inconnue',
-        'FeexPay n’a pas pu ouvrir ce moyen de paiement. Choisissez-en un autre ou réessayez plus tard.',
+        achat.moyen === 'wave'
+          ? 'FeexPay a refusé d’ouvrir le paiement Wave : Wave n’est pas activé sur notre compte. Payez par Mobile Money.'
+          : 'FeexPay n’a pas pu ouvrir ce moyen de paiement. Choisissez-en un autre ou réessayez plus tard.',
       )
       return
     }
@@ -354,6 +364,46 @@ async function ouvrirFeexPay(parametres: ParametresFeexPay) {
   await nextTick()
   const bouton = document.querySelector<HTMLElement>(`#${CONTENEUR_FEEXPAY} button`)
   bouton?.click()
+  void preremplirFeexPay(parametres)
+}
+
+/**
+ * Le SDK ignore `first_name`, `email` et `phone` : le client retapait dans la
+ * fenêtre FeexPay ce qu'il venait de saisir ici (recette du 15/10). On remplit
+ * donc ses champs une fois la fenêtre ouverte, opérateur compris (déduit du
+ * numéro : 01 Moov, 05 MTN, 07 Orange). Si le SDK change ses champs, rien ne
+ * casse : le client les remplit lui-même, comme avant.
+ */
+async function preremplirFeexPay(parametres: ParametresFeexPay) {
+  const ecrire = (champ: HTMLInputElement | HTMLSelectElement | null, valeur: string) => {
+    if (!champ || !valeur || champ.value) return
+    champ.value = valeur
+    champ.dispatchEvent(new Event('input', { bubbles: true }))
+    champ.dispatchEvent(new Event('change', { bubbles: true }))
+  }
+  const chiffres = (moyenChoisi.value.numero ? numeroMobileMoney.value : '').replace(/\D/g, '')
+  const national = chiffres.startsWith('225') && chiffres.length === 13 ? chiffres.slice(3) : chiffres
+  const operateur = ({ '01': 'MOOV', '05': 'MTN', '07': 'ORANGE' } as Record<string, string>)[national.slice(0, 2)]
+
+  // La fenêtre se construit après la validation de la boutique : on l'attend.
+  for (let i = 0; i < 20; i += 1) {
+    if (document.getElementById('feexpay-name-input')) break
+    await new Promise((r) => setTimeout(r, 150))
+  }
+  ecrire(document.querySelector<HTMLInputElement>('#feexpay-name-input'), `${parametres.prenom} ${parametres.nom}`.trim())
+  ecrire(document.querySelector<HTMLInputElement>('#feexpay-email-input'), parametres.email)
+  if (national.length !== 10) return
+
+  const reseau = document.querySelector<HTMLSelectElement>('#feexpay-network-select')
+  if (reseau && operateur && [...reseau.options].some((o) => o.value === operateur)) {
+    reseau.value = operateur
+    reseau.dispatchEvent(new Event('change', { bubbles: true }))
+  }
+  const champsNumero = [
+    document.querySelector<HTMLInputElement>('#feexpay-wallet-phone-input'),
+    ...document.querySelectorAll<HTMLInputElement>('.feexpay-modal input[placeholder*="léphone"]'),
+  ].filter((c): c is HTMLInputElement => !!c && c.offsetParent !== null)
+  for (const champ of champsNumero) ecrire(champ, national)
 }
 
 /** Vérification serveur, relancée toutes les trois secondes tant que FeexPay
@@ -416,7 +466,17 @@ function afficherEchec(code: CodeEchecPaiement, texte: string, reference?: strin
   etat.value = 'echec'
   tentatives.value += 1
   codeEchec.value = code
-  message.value = ECHECS_PAIEMENT[code]?.message ?? texte
+  // Un motif connu a son message rédigé. Pour un motif inconnu, on garde le
+  // texte précis quand il y en a un (moyen non activé, refus serveur) ; un
+  // code brut de FeexPay est cité tel quel, pour que l'équipe puisse le
+  // retrouver.
+  const redige = ECHECS_PAIEMENT[code]?.message ?? texte
+  message.value =
+    code !== 'erreur-inconnue' || !texte || texte === redige
+      ? redige
+      : /^[A-Z0-9_ ]+$/.test(texte)
+        ? `${redige} Motif communiqué par FeexPay : ${texte}.`
+        : texte
   referenceEchec.value = reference ?? commandeEnCours.value
   slugDoublon.value = slug ?? null
 }
@@ -490,10 +550,10 @@ function changerDeMoyen() {
       >
         <p class="flex items-center gap-2 font-title text-[21px] font-light" :class="echec.action === 'acceder' ? 'text-succes' : echec.action === 'attendre' ? 'text-alerte' : 'text-erreur-fonce'">
           <span aria-hidden="true">{{ echec.action === 'acceder' ? '✓' : echec.action === 'attendre' ? '…' : '✕' }}</span>
-          {{ echec.action === 'acceder' || echec.action === 'attendre' ? echec.titre : 'Paiement non abouti' }}
+          {{ echec.titre }}
         </p>
         <p class="mt-1 text-[14px] text-texte">
-          <b v-if="echec.action !== 'acceder' && echec.action !== 'attendre'">{{ echec.titre }} — </b>{{ message }}
+          {{ message }}
           <template v-if="referenceEchec"> Référence : <span class="font-mono">{{ referenceEchec }}</span>.</template>
         </p>
         <p class="mt-2 text-[14px] text-texte">{{ echec.conseil }}</p>
@@ -523,7 +583,7 @@ function changerDeMoyen() {
         </div>
       </div>
 
-      <!-- Des pavés égaux (quatre, deux sans la carte), le moyen retenu cerné d'un trait de 2 px : la
+      <!-- Quatre pavés égaux (un moyen pas encore ouvert porte « Bientôt disponible »), le moyen retenu cerné d'un trait de 2 px : la
            maquette ne montre ni bouton radio ni sous-titre. -->
       <div class="mb-4.5 grid grid-cols-2 gap-3">
         <label
@@ -535,21 +595,32 @@ function changerDeMoyen() {
           <input v-model="achat.moyen" type="radio" :value="moyen.valeur" class="sr-only">
           <span class="block">{{ moyen.libelle }}</span>
           <span class="mt-1 block text-[12px] font-normal text-discret">{{ moyen.detail }}</span>
+          <span v-if="indisponibilite(moyen.valeur)" class="mt-1.5 inline-block rounded-full bg-alerte-pale px-2 py-0.5 text-[11px] font-bold text-alerte-fonce">Bientôt disponible</span>
         </label>
       </div>
 
       <!-- Planche A, écran 04c : le numéro est saisi avant de payer et
            pré-remplit la fenêtre FeexPay. D'abord réservé au mobile et au seul
            Mobile Money, il vaut aussi pour Wave et sur tous les écrans. -->
-      <p class="mb-3.5 text-[13.5px] leading-[1.55] text-texte">{{ moyenChoisi.consigne }}</p>
-      <label v-if="moyenChoisi.numero" class="mb-3.5 block">
-        <span class="mb-1.5 block text-[13px] font-bold text-encre">{{ moyenChoisi.numero }}</span>
-        <UiChampTelephone v-model="numeroMobileMoney" :pays="auth.utilisateur?.pays" />
-      </label>
+      <template v-if="indisponible">
+        <p class="mb-3.5 rounded-[12px] border border-alerte-bordure bg-alerte-pale p-3.5 text-[13.5px] leading-[1.55] text-alerte-fonce" role="status">
+          {{ indisponible }}
+        </p>
+        <UiBaseButton class="mb-3 w-full" variante="sombre" taille="lg" @click="achat.moyen = 'mobile-money'">
+          Payer par Mobile Money
+        </UiBaseButton>
+      </template>
+      <template v-else>
+        <p class="mb-3.5 text-[13.5px] leading-[1.55] text-texte">{{ moyenChoisi.consigne }}</p>
+        <label v-if="moyenChoisi.numero" class="mb-3.5 block">
+          <span class="mb-1.5 block text-[13px] font-bold text-encre">{{ moyenChoisi.numero }}</span>
+          <UiChampTelephone v-model="numeroMobileMoney" :pays="auth.utilisateur?.pays" />
+        </label>
 
-      <UiBaseButton class="mb-3 w-full" variante="sombre" taille="lg" @click="payer">
-        {{ etat === 'echec' ? 'Réessayer le paiement' : `Payer ${formatFcfa(montant, true)}` }}
-      </UiBaseButton>
+        <UiBaseButton class="mb-3 w-full" variante="sombre" taille="lg" @click="payer">
+          {{ etat === 'echec' ? 'Réessayer le paiement' : `Payer ${formatFcfa(montant, true)}` }}
+        </UiBaseButton>
+      </template>
       <p class="rounded-[12px] border border-alerte-bordure bg-alerte-pale p-3.5 text-[13px] leading-[1.55] text-alerte-fonce">
         ⚠ <b>Ne fermez pas cette page</b> avant la confirmation du paiement.
       </p>

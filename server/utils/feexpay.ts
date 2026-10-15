@@ -83,6 +83,8 @@ export interface TransactionFeexPay {
   shop: string | null
   reseau: string | null
   motif: string | null
+  /** Numéro payeur (225…), quand le prestataire le restitue. */
+  telephone: string | null
 }
 
 /** Les réponses FeexPay varient d'un point d'entrée à l'autre (objet nu ou
@@ -129,6 +131,12 @@ function lireTransaction(brut: unknown): TransactionFeexPay | null {
           : null,
     reseau: typeof source.reseau === 'string' ? source.reseau : null,
     motif: typeof source.reason === 'string' && source.reason ? source.reason : null,
+    telephone:
+      typeof source.phoneNumber === 'string'
+        ? source.phoneNumber
+        : typeof source.phone_number === 'string'
+          ? source.phone_number
+          : null,
   }
 }
 
@@ -208,6 +216,29 @@ export function descriptionFeexPay(texte: string): string {
   return ascii.length <= DESCRIPTION_FEEXPAY_MAX
     ? ascii
     : `${ascii.slice(0, DESCRIPTION_FEEXPAY_MAX - 3).trimEnd()}...`
+}
+
+/**
+ * Opérateur Mobile Money d'un numéro ivoirien, d'après son préfixe (plan de
+ * numérotation à 10 chiffres de 2021) : 01 Moov, 05 MTN, 07 Orange.
+ */
+export function reseauDepuisTelephone(telephone: string | null): string | null {
+  const chiffres = (telephone ?? '').replace(/\D/g, '')
+  const national = chiffres.startsWith('225') && chiffres.length === 13 ? chiffres.slice(3) : chiffres
+  if (national.length !== 10) return null
+  return { '01': 'MOOV CI', '05': 'MTN CI', '07': 'ORANGE CI' }[national.slice(0, 2)] ?? null
+}
+
+/**
+ * Le réseau d'une transaction. Le statut FeexPay d'un paiement Mobile Money
+ * ne dit pas l'opérateur : il se déduit alors du numéro payeur. Sans cela,
+ * un paiement MTN restait enregistré « Orange Money », le libellé posé à la
+ * création de la commande (recette du 15/10). Le numéro ne vaut que pour le
+ * Mobile Money : un client Wave peut payer depuis une ligne Orange.
+ */
+function reseauEffectif(transaction: TransactionFeexPay, commande: Commande): string | null {
+  if (transaction.reseau) return transaction.reseau
+  return commande.moyen === 'mobile-money' ? reseauDepuisTelephone(transaction.telephone) : null
 }
 
 export function moyenDepuisReseau(reseau: string | null): MoyenTransactionSql | null {
@@ -309,14 +340,16 @@ export async function rapprocherCommande(
     return { statut: 'attente', commande: { ...commande, statut: 'verification' } }
   }
 
+  const reseau = reseauEffectif(transaction, commande)
+
   if (transaction.statut === 'FAILED') {
-    const codeEchec = codeEchecDepuisMotif(transaction.motif, transaction.reseau)
+    const codeEchec = codeEchecDepuisMotif(transaction.motif, reseau)
     const detail = transaction.motif ?? 'Paiement refusé par le prestataire.'
     await cloreTransactionsCommande(commande.reference, {
       statut: 'echouee',
       referencePrestataire: transaction.reference,
-      reseau: transaction.reseau ?? undefined,
-      moyen: moyenDepuisReseau(transaction.reseau) ?? undefined,
+      reseau: reseau ?? undefined,
+      moyen: moyenDepuisReseau(reseau) ?? undefined,
       codeEchec,
       detailEchec: detail,
     })
@@ -331,7 +364,7 @@ export async function rapprocherCommande(
     await cloreTransactionsCommande(commande.reference, {
       statut: 'echouee',
       referencePrestataire: transaction.reference,
-      reseau: transaction.reseau ?? undefined,
+      reseau: reseau ?? undefined,
       codeEchec: 'erreur-inconnue',
       detailEchec: detail,
     })
@@ -342,8 +375,8 @@ export async function rapprocherCommande(
   await cloreTransactionsCommande(commande.reference, {
     statut: 'reussie',
     referencePrestataire: transaction.reference,
-    reseau: transaction.reseau ?? undefined,
-    moyen: moyenDepuisReseau(transaction.reseau) ?? undefined,
+    reseau: reseau ?? undefined,
+    moyen: moyenDepuisReseau(reseau) ?? undefined,
   })
   await changerStatutCommande(commande.reference, 'confirmee')
 
@@ -413,6 +446,7 @@ export async function verifierEtRapprocher(
       shop: null,
       reseau: 'SANDBOX',
       motif: null,
+      telephone: null,
     })
   }
 
