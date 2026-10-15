@@ -5,6 +5,12 @@ import { dureeSessionEnHeures, PLACES_SESSION } from '#shared/utils/coaching'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Calendrier des sessions — administration')
 
+/** Zoom en simulation (ZOOM_MODE lu au démarrage du serveur) : une session
+ *  créée ici reçoit une réunion fictive, sans que rien ne le signale à l'écran
+ *  — le cas s'est produit le 15/10 sur un serveur local lancé avant le passage
+ *  en mode réel. */
+const zoomReel = useRuntimeConfig().public.zoomActif
+
 type SessionAdmin = SessionCoaching & {
   thematique: Thematique | null
   formateur: Formateur | null
@@ -267,6 +273,16 @@ async function creer() {
         + Créer une session
       </UiBaseButton>
     </div>
+
+    <p
+      v-if="!zoomReel"
+      class="mb-4 rounded-[12px] border border-alerte-bordure bg-alerte-pale p-3.5 text-[13.5px] leading-[1.55] text-alerte-fonce"
+      role="status"
+    >
+      <b>Zoom est en mode simulation sur ce serveur.</b> Les sessions créées ici reçoivent une réunion
+      fictive, sans salle réelle. Créez-les depuis le site en ligne, ou redémarrez ce serveur après avoir
+      posé <code>ZOOM_MODE=live</code>.
+    </p>
 
     <!-- Les quatre filtres de la maquette, en pilules, au-dessus du tableau. -->
     <div class="mb-[18px] flex flex-wrap items-center gap-2 text-[12.5px]">
