@@ -187,6 +187,28 @@ export async function rechercherParCommandeFeexPay(customId: string): Promise<Tr
 // --- Traduction des réponses ----------------------------------------------
 
 /** Réseau restitué par FeexPay → famille de moyen suivie dans `transactions`. */
+/**
+ * Libellé de paiement accepté par FeexPay. Son API refuse toute description
+ * de plus de 40 caractères (« Validation failed », HTTP 400 — recette du
+ * 15/10 : « Valider son idée de business avant d'investir » en faisait 43, et
+ * aucun paiement Mobile Money ni Wave ne partait pour ce module). Le SDK retire
+ * en outre les lettres accentuées : on les remplace plutôt que de les perdre.
+ */
+export const DESCRIPTION_FEEXPAY_MAX = 40
+
+export function descriptionFeexPay(texte: string): string {
+  const ascii = texte
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[’'`]/g, ' ')
+    .replace(/[—–]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return ascii.length <= DESCRIPTION_FEEXPAY_MAX
+    ? ascii
+    : `${ascii.slice(0, DESCRIPTION_FEEXPAY_MAX - 3).trimEnd()}...`
+}
+
 export function moyenDepuisReseau(reseau: string | null): MoyenTransactionSql | null {
   const r = (reseau ?? '').toUpperCase()
   if (!r) return null

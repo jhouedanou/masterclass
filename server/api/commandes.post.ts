@@ -5,7 +5,7 @@ import { enregistrerCommande, enregistrerTransaction } from '../database/commerc
 import { listerAccesUtilisateur, ouvrirAcces } from '../database/comptes'
 import { notifierCompte } from '../utils/notifications'
 import type { MoyenTransactionSql } from '../database/types'
-import { configFeexPay } from '../utils/feexpay'
+import { configFeexPay, descriptionFeexPay } from '../utils/feexpay'
 import { exigerUtilisateur } from '../utils/session'
 
 /** Motifs d'échec tels que le prestataire les remonte (planche A, écran 04c). */
@@ -136,7 +136,7 @@ export default defineEventHandler(async (event) => {
         mode: feexpay.mode === 'live' ? 'LIVE' : 'SANDBOX',
         montant: commande.total,
         customId: commande.reference,
-        description: `Coaching privé ${demande.heures} h — ${formateur?.nom ?? ''}`.slice(0, 120),
+        description: descriptionFeexPay(`Coaching privé ${demande.heures} h - ${formateur?.nom ?? ''}`),
         cas: CAS_FEEXPAY[moyenCommande] ?? '',
         email: utilisateur.email,
         prenom: utilisateur.prenom,
@@ -198,7 +198,7 @@ export default defineEventHandler(async (event) => {
         mode: feexpay.mode === 'live' ? 'LIVE' : 'SANDBOX',
         montant: commande.total,
         customId: commande.reference,
-        description: achetes.map((m) => m.titre).join(' + ').slice(0, 120),
+        description: descriptionFeexPay(achetes.map((m) => m.titre).join(' + ')),
         cas: CAS_FEEXPAY[moyenCommande] ?? '',
         email: utilisateur.email,
         prenom: utilisateur.prenom,
