@@ -205,10 +205,66 @@ function surveillerCadreVide() {
   gardeCadre.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] })
 }
 
+/**
+ * Adresses de retour des pages hébergées (Orange Money, Wave). L'API accepte
+ * `return_url` et `cancel_url` (docs.feexpay.me), mais le SDK ne les envoie
+ * pas pour Orange : après paiement, la page Orange ramenait le client sur
+ * app-v2.feexpay.me au lieu du site (recette du 15/10). On complète donc sa
+ * requête au vol, et on garde la référence FeexPay renvoyée, qu'Orange
+ * n'ajoute pas forcément à l'adresse de retour.
+ */
+const CLE_REFERENCE_FEEXPAY = 'reference-feexpay'
+let fetchOriginal: typeof window.fetch | undefined
+/** La commande en cours : une nouvelle tentative en ouvre une autre. */
+let commandeRetour = ''
+
+function completerRequetesFeexPay(commande: string) {
+  commandeRetour = commande
+  if (fetchOriginal) return
+  fetchOriginal = window.fetch
+  const origine = fetchOriginal
+  window.fetch = async (entree, options) => {
+    const url = typeof entree === 'string' ? entree : entree instanceof URL ? entree.href : entree.url
+    if (!url.includes('/api/transactions/requesttopay/') || typeof options?.body !== 'string') {
+      return origine(entree, options)
+    }
+    let corps: Record<string, unknown> | null = null
+    try {
+      corps = JSON.parse(options.body)
+    } catch {
+      return origine(entree, options)
+    }
+    const reponse = await origine(entree, {
+      ...options,
+      body: JSON.stringify({ ...corps, return_url: urlRetour(commandeRetour), cancel_url: urlRetour(commandeRetour, 'echec') }),
+    })
+    try {
+      const lu = await reponse.clone().json()
+      if (typeof lu?.reference === 'string') {
+        sessionStorage.setItem(CLE_REFERENCE_FEEXPAY, JSON.stringify({ commande: commandeRetour, reference: lu.reference }))
+      }
+    } catch {
+      // Réponse illisible ou stockage indisponible : la recherche par commande suffit.
+    }
+    return reponse
+  }
+}
+
+function referenceMiseDeCote(commande: string): string | null {
+  try {
+    const mis = JSON.parse(sessionStorage.getItem(CLE_REFERENCE_FEEXPAY) ?? 'null')
+    return mis?.commande === commande && typeof mis.reference === 'string' ? mis.reference : null
+  } catch {
+    return null
+  }
+}
+
 onBeforeUnmount(() => {
   if (minuteurVerification) clearTimeout(minuteurVerification)
   if (minuteurFermeture) clearTimeout(minuteurFermeture)
   gardeCadre?.disconnect()
+  if (fetchOriginal) window.fetch = fetchOriginal
+  fetchOriginal = undefined
 })
 
 async function attendreSdk(): Promise<FeexPayButtonGlobal> {
@@ -299,7 +355,7 @@ function reprendreApresRedirection() {
   if (typeof retour !== 'string' || !retour) return
   reprendreAchatMisDeCote(retour)
   commandeEnCours.value = retour
-  void confirmer(referenceDepuisRetour(), 0, issue === 'echec')
+  void confirmer(referenceDepuisRetour() ?? referenceMiseDeCote(retour), 0, issue === 'echec')
 }
 
 onMounted(reprendreApresRedirection)
@@ -311,6 +367,7 @@ async function ouvrirFeexPay(parametres: ParametresFeexPay) {
   await nextTick()
   const sdk = await attendreSdk()
   surveillerCadreVide()
+  completerRequetesFeexPay(parametres.customId)
   sdk.init(CONTENEUR_FEEXPAY, {
     id: parametres.shopId,
     token: parametres.token,
@@ -431,7 +488,10 @@ async function confirmer(referenceFeexPay: string | null, essai = 0, echecAnnonc
     // Retour par l'adresse d'échec de la page carte : le serveur n'a pas
     // encore le motif, mais il n'y a rien à attendre pendant deux minutes.
     if (echecAnnonce) {
-      afficherEchec('carte-refusee', ECHECS_PAIEMENT['carte-refusee'].message, referenceFeexPay)
+      // Retour par l'adresse d'échec : carte refusée pour un paiement par
+      // carte, sinon le client a quitté ou refusé la page Orange ou Wave.
+      const code = 'carte' in moyenChoisi.value ? 'carte-refusee' : 'annule-utilisateur'
+      afficherEchec(code, ECHECS_PAIEMENT[code].message, referenceFeexPay)
       return
     }
     if (essai < 40) {
