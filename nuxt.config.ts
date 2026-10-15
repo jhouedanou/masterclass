@@ -134,6 +134,10 @@ export default defineNuxtConfig({
       // Visa et Djamo passent par la carte, que FeexPay refuse tant que le KYC
       // carte de la boutique n'est pas validé : masqués sauf mention contraire.
       feexpayCarteActive: process.env.FEEXPAY_CARTE_ACTIVE === 'true',
+      // Wave (Côte d'Ivoire) : FeexPay répond « Wave aggregated merchant not
+      // configured for this merchant » tant qu'il ne l'a pas activé sur le
+      // compte marchand (constat du 15/10) — masqué sauf mention contraire.
+      feexpayWaveActive: process.env.FEEXPAY_WAVE_ACTIVE === 'true',
       // La salle Zoom charge le Meeting SDK seulement quand Zoom est branché.
       zoomActif: (process.env.ZOOM_MODE || 'simulation') === 'live',
     },

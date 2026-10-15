@@ -55,8 +55,13 @@ const moyens = [
 ] as const
 
 /** Visa et Djamo se règlent par carte : FeexPay la refuse tant que le KYC
- *  carte de la boutique n'est pas validé (`FEEXPAY_CARTE_ACTIVE`). */
-const moyensProposes = moyens.filter((m) => !('carte' in m) || config.public.feexpayCarteActive)
+ *  carte de la boutique n'est pas validé (`FEEXPAY_CARTE_ACTIVE`). Wave attend
+ *  son activation sur le compte marchand (`FEEXPAY_WAVE_ACTIVE`). */
+const moyensProposes = moyens.filter(
+  (m) =>
+    (!('carte' in m) || config.public.feexpayCarteActive) &&
+    (m.valeur !== 'wave' || config.public.feexpayWaveActive),
+)
 if (!moyensProposes.some((m) => m.valeur === achat.moyen)) achat.moyen = 'mobile-money'
 
 const moyenChoisi = computed(() => moyensProposes.find((m) => m.valeur === achat.moyen) ?? moyens[0])
@@ -161,9 +166,39 @@ const CONTENEUR_FEEXPAY = 'feexpay-bouton'
 const commandeEnCours = ref<string | null>(null)
 let minuteurVerification: ReturnType<typeof setTimeout> | undefined
 
+/**
+ * Garde contre une page vide du SDK. Pour Wave et Orange, le SDK ouvre en
+ * plein écran un cadre sur l'adresse de paiement renvoyée par FeexPay, sans
+ * vérifier qu'il l'a reçue : quand FeexPay refuse (« Wave aggregated merchant
+ * not configured », recette du 15/10), le cadre charge `/achat/undefined` et
+ * le client voit notre page 404 par-dessus le tunnel. On retire ce cadre et on
+ * affiche un échec lisible.
+ */
+let gardeCadre: MutationObserver | undefined
+
+function surveillerCadreVide() {
+  gardeCadre?.disconnect()
+  gardeCadre = new MutationObserver(() => {
+    for (const cadre of document.querySelectorAll('iframe')) {
+      // `iframe.src = undefined` écrit littéralement « undefined » dans l'attribut.
+      const src = cadre.getAttribute('src')
+      if (src !== 'undefined' && src !== 'null') continue
+      ;(cadre.parentElement ?? cadre).remove()
+      gardeCadre?.disconnect()
+      afficherEchec(
+        'erreur-inconnue',
+        'FeexPay n’a pas pu ouvrir ce moyen de paiement. Choisissez-en un autre ou réessayez plus tard.',
+      )
+      return
+    }
+  })
+  gardeCadre.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] })
+}
+
 onBeforeUnmount(() => {
   if (minuteurVerification) clearTimeout(minuteurVerification)
   if (minuteurFermeture) clearTimeout(minuteurFermeture)
+  gardeCadre?.disconnect()
 })
 
 async function attendreSdk(): Promise<FeexPayButtonGlobal> {
@@ -265,6 +300,7 @@ async function ouvrirFeexPay(parametres: ParametresFeexPay) {
   message.value = 'La fenêtre de paiement FeexPay s’ouvre.'
   await nextTick()
   const sdk = await attendreSdk()
+  surveillerCadreVide()
   sdk.init(CONTENEUR_FEEXPAY, {
     id: parametres.shopId,
     token: parametres.token,

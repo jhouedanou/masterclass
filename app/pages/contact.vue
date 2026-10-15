@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { feexpayCarteActive } = useRuntimeConfig().public
+const moyens = enumerer(moyensAnnonces(useRuntimeConfig().public))
 
 const groupesFaq = [
   {
@@ -16,9 +16,7 @@ const groupesFaq = [
       },
       {
         question: 'Quels moyens de paiement sont acceptés ?',
-        reponse: `Le paiement s’effectue via FeexPay avec les moyens proposés au moment de la commande, notamment ${
-          feexpayCarteActive ? 'Mobile Money, Djamo, Wave et Visa' : 'Mobile Money et Wave'
-        }.`,
+        reponse: `Le paiement s’effectue via FeexPay avec les moyens proposés au moment de la commande, notamment ${moyens}.`,
       },
       {
         question: 'Quand mon module devient-il accessible ?',

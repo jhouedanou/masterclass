@@ -78,13 +78,20 @@ export default defineEventHandler(async (event) => {
     demandeId?: string
   }>(event)
 
-  // Visa et Djamo se règlent par carte, que FeexPay refuse tant que le KYC
-  // carte de la boutique n'est pas validé : le tunnel ne les propose pas, et
-  // une commande forgée ne doit pas ouvrir une fenêtre vouée à l'échec.
+  // Un moyen que FeexPay refuserait n'est pas proposé par le tunnel, et une
+  // commande forgée ne doit pas ouvrir une fenêtre vouée à l'échec : Wave
+  // attend son activation sur le compte marchand, Visa et Djamo (carte) la
+  // validation du KYC carte de la boutique.
+  if (moyen === 'wave' && !useRuntimeConfig().public.feexpayWaveActive) {
+    throw createError({
+      statusCode: 422,
+      statusMessage: 'Le paiement par Wave n’est pas encore disponible. Choisissez Mobile Money.',
+    })
+  }
   if ((moyen === 'visa' || moyen === 'djamo') && !useRuntimeConfig().public.feexpayCarteActive) {
     throw createError({
       statusCode: 422,
-      statusMessage: 'Le paiement par carte n’est pas encore disponible. Choisissez Mobile Money ou Wave.',
+      statusMessage: 'Le paiement par carte n’est pas encore disponible. Choisissez Mobile Money.',
     })
   }
 
