@@ -5,9 +5,9 @@ Bonjour,
 Voici le point de la recette du 15 octobre. La plateforme est en ligne à son adresse définitive : https://emasterclass.bigfive.solutions/
 
 Sur 50 cas vérifiés :
-- **31 sont validés** ;
+- **32 sont validés** ;
 - **10 attendent une action de votre part ou de FeexPay** ;
-- **9 sont à revérifier en ligne** après le déploiement de ce soir.
+- **8 sont en ligne et restent à constater** sur un usage réel (achat, attestation, réservation…).
 
 Aucun défaut n'est plus ouvert côté développement.
 
@@ -39,15 +39,22 @@ Le classeur de recette détaillé, avec une capture par point, est joint à ce m
 
 **À confirmer avec FeexPay :** leur fenêtre de paiement ajoute des frais de 1,7 % à 3,2 % selon le réseau, à la charge du client.
 
-## Ce que nous faisons ce soir et ensuite
+## Mis en ligne ce soir
 
-- **Ce soir :** deux mises à jour de la base, puis la mise en ligne des derniers développements :
-  - l'e-mail de confirmation d'achat ;
-  - l'envoi de l'attestation par e-mail ;
-  - la relance automatique des commandes restées en attente ;
-  - les paiements de coaching privé dans les transactions ;
-  - le verrouillage des droits de la base.
-- **Ensuite :** vérifier ces points en ligne, puis tester l'entrée dans la salle Zoom (formateur et apprenant), ainsi que le report et l'annulation d'une session.
+Les deux mises à jour de la base ont été exécutées, et les derniers développements sont en ligne depuis le 15/10 au soir :
+- l'e-mail de confirmation d'achat ;
+- l'envoi de l'attestation par e-mail ;
+- la relance automatique, chaque nuit, des commandes restées en attente ;
+- les paiements de coaching privé dans les transactions ;
+- le verrouillage des droits de la base, vérifié.
+
+## Prochaines étapes
+
+- Constater en usage réel :
+  - les e-mails, au prochain achat et à la prochaine attestation ;
+  - la relance, après sa première exécution cette nuit ;
+  - un paiement de coaching privé.
+- Tester l'entrée dans la salle Zoom (formateur et apprenant), puis le report et l'annulation d'une session.
 
 Je reste disponible pour en parler.
 
