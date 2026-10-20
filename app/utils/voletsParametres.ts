@@ -22,7 +22,7 @@ export const VOLETS_PARAMETRES: {
   { cle: 'acces', libelle: 'Administration des accès', section: 'administration-acces' },
   { cle: 'tracking', libelle: 'Tracking & pixels', section: null, verrou: true },
   { cle: 'referencement', libelle: 'Référencement · règles globales', section: null, verrou: true },
-  { cle: 'attestations', libelle: 'Attestations', section: null },
+  { cle: 'attestations', libelle: 'Attestations', section: 'attestations', verrou: true },
   { cle: 'financier', libelle: 'Paramètres financiers', section: null, verrou: true },
   { cle: 'profil', libelle: 'Mon profil', section: null },
 ]

@@ -2,7 +2,7 @@ import { enregistrerJournal } from '../../database/administration'
 import { trouverModule } from '../../database/catalogue'
 import { retablirAcces, revoquerAcces, trouverUtilisateur } from '../../database/comptes'
 import { notifierCompte } from '../../utils/notifications'
-import { exigerAdmin } from '../../utils/session'
+import { exigerSection } from '../../utils/session'
 
 /**
  * Révocation ou rétablissement de l'accès d'un apprenant à un module
@@ -14,7 +14,7 @@ import { exigerAdmin } from '../../utils/session'
  * même exigence que pour la révocation d'une attestation.
  */
 export default defineEventHandler(async (event) => {
-  const admin = await exigerAdmin(event)
+  const admin = await exigerSection(event, 'apprenants')
   const { utilisateurId, moduleId, action, motif } = await readBody<{
     utilisateurId: string
     moduleId: string

@@ -11,9 +11,11 @@ import { exigerAdmin } from '../../../utils/session'
  * Le fichier part du seau en même temps que la référence : laissé là, il
  * resterait servi publiquement par une adresse que plus rien ne désigne, ce
  * qu'on ne pourrait plus ni retrouver ni justifier.
+ *
+ * Administrateur supérieur seulement, comme le dépôt.
  */
 export default defineEventHandler(async (event) => {
-  await exigerAdmin(event)
+  await exigerAdmin(event, true)
 
   const formateurId = (getQuery(event).formateur as string | undefined)?.trim() || null
   const formateur = formateurId ? await trouverFormateur(formateurId) : null

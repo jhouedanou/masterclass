@@ -1,6 +1,6 @@
 import { lireReglagesAttestation } from '../../database/administration'
 import { listerFormateurs } from '../../database/catalogue'
-import { exigerAdmin } from '../../utils/session'
+import { exigerSection } from '../../utils/session'
 
 /**
  * L'onglet « Attestations » des paramètres : la griffe de la direction, et
@@ -11,7 +11,7 @@ import { exigerAdmin } from '../../utils/session'
  * fiche entière — bio, référencement, tarif de coaching.
  */
 export default defineEventHandler(async (event) => {
-  await exigerAdmin(event)
+  await exigerSection(event, 'attestations')
   const [reglages, formateurs] = await Promise.all([
     lireReglagesAttestation(),
     listerFormateurs(),

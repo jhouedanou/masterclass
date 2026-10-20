@@ -1,3 +1,4 @@
+import type { SectionAdmin } from '#shared/types'
 import {
   lireReglagesFinanciers,
   listerCandidatures,
@@ -8,10 +9,25 @@ import { listerDemandesCoachingPrive, listerSessions } from '../../database/coac
 import { listerCertificats, listerTransactions } from '../../database/commerce'
 import { listerAcces, listerUtilisateurs } from '../../database/comptes'
 import { chiffreAffaires, DEBUT_PERIODE, surPeriode } from '../../utils/indicateurs'
-import { exigerAdmin } from '../../utils/session'
+import { exigerAdmin, sectionsEffectives } from '../../utils/session'
 
+/**
+ * Vue d'ensemble (planche C, écran 01) : la page d'accueil de tout compte
+ * d'administration, quelles que soient ses sections.
+ *
+ * Elle reprenait pourtant le chiffre d'affaires, les dernières transactions
+ * nominatives et le journal, que les sections refusent par ailleurs à un
+ * administrateur de contenu. Chaque bloc suit désormais la section de l'écran
+ * qu'il résume ; un bloc non autorisé vaut `null` et la page le masque.
+ */
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerAdmin(event)
+  const siennes = sectionsEffectives(utilisateur)
+  const voit = (...sections: SectionAdmin[]) =>
+    siennes === 'toutes' || sections.some((s) => siennes.includes(s))
+  const voitChiffres = voit('performances-marketing', 'statistiques-performance')
+  const voitTransactions = voit('transactions-paiements')
+  const voitJournal = voit('historique-versions')
 
   // Filtres de l'écran 01 : un mois « AAAA-MM » et un programme. Absents, la
   // vue porte sur les trente derniers jours, comme les objectifs mensuels.
@@ -44,7 +60,7 @@ export default defineEventHandler(async (event) => {
     listerUtilisateurs(),
     listerDemandesCoachingPrive(),
     listerCandidatures(),
-    listerJournal(3),
+    voitJournal ? listerJournal(3) : Promise.resolve(null),
   ])
 
   const modulesDuProgramme = new Set(
@@ -71,14 +87,14 @@ export default defineEventHandler(async (event) => {
 
   return {
     role: utilisateur.role,
-    inscriptions: periode.length,
-    objectifInscriptions: reglages.objectifInscriptionsMensuel,
-    ca,
-    objectifCa: reglages.objectifCaMensuel,
-    margeBrute: ca - frais,
+    inscriptions: voitChiffres ? periode.length : null,
+    objectifInscriptions: voitChiffres ? reglages.objectifInscriptionsMensuel : null,
+    ca: voitChiffres ? ca : null,
+    objectifCa: voitChiffres ? reglages.objectifCaMensuel : null,
+    margeBrute: voitChiffres ? ca - frais : null,
     completionMoyenne: acces.length ? Math.round(cumulProgression / acces.length) : 0,
     certificatsGeneres: certificats.length,
-    topModules: [...ventesParModule.entries()]
+    topModules: !voitChiffres ? null : [...ventesParModule.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([moduleId, ventes]) => {
@@ -105,8 +121,10 @@ export default defineEventHandler(async (event) => {
         inscrits: s.inscrits,
         places: s.places,
       })),
-    moisDisponibles: [...new Set(transactions.map((t) => t.date.slice(0, 7)))].sort().reverse(),
-    dernieresTransactions: retenues.slice(0, 5).map((t) => {
+    moisDisponibles: voitChiffres
+      ? [...new Set(transactions.map((t) => t.date.slice(0, 7)))].sort().reverse()
+      : [],
+    dernieresTransactions: !voitTransactions ? null : retenues.slice(0, 5).map((t) => {
       const u = utilisateurs.find((x) => x.id === t.utilisateurId)
       return {
         reference: t.reference,

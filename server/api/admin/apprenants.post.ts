@@ -3,7 +3,7 @@ import { trouverModule } from '../../database/catalogue'
 import { creerReinitialisation, creerUtilisateur } from '../../database/comptes'
 import { creerJeton, hacherMotDePasse, refusMotDePasse } from '../../utils/motDePasse'
 import { notifierCompte } from '../../utils/notifications'
-import { exigerAdmin } from '../../utils/session'
+import { exigerSection } from '../../utils/session'
 
 /** Le lien de définition vaut trois jours, comme l'invitation formateur. */
 const VALIDITE_INVITATION_HEURES = 72
@@ -19,7 +19,7 @@ const VALIDITE_INVITATION_HEURES = 72
  * « achat » : la distinction porte les statistiques de revenus.
  */
 export default defineEventHandler(async (event) => {
-  const admin = await exigerAdmin(event)
+  const admin = await exigerSection(event, 'apprenants')
   const body = await readBody<{
     prenom?: string
     nom?: string
@@ -46,7 +46,9 @@ export default defineEventHandler(async (event) => {
     if (refus) throw createError({ statusCode: 422, statusMessage: refus })
   }
   // Attribuer un accès engage un module gratuit : le motif est exigé ici comme
-  // partout ailleurs, et il est journalisé.
+  // partout ailleurs, et il est journalisé. C'est aussi la décision commerciale
+  // de `/api/admin/attribution`, qui demande la même section.
+  if (body.moduleId) await exigerSection(event, 'offres-commerciales')
   if (body.moduleId && !body.motif?.trim()) {
     throw createError({
       statusCode: 422,

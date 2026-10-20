@@ -20,6 +20,17 @@ export default defineEventHandler(async (event) => {
   const actuel = await trouverModule(body.id)
   if (!actuel) throw createError({ statusCode: 404, statusMessage: 'Module introuvable' })
 
+  // Le prix relève des offres commerciales, pas de l'édition du contenu : la
+  // section « Modules & chapitres » seule laissait n'importe quel rédacteur
+  // passer un module à 0 FCFA. Un prix renvoyé inchangé (l'éditeur envoie
+  // parfois le module entier) n'est pas une modification.
+  if (body.prixFcfa !== undefined && body.prixFcfa !== actuel.prixFcfa) {
+    await exigerSection(event, 'offres-commerciales')
+    if (!Number.isInteger(body.prixFcfa) || (body.prixFcfa as number) < 0) {
+      throw createError({ statusCode: 422, statusMessage: 'Prix invalide : un nombre entier de FCFA est attendu.' })
+    }
+  }
+
   if (body.statut === 'disponible') {
     const manques: string[] = []
     if (!(body.promesse ?? actuel.promesse)) manques.push('la promesse')

@@ -93,6 +93,13 @@ function libelleValeur(cle: CleFiltre, valeur: string) {
   return DIMENSIONS.find((d) => d.cle === cle)?.options.find((o) => o.valeur === valeur)?.libelle ?? valeur
 }
 
+// Deux gestes de la fiche relèvent d'autres sections que « Apprenants » : le
+// serveur les refuse sans elles, l'écran ne les propose donc pas.
+const auth = useAuthStore()
+/** Offrir un module, c'est renoncer à sa vente : « Offres commerciales ». */
+const peutAttribuer = computed(() => auth.voitSection('offres-commerciales'))
+const peutAgirSurAttestations = computed(() => auth.voitSection('attestations'))
+
 // L'API renvoie `{ apprenants, choix }` (listes du méga-filtre) : l'écran ne
 // lit que la liste. Typer la réponse en `Apprenant[]` laissait le `v-for`
 // parcourir les clés de l'objet, et la page tombait en 500 (retest du 15/10).
@@ -510,6 +517,7 @@ const ETIQUETTE = 'flex flex-col gap-1.5 text-[12.5px] font-bold text-texte'
 
         <div class="mt-4 flex flex-wrap gap-2 text-[12.5px] font-bold">
           <button
+            v-if="peutAttribuer"
             class="rounded-full border-[1.5px] border-encre px-4 py-[9px] text-encre"
             @click="attribution.ouverte = true"
           >
@@ -522,7 +530,7 @@ const ETIQUETTE = 'flex flex-col gap-1.5 text-[12.5px] font-bold text-texte'
             Historique
           </button>
         </div>
-        <p class="mt-2.5 text-[11.5px] leading-[1.5] text-discret">
+        <p v-if="peutAttribuer" class="mt-2.5 text-[11.5px] leading-[1.5] text-discret">
           « Attribuer un accès » ouvre une fenêtre pour offrir gratuitement une formation à cet
           apprenant — il est notifié par email + WhatsApp dès l’attribution.
         </p>
@@ -563,11 +571,11 @@ const ETIQUETTE = 'flex flex-col gap-1.5 text-[12.5px] font-bold text-texte'
             Numéro WhatsApp
             <input v-model="ajout.whatsapp" :class="CHAMP">
           </label>
-          <label class="flex items-center gap-2.5 text-[12.5px] font-semibold text-texte">
+          <label v-if="peutAttribuer" class="flex items-center gap-2.5 text-[12.5px] font-semibold text-texte">
             <input v-model="ajout.attribuerEnsuite" type="checkbox" class="size-4 accent-social">
             Attribuer un accès à un module juste après la création
           </label>
-          <template v-if="ajout.attribuerEnsuite">
+          <template v-if="peutAttribuer && ajout.attribuerEnsuite">
             <label :class="ETIQUETTE">
               Module
               <select v-model="ajout.moduleId" :class="CHAMP">
@@ -753,14 +761,14 @@ const ETIQUETTE = 'flex flex-col gap-1.5 text-[12.5px] font-bold text-texte'
                   </p>
                 </div>
                 <button
-                  v-if="attestation.revoqueLe"
+                  v-if="attestation.revoqueLe && peutAgirSurAttestations"
                   class="text-[12.5px] font-bold"
                   @click="agirSurAttestation(attestation.numero, 'retablir')"
                 >
                   Rétablir
                 </button>
                 <button
-                  v-else-if="revocation.numero !== attestation.numero"
+                  v-else-if="!attestation.revoqueLe && peutAgirSurAttestations && revocation.numero !== attestation.numero"
                   class="text-[12.5px] font-bold text-erreur"
                   @click="revocation.numero = attestation.numero; revocation.motif = ''"
                 >

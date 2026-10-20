@@ -279,6 +279,11 @@ export type SectionAdmin =
   | 'statistiques-performance'
   | 'performances-marketing'
   | 'transactions-paiements'
+  /** Liste, fiches et comptes des apprenants, révocation de leurs accès. */
+  | 'apprenants'
+  /** Révocation des attestations et lecture de leurs réglages. Les griffes et
+   *  le signataire restent réservés à l'administrateur supérieur. */
+  | 'attestations'
 
 export interface Utilisateur {
   id: string

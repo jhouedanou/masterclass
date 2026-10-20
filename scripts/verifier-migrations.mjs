@@ -970,6 +970,28 @@ await attendValeur(
   `select (delivrer_certificat('usr-fatou', '${QUIZ_MODULE}')).numero like 'EMBF-%'`,
 )
 
+// --- Sections du back-office (audit du 20/10) --------------------------------
+
+console.log('\nSections « Apprenants » et « Attestations »')
+await attendValeur(
+  'les deux sections existent dans l’énumération',
+  2,
+  `select count(*)::int from pg_enum e join pg_type t on t.oid = e.enumtypid
+    where t.typname = 'section_admin' and e.enumlabel in ('apprenants', 'attestations')`,
+)
+await attendValeur(
+  'un compte peut les recevoir',
+  'true',
+  `update utilisateurs set sections_autorisees = '{apprenants,attestations}'
+    where id = 'usr-moussa' returning sections_autorisees @> '{apprenants}'::section_admin[]`,
+)
+await db.query(`update utilisateurs set sections_autorisees = '{}' where id = 'usr-moussa'`)
+await attendErreur(
+  'une section inconnue est refusée par la base',
+  '22P02',
+  `update utilisateurs set sections_autorisees = '{tout}' where id = 'usr-moussa'`,
+)
+
 await db.close()
 
 // --- Fichiers d'installation pour le Supabase hébergé ------------------------

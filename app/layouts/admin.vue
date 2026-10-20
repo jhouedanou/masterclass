@@ -39,7 +39,7 @@ const tousLesLiens: Lien[] = [
   { libelle: 'Formateurs', chemin: '/admin/formateurs', icone: 'ph:users-three', section: 'formateurs' },
   { libelle: 'Calendrier des sessions', chemin: '/admin/sessions', icone: 'ph:calendar-dots', section: 'calendrier-sessions' },
   { libelle: 'Coaching privé', chemin: '/admin/coaching-prive', icone: 'ph:target', section: 'coaching-prive' },
-  { libelle: 'Apprenants', chemin: '/admin/apprenants', icone: 'ph:student', section: null },
+  { libelle: 'Apprenants', chemin: '/admin/apprenants', icone: 'ph:student', section: 'apprenants' },
   { libelle: 'Candidatures formateurs', chemin: '/admin/candidatures', icone: 'ph:user-plus', section: 'candidatures-formateurs' },
   { libelle: 'Statistiques', chemin: '/admin/coaching-prive#statistiques', icone: 'ph:chart-bar', section: 'statistiques-performance' },
   { libelle: 'Performances', chemin: '/admin/performances', icone: 'ph:chart-line-up', section: 'performances-marketing' },

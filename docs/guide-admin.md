@@ -36,19 +36,24 @@ sortie du serveur : un développeur le transmet.
 Un compte d'administration reçoit ses **sections** une à une (Paramètres → Administration des
 accès). Une section non accordée est masquée, pas seulement grisée. Deux droits ne peuvent être
 accordés que par un administrateur supérieur : **Transactions & paiements** et **Référencement
-avancé** (slugs publiés, indexation, canonicals).
+avancé** (slugs publiés, indexation, canonicals). Un administrateur qui n'est pas supérieur
+n'accorde que des sections qu'il détient lui-même.
 
 | Groupe | Écran | Droit |
 |---|---|---|
-| Pilotage | Vue d'ensemble | tous |
+| Pilotage | Vue d'ensemble | tous ; chiffre d'affaires et ventes avec performances-marketing ou statistiques-performance, dernières transactions avec transactions-paiements, activité récente avec historique-versions |
 | Pilotage | Performances | performances-marketing |
 | Pilotage | Revenus | statistiques-performance |
 | Pilotage | Transactions | transactions-paiements (admin supérieur) |
 | Contenus | Modules et chapitres, CMS, Blog, Référencement | modules-chapitres, cms-site-vitrine, blog, referencement-contenu |
-| Communauté | Formateurs, Calendrier des sessions, Coaching privé, Apprenants | formateurs, calendrier-sessions, coaching-prive |
+| Contenus | Prix d'un module, accès gratuit à un module | offres-commerciales |
+| Communauté | Formateurs, Calendrier des sessions, Coaching privé | formateurs, calendrier-sessions, coaching-prive |
+| Communauté | Apprenants (fiches, création de compte, révocation d'accès) | apprenants |
+| Communauté | Révocation d'une attestation, volet Attestations en lecture | attestations |
 | Administration | Accès, Tracking, Historique, Paramètres | administration-acces, historique-versions |
 
-Un compte ne peut pas se révoquer lui-même.
+Les griffes et le nom du signataire des attestations ne se changent que depuis un compte
+d'administrateur supérieur. Un compte ne peut pas se révoquer lui-même.
 
 ---
 

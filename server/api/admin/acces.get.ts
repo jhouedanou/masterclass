@@ -12,6 +12,8 @@ const SECTIONS = [
   { cle: 'formateurs', libelle: 'Formateurs' },
   { cle: 'calendrier-sessions', libelle: 'Calendrier des sessions' },
   { cle: 'coaching-prive', libelle: 'Coaching privé' },
+  { cle: 'apprenants', libelle: 'Apprenants', note: 'Coordonnées, création de comptes, révocation des accès. L’attribution gratuite d’un module demande aussi « Offres commerciales ».' },
+  { cle: 'attestations', libelle: 'Attestations', note: 'Révocation et rétablissement. Griffes et signataire : administrateur supérieur.' },
   { cle: 'candidatures-formateurs', libelle: 'Candidatures formateurs' },
   { cle: 'ressources-scripts', libelle: 'Ressources & scripts' },
   { cle: 'blog', libelle: 'Blog — articles' },

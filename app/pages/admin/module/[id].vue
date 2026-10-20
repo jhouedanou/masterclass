@@ -232,6 +232,9 @@ async function ajouterRessource() {
 
 const prix = ref(0)
 watchEffect(() => { if (data.value) prix.value = data.value.module.prixFcfa })
+/** Le prix relève de la section « Offres commerciales » : sans elle, le
+ *  serveur refuse la modification, et le champ reste en lecture seule. */
+const peutFixerPrix = computed(() => useAuthStore().voitSection('offres-commerciales'))
 
 async function restaurer(versionId: string) {
   erreur.value = ''
@@ -645,11 +648,14 @@ const champ =
       <div class="rounded-[12px] border border-ligne-douce px-[18px] py-4">
         <label class="block">
           <span class="mb-1.5 block text-[12.5px] font-bold">Prix TTC (FCFA)</span>
-          <input v-model.number="prix" type="number" min="0" step="500" :class="champ">
+          <input v-model.number="prix" type="number" min="0" step="500" :class="champ" :readonly="!peutFixerPrix">
         </label>
-        <UiBaseButton class="mt-4" taille="sm" variante="contour" @click="appliquer({ prixFcfa: prix })">
+        <UiBaseButton v-if="peutFixerPrix" class="mt-4" taille="sm" variante="contour" @click="appliquer({ prixFcfa: prix })">
           Enregistrer le prix
         </UiBaseButton>
+        <p v-else class="mt-2 text-[12.5px] text-discret">
+          Le prix se modifie avec la section « Offres commerciales ».
+        </p>
       </div>
 
       <div class="mt-4 rounded-[12px] border px-[18px] py-4" :class="data.peutOuvrirOffre ? 'border-succes-bordure bg-succes-pale' : 'border-alerte-bordure bg-alerte-pale'">

@@ -72,6 +72,8 @@ export type SectionAdminSql =
   | 'statistiques-performance'
   | 'performances-marketing'
   | 'transactions-paiements'
+  | 'apprenants'
+  | 'attestations'
 
 /** Colonnes « Référencement et partage », dépliées sur les quatre entités
  *  éditables depuis le back-office. */

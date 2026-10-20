@@ -49,7 +49,23 @@ const estSuperieur = computed(() => data.value?.role === 'admin-superieur')
  * cochés ou non : l'œil doit les retrouver du premier coup.
  */
 const SENSIBLES: SectionAdmin[] = ['transactions-paiements', 'referencement-avance']
-const verrouillee = (cle: SectionAdmin) => SENSIBLES.includes(cle) && !estSuperieur.value
+
+/** Un administrateur qui n'est pas supérieur n'accorde que ce qu'il détient
+ *  lui-même : le serveur refuse le reste, autant ne pas le proposer. */
+const horsPerimetre = (cle: SectionAdmin) => {
+  const siennes = data.value?.mesSections
+  return !estSuperieur.value && siennes !== 'toutes' && !siennes?.includes(cle)
+}
+
+/**
+ * Case non cochable. `dejaAccordee` : en édition, une section que le compte
+ * détient déjà peut être retirée puis remise, ce n'est pas un octroi.
+ */
+const verrouillee = (cle: SectionAdmin, dejaAccordee = false) =>
+  !dejaAccordee && ((SENSIBLES.includes(cle) && !estSuperieur.value) || horsPerimetre(cle))
+
+const motifVerrou = (cle: SectionAdmin) =>
+  SENSIBLES.includes(cle) ? 'Réservé à un administrateur supérieur.' : 'Hors de vos propres sections.'
 
 /** Libellé de la sous-ligne d'une section : la maquette accole la note au
  *  libellé (« Administration des accès — permet de… »). */
@@ -116,13 +132,11 @@ async function creer() {
 
 // --- Modification et révocation ---------------------------------------------
 
-const edition = ref<{ id: string; sections: SectionAdmin[] } | null>(null)
+const edition = ref<{ id: string; sections: SectionAdmin[]; accordees: SectionAdmin[] } | null>(null)
 
 function ouvrirEdition(compte: Compte) {
-  edition.value = {
-    id: compte.id,
-    sections: compte.sections === 'toutes' ? [] : [...compte.sections],
-  }
+  const accordees = compte.sections === 'toutes' ? [] : [...compte.sections]
+  edition.value = { id: compte.id, sections: [...accordees], accordees }
 }
 
 function basculerEdition(cle: SectionAdmin) {
@@ -361,7 +375,7 @@ const lienAction = 'text-[12px] font-bold hover:underline disabled:opacity-50'
                 :class="SENSIBLES.includes(section.cle) ? 'text-alerte' : 'text-discret'"
               >{{ section.note }}</span>
               <span v-if="verrouillee(section.cle)" class="mt-0.5 block text-[11.5px] font-semibold text-alerte">
-                Réservé à un administrateur supérieur.
+                {{ motifVerrou(section.cle) }}
               </span>
             </span>
           </label>
@@ -464,7 +478,7 @@ const lienAction = 'text-[12px] font-bold hover:underline disabled:opacity-50'
           :key="section.cle"
           :class="[
             classesSection(section.cle, edition.sections.includes(section.cle)),
-            verrouillee(section.cle) ? 'opacity-60' : '',
+            verrouillee(section.cle, edition.accordees.includes(section.cle)) ? 'opacity-60' : '',
           ]"
         >
           <input
@@ -472,10 +486,16 @@ const lienAction = 'text-[12px] font-bold hover:underline disabled:opacity-50'
             class="mt-0.5 size-[17px]"
             :class="SENSIBLES.includes(section.cle) ? 'accent-alerte' : 'accent-social'"
             :checked="edition.sections.includes(section.cle)"
-            :disabled="verrouillee(section.cle)"
+            :disabled="verrouillee(section.cle, edition.accordees.includes(section.cle))"
             @change="basculerEdition(section.cle)"
           >
-          <b class="text-encre">{{ section.libelle }}</b>
+          <span>
+            <b class="text-encre">{{ section.libelle }}</b>
+            <span
+              v-if="verrouillee(section.cle, edition.accordees.includes(section.cle))"
+              class="mt-0.5 block text-[11.5px] font-semibold text-alerte"
+            >{{ motifVerrou(section.cle) }}</span>
+          </span>
         </label>
       </div>
       <div class="mt-5 flex gap-3">
