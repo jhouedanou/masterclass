@@ -167,7 +167,7 @@ function imminente(carte?: Carte) {
         <p class="mt-1 text-[13px] text-discret">Suite logique de votre module en cours.</p>
         <div class="mt-auto pt-4">
           <UiBaseButton :to="`/modules/${suggestion.slug}`" taille="sm" variante="contour">
-            Découvrir — {{ formatFcfa(suggestion.prixFcfa) }}
+            Découvrir<template v-if="suggestion.prixFcfa != null"> — {{ formatFcfa(suggestion.prixFcfa) }}</template>
           </UiBaseButton>
         </div>
       </article>

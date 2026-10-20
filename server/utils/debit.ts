@@ -28,6 +28,12 @@ export const PLAFONDS = {
   contact: 5,
   candidature: 3,
   'alerte-lancement': 5,
+  // Connexions : seuls les échecs comptent (voir `limiterEchecs`). Le verrou
+  // par compte arrête qui s'acharne sur une adresse ; celui-ci arrête qui
+  // essaie un mot de passe courant sur des centaines d'adresses. Vingt échecs
+  // laissent passer une salle de formation derrière une même box.
+  connexion: 20,
+  'connexion-admin': 10,
 } as const
 
 export type RoutePublique = keyof typeof PLAFONDS
@@ -40,6 +46,35 @@ export type RoutePublique = keyof typeof PLAFONDS
  * silence et laisse passer. Le plafond est une digue contre l'abus, pas un
  * élément du contrôle d'accès.
  */
+/**
+ * Variante pour les connexions : seuls les échecs sont comptés, sans quoi une
+ * salle de formation derrière une même adresse buterait sur le plafond en se
+ * connectant normalement. `verifier` refuse avant le hachage ; `compter`
+ * inscrit l'échec une fois le mot de passe refusé.
+ */
+export function limiterEchecs(event: H3Event, route: RoutePublique) {
+  const ip = adresseAppelant(event)
+  return {
+    async verifier(): Promise<void> {
+      let echecs = 0
+      try {
+        echecs = await compterTentativesPubliques(ip, route)
+      } catch {
+        return
+      }
+      if (echecs >= PLAFONDS[route]) {
+        throw createError({
+          statusCode: 429,
+          statusMessage: `Trop de tentatives depuis cette adresse. Réessayez dans ${FENETRE_DEBIT_MINUTES} minutes.`,
+        })
+      }
+    },
+    async compter(): Promise<void> {
+      await enregistrerTentativePublique(ip, route).catch(() => {})
+    },
+  }
+}
+
 export async function limiterDebit(event: H3Event, route: RoutePublique): Promise<void> {
   const ip = adresseAppelant(event)
   try {

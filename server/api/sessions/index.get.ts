@@ -24,10 +24,13 @@ export default defineEventHandler(async () => {
   // indéfiniment, et ouvrait sur des dates révolues.
   const aujourdhui = new Date().toISOString().slice(0, 10)
 
+  // Le numéro de réunion Zoom reste dans l'espace des inscrits : publié ici,
+  // il laissait n'importe qui frapper à la porte de la salle, voire y entrer
+  // quand le mot de passe est faible ou absent.
   return sessions
     .filter((s) => s.date >= aujourdhui)
     .sort((a, b) => a.date.localeCompare(b.date) || a.heure.localeCompare(b.heure))
-    .map((s) => ({
+    .map(({ zoomReunionId: _zoom, ...s }) => ({
       ...s,
       thematique: parThematique.get(s.thematiqueId) ?? null,
       formateur: parFormateur.get(s.formateurId) ?? null,

@@ -30,9 +30,14 @@ const tousLesModules = computed(() => data.value!.thematiques.flatMap((t) => t.m
 
 const reperes = computed(() => {
   const modules = tousLesModules.value
-  const prix = [...new Set(modules.map((m) => m.prixFcfa))]
+  // Un prix masqué (module annoncé) arrive à `null` : il ne compte pas.
+  const prix = [...new Set(modules.map((m) => m.prixFcfa as number | null))].filter((p): p is number => p != null)
   // Un prix unique s'annonce tel quel ; plusieurs, on annonce le plus bas.
-  const prixAffiche = prix.length === 1 ? formatFcfa(prix[0]!, true) : `à partir de ${formatFcfa(Math.min(...prix), true)}`
+  const prixAffiche = !prix.length
+    ? 'Prix au lancement'
+    : prix.length === 1
+      ? formatFcfa(prix[0]!, true)
+      : `à partir de ${formatFcfa(Math.min(...prix), true)}`
   return [
     { valeur: compterModules(modules.length), suite: modules.length > 1 ? 'disponibles' : 'disponible' },
     { valeur: prixAffiche, suite: 'par module' },

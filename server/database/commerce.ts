@@ -193,14 +193,24 @@ export async function retablirCertificat(numero: string): Promise<Certificat> {
 /** Fenêtre glissante sur laquelle les consultations d'une même adresse sont comptées. */
 export const FENETRE_VERIFICATION_MINUTES = 10
 
+/** Inscrit une consultation, et rend son identifiant pour la marquer
+ *  « trouvée » une fois la lecture faite. */
 export async function enregistrerTentativeVerification(
   ip: string,
   numero: string,
   trouve: boolean,
-): Promise<void> {
-  verifier(
+): Promise<string> {
+  const rows = verifier(
     await supabase().from('tentatives_verification').insert({ ip, numero, trouve }).select('id'),
     'consultation de vérification',
+  )
+  return rows[0]!.id
+}
+
+export async function marquerVerificationTrouvee(id: string): Promise<void> {
+  verifier(
+    await supabase().from('tentatives_verification').update({ trouve: true }).eq('id', id).select('id'),
+    'consultation de vérification aboutie',
   )
 }
 

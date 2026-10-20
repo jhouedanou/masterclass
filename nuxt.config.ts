@@ -6,6 +6,46 @@ import tailwindcss from '@tailwindcss/vite'
 // apporter.
 const enDeveloppement = process.env.NODE_ENV === 'development'
 
+/**
+ * Politique de sécurité du contenu (audit du 20/10).
+ *
+ * Le site public charge GTM et ce que le conteneur y ajoute, le tunnel le SDK
+ * FeexPay puis les pages de paiement d'Orange, de Wave ou de la banque (3-D
+ * Secure), la salle de coaching le Meeting SDK de Zoom (scripts de
+ * source.zoom.us et de CloudFront, WebAssembly, travailleurs `blob:`), le
+ * lecteur hls.js le diffuseur vidéo (`blob:` pour la source média). Aucune de
+ * ces listes d'hôtes n'est fermée : on ne peut pas énumérer les banques. La
+ * politique du site admet donc `https:` comme source, et tient ce qui ne
+ * dépend d'aucun tiers : pas de plugin (`object-src`), pas de `<base>`
+ * détournée, pas d'encadrement par un autre site, rien en clair (`http:`),
+ * pas de script en `data:`.
+ *
+ * Le back-office ne charge aucun de ces tiers : ses scripts viennent du site
+ * seul. Le `'unsafe-inline'` y reste, pour la charge utile que Nuxt écrit dans
+ * la page. Durcir davantage (nonces, hôtes nommés) demande une campagne
+ * `Report-Only` sur le site public, tiers compris.
+ */
+const CSP_COMMUNE = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'self'",
+  "form-action 'self' https:",
+  "style-src 'self' 'unsafe-inline' https:",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data: https:",
+  "media-src 'self' blob: https:",
+  `connect-src 'self' https: wss:${enDeveloppement ? ' ws:' : ''}`,
+  "worker-src 'self' blob:",
+  "frame-src 'self' https:",
+  "manifest-src 'self'",
+]
+const CSP_SITE = [
+  ...CSP_COMMUNE,
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https:",
+].join('; ')
+const CSP_ADMIN = [...CSP_COMMUNE, "script-src 'self' 'unsafe-inline'"].join('; ')
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -316,10 +356,10 @@ export default defineNuxtConfig({
    * servirait le HTML d'un visiteur connecté à tous les autres. Seules les
    * routes d'API du catalogue, qui ne dépendent d'aucun compte, sont cachées.
    *
-   * La CSP n'est pas posée ici : le site charge GTM, le SDK FeexPay et le SDK
-   * Zoom depuis des domaines tiers, et `tracking.client.ts` injecte du script
-   * en ligne à dessein. Elle demande une campagne `Report-Only` avant d'être
-   * appliquée — les quatre en-têtes ci-dessous, eux, ne cassent rien.
+   * La CSP (voir CSP_SITE en tête de fichier) admet les tiers dont le site a
+   * besoin — GTM, FeexPay, Zoom — et ferme tout le reste ; le back-office, qui
+   * n'en charge aucun, a la sienne, plus stricte. `X-Powered-By` est retiré
+   * par server/plugins/entetes.ts.
    */
   routeRules: {
     '/**': {
@@ -328,8 +368,10 @@ export default defineNuxtConfig({
         'X-Frame-Options': 'SAMEORIGIN',
         'Referrer-Policy': 'strict-origin-when-cross-origin',
         'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+        'Content-Security-Policy': CSP_SITE,
       },
     },
+    '/admin/**': { headers: { 'Content-Security-Policy': CSP_ADMIN } },
 
     // Contenu éditorial : il change à la publication, pas à la requête. Une
     // minute suffit à absorber une pointe de trafic sans que l'équipe attende

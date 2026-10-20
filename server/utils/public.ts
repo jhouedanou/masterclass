@@ -63,11 +63,26 @@ export type ChapitrePublic = Omit<
   'script' | 'videoCle' | 'videoNomFichier' | 'videoTailleOctets' | 'videoImporteeLe' | 'scriptNomFichier' | 'scriptImporteLe'
 >
 
-export type ModulePublic = Omit<Module, 'chapitres'> & { chapitres: ChapitrePublic[] }
+export type ModulePublic = Omit<Module, 'chapitres' | 'prixFcfa'> & {
+  chapitres: ChapitrePublic[]
+  /** `null` quand l'équipe masque le prix d'un module annoncé. */
+  prixFcfa: number | null
+}
+
+/**
+ * « Masquer le prix » (fiche commerciale d'un module annoncé) ne masquait que
+ * son affichage sur la fiche : le prix voyageait dans toutes les réponses
+ * publiques et s'affichait sur les cartes du catalogue. Il n'en sort plus.
+ * Un module en vente, lui, montre toujours son prix.
+ */
+export function prixPublic(module: Pick<Module, 'prixFcfa' | 'prixMasque' | 'statut'>): number | null {
+  return module.prixMasque && module.statut !== 'disponible' ? null : module.prixFcfa
+}
 
 export function modulePublic(module: Module): ModulePublic {
   return {
     ...module,
+    prixFcfa: prixPublic(module),
     chapitres: module.chapitres.map((c) => ({
       libelle: c.libelle,
       titre: c.titre,

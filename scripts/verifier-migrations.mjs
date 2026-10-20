@@ -225,10 +225,13 @@ await db.query(
    where utilisateur_id = 'usr-aya'
      and module_id = 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting'`,
 )
+// Migration 44 : le rang suit la séquence, un suffixe tiré au sort le rend
+// impossible à deviner.
 await attendValeur(
-  'numéro tiré de la séquence',
-  'EMBF-SOM-2026-000129',
-  `select (delivrer_certificat('usr-aya', 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting')).numero`,
+  'numéro : rang de la séquence et suffixe aléatoire de 8 caractères',
+  'true',
+  `select (delivrer_certificat('usr-aya', 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting')).numero
+          ~ '^EMBF-SOM-2026-000129-[0-9A-F]{8}$'`,
 )
 
 // --- Attribution d'un accès gratuit -----------------------------------------

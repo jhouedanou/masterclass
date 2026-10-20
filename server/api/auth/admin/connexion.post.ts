@@ -1,6 +1,7 @@
 import { enregistrerTentative, trouverIdentifiants } from '../../../database/comptes'
 import { lireTotp } from '../../../database/totp'
 import { emettreCode, fournisseurCode } from '../../../utils/codeAdmin'
+import { limiterEchecs } from '../../../utils/debit'
 import { verifierMotDePasse } from '../../../utils/motDePasse'
 import { ouvrirSession, ouvrirSessionPartielle } from '../../../utils/session'
 
@@ -29,6 +30,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 422, statusMessage: 'Renseignez votre adresse e-mail et votre mot de passe.' })
   }
 
+  // Plafond d'échecs par adresse IP, plus serré que pour les apprenants.
+  const plafond = limiterEchecs(event, 'connexion-admin')
+  await plafond.verifier()
+
   const identifiants = await trouverIdentifiants(adresse)
   const verrou = identifiants?.utilisateur.verrouilleJusquA
   if (verrou && new Date(verrou) > new Date()) {
@@ -37,11 +42,14 @@ export default defineEventHandler(async (event) => {
 
   const role = identifiants?.utilisateur.role
   const estAdmin = role === 'admin-contenu' || role === 'admin-superieur'
-  const valide =
-    identifiants !== null && estAdmin && (await verifierMotDePasse(motDePasse, identifiants.motDePasseHache))
+  // Toujours un scrypt, compte inconnu ou non administrateur compris : la
+  // durée de la réponse ne doit rien dire de l'existence ni du rôle du compte.
+  const motDePasseJuste = await verifierMotDePasse(motDePasse, identifiants?.motDePasseHache ?? null)
+  const valide = identifiants !== null && estAdmin && motDePasseJuste
 
   const verrouille = await enregistrerTentative(adresse, ip, appareil, valide)
   if (!valide) {
+    await plafond.compter()
     if (verrouille) throw createError({ statusCode: 429, statusMessage: VERROU })
     // Un seul et même message pour les trois refus possibles — compte inconnu,
     // mot de passe faux, rôle sans accès à l'administration. Les énumérer n'en

@@ -15,7 +15,7 @@ usePageSeo({
 const numero = ref('')
 
 /** Le numéro imprimé peut être recopié avec des espaces ou en minuscules :
- *  on normalise vers la forme EMBF-XXX-AAAA-###### avant de naviguer. */
+ *  on normalise vers la forme EMBF-XXX-AAAA-######(-XXXXXXXX) avant de naviguer. */
 const numeroNormalise = computed(() => numero.value.replace(/\s+/g, '').toUpperCase())
 
 function verifier() {
@@ -37,14 +37,15 @@ function verifier() {
         <input
           v-model="numero"
           required
-          placeholder="EMBF-ENT-2026-000128"
+          placeholder="EMBF-ENT-2026-000140-3FA9C21B"
           autocomplete="off"
           spellcheck="false"
           class="w-full rounded-[10px] border border-ligne px-4 py-2.5 font-mono text-[15px] uppercase focus:border-social focus:outline-none"
         >
       </label>
       <p class="mt-2 text-[12.5px] text-discret">
-        Le numéro figure en bas de l’attestation, sous la forme EMBF-XXX-AAAA-000000.
+        Le numéro figure en bas de l’attestation, sous la forme EMBF-XXX-AAAA-000000-XXXXXXXX
+        (sans le dernier groupe pour les attestations délivrées avant le 21 octobre 2026).
       </p>
       <UiBaseButton type="submit" class="mt-5">Vérifier l’authenticité</UiBaseButton>
     </form>

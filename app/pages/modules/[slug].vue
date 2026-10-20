@@ -117,7 +117,8 @@ useJsonLd(() => ({
   },
   offers: {
     '@type': 'Offer',
-    price: moduleCourant.value.prixFcfa,
+    // Prix masqué (module annoncé) : l'API le rend à `null`, l'offre s'en passe.
+    ...(moduleCourant.value.prixFcfa != null ? { price: moduleCourant.value.prixFcfa } : {}),
     priceCurrency: 'XOF',
     availability: disponible.value ? 'https://schema.org/InStock' : 'https://schema.org/PreOrder',
   },

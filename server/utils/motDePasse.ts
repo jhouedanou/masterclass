@@ -53,14 +53,28 @@ export async function hacherMotDePasse(motDePasse: string, selFixe?: Buffer): Pr
 }
 
 /**
+ * Empreinte d'un mot de passe que personne ne connaît, aux paramètres courants.
+ * Elle sert de cible quand le compte n'existe pas ou n'a pas de mot de passe.
+ */
+const EMPREINTE_FACTICE = `scrypt$${N}$${R}$${P}$${'00'.repeat(16)}$${'00'.repeat(LONGUEUR)}`
+
+/**
  * Vérifie un mot de passe. La comparaison est à temps constant : la durée de
  * la réponse ne révèle pas jusqu'où les deux empreintes coïncident.
+ *
+ * Sans empreinte — adresse inconnue, compte sans mot de passe —, un scrypt est
+ * tout de même calculé sur une empreinte factice : répondre aussitôt faisait
+ * de la durée de la connexion un test d'existence des comptes, à 16 Mo et
+ * quelques dizaines de millisecondes près.
  */
 export async function verifierMotDePasse(
   motDePasse: string,
   stocke: string | null,
 ): Promise<boolean> {
-  if (!stocke) return false
+  if (!stocke) {
+    await verifierMotDePasse(motDePasse, EMPREINTE_FACTICE)
+    return false
+  }
 
   const [algo, n, r, p, selHex, empreinteHex] = stocke.split('$')
   if (algo !== 'scrypt' || !selHex || !empreinteHex) return false
