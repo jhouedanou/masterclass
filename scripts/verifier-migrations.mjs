@@ -260,6 +260,31 @@ await attendErreur(
 console.log('\nenregistrer_visionnage')
 const CH = (position) =>
   `(select id from chapitres where module_id = 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting' and position = ${position})`
+const VU = (utilisateur, chapitre) =>
+  `select secondes_vues from visionnages where utilisateur_id = '${utilisateur}' and chapitre_id = ${chapitre}`
+
+/**
+ * Fait comme si `secondes` s'étaient écoulées depuis le dernier relevé d'un
+ * chapitre. Chaque relevé est confronté au temps réel : sans cette aide, les
+ * appels qui se suivent ici à quelques millisecondes d'écart seraient tous
+ * plafonnés. Le déclencheur `touch_maj_le` est suspendu le temps de
+ * l'écriture, faute de quoi il remettrait `maj_le` à l'instant présent.
+ */
+async function laisserPasser(utilisateur, chapitre, secondes) {
+  await db.exec(`
+    alter table visionnages disable trigger visionnages_maj_le;
+    update visionnages set maj_le = maj_le - interval '${secondes} seconds'
+     where utilisateur_id = '${utilisateur}' and chapitre_id = ${chapitre};
+    alter table visionnages enable trigger visionnages_maj_le;
+  `)
+}
+
+/** Un relevé du lecteur, `ecart` secondes de montre après le précédent. */
+async function relever(utilisateur, chapitre, ecart, total) {
+  await laisserPasser(utilisateur, chapitre, ecart)
+  const { rows } = await db.query(`select enregistrer_visionnage('${utilisateur}', ${chapitre}, ${total}) as p`)
+  return rows[0].p
+}
 
 await attendErreur(
   'module non acquis',
@@ -278,8 +303,15 @@ await attendErreur(
 )
 
 // Deux chapitres portent une vidéo de 31 s : la moitié du module vue donne 50 %.
+// Un premier relevé ne vaut jamais plus de 15 s, quoi qu'il annonce.
 await attendValeur(
-  'premier chapitre vu en entier → 50 %',
+  'premier relevé de 31 s ramené à 15 → 15 / 62 → 24 %',
+  24,
+  `select enregistrer_visionnage('usr-aya', ${CH(0)}, 31)`,
+)
+await laisserPasser('usr-aya', CH(0), 10)
+await attendValeur(
+  'dix secondes plus tard, premier chapitre vu en entier → 50 %',
   50,
   `select enregistrer_visionnage('usr-aya', ${CH(0)}, 31)`,
 )
@@ -293,16 +325,52 @@ await attendValeur(
   74,
   `select enregistrer_visionnage('usr-aya', ${CH(1)}, 2)`,
 )
+await attendValeur('temps conservé, pas écrasé', 15, VU('usr-aya', CH(1)))
+
+// Le saut que l'API acceptait sans broncher : 9999 s annoncées d'un coup.
 await attendValeur(
-  'temps conservé, pas écrasé',
-  15,
-  `select secondes_vues from visionnages where utilisateur_id = 'usr-aya' and chapitre_id = ${CH(1)}`,
+  'un saut de 9999 s aussitôt après est ramené au plafond → 74 %',
+  74,
+  `select enregistrer_visionnage('usr-aya', ${CH(1)}, 9999)`,
 )
+await attendValeur('temps vu inchangé, la réserve étant vide', 15, VU('usr-aya', CH(1)))
+await laisserPasser('usr-aya', CH(1), 10)
 await attendValeur(
-  'temps plafonné à la durée du chapitre',
+  'dix secondes plus tard, le saut gagne 25 s ; la durée borne le calcul → 100 %',
   100,
   `select enregistrer_visionnage('usr-aya', ${CH(1)}, 9999)`,
 )
+await attendValeur('temps vu : 15 + 10 × 2,5', 40, VU('usr-aya', CH(1)))
+
+// La réserve de 15 s ne se renouvelle pas à chaque appel. Si c'était le cas,
+// une rafale validerait n'importe quel chapitre en une seconde.
+for (let i = 0; i < 5; i++) {
+  await db.query(`select enregistrer_visionnage('usr-aya', ${CH(4)}, 99999)`)
+}
+await attendValeur('cinq relevés de 99999 s en rafale → 15 s, pas 75', 15, VU('usr-aya', CH(4)))
+
+// Lecture normale, au rythme le plus rapide que propose la barre : à 2×, un
+// relevé part toutes les dix secondes de film, soit toutes les cinq secondes
+// de montre. Le réseau les livre ici tantôt en trois, tantôt en sept.
+let lu = 0
+for (let i = 1; i <= 60; i++) {
+  lu += 10
+  await relever('usr-aya', CH(2), i === 1 ? 0 : i % 2 ? 7 : 3, lu)
+}
+await attendValeur('dix minutes lues à 2×, avec deux secondes de gigue → tout est crédité', 600, VU('usr-aya', CH(2)))
+await relever('usr-aya', CH(2), 5, 99999)
+await attendValeur(
+  'un saut de 99999 s cinq secondes plus tard ne gagne que la réserve et 12,5 s',
+  'true',
+  `select (secondes_vues - 600) between 25 and 27 from visionnages
+    where utilisateur_id = 'usr-aya' and chapitre_id = ${CH(2)}`,
+)
+
+// Un relevé perdu en route : le lecteur envoie un total de chapitre, le
+// suivant rattrape le retard.
+await relever('usr-aya', CH(3), 0, 10)
+await relever('usr-aya', CH(3), 10, 30)
+await attendValeur('relevé de 20 s perdu à 2×, le suivant le rattrape', 30, VU('usr-aya', CH(3)))
 
 // La grâce de 95 % : un chapitre de 31 s atteint à 30 s compte pour 31. Sans
 // elle, un chapitre regardé jusqu'au bout se déclarait une seconde trop court
@@ -311,6 +379,10 @@ await attendValeur(
 await db.query(
   `select attribuer_acces('usr-fatou', 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting', 'contrôle du seuil', 'Admin')`,
 )
+// Lu à 1× : un relevé toutes les dix secondes.
+await relever('usr-fatou', CH(0), 0, 10)
+await relever('usr-fatou', CH(0), 10, 20)
+await laisserPasser('usr-fatou', CH(0), 10)
 await attendValeur(
   'chapitre vu à 30 s sur 31 → crédité en entier, soit 50 %',
   50,

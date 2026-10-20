@@ -329,6 +329,8 @@ export type VisionnageRow = {
   utilisateur_id: string
   chapitre_id: string
   secondes_vues: number
+  /** Réserve de tolérance du relevé, en secondes de film (0 à 15). */
+  marge_secondes: number
   maj_le: string
 }
 
@@ -826,7 +828,7 @@ export type Database = {
       connexions: Table<ConnexionRow, 'id' | 'cree_le' | 'ip' | 'appareil' | 'utilisateur_id'>
       reinitialisations_mot_de_passe: Table<ReinitialisationRow, 'cree_le' | 'utilise_le'>
       personas: Table<PersonaRow, Exclude<keyof PersonaRow, 'utilisateur_id'>>
-      visionnages: Table<VisionnageRow, 'secondes_vues' | 'maj_le'>
+      visionnages: Table<VisionnageRow, 'secondes_vues' | 'marge_secondes' | 'maj_le'>
       acces: Table<AccesRow, 'progression' | 'achete_le' | 'termine_le' | 'origine' | 'revoque_le' | 'motif_revocation'>
       sessions_coaching: Table<
         SessionCoachingRow,
