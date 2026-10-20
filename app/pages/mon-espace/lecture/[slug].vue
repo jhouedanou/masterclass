@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Acces, Formateur, Module, Programme, Thematique } from '#shared/types'
+import type { Acces, EtatQuiz, Formateur, Module, Programme, Thematique } from '#shared/types'
+import { quizAReussir } from '#shared/utils/attestation'
 
 definePageMeta({ layout: false, middleware: 'auth' })
 
@@ -21,6 +22,9 @@ const { data, error } = await useFetch<{
     pourcentage: number
     secondesVues: number
   }[]
+  /** Quiz du module : tant qu'il n'est pas réussi, la fin du module y mène
+   *  plutôt qu'à l'attestation, qui l'exige. */
+  quiz: EtatQuiz | null
 }>(() => `/api/mon-espace/module/${route.params.slug}`)
 
 if (!data.value) {
@@ -301,8 +305,11 @@ let minuteurAttestation: ReturnType<typeof setInterval> | undefined
  * Le module déjà attesté y est simplement affiché : la page ne rouvre la
  * validation que pour un certificat encore à générer.
  */
-const cheminAttestation = computed(
-  () => `/mon-espace/certificats?module=${moduleCourant.value.id}`,
+const quizEnAttente = computed(() => quizAReussir(data.value?.quiz))
+const cheminAttestation = computed(() =>
+  quizEnAttente.value
+    ? `/mon-espace/quiz/${moduleCourant.value.slug}`
+    : `/mon-espace/certificats?module=${moduleCourant.value.id}`,
 )
 
 function annulerRedirectionAttestation() {
@@ -718,7 +725,42 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
           class="absolute inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-black/80 px-6 text-center backdrop-blur-sm"
           role="status"
         >
-          <template v-if="moduleComplet">
+          <!-- Vidéos finies, quiz pas encore réussi : c'est lui la dernière
+               étape avant l'attestation, et le décompte y mène. -->
+          <template v-if="moduleComplet && quizEnAttente">
+            <Icon name="ph:list-checks-fill" class="size-10 text-social-pastel" />
+            <p class="text-[12.5px] tracking-wide text-social-pastel uppercase">Dernière étape : le quiz</p>
+            <p class="font-title text-[22px] font-light text-white">
+              Vous avez vu toutes les vidéos de « {{ moduleCourant.titre }} »
+            </p>
+            <p class="max-w-md text-[13.5px] text-discret-clair">
+              Réussissez le quiz du module à 100 % pour obtenir votre attestation :
+              {{ data?.quiz?.questions }} questions, {{ data?.quiz?.tentativesMax }} tentatives par jour. Chaque
+              question manquée vous renvoie au passage à revoir.
+            </p>
+            <div class="mt-1 flex flex-wrap items-center justify-center gap-3">
+              <NuxtLink
+                :to="cheminAttestation"
+                class="rounded-full bg-social px-5 py-2.5 text-[13.5px] font-extrabold text-white"
+                @click="annulerRedirectionAttestation()"
+              >
+                Passer le quiz
+              </NuxtLink>
+              <button
+                type="button"
+                class="rounded-full border border-white/35 px-5 py-2.5 text-[13.5px] font-bold text-white"
+                @click="annulerRedirectionAttestation()"
+              >
+                Rester sur le lecteur
+              </button>
+            </div>
+            <p v-if="resteAvantAttestation !== null" class="text-[12.5px] text-discret-clair">
+              Ouverture du quiz dans {{ resteAvantAttestation }}
+              seconde{{ resteAvantAttestation > 1 ? 's' : '' }}…
+            </p>
+          </template>
+
+          <template v-else-if="moduleComplet">
             <Icon name="ph:confetti-fill" class="size-10 text-succes" />
             <p class="text-[12.5px] tracking-wide text-succes uppercase">Félicitations</p>
             <p class="font-title text-[22px] font-light text-white">
@@ -756,7 +798,7 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
             <p class="font-title text-[22px] font-light text-white">{{ moduleCourant.titre }}</p>
             <p class="max-w-md text-[13.5px] text-discret-clair">
               Le temps visionné est enregistré. L’attestation se débloque quand tous les chapitres
-              sont vus.
+              sont vus<template v-if="data?.quiz"> et le quiz réussi à 100 %</template>.
             </p>
             <div class="mt-1 flex flex-wrap items-center justify-center gap-3">
               <NuxtLink

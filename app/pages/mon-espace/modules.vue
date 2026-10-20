@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Acces, Formateur, Module, Thematique } from '#shared/types'
+import type { Acces, EtatQuiz, Formateur, Module, Thematique } from '#shared/types'
+import { quizAReussir } from '#shared/utils/attestation'
 import { compterPlaces } from '#shared/utils/compteurs'
 
 definePageMeta({ layout: 'espace', middleware: 'auth' })
@@ -18,6 +19,7 @@ interface Carte {
   chapitresTotal: number
   progression: number
   certificat: string | null
+  quiz: EtatQuiz | null
   prochaineSession: { id: string; date: string; heure: string; inscrit: boolean; places: number; inscrits: number } | null
 }
 
@@ -54,6 +56,12 @@ const suggestion = computed(() => {
     ) ?? null
   )
 })
+
+/** Vidéos finies mais quiz à réussir : l'attestation attend encore. */
+function quizEnAttente(ligne: AccesGarni): boolean {
+  const carte = cartes.value.get(ligne.moduleId)
+  return ligne.progression === 100 && !carte?.certificat && quizAReussir(carte?.quiz)
+}
 
 /** 4 · Session imminente : demain ou aujourd'hui. */
 function imminente(carte?: Carte) {
@@ -117,6 +125,7 @@ function imminente(carte?: Carte) {
         <div class="mt-auto flex items-center justify-between gap-3 pt-4">
           <span class="text-[13.5px] font-bold text-encre">
             {{ cartes.get(ligne.moduleId)?.chapitresVus ?? 0 }}/{{ cartes.get(ligne.moduleId)?.chapitresTotal ?? ligne.module?.chapitres.length ?? 0 }}<span v-if="ligne.progression === 100"> ✓</span>
+            <span v-if="quizEnAttente(ligne)" class="ml-1.5 rounded-full bg-alerte-voile px-2 py-0.5 text-[11.5px] text-alerte-fonce">Quiz à réussir</span>
           </span>
           <UiBaseButton
             v-if="imminente(cartes.get(ligne.moduleId)) && ligne.progression < 100"
@@ -131,7 +140,11 @@ function imminente(carte?: Carte) {
             <UiBaseButton :to="`/mon-espace/module/${ligne.module?.slug}`" taille="sm" variante="contour">
               Revoir
             </UiBaseButton>
+            <UiBaseButton v-if="quizEnAttente(ligne)" :to="`/mon-espace/quiz/${ligne.module?.slug}`" taille="sm">
+              Passer le quiz
+            </UiBaseButton>
             <UiBaseButton
+              v-else
               :to="cartes.get(ligne.moduleId)?.certificat ? `/certificats/${cartes.get(ligne.moduleId)?.certificat}` : '/mon-espace/certificats'"
               taille="sm"
               variante="sombre"

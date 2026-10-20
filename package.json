@@ -22,6 +22,7 @@
     "db:verifier": "node --experimental-strip-types scripts/verifier-migrations.mjs",
     "db:comparer": "node --experimental-strip-types scripts/comparer-base.ts",
     "db:appliquer": "node --experimental-strip-types scripts/appliquer-sql.ts",
+    "quiz:importer": "node --experimental-strip-types scripts/importer-quiz.ts",
     "video:transcoder": "node scripts/transcoder-video.mjs",
     "video:publier": "node scripts/publier-video.mjs",
     "video:durees": "node --experimental-strip-types scripts/rattraper-durees-video.mjs",

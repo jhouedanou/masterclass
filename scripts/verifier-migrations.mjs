@@ -866,6 +866,100 @@ await attendValeur(
     where email = 'inconnu@example.ci' and utilisateur_id is null`,
 )
 
+// --- Quiz des modules (migration 40) -----------------------------------------
+
+console.log('\nQuiz des modules (migration 40)')
+const QUIZ_MODULE = 'mod-linkedin-algorithme-et-optimisation-du-profil'
+const OPTIONS = `'[{"id":"A","texte":"a"},{"id":"B","texte":"b"},{"id":"C","texte":"c"},{"id":"D","texte":"d"}]'::jsonb`
+const SOUMETTRE = (reponses) =>
+  `soumettre_quiz('usr-fatou', '${QUIZ_MODULE}', '${JSON.stringify(reponses)}'::jsonb)`
+
+await db.query(`insert into quiz (module_id, code, version) values ('${QUIZ_MODULE}', 'SM_TEST', 'v1')`)
+await db.query(
+  `insert into quiz_questions (module_id, position, code, enonce, options, bonne_reponse, justification, piste_si_erreur, renvois)
+   values ('${QUIZ_MODULE}', 1, 'Q01', 'Première ?', ${OPTIONS}, 'A', 'Parce que A.', 'Revoyez A.', '[]'),
+          ('${QUIZ_MODULE}', 2, 'Q02', 'Seconde ?', ${OPTIONS}, 'B', 'Parce que B.', 'Revoyez B.',
+           '[{"position":1,"titre":"Chapitre 1","debut_s":12.5,"libelle":"Revoir le chapitre 1"}]')`,
+)
+await attendValeur(
+  'jour_abidjan() est la date UTC (Abidjan est à UTC+0)',
+  'true',
+  `select jour_abidjan() = (now() at time zone 'UTC')::date`,
+)
+await attendErreur(
+  'bonne réponse hors des options',
+  '23514',
+  `insert into quiz_questions (module_id, position, code, enonce, options, bonne_reponse, justification, piste_si_erreur)
+   values ('${QUIZ_MODULE}', 3, 'Q03', '?', ${OPTIONS}, 'E', 'j', 'p')`,
+)
+await attendErreur(
+  'module sans quiz',
+  'EM404',
+  `select soumettre_quiz('usr-fatou', 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting', '{}'::jsonb)`,
+)
+await attendErreur(
+  'module non acquis',
+  'EM403',
+  `select soumettre_quiz('usr-moussa', '${QUIZ_MODULE}', '{"Q01":"A","Q02":"B"}'::jsonb)`,
+)
+await attendErreur('réponse manquante', 'EM422', `select ${SOUMETTRE({ Q01: 'A' })}`)
+await attendErreur('lettre inventée', 'EM422', `select ${SOUMETTRE({ Q01: 'A', Q02: 'Z' })}`)
+await attendValeur(
+  'une soumission refusée ne consomme pas de tentative',
+  0,
+  `select count(*)::int from quiz_tentatives where utilisateur_id = 'usr-fatou'`,
+)
+await attendValeur('1re tentative, une erreur sur deux → 50', 50, `select ${SOUMETTRE({ Q01: 'A', Q02: 'C' })} ->> 'note'`)
+await attendValeur(
+  'question manquée : piste et renvois, sans justification',
+  'true',
+  `select (r -> 'corrections' -> 1 ->> 'piste') = 'Revoyez B.'
+      and (r -> 'corrections' -> 1 -> 'renvois' -> 0 ->> 'position') = '1'
+      and not (r -> 'corrections' -> 1) ? 'justification'
+      and (r -> 'corrections' -> 0 ->> 'justification') = 'Parce que A.'
+    from (select ${SOUMETTRE({ Q01: 'A', Q02: 'D' })} as r) s`,
+)
+await attendValeur(
+  'la bonne réponse ne sort jamais',
+  0,
+  `select strpos(${SOUMETTRE({ Q01: 'C', Q02: 'C' })}::text, 'bonne')`,
+)
+await attendErreur('4e tentative du jour', 'EM409', `select ${SOUMETTRE({ Q01: 'A', Q02: 'B' })}`)
+await attendValeur(
+  'état : 3 tentatives, dernière note 0, non réussi',
+  '3|0|false',
+  `select tentatives_jour || '|' || derniere_note || '|' || reussi
+     from etats_quiz('usr-fatou', '${QUIZ_MODULE}')`,
+)
+await db.query(
+  `update acces set progression = 100, termine_le = '2026-10-20'
+    where utilisateur_id = 'usr-fatou' and module_id = '${QUIZ_MODULE}'`,
+)
+await attendErreur(
+  'attestation refusée tant que le quiz n’est pas réussi',
+  'EM409',
+  `select delivrer_certificat('usr-fatou', '${QUIZ_MODULE}')`,
+)
+// Minuit à Abidjan : les tentatives d'hier ne comptent plus.
+await db.query(`update quiz_tentatives set jour = jour - 1 where utilisateur_id = 'usr-fatou'`)
+await attendValeur(
+  'le lendemain, le compteur repart à zéro',
+  0,
+  `select tentatives_jour from etats_quiz('usr-fatou', '${QUIZ_MODULE}')`,
+)
+await attendValeur('tout juste → réussi', 'true', `select ${SOUMETTRE({ Q01: 'A', Q02: 'B' })} ->> 'reussi'`)
+await attendValeur(
+  'dernière note enregistrée',
+  '100|true',
+  `select derniere_note || '|' || reussi from etats_quiz('usr-fatou', '${QUIZ_MODULE}')`,
+)
+await attendErreur('quiz fermé une fois réussi', 'EM409', `select ${SOUMETTRE({ Q01: 'A', Q02: 'B' })}`)
+await attendValeur(
+  'attestation délivrée après réussite',
+  'true',
+  `select (delivrer_certificat('usr-fatou', '${QUIZ_MODULE}')).numero like 'EMBF-%'`,
+)
+
 await db.close()
 
 // --- Fichiers d'installation pour le Supabase hébergé ------------------------

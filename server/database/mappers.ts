@@ -7,8 +7,10 @@ import type {
   Certificat,
   Chapitre,
   Commande,
+  CorrectionQuiz,
   DemandeCoachingPrive,
   EntreeJournal,
+  EtatQuiz,
   Formateur,
   HistoriqueCoachingPrive,
   InscriptionSession,
@@ -16,6 +18,8 @@ import type {
   NoteFormateur,
   Persona,
   Programme,
+  QuestionQuiz,
+  RenvoiQuiz,
   SeoFields,
   ReglagesAttestation,
   SessionCoaching,
@@ -36,6 +40,7 @@ import type {
   CommandeRow,
   DemandeCoachingPriveRow,
   EntreeJournalRow,
+  EtatQuizRow,
   FormateurRow,
   HistoriqueCoachingPriveRow,
   InscriptionSessionRow,
@@ -43,6 +48,9 @@ import type {
   NoteFormateurRow,
   PersonaRow,
   ProgrammeRow,
+  QuizQuestionRow,
+  RenvoiQuizSql,
+  ResultatQuizSql,
   ReglagesFinanciersRow,
   ReglagesSeoRow,
   SessionCoachingRow,
@@ -475,6 +483,49 @@ export function versCertificat(row: CertificatRow): Certificat {
     revoqueLe: optionnel(row.revoque_le),
     motifRevocation: optionnel(row.motif_revocation),
   }
+}
+
+// --- Quiz ------------------------------------------------------------------
+
+/** Ne lit que les colonnes montrables : la bonne réponse n'y figure pas. */
+export function versQuestionQuiz(
+  row: Pick<QuizQuestionRow, 'code' | 'position' | 'enonce' | 'options'>,
+): QuestionQuiz {
+  return {
+    code: row.code,
+    position: row.position,
+    enonce: row.enonce,
+    options: row.options.map((o) => ({ id: o.id, texte: o.texte })),
+  }
+}
+
+export function versRenvoiQuiz(renvoi: RenvoiQuizSql): RenvoiQuiz {
+  return {
+    position: renvoi.position,
+    titre: renvoi.titre,
+    libelle: renvoi.libelle,
+    debutS: renvoi.debut_s,
+  }
+}
+
+export function versEtatQuiz(row: EtatQuizRow): EtatQuiz {
+  return {
+    questions: row.questions,
+    tentativesMax: row.tentatives_max,
+    tentativesUtilisees: row.tentatives_jour,
+    tentativesRestantes: row.reussi ? 0 : Math.max(row.tentatives_max - row.tentatives_jour, 0),
+    derniereNote: optionnelNombre(row.derniere_note),
+    reussi: row.reussi,
+    reussiLe: optionnel(row.reussi_le),
+  }
+}
+
+export function versCorrectionsQuiz(corrections: ResultatQuizSql['corrections']): CorrectionQuiz[] {
+  return corrections.map((c) =>
+    c.correct
+      ? { code: c.code, position: c.position, correct: true, justification: c.justification }
+      : { code: c.code, position: c.position, correct: false, piste: c.piste, renvois: c.renvois.map(versRenvoiQuiz) },
+  )
 }
 
 // --- Administration --------------------------------------------------------

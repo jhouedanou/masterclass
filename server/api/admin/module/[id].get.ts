@@ -6,6 +6,7 @@ import {
   listerThematiques,
   trouverModule,
 } from '../../../database/catalogue'
+import { quizAdmin } from '../../../database/quiz'
 import { checklistPret } from '../../../utils/pret'
 import { exigerSection } from '../../../utils/session'
 
@@ -19,12 +20,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Module introuvable' })
   }
 
-  const [chapitres, ressources, thematiques, formateurs, versions] = await Promise.all([
+  const [chapitres, ressources, thematiques, formateurs, versions, quiz] = await Promise.all([
     listerChapitres(id),
     listerRessources(id),
     listerThematiques(),
     listerFormateurs(),
     listerVersions('modules', id, 20),
+    quizAdmin(id),
   ])
 
   // Un dépôt peut avoir été lancé depuis un autre poste, ou dans un onglet
@@ -49,5 +51,7 @@ export default defineEventHandler(async (event) => {
     peutOuvrirOffre:
       Boolean(moduleTrouve.promesse) && Boolean(moduleTrouve.pourquoi) && chapitres.length > 0,
     checklist: checklistPret(moduleTrouve, chapitres),
+    // Quiz livré, en lecture seule : il se met à jour par `npm run quiz:importer`.
+    quiz,
   }
 })

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Acces, Formateur, Module, Programme, SessionCoaching, Thematique } from '#shared/types'
+import type { Acces, EtatQuiz, Formateur, Module, Programme, SessionCoaching, Thematique } from '#shared/types'
+import { quizAReussir } from '#shared/utils/attestation'
 import { compterChapitres, compterPlaces } from '#shared/utils/compteurs'
 
 definePageMeta({ layout: 'espace', middleware: 'auth' })
@@ -29,6 +30,7 @@ const { data, error } = await useFetch<{
   ressources: { id: string; titre: string; url: string; format: string }[]
   session: (SessionCoaching & { inscrit: boolean }) | null
   completionProfil: number
+  quiz: EtatQuiz | null
 }>(() => `/api/mon-espace/module/${route.params.slug}`)
 
 if (!data.value) {
@@ -46,6 +48,10 @@ usePagePrivee(moduleCourant.value.titre)
 const social = computed(() => moduleCourant.value.programme === 'social-media')
 const total = computed(() => data.value!.chapitres.length)
 const restants = computed(() => total.value - data.value!.chapitresVus)
+const quiz = computed(() => data.value!.quiz)
+/** L'attestation attend encore le quiz : tous les chapitres vus ne suffisent plus. */
+const quizEnAttente = computed(() => quizAReussir(quiz.value))
+const certificatDebloque = computed(() => restants.value === 0 && !quizEnAttente.value)
 
 function horloge(secondes: number): string {
   const s = Math.max(0, Math.floor(secondes))
@@ -251,20 +257,58 @@ const LIBELLE_SESSION = (date: string) =>
           <p v-else class="text-[13.5px] text-discret">Aucune session planifiée pour cette thématique pour l’instant.</p>
         </div>
 
+        <!-- Quiz du module : ouvert dès l'achat, sa réussite conditionne
+             l'attestation. Les tentatives du jour sont rappelées ici pour
+             qu'on ne découvre pas le verrou en arrivant sur le quiz. -->
+        <div v-if="quiz" class="rounded-carte border border-ligne-douce bg-white p-[22px]">
+          <div class="mb-2.5 flex items-center justify-between gap-3">
+            <p class="font-title text-[17px] font-light">Quiz du module</p>
+            <span
+              v-if="quiz.reussi"
+              class="inline-flex items-center gap-1 rounded-full bg-succes-voile px-2.5 py-1 text-[12px] font-bold text-succes"
+            >
+              <Icon name="ph:seal-check-fill" class="size-3.5" /> Réussi
+            </span>
+          </div>
+          <p class="mb-3 text-[13px] leading-[1.6] text-texte">
+            <template v-if="quiz.reussi">Réussi à 100 % le {{ formatDate(quiz.reussiLe) }}.</template>
+            <template v-else>
+              {{ quiz.questions }} questions · réussite à 100 % · {{ quiz.tentativesMax }} tentatives par jour.
+              <template v-if="quiz.derniereNote !== undefined">Dernière note : <b>{{ quiz.derniereNote }} / 100</b>.</template>
+            </template>
+          </p>
+          <p v-if="!quiz.reussi" class="mb-3 text-[12.5px] text-discret">
+            Tentatives restantes aujourd’hui :
+            <b :class="quiz.tentativesRestantes === 0 ? 'text-erreur' : 'text-encre'">{{ quiz.tentativesRestantes }} / {{ quiz.tentativesMax }}</b>
+          </p>
+          <UiBaseButton
+            :to="`/mon-espace/quiz/${moduleCourant.slug}`"
+            class="w-full"
+            taille="sm"
+            :variante="quiz.reussi || quiz.tentativesRestantes === 0 ? 'contour' : 'social'"
+          >
+            <template v-if="quiz.reussi">Revoir mon quiz</template>
+            <template v-else-if="quiz.tentativesRestantes === 0">Voir mes résultats</template>
+            <template v-else-if="quiz.derniereNote !== undefined">Reprendre le quiz</template>
+            <template v-else>Passer le quiz</template>
+          </UiBaseButton>
+        </div>
+
         <!-- Certificat -->
         <div class="rounded-carte border border-ligne-douce bg-white p-[22px]">
           <p class="mb-2.5 font-title text-[17px] font-light">Certificat de participation</p>
           <p class="mb-3 text-[13px] leading-[1.6] text-texte">
-            Débloquée automatiquement quand les {{ compterChapitres(total) }} sont vus à 100 %.
+            Débloquée automatiquement quand les {{ compterChapitres(total) }} sont vus à 100 %<template v-if="quiz"> et le quiz réussi à 100 %</template>.
             <template v-if="restants > 0">Il vous reste <b>{{ restants }} chapitre{{ restants > 1 ? 's' : '' }}</b>.</template>
+            <template v-else-if="quizEnAttente">Tous les chapitres sont vus : il reste <b>le quiz à réussir</b>.</template>
             <template v-else>Tous les chapitres sont vus.</template>
           </p>
           <UiBaseButton
-            :to="restants === 0 ? `/mon-espace/certificats?module=${moduleCourant.id}` : undefined"
+            :to="certificatDebloque ? `/mon-espace/certificats?module=${moduleCourant.id}` : undefined"
             class="w-full"
             taille="sm"
-            :variante="restants > 0 ? 'verrouille' : 'sombre'"
-            :disabled="restants > 0"
+            :variante="certificatDebloque ? 'sombre' : 'verrouille'"
+            :disabled="!certificatDebloque"
           >
             Obtenir mon certificat
           </UiBaseButton>

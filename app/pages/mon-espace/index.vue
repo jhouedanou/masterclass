@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Formateur, Module, StatutCoachingPrive, Thematique } from '#shared/types'
+import type { EtatQuiz, Formateur, Module, StatutCoachingPrive, Thematique } from '#shared/types'
+import { quizAReussir } from '#shared/utils/attestation'
 import { compterPlaces } from '#shared/utils/compteurs'
 import { dureeSessionEnHeures, PLACES_SESSION } from '#shared/utils/coaching'
 
@@ -18,6 +19,7 @@ interface Carte {
   chapitresTotal: number
   termineLe: string | null
   certificat: string | null
+  quiz: EtatQuiz | null
   prochaineSession: {
     id: string
     date: string
@@ -88,6 +90,11 @@ function etatCarte(carte: Carte) {
   if (carte.prochaineSession && carte.prochaineSession.joursAvant <= 1) return 'imminente'
   return carte.progression > 0 ? 'en-cours' : 'nouveau'
 }
+/** Vidéos finies, attestation pas encore délivrée, quiz à réussir : la carte
+ *  mène au quiz plutôt qu'au certificat, qui l'exige. */
+function quizEnAttente(carte: Carte): boolean {
+  return carte.progression === 100 && !carte.certificat && quizAReussir(carte.quiz)
+}
 const COULEUR_SURTITRE = {
   complete: 'text-succes',
   imminente: 'text-alerte',
@@ -138,9 +145,9 @@ const COULEUR_SURTITRE = {
                 </p>
                 <span
                   class="shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-bold"
-                  :class="carte.progression === 100 ? 'bg-succes-voile text-succes' : carte.progression > 0 ? 'bg-social-voile text-social' : 'bg-fond-voile text-discret'"
+                  :class="quizEnAttente(carte) ? 'bg-alerte-voile text-alerte-fonce' : carte.progression === 100 ? 'bg-succes-voile text-succes' : carte.progression > 0 ? 'bg-social-voile text-social' : 'bg-fond-voile text-discret'"
                 >
-                  {{ carte.progression === 100 ? 'Complété ✓' : carte.progression > 0 ? 'En cours' : 'Non commencé' }}
+                  {{ quizEnAttente(carte) ? 'Quiz à réussir' : carte.progression === 100 ? 'Complété ✓' : carte.progression > 0 ? 'En cours' : 'Non commencé' }}
                 </span>
               </div>
               <h2 class="mb-1.5 font-title text-[21px] leading-[1.25] font-light">{{ carte.titre }}</h2>
@@ -190,7 +197,11 @@ const COULEUR_SURTITRE = {
                  revoir un chapitre demandait de repasser par le catalogue —
                  un module achevé n'est pas un module fermé. -->
             <div v-else-if="carte.progression === 100" class="flex shrink-0 flex-col items-stretch gap-2">
+              <UiBaseButton v-if="quizEnAttente(carte)" :to="`/mon-espace/quiz/${carte.slug}`" taille="sm">
+                Passer le quiz
+              </UiBaseButton>
               <UiBaseButton
+                v-else
                 :to="carte.certificat ? `/certificats/${carte.certificat}` : '/mon-espace/certificats'"
                 taille="sm"
                 variante="succes"

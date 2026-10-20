@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Formateur, Module, Thematique } from '#shared/types'
+import type { Formateur, Module, QuizAdmin, Thematique } from '#shared/types'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -54,6 +54,7 @@ const { data, refresh } = await useFetch<{
   versions: Version[]
   peutOuvrirOffre: boolean
   checklist: Checklist
+  quiz: QuizAdmin | null
 }>(() => `/api/admin/module/${route.params.id}`)
 
 if (!data.value) {
@@ -62,11 +63,12 @@ if (!data.value) {
 
 usePagePrivee(`${data.value.module.titre} — édition`)
 
-type Onglet = 'informations' | 'chapitres' | 'ressources' | 'fiche' | 'offre' | 'referencement' | 'historique'
+type Onglet = 'informations' | 'chapitres' | 'ressources' | 'quiz' | 'fiche' | 'offre' | 'referencement' | 'historique'
 const ONGLETS_VALIDES: Onglet[] = [
   'informations',
   'chapitres',
   'ressources',
+  'quiz',
   'fiche',
   'offre',
   'referencement',
@@ -375,6 +377,7 @@ const ONGLETS = computed(() => [
   { cle: 'informations', libelle: 'Informations' },
   { cle: 'chapitres', libelle: 'Chapitres', compteur: data.value?.chapitres.length ?? 0 },
   { cle: 'ressources', libelle: 'Ressources', compteur: data.value?.ressources.length ?? 0 },
+  { cle: 'quiz', libelle: 'Quiz', compteur: data.value?.quiz?.questions.length ?? 0 },
   { cle: 'fiche', libelle: 'Fiche commerciale' },
   { cle: 'offre', libelle: 'Offre & prix' },
   { cle: 'referencement', libelle: 'Référencement et partage' },
@@ -384,6 +387,17 @@ const ONGLETS = computed(() => [
 const nomThematique = computed(
   () => data.value?.thematiques.find((t) => t.id === data.value?.module.thematiqueId)?.nom ?? '',
 )
+
+/** « 01:04 » : instant de la vidéo vers lequel renvoie une question manquée. */
+function instant(secondes: number): string {
+  const s = Math.max(0, Math.floor(secondes))
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+}
+
+/** Le libellé livré finit par « (vers 01:04) », déjà affiché à côté. */
+function sansInstant(libelle: string): string {
+  return libelle.replace(/\s*\(vers [^)]*\)\s*$/, '')
+}
 
 // Écran 09 : filets de 1,5 px, chemise 11/13, corps 13,5 px.
 const champ =
@@ -686,6 +700,81 @@ const champ =
         integre
         @enregistre="refresh()"
       />
+    </section>
+
+    <!-- Quiz : lecture seule. Le contenu vient de la livraison Big Five et se
+         réimporte par script ; l'écran sert à relire et à suivre les résultats. -->
+    <section v-if="onglet === 'quiz'" class="max-w-[860px]">
+      <template v-if="data.quiz">
+        <p class="rounded-[10px] bg-fond-voile px-4 py-3 text-[12.5px] leading-[1.55] text-texte">
+          Lecture seule · quiz {{ data.quiz.code }} ({{ data.quiz.version }}), importé le
+          {{ new Date(data.quiz.majLe).toLocaleDateString('fr-FR') }}. Mise à jour :
+          <code class="font-mono text-[12px]">npm run quiz:importer</code>.
+        </p>
+        <dl class="mt-4 grid gap-3 sm:grid-cols-4">
+          <div class="rounded-[12px] border border-ligne-douce px-4 py-3">
+            <dt class="text-[12px] text-discret">Règles</dt>
+            <dd class="mt-1 text-[13.5px] font-bold text-encre">
+              {{ data.quiz.questions.length }} questions · {{ data.quiz.seuilReussite }} % · {{ data.quiz.tentativesParJour }}/jour
+            </dd>
+          </div>
+          <div class="rounded-[12px] border border-ligne-douce px-4 py-3">
+            <dt class="text-[12px] text-discret">Apprenants</dt>
+            <dd class="mt-1 text-[13.5px] font-bold text-encre">{{ data.quiz.statistiques.apprenants }}</dd>
+          </div>
+          <div class="rounded-[12px] border border-ligne-douce px-4 py-3">
+            <dt class="text-[12px] text-discret">Réussites</dt>
+            <dd class="mt-1 text-[13.5px] font-bold text-encre">{{ data.quiz.statistiques.reussites }}</dd>
+          </div>
+          <div class="rounded-[12px] border border-ligne-douce px-4 py-3">
+            <dt class="text-[12px] text-discret">Moyenne des dernières notes</dt>
+            <dd class="mt-1 text-[13.5px] font-bold text-encre">
+              {{ data.quiz.statistiques.noteMoyenne !== undefined ? `${data.quiz.statistiques.noteMoyenne} / 100` : '—' }}
+              <span class="font-normal text-discret">· {{ data.quiz.statistiques.tentatives }} tentatives</span>
+            </dd>
+          </div>
+        </dl>
+        <ol class="mt-5 flex flex-col gap-3">
+          <li
+            v-for="q in data.quiz.questions"
+            :key="q.code"
+            class="rounded-[12px] border border-ligne-douce px-[18px] py-4"
+          >
+            <p class="text-[12px] text-discret">
+              <b class="text-encre">{{ q.code }}</b>
+              <template v-if="q.niveau"> · {{ q.niveau }}</template>
+              <template v-if="q.competence"> · {{ q.competence }}</template>
+            </p>
+            <p class="mt-1 text-[14px] leading-[1.5] font-bold text-encre">{{ q.enonce }}</p>
+            <ul class="mt-2.5 flex flex-col gap-1.5">
+              <li
+                v-for="o in q.options"
+                :key="o.id"
+                class="flex gap-2.5 rounded-[8px] px-3 py-1.5 text-[13px] leading-[1.5]"
+                :class="o.id === q.bonneReponse ? 'bg-succes-voile text-succes-fonce' : 'text-texte'"
+              >
+                <b class="w-4 shrink-0">{{ o.id }}</b>
+                <span>{{ o.texte }}</span>
+                <span v-if="o.id === q.bonneReponse" class="ml-auto shrink-0 text-[11.5px] font-bold">Bonne réponse</span>
+              </li>
+            </ul>
+            <div class="mt-3 grid gap-2 text-[12.5px] leading-[1.55] sm:grid-cols-2">
+              <p><b class="text-encre">Justification (si réussie) :</b> {{ q.justification }}</p>
+              <div>
+                <p><b class="text-encre">Piste (si manquée) :</b> {{ q.piste }}</p>
+                <ul class="mt-1 text-discret">
+                  <li v-for="r in q.renvois" :key="`${r.position}-${r.debutS}`">
+                    {{ sansInstant(r.libelle) }} · {{ instant(r.debutS) }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </li>
+        </ol>
+      </template>
+      <p v-else class="rounded-[12px] border border-dashed border-ligne-pointillee p-5 text-[13px] text-discret">
+        Ce module n’a pas de quiz : l’attestation ne dépend que du visionnage.
+      </p>
     </section>
 
     <section v-if="onglet === 'historique'" class="max-w-[760px]">

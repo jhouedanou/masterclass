@@ -911,12 +911,10 @@ export async function trouverAcces(
 }
 
 /**
- * La progression est le point le plus avancé atteint : elle ne redescend pas.
- * C'est ce qui permet à `termine_le` de rester posé une fois le module réalisé,
- * comme l'exige la contrainte `acces_termine_coherent`.
- */
-/**
- * Relevé du temps réellement visionné d'un chapitre.
+ * Relevé du temps réellement visionné d'un chapitre — seule voie par laquelle
+ * la progression d'un module avance. L'ancienne écriture directe de la
+ * progression (`POST /api/mon-espace/progression`) laissait un apprenant se
+ * déclarer à 100 % ; elle a été retirée avec l'arrivée des quiz.
  *
  * Le lecteur n'envoie qu'un cumul de secondes ; l'identifiant technique du
  * chapitre est retrouvé ici, à partir du module et du rang, pour que le client
@@ -950,34 +948,6 @@ export async function enregistrerVisionnage(
   })
   if (error) throw traduireErreur(error, 'relevé de visionnage')
   return data
-}
-
-export async function majProgression(
-  utilisateurId: string,
-  moduleId: string,
-  progression: number,
-): Promise<Acces> {
-  const actuel = await trouverAcces(utilisateurId, moduleId)
-  if (!actuel) {
-    throw createError({ statusCode: 404, statusMessage: 'Module non acquis' })
-  }
-
-  const valeur = Math.max(actuel.progression, Math.max(0, Math.min(100, Math.round(progression))))
-  const termineLe =
-    valeur === 100 ? (actuel.termineLe ?? new Date().toISOString().slice(0, 10)) : actuel.termineLe
-
-  const row = verifierUn(
-    await supabase()
-      .from('acces')
-      .update({ progression: valeur, termine_le: termineLe })
-      .eq('utilisateur_id', utilisateurId)
-      .eq('module_id', moduleId)
-      .select('*')
-      .maybeSingle(),
-    'progression',
-    'Module non acquis',
-  )
-  return versAcces(row)
 }
 
 /** Ouvre les accès d'une commande. Un module déjà possédé est ignoré plutôt

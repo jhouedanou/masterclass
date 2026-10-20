@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Acces, Certificat, Module } from '#shared/types'
+import type { Acces, Certificat, EtatQuiz, Module } from '#shared/types'
+import { etatAttestation } from '#shared/utils/attestation'
 
 definePageMeta({ layout: 'espace', middleware: 'auth' })
 usePagePrivee('Mes certificats')
@@ -8,25 +9,25 @@ const auth = useAuthStore()
 const route = useRoute()
 const { data: certificats, refresh } = await useFetch<Certificat[]>('/api/certificats')
 const { data: acces } = await useFetch<(Acces & { module: Module | null; formateur: { nom: string } | null })[]>('/api/mon-espace/acces')
-const { data: tableau } = await useFetch<{ cartes: { moduleId: string; chapitresVus: number; chapitresTotal: number; prochaineSession: unknown }[] }>('/api/mon-espace')
+const { data: tableau } = await useFetch<{ cartes: { moduleId: string; chapitresVus: number; chapitresTotal: number; prochaineSession: unknown; quiz: EtatQuiz | null }[] }>('/api/mon-espace')
 
 const cartes = computed(() => new Map((tableau.value?.cartes ?? []).map((c) => [c.moduleId, c])))
 const delivres = computed(() => new Map((certificats.value ?? []).map((c) => [c.moduleId, c])))
 
-/** Les trois états (planche B, écran 09) : 🎓 délivré · ⏳ en progression · 🔒 non commencé. */
+const ORDRE_ETATS = ['delivre', 'a-generer', 'quiz-a-reussir', 'en-progression', 'non-commence']
+
+/** Les trois états (planche B, écran 09) : 🎓 délivré · ⏳ en progression · 🔒 non commencé.
+ *  S'y ajoute « quiz à réussir » : vidéos vues, quiz du module pas encore réussi. */
 const toutesLignes = computed(() =>
   (acces.value ?? [])
     .filter((a) => !a.revoqueLe)
     .map((a) => {
       const certificat = delivres.value.get(a.moduleId) ?? null
       const carte = cartes.value.get(a.moduleId)
-      const etat: 'delivre' | 'a-generer' | 'en-progression' | 'non-commence' = certificat
-        ? 'delivre'
-        : a.progression === 100
-          ? 'a-generer'
-          : a.progression > 0
-            ? 'en-progression'
-            : 'non-commence'
+      // Règle commune (shared/utils/attestation.ts) : vidéos à 100 % et, si le
+      // module en a un, quiz réussi.
+      const suivi = etatAttestation(a.progression, carte?.quiz, Boolean(certificat))
+      const etat = suivi === 'delivree' ? 'delivre' : suivi
       // Un module pas encore en vente (brouillon, en préparation) auquel
       // l'apprenant a déjà accès — un compte d'équipe, typiquement. Une
       // attestation déjà délivrée reste parmi les disponibles : elle demeure
@@ -34,7 +35,7 @@ const toutesLignes = computed(() =>
       const aVenir = !certificat && a.module?.statut !== 'disponible'
       return { acces: a, certificat, carte, etat, aVenir }
     })
-    .sort((x, y) => ['delivre', 'a-generer', 'en-progression', 'non-commence'].indexOf(x.etat) - ['delivre', 'a-generer', 'en-progression', 'non-commence'].indexOf(y.etat)),
+    .sort((x, y) => ORDRE_ETATS.indexOf(x.etat) - ORDRE_ETATS.indexOf(y.etat)),
 )
 
 /** Deux onglets : les modules en vente d'abord, ceux à venir à part, pour que
@@ -132,7 +133,7 @@ async function generer() {
         :class="ligne.etat === 'non-commence' ? 'border-ligne-claire opacity-80' : 'border-ligne-douce'"
       >
         <span class="grid size-11 shrink-0 place-items-center rounded-full bg-fond-voile text-[20px]" aria-hidden="true">
-          {{ ligne.etat === 'delivre' || ligne.etat === 'a-generer' ? '🎓' : ligne.etat === 'en-progression' ? '⏳' : '🔒' }}
+          {{ ligne.etat === 'delivre' || ligne.etat === 'a-generer' ? '🎓' : ligne.etat === 'en-progression' || ligne.etat === 'quiz-a-reussir' ? '⏳' : '🔒' }}
         </span>
         <div class="min-w-[220px] flex-1">
           <h2 class="font-title text-[19px] font-light">
@@ -152,6 +153,10 @@ async function generer() {
               N° {{ ligne.certificat.numero }} · délivrée le {{ formatDate(ligne.certificat.dateDelivrance) }}
             </template>
             <template v-else-if="ligne.etat === 'a-generer'">Module complété à 100 % — certificat prêt à générer</template>
+            <template v-else-if="ligne.etat === 'quiz-a-reussir'">
+              Chapitres vus à 100 % — quiz à réussir à 100 %<template v-if="ligne.carte?.quiz?.derniereNote !== undefined">
+                · dernière note : {{ ligne.carte.quiz.derniereNote }} / 100</template>
+            </template>
             <template v-else-if="ligne.etat === 'en-progression'">
               Chapitres : {{ ligne.carte?.chapitresVus ?? 0 }}/{{ ligne.carte?.chapitresTotal ?? ligne.acces.module?.chapitres.length }} vus ·
               participation session : {{ ligne.carte?.prochaineSession ? 'à venir' : 'non planifiée' }}
@@ -188,6 +193,13 @@ async function generer() {
           <UiBaseButton v-else-if="ligne.etat === 'a-generer'" taille="sm" @click="ouvrirValidation(ligne)">
             Obtenir mon certificat
           </UiBaseButton>
+          <UiBaseButton
+            v-else-if="ligne.etat === 'quiz-a-reussir' && ligne.acces.module"
+            :to="`/mon-espace/quiz/${ligne.acces.module.slug}`"
+            taille="sm"
+          >
+            Passer le quiz
+          </UiBaseButton>
           <span v-else-if="ligne.etat === 'en-progression'" class="rounded-full bg-alerte-voile px-3 py-1.5 text-[12px] font-bold text-alerte">
             En progression · {{ Math.round(ligne.acces.progression) }} %
           </span>
@@ -199,7 +211,7 @@ async function generer() {
     </p>
 
     <p class="mt-6 text-[12.5px] text-discret">
-      Conditions : 100 % des chapitres vus (temps réel). Le PDF reprend prénom, nom, module,
+      Conditions : 100 % des chapitres vus (temps réel) et, quand le module en a un, quiz réussi à 100 %. Le PDF reprend prénom, nom, module,
       formateur, date et QR de vérification.
     </p>
 

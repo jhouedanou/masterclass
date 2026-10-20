@@ -359,6 +359,75 @@ export interface Certificat {
   motifRevocation?: string
 }
 
+// --- Quiz des modules ------------------------------------------------------
+
+/** Question telle que la voit l'apprenant : ni bonne réponse ni justification. */
+export interface QuestionQuiz {
+  /** Identifiant de la livraison (Q01…) : clé des réponses soumises. */
+  code: string
+  position: number
+  enonce: string
+  options: { id: string; texte: string }[]
+}
+
+/** Chapitre à revoir après une question manquée. `position` est celle du
+ *  lecteur (`?chapitre=`), `debutS` l'instant à rejoindre. */
+export interface RenvoiQuiz {
+  position: number
+  titre: string
+  libelle: string
+  debutS: number
+}
+
+export type CorrectionQuiz =
+  | { code: string; position: number; correct: true; justification: string }
+  | { code: string; position: number; correct: false; piste: string; renvois: RenvoiQuiz[] }
+
+/** Où en est un apprenant du quiz d'un module. */
+export interface EtatQuiz {
+  questions: number
+  tentativesMax: number
+  /** Tentatives du jour, heure d'Abidjan. */
+  tentativesUtilisees: number
+  tentativesRestantes: number
+  /** Dernière note obtenue, sur 100. Absente avant la première tentative. */
+  derniereNote?: number
+  reussi: boolean
+  reussiLe?: string
+}
+
+export interface ResultatQuiz {
+  note: number
+  reussi: boolean
+  etat: EtatQuiz
+  corrections: CorrectionQuiz[]
+}
+
+/** Vue complète du quiz pour l'administration, en lecture seule. */
+export interface QuizAdmin {
+  code: string
+  version: string
+  seuilReussite: number
+  tentativesParJour: number
+  majLe: string
+  questions: (QuestionQuiz & {
+    niveau?: string
+    competence?: string
+    bonneReponse: string
+    justification: string
+    piste: string
+    renvois: RenvoiQuiz[]
+  })[]
+  statistiques: {
+    /** Apprenants ayant soumis au moins une tentative. */
+    apprenants: number
+    reussites: number
+    tentatives: number
+    /** Moyenne des dernières notes, arrondie. Absente sans tentative. */
+    noteMoyenne?: number
+  }
+}
+
 /** Pied des attestations : la griffe de la direction et sa légende. Réglage
  *  unique, comme {@link ReglagesFinanciers}. */
 export interface ReglagesAttestation {

@@ -647,6 +647,71 @@ export type Erreur404Row = {
   derniere_le: string
 }
 
+export type QuizRow = {
+  module_id: string
+  code: string
+  version: string
+  seuil_reussite: number
+  tentatives_par_jour: number
+  cree_le: string
+  maj_le: string
+}
+
+export type OptionQuizSql = { id: string; texte: string }
+export type RenvoiQuizSql = { position: number; titre: string; debut_s: number; libelle: string }
+
+export type QuizQuestionRow = {
+  id: string
+  module_id: string
+  position: number
+  code: string
+  niveau: string | null
+  competence: string | null
+  enonce: string
+  options: OptionQuizSql[]
+  /** Ne quitte jamais le serveur à destination d'un apprenant. */
+  bonne_reponse: string
+  justification: string
+  piste_si_erreur: string
+  renvois: RenvoiQuizSql[]
+}
+
+export type QuizTentativeRow = {
+  id: string
+  utilisateur_id: string
+  module_id: string
+  jour: string
+  numero: number
+  reponses: Record<string, string>
+  note: number
+  reussi: boolean
+  cree_le: string
+}
+
+/** Ligne de `etats_quiz(apprenant, module?)`. */
+export type EtatQuizRow = {
+  module_id: string
+  questions: number
+  tentatives_max: number
+  tentatives_jour: number
+  derniere_note: number | null
+  derniere_le: string | null
+  reussi: boolean
+  reussi_le: string | null
+}
+
+/** Valeur renvoyée par `soumettre_quiz` : jamais la bonne réponse. */
+export type ResultatQuizSql = {
+  note: number
+  reussi: boolean
+  tentatives_utilisees: number
+  tentatives_max: number
+  corrections: (
+    | { code: string; position: number; correct: true; justification: string }
+    | { code: string; position: number; correct: false; piste: string; renvois: RenvoiQuizSql[] }
+  )[]
+}
+
 export type ReferentielRow = {
   id: string
   categorie: CategorieReferentielSql
@@ -865,6 +930,9 @@ export type Database = {
       versions_contenu: Table<VersionContenuRow, 'id' | 'cree_le'>
       referentiels: Table<ReferentielRow, 'ordre' | 'actif'>
       codes_secours: Table<CodeSecoursRow, 'id' | 'cree_le' | 'utilise_le'>
+      quiz: Table<QuizRow, 'seuil_reussite' | 'tentatives_par_jour' | 'cree_le' | 'maj_le'>
+      quiz_questions: Table<QuizQuestionRow, 'id' | 'niveau' | 'competence' | 'renvois'>
+      quiz_tentatives: Table<QuizTentativeRow, 'id' | 'jour' | 'cree_le'>
     }
     // `{ [_ in never]: never }` est la forme qu'attend postgrest-js pour une
     // collection vide : `Record<string, never>` ne satisfait pas la contrainte
@@ -896,6 +964,15 @@ export type Database = {
       delivrer_certificat: {
         Args: { p_utilisateur_id: string; p_module_id: string }
         Returns: CertificatRow
+      }
+      jour_abidjan: { Args: Record<string, never>; Returns: string }
+      soumettre_quiz: {
+        Args: { p_utilisateur_id: string; p_module_id: string; p_reponses: Record<string, string> }
+        Returns: ResultatQuizSql
+      }
+      etats_quiz: {
+        Args: { p_utilisateur_id: string; p_module_id?: string }
+        Returns: EtatQuizRow[]
       }
       attribuer_acces: {
         Args: {

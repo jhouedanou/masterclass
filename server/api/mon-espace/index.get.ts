@@ -2,6 +2,7 @@ import { listerFormateurs, listerModules, listerThematiques } from '../../databa
 import { listerDemandesCoachingPriveUtilisateur, listerInscriptionsUtilisateur, listerSessions } from '../../database/coaching'
 import { listerCertificatsUtilisateur, listerCommandesUtilisateur } from '../../database/commerce'
 import { completionProfil, listerAccesUtilisateur, listerVisionnagesUtilisateur } from '../../database/comptes'
+import { etatsQuiz } from '../../database/quiz'
 import { exigerUtilisateur } from '../../utils/session'
 
 /** Nombre de jours entre aujourd'hui et une date « AAAA-MM-JJ » (J-8). */
@@ -13,13 +14,13 @@ function joursAvant(date: string): number {
 
 /**
  * Accueil du tableau de bord (planche B, écran 01) : complétion du profil,
- * cartes des modules avec chapitres vus, prochaine session et formateur,
+ * cartes des modules avec chapitres vus, quiz, prochaine session et formateur,
  * dernière demande de coaching privé, historique d'achats et planning.
  */
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerUtilisateur(event)
 
-  const [acces, modules, formateurs, thematiques, sessions, inscriptions, demandes, commandes, certificats, visionnages, completion] =
+  const [acces, modules, formateurs, thematiques, sessions, inscriptions, demandes, commandes, certificats, visionnages, completion, quiz] =
     await Promise.all([
       listerAccesUtilisateur(utilisateur.id),
       listerModules(),
@@ -32,6 +33,7 @@ export default defineEventHandler(async (event) => {
       listerCertificatsUtilisateur(utilisateur.id),
       listerVisionnagesUtilisateur(utilisateur.id),
       completionProfil(utilisateur),
+      etatsQuiz(utilisateur.id),
     ])
 
   const aujourdHui = new Date().toISOString().slice(0, 10)
@@ -59,6 +61,8 @@ export default defineEventHandler(async (event) => {
         chapitresTotal: module.chapitres.length,
         termineLe: a.termineLe,
         certificat: certificats.find((c) => c.moduleId === module.id)?.numero ?? null,
+        /** État du quiz du module, `null` s'il n'en a pas. */
+        quiz: quiz.get(module.id) ?? null,
         prochaineSession: prochaine
           ? {
               id: prochaine.id,

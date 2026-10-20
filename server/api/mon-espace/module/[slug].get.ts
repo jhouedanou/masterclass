@@ -7,12 +7,13 @@ import {
 } from '../../../database/catalogue'
 import { listerInscriptionsUtilisateur, listerSessions } from '../../../database/coaching'
 import { completionProfil, listerVisionnagesModule, trouverAcces } from '../../../database/comptes'
+import { etatQuiz } from '../../../database/quiz'
 import { exigerUtilisateur } from '../../../utils/session'
 
 /**
  * Page module de l'espace apprenant (planche B, écran 02) : chapitres avec
  * leur état (vu / en cours — reprise / à voir), session de coaching du
- * module, condition du certificat, ressources. Réservé aux modules acquis.
+ * module, quiz, condition du certificat, ressources. Réservé aux modules acquis.
  */
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerUtilisateur(event)
@@ -28,7 +29,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'Ce module ne fait pas partie de vos accès' })
   }
 
-  const [formateur, thematiques, programme, ressources, visionnages, sessions, inscriptions, completion] =
+  const [formateur, thematiques, programme, ressources, visionnages, sessions, inscriptions, completion, quiz] =
     await Promise.all([
       trouverFormateur(moduleTrouve.formateurId),
       listerThematiques(),
@@ -38,6 +39,7 @@ export default defineEventHandler(async (event) => {
       listerSessions(),
       listerInscriptionsUtilisateur(utilisateur.id),
       completionProfil(utilisateur),
+      etatQuiz(utilisateur.id, moduleTrouve.id),
     ])
 
   const chapitres = moduleTrouve.chapitres.map((c, position) => {
@@ -79,5 +81,7 @@ export default defineEventHandler(async (event) => {
       ? { ...session, inscrit: inscriptions.some((i) => i.sessionId === session.id) }
       : null,
     completionProfil: completion,
+    /** Absent si le module n'a pas de quiz ; sinon sa réussite conditionne l'attestation. */
+    quiz,
   }
 })
