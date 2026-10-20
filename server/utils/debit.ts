@@ -34,6 +34,10 @@ export const PLAFONDS = {
   // laissent passer une salle de formation derrière une même box.
   connexion: 20,
   'connexion-admin': 10,
+  // Rapports CSP : le navigateur en envoie un par violation (Firefox, Safari)
+  // ou par lot (Chrome). Au-delà, les rapports d'une même adresse ne disent
+  // plus rien de neuf ; les perdre ne coûte rien.
+  'csp-rapport': 100,
 } as const
 
 export type RoutePublique = keyof typeof PLAFONDS

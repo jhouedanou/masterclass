@@ -22,8 +22,12 @@ const enDeveloppement = process.env.NODE_ENV === 'development'
  *
  * Le back-office ne charge aucun de ces tiers : ses scripts viennent du site
  * seul. Le `'unsafe-inline'` y reste, pour la charge utile que Nuxt écrit dans
- * la page. Durcir davantage (nonces, hôtes nommés) demande une campagne
- * `Report-Only` sur le site public, tiers compris.
+ * la page.
+ *
+ * Le durcissement est en observation : chaque page du site public reçoit en
+ * plus une politique à hôtes nommés et à nonce, en `Report-Only`, dont les
+ * rapports arrivent à /api/csp-rapport (server/utils/csp.ts). Quand elle
+ * remplacera celle-ci : docs/csp-mode-d-emploi.md.
  */
 const CSP_COMMUNE = [
   "default-src 'self'",

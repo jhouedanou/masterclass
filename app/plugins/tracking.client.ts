@@ -38,6 +38,12 @@ export default defineNuxtPlugin(() => {
 
     charge = true
 
+    // Le nonce de la page (server/plugins/csp.ts). Posé sur gtm.js, il est
+    // reporté par GTM sur les scripts qu'il ajoute ; posé sur les copies du
+    // code additionnel, il les fait admettre comme les scripts de Nuxt. Le
+    // navigateur vide l'attribut, mais la propriété `nonce` garde la valeur.
+    const nonce = document.querySelector<HTMLScriptElement>('script[nonce]')?.nonce
+
     // Le conteneur porte les autres traqueurs : c'est tout l'intérêt d'un
     // gestionnaire de balises, et cela évite d'injecter cinq scripts ici.
     const w = window as unknown as { dataLayer?: unknown[] }
@@ -47,6 +53,7 @@ export default defineNuxtPlugin(() => {
     const script = document.createElement('script')
     script.async = true
     script.src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(ids.gtmConteneur)}`
+    if (nonce) script.nonce = nonce
     document.head.appendChild(script)
 
     // Le code additionnel de l'écran 19. Il est saisi par un administrateur
@@ -59,6 +66,7 @@ export default defineNuxtPlugin(() => {
       for (const balise of conteneur.querySelectorAll('script')) {
         const copie = document.createElement('script')
         for (const attribut of balise.attributes) copie.setAttribute(attribut.name, attribut.value)
+        if (nonce) copie.nonce = nonce
         copie.textContent = balise.textContent
         document.head.appendChild(copie)
       }
