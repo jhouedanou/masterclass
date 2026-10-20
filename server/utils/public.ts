@@ -97,20 +97,30 @@ function seoInterpole(seo: SeoFields, compteurs: Compteurs): SeoFields {
 }
 
 /**
- * Ce qu'un programme pèse réellement, brouillons exclus comme partout sur le
- * public. Les formateurs sont ceux qui interviennent dans le programme, pas
- * ceux qui l'ont pour rattachement principal : c'est le nombre que la page
- * annonce.
+ * Un module qu'on peut acheter aujourd'hui. Les décomptes publics, la liste des
+ * formateurs et les thématiques de l'accueil ne retiennent que ceux-là : un
+ * module en préparation reste annoncé sur sa fiche et dans le catalogue, mais
+ * ne gonfle plus « 9 modules » ni ne fait apparaître un formateur sans module.
+ */
+export function estDisponible(m: Pick<Module, 'statut'>): boolean {
+  return m.statut === 'disponible'
+}
+
+/**
+ * Ce qu'un programme pèse réellement : ses modules disponibles, les
+ * thématiques qui en contiennent au moins un, et les formateurs qui les
+ * animent — pas ceux qui ont le programme pour rattachement principal.
  */
 export function compteursProgramme(
   slug: string,
   modules: Pick<Module, 'programme' | 'statut' | 'thematiqueId' | 'formateurId'>[],
-  thematiques: { programme: string }[],
+  thematiques: { id: string; programme: string }[],
 ): Compteurs {
-  const siens = modules.filter((m) => m.programme === slug && m.statut !== 'brouillon')
+  const siens = modules.filter((m) => m.programme === slug && estDisponible(m))
+  const garnies = new Set(siens.map((m) => m.thematiqueId))
   return {
     modules: siens.length,
-    thematiques: thematiques.filter((t) => t.programme === slug).length,
+    thematiques: thematiques.filter((t) => t.programme === slug && garnies.has(t.id)).length,
     formateurs: new Set(siens.map((m) => m.formateurId)).size,
   }
 }

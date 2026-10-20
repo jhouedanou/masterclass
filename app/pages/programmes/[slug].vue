@@ -34,7 +34,7 @@ const reperes = computed(() => {
   // Un prix unique s'annonce tel quel ; plusieurs, on annonce le plus bas.
   const prixAffiche = prix.length === 1 ? formatFcfa(prix[0]!, true) : `à partir de ${formatFcfa(Math.min(...prix), true)}`
   return [
-    { valeur: compterModules(modules.length), suite: 'disponibles' },
+    { valeur: compterModules(modules.length), suite: modules.length > 1 ? 'disponibles' : 'disponible' },
     { valeur: prixAffiche, suite: 'par module' },
     { valeur: 'Accès à vie', suite: 'après l’achat' },
     {

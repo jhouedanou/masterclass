@@ -244,7 +244,7 @@ function acheter() {
               </p>
               <p class="mb-2.5 text-[14.5px] leading-[1.7] text-texte">{{ data.formateur.bio }}</p>
               <p class="mb-3 text-[13.5px] text-discret">
-                {{ compterModules(data.nbModulesThematique) }} disponibles dans la thématique
+                {{ compterModules(data.nbModulesThematique) }} {{ data.nbModulesThematique > 1 ? 'disponibles' : 'disponible' }} dans la thématique
                 {{ data.thematique?.nom }}
               </p>
               <NuxtLink

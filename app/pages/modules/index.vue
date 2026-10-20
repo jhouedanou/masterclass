@@ -14,6 +14,10 @@ const { data: modules } = await useFetch<
 // servir de total. Les programmes, eux, portent chacun leur décompte — deux
 // lignes de réponse au lieu du catalogue entier.
 const { data: programmes } = await useFetch<ProgrammePublic[]>('/api/programmes')
+// Le catalogue montre aussi les modules annoncés, marqués « En préparation » ;
+// le décompte, lui, ne dit que ce qui s'achète aujourd'hui.
+const nbDisponibles = computed(() => (modules.value ?? []).filter((m) => m.statut === 'disponible').length)
+const nbAVenir = computed(() => (modules.value?.length ?? 0) - nbDisponibles.value)
 const totalCatalogue = computed(() =>
   (programmes.value ?? []).reduce((total, p) => total + p.nbModules, 0),
 )
@@ -40,7 +44,7 @@ useFilAriane(mailles)
         <UiSurtitre ton="social" taille="section">Le catalogue</UiSurtitre>
         <h1 class="mt-3 text-[42px] font-medium">Tous les modules</h1>
         <p class="mt-4 max-w-[720px] text-[17px] leading-relaxed text-texte">
-          Chaque module dure 60 minutes, coûte 10 000 FCFA TTC et reste accessible à vie.
+          Chaque module dure une heure au plus, coûte 10 000 FCFA TTC et reste accessible à vie.
         </p>
       </div>
     </section>
@@ -64,7 +68,9 @@ useFilAriane(mailles)
           </button>
         </div>
 
-        <p class="mt-6 text-[13px] text-discret">{{ compterModules(modules?.length ?? 0) }}</p>
+        <p class="mt-6 text-[13px] text-discret">
+          {{ compterModules(nbDisponibles) }} {{ nbDisponibles > 1 ? 'disponibles' : 'disponible' }}<template v-if="nbAVenir"> · {{ nbAVenir }} à venir</template>
+        </p>
 
         <div class="mt-4 grid gap-5.5 sm:grid-cols-2 lg:grid-cols-3">
           <CatalogueModuleCarte

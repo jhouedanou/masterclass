@@ -1,5 +1,5 @@
 import { listerModules, trouverFormateurParSlug } from '../../database/catalogue'
-import { formateurPublic } from '../../utils/public'
+import { estDisponible, formateurPublic } from '../../utils/public'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
@@ -11,6 +11,6 @@ export default defineEventHandler(async (event) => {
   const modules = await listerModules()
   return {
     formateur: formateurPublic(formateur),
-    modules: modules.filter((m) => m.formateurId === formateur.id && m.statut !== 'brouillon'),
+    modules: modules.filter((m) => m.formateurId === formateur.id && estDisponible(m)),
   }
 })

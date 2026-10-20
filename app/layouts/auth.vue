@@ -19,7 +19,7 @@
         Montez en compétences.
       </p>
       <p class="mt-4 max-w-md text-[15px] text-texte">
-        Des modules de 60 minutes, animés par des professionnels de terrain. 10 000 FCFA TTC par
+        Des modules d’une heure au plus, animés par des professionnels de terrain. 10 000 FCFA TTC par
         module, accès à vie.
       </p>
     </div>

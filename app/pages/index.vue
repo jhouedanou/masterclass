@@ -70,7 +70,7 @@ const faq = [
 usePageSeo({
   titreAuto: 'E-Masterclass Big Five — Montez en compétences',
   descriptionAuto:
-    'Des modules de 60 minutes pour les professionnels du Social Media et les entrepreneurs d’Afrique francophone. 10 000 FCFA TTC par module, accès à vie et coaching collectif.',
+    'Des modules d’une heure au plus pour les professionnels du Social Media et les entrepreneurs d’Afrique francophone. 10 000 FCFA TTC par module, accès à vie et coaching collectif.',
   chemin: '/',
 })
 
@@ -95,7 +95,7 @@ useJsonLd({
     <!-- bandeau sous le hero -->
     <div class="border-b border-ligne-claire bg-fond-clair">
       <div class="conteneur flex flex-wrap gap-x-7 gap-y-2 py-4.5 text-[14px] text-texte">
-        <NuxtLink to="/modules" class="hover:underline"><b class="text-encre">{{ compterModules(nbModulesTotal) }}</b><span class="hidden lg:inline"> disponibles</span></NuxtLink>
+        <NuxtLink to="/modules" class="hover:underline"><b class="text-encre">{{ compterModules(nbModulesTotal) }}</b><span class="hidden lg:inline"> {{ nbModulesTotal > 1 ? 'disponibles' : 'disponible' }}</span></NuxtLink>
         <span><b class="text-encre">10 000 FCFA TTC</b><span class="hidden lg:inline"> par module</span></span>
         <span><b class="text-encre">Accès à vie</b><span class="hidden lg:inline"> après l’achat</span></span>
       </div>

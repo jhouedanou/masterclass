@@ -1,5 +1,5 @@
 import { listerFormateurs, listerModules, listerThematiques } from '../../database/catalogue'
-import { formateurPublic } from '../../utils/public'
+import { estDisponible, formateurPublic } from '../../utils/public'
 
 export default defineEventHandler(async () => {
   const [formateurs, modules, thematiques] = await Promise.all([
@@ -8,9 +8,12 @@ export default defineEventHandler(async () => {
     listerThematiques(),
   ])
 
-  return formateurs.map((f) => {
-    const siens = modules.filter((m) => m.formateurId === f.id && m.statut !== 'brouillon')
-    return {
+  // Un formateur sans module disponible n'est pas présenté : la page ne peut
+  // rien proposer d'acheter avec lui.
+  return formateurs.flatMap((f) => {
+    const siens = modules.filter((m) => m.formateurId === f.id && estDisponible(m))
+    if (!siens.length) return []
+    return [{
       ...formateurPublic(f),
       nbModules: siens.length,
       modules: siens.map((m) => ({
@@ -21,6 +24,6 @@ export default defineEventHandler(async () => {
         programme: m.programme,
         thematique: thematiques.find((t) => t.id === m.thematiqueId)?.nom ?? '',
       })),
-    }
+    }]
   })
 })

@@ -5,7 +5,7 @@ import {
   trouverModuleParSlug,
   trouverProgramme,
 } from '../../database/catalogue'
-import { formateurPublic, modulePublic } from '../../utils/public'
+import { estDisponible, formateurPublic, modulePublic } from '../../utils/public'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
   ])
 
   const memeThematique = modules.filter(
-    (m) => m.thematiqueId === moduleTrouve.thematiqueId && m.statut !== 'brouillon',
+    (m) => m.thematiqueId === moduleTrouve.thematiqueId && estDisponible(m),
   )
 
   return {

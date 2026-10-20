@@ -63,7 +63,7 @@ export const programmes: Programme[] = [
     surtitreHero: 'Programme Social Média',
     h1Variable: 'Restez dans la course.',
     descriptionHero:
-      'Choisissez parmi {modules} de 60 minutes pour renforcer des compétences précises en stratégie, contenu et plateformes Social Media. Accès à vie et sessions de coaching collectif.',
+      '{modules} d’une heure au plus pour renforcer des compétences précises en stratégie, contenu et plateformes Social Media. Accès à vie et sessions de coaching collectif.',
     ctaHero: 'Découvrir le programme Social Média',
     descriptionProgramme:
       'Des modules indépendants conçus pour les Social Media Managers, Community Managers et professionnels de la communication qui souhaitent actualiser leurs pratiques et renforcer des compétences ciblées.',
@@ -74,7 +74,7 @@ export const programmes: Programme[] = [
       motClePrincipal: 'formation social média Abidjan',
       title: 'Programme Social Média | E-Masterclass Big Five',
       metaDescription:
-        '{modules} de 60 minutes pour renforcer des compétences précises en stratégie, contenu et plateformes Social Media. 10 000 FCFA TTC par module, accès à vie.',
+        '{modules} d’une heure au plus pour renforcer des compétences précises en stratégie, contenu et plateformes Social Media. 10 000 FCFA TTC par module, accès à vie.',
       indexable: true,
     },
   },
@@ -86,7 +86,7 @@ export const programmes: Programme[] = [
     surtitreHero: 'Programme Entrepreneurs',
     h1Variable: 'Soyez à jour.',
     descriptionHero:
-      'Choisissez parmi {modules} de 60 minutes pour renforcer les compétences utiles au développement de votre activité : valider une idée, fixer vos prix, vendre et gagner en visibilité.',
+      '{modules} d’une heure au plus pour renforcer les compétences utiles au développement de votre activité : lancer une offre, vendre et gagner en visibilité.',
     ctaHero: 'Découvrir le programme Entrepreneurs',
     descriptionProgramme:
       'Des modules indépendants conçus pour les entrepreneurs en activité ou en lancement qui souhaitent renforcer des compétences pratiques et faire évoluer leur activité.',
@@ -97,7 +97,7 @@ export const programmes: Programme[] = [
       motClePrincipal: 'formation entrepreneur Côte d’Ivoire',
       title: 'Programme Entrepreneurs | E-Masterclass Big Five',
       metaDescription:
-        '{modules} de 60 minutes pour valider une idée, fixer ses prix, vendre et gagner en visibilité. 10 000 FCFA TTC par module, accès à vie.',
+        '{modules} d’une heure au plus pour lancer une offre, vendre et gagner en visibilité. 10 000 FCFA TTC par module, accès à vie.',
       indexable: true,
     },
   },
@@ -1161,7 +1161,7 @@ export const reglagesSeo = {
   titreParDefaut: 'E-Masterclass Big Five',
   gabaritTitre: '%s | E-Masterclass Big Five',
   descriptionParDefaut:
-    'Des modules de 60 minutes pour les professionnels du Social Media et les entrepreneurs d’Afrique francophone. 10 000 FCFA TTC par module, accès à vie.',
+    'Des modules d’une heure au plus pour les professionnels du Social Media et les entrepreneurs d’Afrique francophone. 10 000 FCFA TTC par module, accès à vie.',
   imageSocialeParDefaut: '/images/og-default.png',
   googleSearchConsole: '',
   ga4: '',

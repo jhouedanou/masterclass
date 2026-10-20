@@ -10,9 +10,17 @@ const { data: modules } = await useFetch<(Module & { formateur?: Formateur | nul
 
 const filtre = ref(typeof route.query.thematique === 'string' ? route.query.thematique : '')
 
+// Seuls les modules qu'on peut acheter : la page, ses filtres et ses décomptes
+// décrivent l'offre du jour, pas le plan de production.
+const disponibles = computed(() => (modules.value ?? []).filter((m) => m.statut === 'disponible'))
+// Une thématique sans module disponible n'a pas de pastille : elle mènerait à
+// une liste vide.
+const thematiquesGarnies = computed(() =>
+  (thematiques.value ?? []).filter((t) => disponibles.value.some((m) => m.thematiqueId === t.id)),
+)
+
 const modulesAffiches = computed(() =>
-  (modules.value ?? [])
-    .filter((m) => m.statut !== 'brouillon')
+  disponibles.value
     .filter((m) => !filtre.value || m.thematiqueId === filtre.value)
     .sort((a, b) => (a.programme === b.programme ? a.numero - b.numero : a.programme === 'social-media' ? -1 : 1)),
 )
@@ -21,13 +29,13 @@ const nomThematique = (id: string) => thematiques.value?.find((t) => t.id === id
 // La description annonçait « Deux programmes, six thématiques, dix-huit
 // modules » : trois nombres écrits à la main, dont aucun ne suivait le
 // catalogue. Ils se comptent, et n'entrent dans la page qu'une fois comptés.
-const totalModules = computed(() => (modules.value ?? []).filter((m) => m.statut !== 'brouillon').length)
+const totalModules = computed(() => disponibles.value.length)
 
 usePageSeo({
   titreAuto: 'Programmes Social Média et Entrepreneurs | E-Masterclass Big Five',
   descriptionAuto: () =>
-    `${compterProgrammes(programmes.value?.length ?? 0)}, ${compterThematiques(thematiques.value?.length ?? 0)}, ` +
-    `${compterModules(totalModules.value)} de 60 minutes à 10 000 FCFA TTC. ` +
+    `${compterProgrammes(programmes.value?.length ?? 0)}, ${compterThematiques(thematiquesGarnies.value.length)}, ` +
+    `${compterModules(totalModules.value)} d’une heure au plus à 10 000 FCFA TTC. ` +
     'Choisissez votre univers, puis le module qui répond à votre besoin.',
   chemin: '/programmes',
 })
@@ -99,7 +107,7 @@ useFilAriane(mailles)
             Toutes
           </button>
           <button
-            v-for="t in thematiques"
+            v-for="t in thematiquesGarnies"
             :key="t.id"
             class="rounded-full border px-4.5 py-2.5 text-[14px] font-bold"
             :class="
