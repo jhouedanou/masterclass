@@ -912,6 +912,16 @@ await attendErreur(
   'EM403',
   `select soumettre_quiz('usr-moussa', '${QUIZ_MODULE}', '{"Q01":"A","Q02":"B"}'::jsonb)`,
 )
+// Migration 43 : le quiz suit la formation.
+await attendErreur(
+  'vidéos non terminées : quiz fermé, même avec les bonnes réponses',
+  'EM409',
+  `select ${SOUMETTRE({ Q01: 'A', Q02: 'B' })}`,
+)
+await db.query(
+  `update acces set progression = 100, termine_le = '2026-10-20'
+    where utilisateur_id = 'usr-fatou' and module_id = '${QUIZ_MODULE}'`,
+)
 await attendErreur('réponse manquante', 'EM422', `select ${SOUMETTRE({ Q01: 'A' })}`)
 await attendErreur('lettre inventée', 'EM422', `select ${SOUMETTRE({ Q01: 'A', Q02: 'Z' })}`)
 await attendValeur(

@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto'
 import type { H3Event } from 'h3'
 import type { SectionAdmin, Utilisateur } from '#shared/types'
 import { trouverUtilisateur } from '../database/comptes'
@@ -81,6 +82,14 @@ function secret(): string {
   // Repli de développement uniquement : les sessions sont alors scellées avec
   // une valeur connue, sans valeur de sécurité.
   return 'developpement-uniquement-e-masterclass-big-five'
+}
+
+/**
+ * Clé propre à un usage, tirée du secret de session : un HMAC ne réemploie
+ * jamais le secret brut, et deux usages n'ont jamais la même clé.
+ */
+export function cleDerivee(usage: string): Buffer {
+  return createHmac('sha256', secret()).update(usage).digest()
 }
 
 function session(event: H3Event, longue = false) {

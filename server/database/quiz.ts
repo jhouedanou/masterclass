@@ -90,6 +90,11 @@ export async function soumettreQuiz(
  * La copie réussie, pour l'écran d'un quiz fermé : toutes les réponses y sont
  * justes, leurs justifications ne révèlent donc rien que l'apprenant n'ait
  * déjà trouvé. `null` tant que le quiz n'est pas réussi.
+ *
+ * Les réponses sont dans les lettres de la livraison, communes à tous : ne
+ * jamais les renvoyer telles quelles, ce serait une grille de réponses prête à
+ * circuler. La route les renomme dans l'ordre propre à l'apprenant
+ * (`versLettresAffichees`).
  */
 export async function copieReussie(
   utilisateurId: string,
