@@ -32,11 +32,13 @@ compatibility_date = "2026-01-01"
 # développement passe par l'environnement `developpement`, plus bas.
 [vars]
 ORIGINES_AUTORISEES = "https://emasterclass.bigfive.solutions,https://masterclass-omega-five.vercel.app,https://masterclass-jhouedanous-projects.vercel.app"
-# Transition du préfixe « lecture. » (20/10/2026). Le Worker accepte aussi les
-# autorisations signées à l'ancien format tant que cette variable vaut « oui » :
-# il se déploie donc avant l'application sans couper une vidéo. Quatre heures
-# après le déploiement de l'application, passer à « non » et redéployer.
-LECTURE_ANCIEN_FORMAT = "oui"
+# Transition du préfixe « lecture. » (20/10/2026). L'ancien format n'est admis
+# que pour une autorisation qui expire au plus tard à cette date. L'application
+# signe au nouveau format depuis 18 h 25 UTC le 20/10, et un lien vaut 4 h au
+# plus : passé 22 h 30 UTC, plus aucun lien de l'ancien format n'est valable,
+# et la transition se referme d'elle-même. La ligne peut ensuite être retirée
+# au prochain déploiement, sans effet sur la lecture.
+LECTURE_ANCIEN_FORMAT_JUSQUA = "2026-10-20T22:30:00Z"
 
 [[r2_buckets]]
 binding = "VIDEOS"
@@ -50,7 +52,6 @@ bucket_name = "emasterclass-videos"
 # ne s'héritent pas d'un environnement à l'autre : ils sont redéclarés ici.
 [env.developpement.vars]
 ORIGINES_AUTORISEES = "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3002"
-LECTURE_ANCIEN_FORMAT = "non"
 
 [[env.developpement.r2_buckets]]
 binding = "VIDEOS"

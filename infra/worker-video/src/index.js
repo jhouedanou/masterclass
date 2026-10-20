@@ -60,8 +60,23 @@ async function signer(message, secret) {
 
 /**
  * Plafond de quatre heures, préfixe « lecture. » : voir `verifierSignature`
- * dans server/utils/video.ts. `ancienFormat` vient de LECTURE_ANCIEN_FORMAT.
+ * dans server/utils/video.ts. `ancienFormat` vient de `ancienFormatAdmis`.
  */
+/**
+ * L'ancien format (sans « lecture. ») n'est admis que pour une autorisation
+ * qui expire au plus tard à `LECTURE_ANCIEN_FORMAT_JUSQUA` (date ISO).
+ *
+ * Les derniers liens de l'ancien format ont été émis par l'application avant
+ * sa mise à jour, et valent quatre heures au plus : passé cette date, aucun
+ * ne peut plus être valable, et la transition se referme d'elle-même, sans
+ * redéploiement. Variable absente ou illisible : ancien format refusé.
+ */
+function ancienFormatAdmis(parametres, finTransition) {
+  const fin = Date.parse(finTransition ?? '')
+  if (!Number.isFinite(fin)) return false
+  return Number(parametres.get('e')) <= Math.floor(fin / 1000)
+}
+
 async function verifierSignature(
   chemin,
   parametres,
@@ -415,7 +430,7 @@ export default {
       url.searchParams,
       env.VIDEO_SIGNING_SECRET,
       undefined,
-      env.LECTURE_ANCIEN_FORMAT === 'oui',
+      ancienFormatAdmis(url.searchParams, env.LECTURE_ANCIEN_FORMAT_JUSQUA),
     )
     if (refus) {
       // Le motif aide au diagnostic sans rien révéler d'exploitable.

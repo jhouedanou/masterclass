@@ -102,7 +102,7 @@ const transition = await verifier(
   maintenant,
   true,
 )
-if (transition === null) succes('ancien format accepté avec LECTURE_ANCIEN_FORMAT (transition)')
+if (transition === null) succes('ancien format accepté pendant la transition')
 else echec(`ancien format refusé en transition : ${transition}`)
 
 const nouveauEnTransition = await verifier(
@@ -114,6 +114,26 @@ const nouveauEnTransition = await verifier(
 )
 if (nouveauEnTransition === null) succes('nouveau format accepté aussi pendant la transition')
 else echec(`nouveau format refusé en transition : ${nouveauEnTransition}`)
+
+// La transition se referme d'elle-même : l'ancien format n'est admis que pour
+// une échéance antérieure à LECTURE_ANCIEN_FORMAT_JUSQUA.
+const ancienFormatAdmis = new Function(
+  `${source.slice(source.indexOf('function messageASigner'), source.indexOf('export default'))}
+   return ancienFormatAdmis`,
+)()
+const FIN = '2026-10-20T22:30:00Z'
+const finSecondes = Date.parse(FIN) / 1000
+for (const [nom, e, fin, attendu] of [
+  ['échéance avant la borne', finSecondes - 60, FIN, true],
+  ['échéance égale à la borne', finSecondes, FIN, true],
+  ['échéance après la borne', finSecondes + 1, FIN, false],
+  ['borne absente', finSecondes - 60, undefined, false],
+  ['borne illisible', finSecondes - 60, 'demain', false],
+]) {
+  const obtenu = ancienFormatAdmis(new URLSearchParams({ e: String(e) }), fin)
+  if (obtenu === attendu) succes(`ancien format, ${nom} → ${obtenu ? 'admis' : 'refusé'}`)
+  else echec(`ancien format, ${nom} : ${obtenu} au lieu de ${attendu}`)
+}
 
 // --- Le jeton d'écriture est-il bien étanche à celui de lecture ? ------------
 //

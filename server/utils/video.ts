@@ -259,8 +259,8 @@ export async function verifierEcriture(
  *
  * `ancienFormat` accepte aussi le message d'avant le préfixe « lecture. »
  * (`cle.expiration.utilisateur`), le temps que l'application déployée signe
- * au nouveau format. Le Worker le lit dans `LECTURE_ANCIEN_FORMAT` ; la route
- * locale ne l'accepte jamais.
+ * au nouveau format. Le Worker l'admet jusqu'à `LECTURE_ANCIEN_FORMAT_JUSQUA`
+ * (`ancienFormatAdmis`) ; la route locale ne l'accepte jamais.
  */
 export async function verifierSignature(
   chemin: string,

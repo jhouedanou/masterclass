@@ -63,9 +63,13 @@ Le message signé commence désormais par `lecture.` : `lecture.<dossier>.<éch�
 Une échéance à plus de quatre heures est refusée, même bien signée. Pour ne couper aucune
 vidéo pendant la mise à jour :
 
-1. redéployer ce Worker avec `LECTURE_ANCIEN_FORMAT = "oui"` (il accepte les deux formats) ;
+1. redéployer ce Worker, qui accepte les deux formats ;
 2. déployer l'application, qui signe au nouveau format ;
-3. quatre heures plus tard, passer `LECTURE_ANCIEN_FORMAT` à `"non"` et redéployer.
+3. borner l'ancien format : `LECTURE_ANCIEN_FORMAT_JUSQUA` (date ISO) ne l'admet que pour une
+   autorisation qui expire au plus tard à cette date. Réglée à la mise en ligne de l'application
+   plus quatre heures, elle referme la transition d'elle-même ; absente, l'ancien format est refusé.
+
+Fait le 20/10/2026 : application en ligne à 18 h 25 UTC, borne au 20/10 à 22 h 30 UTC.
 
 ## Cycle d'une vidéo
 
