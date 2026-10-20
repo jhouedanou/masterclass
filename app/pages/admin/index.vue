@@ -114,7 +114,9 @@ const ventesMax = computed(() => data.value?.topModules?.[0]?.ventes || 1)
       />
     </div>
 
-    <div class="grid gap-4 lg:grid-cols-[1.35fr_1fr]">
+    <!-- Sans le top 5 (section non accordée), « À traiter » et les sessions
+         se partagent la largeur au lieu de laisser une colonne vide. -->
+    <div class="grid gap-4" :class="data.topModules ? 'lg:grid-cols-[1.35fr_1fr]' : ''">
       <section v-if="data.topModules" class="rounded-[14px] border border-ligne-douce bg-white p-[22px]">
         <div class="mb-3.5 flex items-center justify-between gap-4">
           <h2 class="font-sans text-[15px] font-bold">Ventes par module — top 5</h2>
@@ -141,7 +143,7 @@ const ventesMax = computed(() => data.value?.topModules?.[0]?.ventes || 1)
         </ul>
       </section>
 
-      <div class="flex flex-col gap-4">
+      <div :class="data.topModules ? 'flex flex-col gap-4' : 'grid gap-4 lg:grid-cols-2'">
         <section class="rounded-[14px] border border-ligne-douce bg-white p-[22px]">
           <h2 class="font-sans text-[15px] font-bold">À traiter</h2>
           <ul class="mt-3 flex flex-col gap-2.5 text-[13.5px]">
@@ -185,7 +187,11 @@ const ventesMax = computed(() => data.value?.topModules?.[0]?.ventes || 1)
       </div>
     </div>
 
-    <div class="mt-4 grid gap-4 lg:grid-cols-[1.35fr_1fr]">
+    <div
+      v-if="data.dernieresTransactions || data.journal"
+      class="mt-4 grid gap-4"
+      :class="data.dernieresTransactions && data.journal ? 'lg:grid-cols-[1.35fr_1fr]' : ''"
+    >
       <section v-if="data.dernieresTransactions" class="rounded-[14px] border border-ligne-douce bg-white p-[22px]">
         <div class="mb-3.5 flex items-center justify-between gap-4">
           <h2 class="font-sans text-[15px] font-bold">Dernières transactions</h2>
