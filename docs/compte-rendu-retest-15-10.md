@@ -1,4 +1,4 @@
-**Objet :** E-Masterclass Big Five — compte rendu de recette du 15/10/2026
+**Objet :** E-Masterclass Big Five — compte rendu de recette du 15/10 et mise à jour du 20/10/2026
 
 Bonjour,
 
@@ -26,6 +26,26 @@ Chaque chapitre est servi en 720p et 1080p, avec ses sous-titres et sa transcrip
 
 Les quiz livrés avec les modules seront intégrés dans une prochaine étape : la plateforme n’a pas encore de module de quiz.
 
+## Compte de test : voir les vidéos sans payer
+
+Un compte apprenant de test donne accès à tous les modules, sans passer par le paiement :
+- connexion : https://emasterclass.bigfive.solutions/connexion
+- identifiant : compte-test@bigfive.solutions
+- mot de passe : communiqué dans l’e-mail envoyé (il n’est pas conservé dans ce dépôt)
+
+Dans « Mes modules » et « Mes certificats », l’onglet « Disponibles » montre les 5 modules en vente, l’onglet « À venir » les 14 autres (brouillons et module en préparation), dont plusieurs ont déjà leurs vidéos. C’est un vrai compte sur la plateforme en ligne : la progression et les attestations y sont enregistrées comme pour un apprenant. Merci de ne pas changer son mot de passe et de ne pas le diffuser hors de l’équipe.
+
+## Guide : mettre à jour les visuels des modules
+
+Aucun module n’a encore de couverture : les cartes du catalogue affichent le visuel du programme. Pour en ajouter ou en changer une :
+1. Se connecter à l’administration (https://emasterclass.bigfive.solutions/admin/login) avec un compte administrateur ou éditeur.
+2. Ouvrir « Modules & chapitres », puis le module voulu.
+3. Onglet « Fiche commerciale », bloc « Couverture » : cliquer sur « Déposer une image » (ou « Remplacer »). L’image est en ligne dès la fin de l’envoi.
+4. Format : 1200 × 630 px, 2 Mo au maximum, en JPEG de préférence. Le PNG convient ; le WebP s’affiche sur le site, mais pas dans les aperçus Facebook et LinkedIn.
+5. Renseigner le « Texte alternatif » (une phrase qui décrit l’image), puis cliquer sur « Enregistrer et publier » sans toucher au statut du module.
+
+Une même couverture sert la fiche du module, sa carte dans le catalogue et l’aperçu quand le lien est partagé. L’image affichée dans le lecteur avant le lancement d’un chapitre est tirée de la vidéo elle-même (vers la 2e seconde) : pour la changer, il faut renvoyer la vidéo du chapitre avec le visuel voulu en ouverture.
+
 ## Ce qui fonctionne, vérifié en réel le 15/10
 
 - **Paiement Mobile Money.** Un paiement Orange Money et un paiement MTN de 200 F ont réussi. Les commandes ont été confirmées, et les modules se sont ouverts automatiquement dans l'espace de l'acheteur. Moov est également ouvert.
@@ -44,11 +64,13 @@ Les quiz livrés avec les modules seront intégrés dans une prochaine étape : 
 5. **Contenus.**
    - Textes juridiques validés : CGU, CGV, mentions légales, confidentialité, cookies.
    - Vidéos des modules : 49 chapitres sur 88 sont en ligne au 20/10.
+   - Couvertures des modules (voir le guide ci-dessus).
    - Publication des 11 modules encore en brouillon.
    - Griffe de signature de la direction, pour les attestations.
    - Biographies des formateurs.
 6. **Mesure d'audience.** Fournir les identifiants Google Analytics 4 et Google Tag Manager, et déclarer le domaine dans la Search Console.
 7. **Paiements de test.** Rembourser les deux paiements de 200 F depuis la console FeexPay, puis remettre les prix des modules à leur valeur.
+8. **Rappel : accès à bigfiveacademy.com.** Merci de me transmettre les accès à bigfiveacademy.com, toujours en attente.
 
 **À confirmer avec FeexPay :** leur fenêtre de paiement ajoute des frais de 1,7 % à 3,2 % selon le réseau, à la charge du client.
 
