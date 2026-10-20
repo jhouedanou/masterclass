@@ -457,6 +457,31 @@ const ligneActive = computed(() => {
 })
 
 /**
+ * Le script tient dans un cadre de 400 px qui défile : la ligne en cours y est
+ * ramenée à mesure de la lecture. Sauf juste après que l'apprenant a fait
+ * défiler lui-même — le cadre ne lui reprend pas la main pendant qu'il lit
+ * plus loin.
+ */
+const cadreScript = ref<HTMLElement | null>(null)
+let defileManuelLe = 0
+function noterDefilementManuel() {
+  defileManuelLe = Date.now()
+}
+watch(ligneActive, () => nextTick(() => {
+  const cadre = cadreScript.value
+  const active = cadre?.querySelector<HTMLElement>('[aria-current="true"]')
+  if (!cadre || !active || Date.now() - defileManuelLe < 6000) return
+  // Le cadre est positionné (`relative`) : `offsetTop` se compte depuis lui.
+  const haut = active.offsetTop
+  const bas = haut + active.offsetHeight
+  if (haut >= cadre.scrollTop && bas <= cadre.scrollTop + cadre.clientHeight) return
+  // Le cadre seul défile, jamais la page : `scrollIntoView` emmènerait aussi
+  // la fenêtre, et la vidéo sortirait de l'écran.
+  const sobre = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  cadre.scrollTo({ top: Math.max(0, haut - cadre.clientHeight / 3), behavior: sobre ? 'auto' : 'smooth' })
+}))
+
+/**
  * Une autorisation expirée en cours de session se renouvelle sans quitter la
  * page : l'apprenant ne voit qu'une reprise de lecture.
  *
@@ -822,13 +847,20 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
           <span class="text-[12px] text-discret-clair">Cliquez sur un passage pour y déplacer la vidéo</span>
         </div>
 
-        <ul class="flex flex-col gap-3 text-[14.5px]/[1.65]">
+        <ul
+          ref="cadreScript"
+          class="relative flex max-h-[400px] flex-col gap-3 overflow-y-auto overscroll-contain pr-2 text-[14.5px]/[1.65] [scrollbar-color:rgb(255_255_255/0.25)_transparent] [scrollbar-width:thin]"
+          @wheel.passive="noterDefilementManuel"
+          @touchmove.passive="noterDefilementManuel"
+          @keydown="noterDefilementManuel"
+        >
           <li v-for="(ligne, i) in chapitre?.script ?? []" :key="i">
             <!-- Les lignes inactives portent la même bordure et le même retrait,
                  en transparent : sinon le texte sauterait à chaque changement. -->
             <button
               class="flex w-full gap-4 rounded-lg border-l-[3px] px-3.5 py-2.5 text-left transition"
               :class="ligneActive === ligne.temps ? 'border-social bg-social/22 text-white' : 'border-transparent text-discret-clair hover:bg-encre-800'"
+              :aria-current="ligneActive === ligne.temps ? 'true' : undefined"
               @click="lecteur.allerA(versSecondes(ligne.temps))"
             >
               <span
