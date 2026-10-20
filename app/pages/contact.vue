@@ -79,14 +79,7 @@ const groupesFaq = [
   },
 ]
 
-const sujets = [
-  'Paiement',
-  'Accès à un module',
-  'Session de coaching',
-  'Certificat de participation',
-  'Problème technique',
-  'Autre demande',
-]
+const sujets = SUJETS_CONTACT
 
 const formulaire = reactive({
   nom: '',

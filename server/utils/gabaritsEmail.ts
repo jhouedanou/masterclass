@@ -130,6 +130,8 @@ function corps(modele: ModeleNotification, variables: Record<string, string>, si
         { p: `Sujet : ${v.sujet}${v.reference ? ` · Référence : ${v.reference}` : ''}` },
         { citation: v.message },
       ]
+    // Envoyé à une adresse non vérifiée : aucun texte saisi n'y entre. Le sujet
+    // vient de la liste fermée SUJETS_CONTACT (server/api/contact.post.ts).
     case 'contact-accuse':
       return [
         { p: `Nous avons bien reçu votre message « ${v.sujet} ». L’équipe vous répond sous 48 h ouvrées.` },

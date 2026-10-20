@@ -16,6 +16,23 @@ export function lienWhatsApp(message?: string): string {
   return message ? `${base}?text=${encodeURIComponent(message)}` : base
 }
 
+/**
+ * Sujets du formulaire de contact : une liste fermée. Le sujet est recopié dans
+ * l'accusé de réception, envoyé à une adresse que personne n'a vérifiée ; un
+ * texte libre à cet endroit ferait de la plateforme un relais de messages vers
+ * n'importe quelle boîte, sous notre nom.
+ */
+export const SUJETS_CONTACT = [
+  'Paiement',
+  'Accès à un module',
+  'Session de coaching',
+  'Certificat de participation',
+  'Problème technique',
+  'Autre demande',
+] as const
+
+export type SujetContact = (typeof SUJETS_CONTACT)[number]
+
 export const ORGANISATION = {
   marque: 'E-Masterclass Big Five',
   raisonSociale: 'BigFiveAbidjan SARL',
