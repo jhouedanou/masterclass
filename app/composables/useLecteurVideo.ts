@@ -293,7 +293,7 @@ export function useLecteurVideo(options: {
   /**
    * Recharge la source en gardant la place.
    *
-   * Un fichier de sept cents mégaoctets se lit sur plus de quatre heures quand
+   * Un fichier de sept cents mégaoctets se lit sur plus d’une demi-heure quand
    * l'apprenant fait des pauses ; passé ce délai l'autorisation périme et les
    * requêtes de plage suivantes échouent en plein visionnage. La page renouvelle
    * alors l'autorisation, et c'est ici qu'on évite de renvoyer l'apprenant au
