@@ -18,7 +18,10 @@ export default defineNuxtPlugin(() => {
   const { consentement, lire } = useConsentement()
   const route = useRoute()
 
-  const PRIVEES = /^\/(admin|mon-espace|formateur|achat|apercu)/
+  // Les pages de compte aussi : un lien de réinitialisation ou d'invitation
+  // porte son jeton dans l'URL, que GA4 enverrait tel quel (`page_location`)
+  // à Google et à toute balise du conteneur.
+  const PRIVEES = /^\/(admin|mon-espace|formateur|achat|apercu|connexion|inscription|mot-de-passe-oublie|reinitialiser-mot-de-passe)/
 
   let charge = false
 

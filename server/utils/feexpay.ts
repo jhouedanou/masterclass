@@ -368,7 +368,9 @@ export async function rapprocherCommande(
 
   // Réussite : le montant encaissé doit couvrir la commande, sinon on n'ouvre
   // rien et on laisse une trace lisible pour l'administration.
-  if (transaction.montant + 0.5 < commande.total) {
+  // `Number.isFinite` d'abord : un montant illisible donne `NaN`, et `NaN + 0.5
+  // < total` est faux — la commande passait pour payée.
+  if (!Number.isFinite(transaction.montant) || transaction.montant + 0.5 < commande.total) {
     const detail = `Montant encaissé (${transaction.montant}) inférieur au total de la commande (${commande.total}).`
     await cloreTransactionsCommande(commande.reference, {
       statut: 'echouee',
@@ -500,6 +502,22 @@ export async function verifierEtRapprocher(
 
   let transaction: TransactionFeexPay | null = null
   if (referenceFeexPay) transaction = await lireStatutFeexPay(referenceFeexPay)
+
+  // Une réussite lue sur le point d'entrée public, à partir d'une référence
+  // que le navigateur a fournie, ne prouve pas qu'elle a été encaissée chez
+  // nous : ce point d'entrée couvre toutes les boutiques, et la réponse ne dit
+  // pas toujours laquelle. Il suffisait d'encaisser le montant sur sa propre
+  // boutique FeexPay, avec notre référence de commande en `custom_id`, pour
+  // s'ouvrir les accès en se remboursant soi-même. Sans boutique annoncée qui
+  // soit la nôtre, la réussite doit donc se retrouver dans l'historique de
+  // notre boutique — authentifié par la clé et filtré par `shop`. Absente, la
+  // commande reste en vérification : le rattrapage de nuit réessaiera.
+  if (transaction?.statut === 'SUCCESSFUL' && transaction.shop !== configFeexPay().shopId) {
+    const notre = await rechercherParCommandeFeexPay(commande.reference, commande.creeeLe).catch(() => null)
+    transaction = notre?.statut === 'SUCCESSFUL' ? notre : null
+    if (!transaction) return { statut: 'attente', commande }
+  }
+
   if (!transaction) transaction = await rechercherParCommandeFeexPay(commande.reference, commande.creeeLe)
   if (!transaction) return { statut: 'attente', commande }
 

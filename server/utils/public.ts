@@ -49,10 +49,18 @@ export function formateurPublic(formateur: Formateur): FormateurPublic {
  * Le tableau `chapitres` reste là — les vues en comptent les éléments — mais
  * allégé de la transcription et de la comptabilité de téléversement, qui ne
  * regardent que l'éditeur du back-office.
+ *
+ * La clé de la vidéo n'en fait pas partie non plus : aucune vue publique ne la
+ * lit, et c'est le nom du dossier du chapitre payant dans le stockage. Seule
+ * la signature en ouvre la lecture, mais rien ne justifie de la publier.
+ *
+ * Toute route publique qui renvoie un module passe par ici — y compris
+ * `/api/formateurs/[slug]` et `/api/articles/[slug]`, qui renvoyaient l'objet
+ * entier, transcriptions comprises.
  */
 export type ChapitrePublic = Omit<
   Chapitre,
-  'script' | 'videoNomFichier' | 'videoTailleOctets' | 'videoImporteeLe' | 'scriptNomFichier' | 'scriptImporteLe'
+  'script' | 'videoCle' | 'videoNomFichier' | 'videoTailleOctets' | 'videoImporteeLe' | 'scriptNomFichier' | 'scriptImporteLe'
 >
 
 export type ModulePublic = Omit<Module, 'chapitres'> & { chapitres: ChapitrePublic[] }
@@ -64,7 +72,6 @@ export function modulePublic(module: Module): ModulePublic {
       libelle: c.libelle,
       titre: c.titre,
       dureeMinutes: c.dureeMinutes,
-      videoCle: c.videoCle,
       videoDureeSecondes: c.videoDureeSecondes,
       videoFormat: c.videoFormat,
       scriptFormat: c.scriptFormat,

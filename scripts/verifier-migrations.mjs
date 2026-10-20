@@ -211,7 +211,17 @@ await attendErreur(
   `select delivrer_certificat('usr-aya', 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting')`,
 )
 await db.query(
-  `update acces set progression = 100, termine_le = '2026-10-20'
+  `update acces set progression = 100, termine_le = '2026-10-20', revoque_le = now()
+   where utilisateur_id = 'usr-aya'
+     and module_id = 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting'`,
+)
+await attendErreur(
+  'accès révoqué : attestation refusée malgré 100 %',
+  'EM409',
+  `select delivrer_certificat('usr-aya', 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting')`,
+)
+await db.query(
+  `update acces set revoque_le = null
    where utilisateur_id = 'usr-aya'
      and module_id = 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting'`,
 )

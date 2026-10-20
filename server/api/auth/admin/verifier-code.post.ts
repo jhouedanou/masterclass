@@ -1,6 +1,6 @@
 import { trouverUtilisateur } from '../../../database/comptes'
 import { controlerCode, fournisseurCode } from '../../../utils/codeAdmin'
-import { compterEchecAdmin, lireSessionPartielle, ouvrirSession } from '../../../utils/session'
+import { compterEchecAdmin, lireSessionPartielle, ouvrirSession, plafonnerEssaisCode } from '../../../utils/session'
 
 /** Connexion admin, étape 2 : le code ouvre la session. */
 export default defineEventHandler(async (event) => {
@@ -27,6 +27,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'Compte sans accès à l’administration.' })
   }
 
+  await plafonnerEssaisCode(utilisateur.id)
   const resultat = await controlerCode(utilisateur, saisie)
   if (resultat === 'expire') {
     throw createError({

@@ -1,7 +1,7 @@
 import { enregistrerJournal } from '../../../../database/administration'
 import { trouverUtilisateur } from '../../../../database/comptes'
 import { activerTotp, lireTotp, regenererCodesSecours } from '../../../../database/totp'
-import { compterEchecAdmin, lireSessionPartielle } from '../../../../utils/session'
+import { compterEchecAdmin, lireSessionPartielle, plafonnerEssaisCode } from '../../../../utils/session'
 import { verifierTotp } from '../../../../utils/totp'
 
 /**
@@ -37,6 +37,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 409, statusMessage: 'Double authentification déjà active sur ce compte.' })
   }
 
+  await plafonnerEssaisCode(utilisateur.id)
   const pas = verifierTotp(etat.secret, code ?? '')
   if (pas === null) {
     const { restants } = await compterEchecAdmin(event)

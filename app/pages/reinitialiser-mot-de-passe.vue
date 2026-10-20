@@ -12,6 +12,7 @@ const erreur = ref('')
 const enCours = ref(false)
 /** « ✓ Mot de passe mis à jour. Vous êtes maintenant connecté sur cet appareil. » */
 const termine = ref(false)
+const versAdmin = ref(false)
 
 /** Même seuil que le serveur (`server/utils/motDePasse.ts`). */
 const LONGUEUR_MINIMALE = 10
@@ -31,15 +32,16 @@ async function soumettre() {
 
   enCours.value = true
   try {
-    await $fetch('/api/auth/reinitialiser', {
+    const { suite } = await $fetch<{ suite?: string }>('/api/auth/reinitialiser', {
       method: 'POST',
       body: { jeton: jeton.value, motDePasse: motDePasse.value },
     })
-    // Le serveur ouvre la session dans la foulée : inutile de repasser par la
-    // page de connexion.
+    // Le serveur ouvre la session dans la foulée, sauf pour un compte
+    // d'administration, qui repasse par sa connexion et son second facteur.
     await auth.rafraichir()
+    versAdmin.value = suite === '/admin/login'
     termine.value = true
-    setTimeout(() => navigateTo('/mon-espace'), 1800)
+    setTimeout(() => navigateTo(versAdmin.value ? '/admin/login' : '/mon-espace'), 1800)
   } catch (e) {
     erreur.value =
       (e as { statusMessage?: string }).statusMessage ?? 'La réinitialisation a échoué.'
@@ -100,7 +102,8 @@ async function soumettre() {
         </template>
 
         <p v-else class="rounded-[12px] border border-succes-bordure bg-succes-voile px-4 py-3.5 text-[13px] leading-[1.5] text-succes-fonce" role="status">
-          ✓ Mot de passe mis à jour. Vous êtes maintenant connecté sur cet appareil.
+          <template v-if="versAdmin">✓ Mot de passe mis à jour. Connectez-vous à l’administration avec ce mot de passe et votre code.</template>
+          <template v-else>✓ Mot de passe mis à jour. Vous êtes maintenant connecté sur cet appareil.</template>
         </p>
       </form>
     </template>

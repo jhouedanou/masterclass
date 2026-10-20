@@ -32,6 +32,10 @@ export default defineEventHandler(async (event) => {
   await definirMotDePasse(utilisateurId, await hacherMotDePasse(motDePasse!))
 
   const utilisateur = await trouverUtilisateur(utilisateurId)
-  if (utilisateur) await ouvrirSession(event, utilisateur)
-  return { ok: true }
+  // Un compte d'administration ne s'ouvre jamais sur le seul lien reçu par
+  // e-mail : ce serait contourner la double authentification. Il repasse par
+  // /admin/login, mot de passe puis code.
+  const admin = utilisateur?.role === 'admin-contenu' || utilisateur?.role === 'admin-superieur'
+  if (utilisateur && !admin) await ouvrirSession(event, utilisateur)
+  return { ok: true, suite: admin ? '/admin/login' : '/mon-espace' }
 })

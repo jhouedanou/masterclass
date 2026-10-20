@@ -51,3 +51,12 @@ yarn.lock
 
 # Secrets d'environnement — aucune variante ne part au dépôt
 .env*
+
+# Contenus payants et données de recette : jamais versionnés (dépôt public).
+# Les bonnes réponses des quiz, les transcriptions des chapitres et les clés
+# des vidéos se régénèrent depuis la livraison (scripts/importer-quiz.ts,
+# scripts/integrer-modules-pilotes.ts) et restent sur le poste qui les applique.
+supabase/rattrapage-quiz-pilotes.sql
+supabase/rattrapage-modules-pilotes.sql
+medias/pilotes/
+docs/sauvegardes/

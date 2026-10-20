@@ -1,7 +1,7 @@
 import { enregistrerJournal } from '../../../database/administration'
 import { definirMotDePasse, trouverEmpreinte } from '../../../database/comptes'
 import { hacherMotDePasse, refusMotDePasse, verifierMotDePasse } from '../../../utils/motDePasse'
-import { exigerUtilisateur } from '../../../utils/session'
+import { exigerUtilisateur, renouvelerSession } from '../../../utils/session'
 
 /**
  * Changement de mot de passe d'un compte connecté — apprenant, formateur ou
@@ -23,6 +23,9 @@ export default defineEventHandler(async (event) => {
   }
 
   await definirMotDePasse(utilisateur.id, await hacherMotDePasse(nouveau!))
+  // Les autres sessions du compte tombent avec l'ancien mot de passe ; celle-ci
+  // reste ouverte.
+  await renouvelerSession(event)
 
   if (utilisateur.role === 'admin-contenu' || utilisateur.role === 'admin-superieur') {
     await enregistrerJournal(`${utilisateur.prenom} ${utilisateur.nom}`, 'a changé son mot de passe', 'compte d’administration')
