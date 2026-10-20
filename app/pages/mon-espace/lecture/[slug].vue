@@ -45,6 +45,7 @@ const { data: lecture, refresh: renouvelerAutorisations } = await useFetch<{
     url: string | null
     dureeSecondes: number | null
     format: 'hls' | 'fichier' | null
+    sousTitres: string | null
   }[]
   expireDansSecondes: number
 }>(() => `/api/mon-espace/lecture/${route.params.slug}`, { server: false })
@@ -55,6 +56,7 @@ const autorisation = computed(() =>
   lecture.value?.chapitres.find((c) => c.position === index.value),
 )
 const source = computed(() => autorisation.value?.url ?? null)
+const sousTitres = computed(() => autorisation.value?.sousTitres ?? null)
 
 const lecteur = useLecteurVideo({
   moduleId: () => moduleCourant.value.id,
@@ -135,6 +137,25 @@ onMounted(() => {
     controlesCustom.value = evenement.matches
   })
 })
+
+/**
+ * Sous-titres : masqués par défaut, comme partout ailleurs. Sur écran large,
+ * la barre de la maquette remplace les contrôles natifs : c'est elle qui porte
+ * le bouton. Ailleurs, le bouton natif du navigateur s'en charge. Le choix suit
+ * l'apprenant d'un chapitre à l'autre.
+ */
+const sousTitresActifs = ref(false)
+function appliquerSousTitres() {
+  const piste = video.value?.textTracks[0]
+  if (!piste) return
+  piste.mode = sousTitresActifs.value ? 'showing' : 'hidden'
+  // La barre de la maquette recouvre le bas de l'image : posées sur la
+  // dernière ligne, les répliques passeraient sous le rail.
+  for (const replique of Array.from(piste.cues ?? [])) {
+    if (replique instanceof VTTCue) replique.line = controlesCustom.value ? -4 : 'auto'
+  }
+}
+watch([sousTitresActifs, sousTitres, video, controlesCustom], () => nextTick(appliquerSousTitres))
 
 function surClavierScene(evenement: KeyboardEvent) {
   // Une touche destinée à un bouton ou au rail qui a le focus leur appartient.
@@ -528,10 +549,16 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
           :controls="!controlesCustom" :tabindex="controlesCustom ? -1 : undefined"
           controlslist="nodownload noplaybackrate noremoteplayback" disablepictureinpicture disableremoteplayback
           playsinline @contextmenu.prevent
+          :crossorigin="sousTitres ? 'anonymous' : undefined"
           preload="metadata" @play="lecteur.gestionnaires.onPlay" @pause="lecteur.gestionnaires.onPause"
           @ended="lecteur.gestionnaires.onEnded" @timeupdate="lecteur.gestionnaires.onTimeupdate"
           @loadedmetadata="lecteur.gestionnaires.onLoadedmetadata"
-          @error="lecteur.gestionnaires.onError"></video>
+          @error="lecteur.gestionnaires.onError">
+          <!-- Servis par le diffuseur, d'où `crossorigin` sur la vidéo : sans lui,
+               le navigateur refuse une piste venue d'un autre domaine. -->
+          <track v-if="sousTitres" :key="sousTitres" kind="subtitles" srclang="fr" label="Français"
+            :src="sousTitres" @load="appliquerSousTitres">
+        </video>
 
         <p v-else class="relative z-10 grid h-full place-items-center px-6 text-center text-[13.5px] text-nuit-clair">
           La vidéo de ce chapitre n’est pas encore en ligne. Le script ci-dessous en donne le
@@ -773,6 +800,8 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
           :adaptative="autorisation?.format === 'hls'"
           :niveaux="lecteur.niveaux.value"
           :niveau-choisi="lecteur.niveauChoisi.value"
+          v-model:sous-titres-actifs="sousTitresActifs"
+          :sous-titres="Boolean(sousTitres)"
           @niveau="lecteur.choisirNiveau($event)"
           :vitesses="vitesses"
           :plein-ecran="lecteur.pleinEcran.value"

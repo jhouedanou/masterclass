@@ -100,6 +100,14 @@ export async function urlLectureSignee(
   utilisateurId: string,
   format: 'hls' | 'fichier' = 'hls',
 ): Promise<string> {
+  return urlFichierSignee(cle, FICHIER_VIDEO[format], utilisateurId)
+}
+
+/**
+ * URL signée d'un fichier du dossier d'une vidéo — les sous-titres, par
+ * exemple. La signature porte sur le dossier : le fichier ne fait que suivre.
+ */
+export async function urlFichierSignee(cle: string, fichier: string, utilisateurId: string): Promise<string> {
   const expiration = Math.floor(Date.now() / 1000) + DUREE_AUTORISATION_SECONDES
   const signature = await signer(messageASigner(cle, expiration, utilisateurId), secretVideo())
   const parametres = new URLSearchParams({
@@ -107,7 +115,7 @@ export async function urlLectureSignee(
     u: utilisateurId,
     s: signature,
   })
-  return `${baseVideo()}/${cle}/${FICHIER_VIDEO[format]}?${parametres}`
+  return `${baseVideo()}/${cle}/${fichier}?${parametres}`
 }
 
 /**

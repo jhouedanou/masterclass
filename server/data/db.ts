@@ -23,6 +23,7 @@ import type {
   Transaction,
   Utilisateur,
 } from '#shared/types'
+import { FICHES as FICHES_PILOTES, type FicheModule } from './modulesPilotes.ts'
 
 /**
  * Jeu de données d'installation, calé sur la maquette Claude Design.
@@ -265,6 +266,9 @@ function chapitres(...titres: string[]): Chapitre[] {
 }
 
 interface Brouillon {
+  /** Identifiant figé : un module renommé garde le sien, que la base en ligne
+   *  et ses accès connaissent déjà. Par défaut, `mod-<slug>`. */
+  id?: string
   slug: string
   numero: number
   titre: string
@@ -303,9 +307,39 @@ const VIDEOS: Record<string, Record<number, { cle: string; dureeSecondes: number
   // ci-dessus sont des démonstrations antérieures au back-office.
 }
 
+/**
+ * Brouillon d'un module pilote livré (`modulesPilotes.ts`). Le script local
+ * reste une démonstration : la transcription réelle n'est importée qu'en ligne,
+ * par `scripts/integrer-modules-pilotes.ts`.
+ */
+function depuisFiche(f: FicheModule): Brouillon {
+  return {
+    id: f.id,
+    slug: f.slug,
+    numero: f.numero,
+    titre: f.titre,
+    programme: f.programme,
+    thematiqueId: f.thematiqueId,
+    formateurId: f.formateurId,
+    promesse: f.promesse,
+    pourquoi: f.pourquoi,
+    pourQui: f.pourQui,
+    prerequis: f.prerequis,
+    chapitres: f.chapitres.map((titre, position) => ({
+      libelle: position === 0 ? 'Introduction' : `Chapitre ${position}`,
+      titre,
+      script: scriptType(titre),
+    })),
+    acquis: f.acquis,
+    livrable: f.livrable,
+    faq: f.faq,
+    pointsForts: f.pointsForts,
+  }
+}
+
 function moduleComplet(b: Brouillon): Module {
   const statut = b.statut ?? 'disponible'
-  const id = `mod-${b.slug}`
+  const id = b.id ?? `mod-${b.slug}`
   const videos = VIDEOS[id] ?? {}
   return {
     id,
@@ -439,49 +473,7 @@ export const modules: Module[] = [
     ],
     livrable: 'Un carnet de formules annotées et adaptées à votre activité.',
   }),
-  moduleComplet({
-    slug: 'accroches-qui-stoppent-le-scroll-et-ia-copywriting',
-    numero: 5,
-    titre: 'Accroches qui stoppent le scroll & IA copywriting',
-    programme: 'social-media',
-    thematiqueId: 'th-sm-copywriting',
-    formateurId: 'for-othniel',
-    promesse:
-      'Apprenez à construire plus rapidement des accroches capables de retenir l’attention, avec une méthode claire et l’IA comme assistant.',
-    pourquoi:
-      'Une publication peut être utile, bien conçue et correctement ciblée sans retenir l’attention si son ouverture manque d’impact. Ce module vous aide à structurer vos premiers mots, varier vos angles et produire plus rapidement sans déléguer votre réflexion à l’IA.',
-    pourQui: [
-      'Vous gérez les réseaux sociaux d’une marque ou de plusieurs clients.',
-      'Vos contenus peinent à retenir l’attention.',
-      'Vous souhaitez produire plus rapidement sans sacrifier la qualité.',
-    ],
-    prerequis:
-      'Aucun prérequis particulier. La méthode est expliquée et appliquée progressivement pendant le module.',
-    chapitres: chapitres(
-      'Anatomie d’une accroche qui stoppe le scroll',
-      'Écrire 10 accroches en 15 minutes : la méthode',
-      'Utiliser l’IA comme assistant copywriting, pas comme remplaçant',
-    ),
-    acquis: [
-      'reconnaître les éléments qui rendent une accroche plus efficace ;',
-      'produire plusieurs propositions rapidement ;',
-      'utiliser l’IA pour enrichir la réflexion et varier les angles.',
-    ],
-    livrable:
-      'Une bibliothèque personnelle de 30 accroches adaptées à votre secteur, accompagnée d’une routine de travail pour produire plus rapidement de nouvelles propositions avec l’aide de l’IA.',
-    faq: [
-      {
-        question: 'Ai-je besoin d’un outil d’IA payant ?',
-        reponse:
-          'Non. Le module ne dépend pas d’un outil payant particulier. Les fonctionnalités nécessaires et les différentes options sont présentées pendant le module.',
-      },
-      {
-        question: 'La méthode peut-elle s’appliquer à tous les secteurs ?',
-        reponse:
-          'Oui. Les principes enseignés sont adaptables à différents secteurs. Les exercices vous permettent de travailler directement à partir de votre activité, de votre marque ou de vos clients.',
-      },
-    ],
-  }),
+  moduleComplet(depuisFiche(FICHES_PILOTES.SM_M05)),
   moduleComplet({
     slug: 'creer-un-buzz-sur-les-reseaux-sociaux',
     numero: 6,
@@ -708,64 +700,8 @@ export const modules: Module[] = [
     ],
     livrable: 'Une fiche d’offre complète, prête à être envoyée à un prospect.',
   }),
-  moduleComplet({
-    slug: 'trouver-ses-premiers-clients',
-    numero: 4,
-    titre: 'Trouver ses premiers clients',
-    programme: 'entrepreneurs',
-    thematiqueId: 'th-ent-vente',
-    formateurId: 'for-soboro',
-    promesse:
-      'Mettez en place une routine de prospection simple qui produit des rendez-vous dès la première semaine.',
-    pourquoi:
-      'Attendre que les clients viennent est la première cause d’arrêt d’activité. Ce module installe une méthode de prise de contact directe, adaptée aux réalités du marché local.',
-    pourQui: [
-      'Vous démarrez votre activité.',
-      'Votre réseau proche est déjà épuisé.',
-      'La prospection vous met mal à l’aise.',
-    ],
-    prerequis: 'Disposer d’une offre formulée.',
-    chapitres: chapitres(
-      'Constituer une liste de prospects qualifiés',
-      'Écrire un premier message qui obtient une réponse',
-      'Tenir une routine de prospection quotidienne',
-    ),
-    acquis: [
-      'constituer une liste de prospects ;',
-      'rédiger un message d’approche ;',
-      'suivre ses relances sans outil complexe.',
-    ],
-    livrable: 'Une liste de 50 prospects qualifiés et une séquence de messages prête à l’emploi.',
-  }),
-  moduleComplet({
-    slug: 'vendre-sans-site-web-whatsapp-business',
-    numero: 5,
-    titre: 'Vendre sans site web : WhatsApp Business de A à Z',
-    programme: 'entrepreneurs',
-    thematiqueId: 'th-ent-vente',
-    formateurId: 'for-soboro',
-    promesse:
-      'Transformez WhatsApp Business en véritable canal de vente, du catalogue jusqu’à la relance.',
-    pourquoi:
-      'La majorité des ventes se concluent déjà sur WhatsApp, mais rarement de façon organisée. Ce module structure le catalogue, les réponses rapides, le suivi des commandes et les relances.',
-    pourQui: [
-      'Vous vendez déjà via WhatsApp sans méthode.',
-      'Vous perdez des commandes dans le fil des conversations.',
-      'Vous n’avez pas de site et n’en voulez pas pour l’instant.',
-    ],
-    prerequis: 'Disposer d’un numéro dédié à l’activité.',
-    chapitres: chapitres(
-      'Configurer un compte professionnel et un catalogue',
-      'Structurer la conversation de vente',
-      'Relancer et fidéliser sans être intrusif',
-    ),
-    acquis: [
-      'configurer WhatsApp Business ;',
-      'structurer une conversation de vente ;',
-      'organiser ses relances.',
-    ],
-    livrable: 'Un catalogue configuré et un jeu de réponses rapides adapté à votre activité.',
-  }),
+  moduleComplet(depuisFiche(FICHES_PILOTES.ENT_M04)),
+  moduleComplet(depuisFiche(FICHES_PILOTES.ENT_M05)),
   moduleComplet({
     slug: 'negocier-et-conclure-une-vente',
     numero: 6,
@@ -795,38 +731,10 @@ export const modules: Module[] = [
     ],
     livrable: 'Une trame d’entretien annotée et une liste d’objections avec leurs réponses.',
   }),
-  moduleComplet({
-    slug: 'contenus-qui-attirent-des-clients',
-    numero: 7,
-    titre: 'Contenus qui attirent des clients',
-    programme: 'entrepreneurs',
-    thematiqueId: 'th-ent-visibilite',
-    formateurId: 'for-othniel',
-    promesse:
-      'Produisez des contenus qui amènent des demandes entrantes plutôt que de simples félicitations.',
-    pourquoi:
-      'Un contenu apprécié n’est pas un contenu qui vend. Ce module oriente la production vers les sujets qui déclenchent une prise de contact.',
-    pourQui: [
-      'Vous publiez sans retombée commerciale.',
-      'Vous manquez de temps pour produire.',
-      'Vous voulez générer des demandes entrantes.',
-    ],
-    prerequis: 'Aucun prérequis particulier.',
-    chapitres: chapitres(
-      'Identifier les sujets qui déclenchent un contact',
-      'Écrire un contenu qui amène à la conversation',
-      'Installer un rythme tenable',
-    ),
-    acquis: [
-      'choisir des sujets orientés demande ;',
-      'écrire un appel à la conversation ;',
-      'tenir un rythme de publication réaliste.',
-    ],
-    livrable: 'Une liste de 20 sujets à fort potentiel commercial pour votre activité.',
-  }),
+  moduleComplet(depuisFiche(FICHES_PILOTES.ENT_M08)),
   moduleComplet({
     slug: 'etre-visible-localement-sur-internet',
-    numero: 8,
+    numero: 7,
     titre: 'Être visible localement sur internet',
     programme: 'entrepreneurs',
     thematiqueId: 'th-ent-visibilite',
@@ -882,9 +790,10 @@ export const modules: Module[] = [
     ],
     livrable: 'Un tableau de bord d’une page, complété avec vos propres données.',
   }),
+  moduleComplet(depuisFiche(FICHES_PILOTES.ENT_M10)),
   moduleComplet({
     slug: 'comprendre-le-business-du-client',
-    numero: 10,
+    numero: 11,
     titre: 'Comprendre le business du client',
     programme: 'entrepreneurs',
     thematiqueId: 'th-ent-fondations',

@@ -13,6 +13,19 @@ Aucun défaut n'est plus ouvert côté développement.
 
 Le classeur de recette détaillé, avec une capture par point, est joint à ce message.
 
+## Mise à jour du 20/10 : modules pilotes en ligne
+
+Les 5 modules pilotes livrés le 20/10 sont intégrés et **publiés** :
+- Entrepreneurs n° 4 « Comment construire une offre simple et commencer à vendre » (Lyle Soboro, 7 chapitres) ;
+- Entrepreneurs n° 5 « Convertir les conversations en vente » (Lyle Soboro, 6 chapitres) ;
+- Entrepreneurs n° 8 « Créer du contenu qui attire les clients » (Coury Othniel, 9 chapitres) ;
+- Entrepreneurs n° 10 « Transformer TikTok en machine d’acquisition client » (Lyle Soboro, 7 chapitres), nouveau module ;
+- Social Media n° 5 « Accroches qui stoppent le scroll & IA dans le copywriting » (Coury Othniel, 7 chapitres).
+
+Chaque chapitre est servi en 720p et 1080p, avec ses sous-titres et sa transcription cliquable ; la lecture a été vérifiée sur ordinateur et sur mobile. La numérotation suit celle des dossiers livrés : « Être visible localement sur internet » passe en n° 7, et « Comprendre le business du client » (Jérémie De Clercq) en n° 11, sans autre changement. Les fiches précédentes des modules renommés sont conservées.
+
+Les quiz livrés avec les modules seront intégrés dans une prochaine étape : la plateforme n’a pas encore de module de quiz.
+
 ## Ce qui fonctionne, vérifié en réel le 15/10
 
 - **Paiement Mobile Money.** Un paiement Orange Money et un paiement MTN de 200 F ont réussi. Les commandes ont été confirmées, et les modules se sont ouverts automatiquement dans l'espace de l'acheteur. Moov est également ouvert.
@@ -30,8 +43,8 @@ Le classeur de recette détaillé, avec une capture par point, est joint à ce m
 4. **E-mails.** Dans Cloudflare, ne garder qu'un seul enregistrement DMARC sur _dmarc.bigfive.solutions. Deux coexistent aujourd'hui : supprimer « v=DMARC1; p=none; ». Vérifier aussi que la boîte contact@bigfiveabidjan.com existe : c'est elle qui reçoit le formulaire de contact.
 5. **Contenus.**
    - Textes juridiques validés : CGU, CGV, mentions légales, confidentialité, cookies.
-   - Vidéos des modules : 15 chapitres sur 72 sont en ligne.
-   - Publication des 15 modules encore en brouillon.
+   - Vidéos des modules : 49 chapitres sur 88 sont en ligne au 20/10.
+   - Publication des 11 modules encore en brouillon.
    - Griffe de signature de la direction, pour les attestations.
    - Biographies des formateurs.
 6. **Mesure d'audience.** Fournir les identifiants Google Analytics 4 et Google Tag Manager, et déclarer le domaine dans la Search Console.

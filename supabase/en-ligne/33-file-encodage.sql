@@ -4,7 +4,7 @@
 -- FICHIER GÉNÉRÉ : ne pas éditer à la main.
 -- Régénération : npm run db:sql
 --
--- Migration 33 sur 38 · source : 20261005120000_file_encodage.sql
+-- Migration 33 sur 39 · source : 20261005120000_file_encodage.sql
 --
 -- À exécuter dans SQL Editor du projet Supabase, dans l'ordre des numéros.
 -- Ces scripts ne sont pas rejouables : sur une base déjà installée,

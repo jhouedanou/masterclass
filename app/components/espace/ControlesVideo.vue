@@ -27,6 +27,8 @@ const props = defineProps<{
   niveauChoisi?: number
   vitesses: number[]
   pleinEcran: boolean
+  /** Vrai quand le chapitre a des sous-titres : le bouton n'apparaît qu'alors. */
+  sousTitres?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -39,6 +41,7 @@ const emit = defineEmits<{
 const vitesse = defineModel<number>('vitesse', { required: true })
 const volume = defineModel<number>('volume', { default: 1 })
 const muet = defineModel<boolean>('muet', { default: false })
+const sousTitresActifs = defineModel<boolean>('sousTitresActifs', { default: false })
 
 /** Trois paliers d'icône : coupé, faible, fort. Une seule icône de haut-parleur
  *  ne dirait pas d'un coup d'œil si le son est éteint. */
@@ -217,8 +220,21 @@ function vitesseSuivante() {
         >
       </div>
       <button
+        v-if="sousTitres"
         type="button"
-        class="ml-auto rounded-lg border border-white/35 px-2.5 py-1 font-bold"
+        class="ml-auto leading-none"
+        :class="sousTitresActifs ? 'text-white' : 'text-white/60'"
+        :aria-label="sousTitresActifs ? 'Masquer les sous-titres' : 'Afficher les sous-titres'"
+        :aria-pressed="sousTitresActifs"
+        title="Sous-titres"
+        @click="sousTitresActifs = !sousTitresActifs"
+      >
+        <Icon :name="sousTitresActifs ? 'ph:closed-captioning-fill' : 'ph:closed-captioning'" size="20" />
+      </button>
+      <button
+        type="button"
+        class="rounded-lg border border-white/35 px-2.5 py-1 font-bold"
+        :class="{ 'ml-auto': !sousTitres }"
         :aria-label="`Vitesse de lecture : ${vitesse}×`"
         @click="vitesseSuivante"
       >

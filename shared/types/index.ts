@@ -111,6 +111,8 @@ export interface Chapitre {
    *  ffmpeg, `fichier` pour un MP4 unique déposé depuis l'administration. Le
    *  lecteur ne demande pas le même fichier ni n'emprunte le même chemin. */
   videoFormat?: 'hls' | 'fichier'
+  /** Vrai quand des sous-titres WebVTT accompagnent la vidéo, dans son dossier. */
+  sousTitres?: boolean
   /** Nom du fichier d'origine, affiché dans l'éditeur. */
   videoNomFichier?: string
   videoTailleOctets?: number

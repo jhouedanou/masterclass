@@ -4,7 +4,7 @@
 -- FICHIER GÉNÉRÉ : ne pas éditer à la main.
 -- Régénération : npm run db:sql
 --
--- Migration 38 sur 38 · source : 20261015120100_transaction_coaching_prive.sql
+-- Migration 38 sur 39 · source : 20261015120100_transaction_coaching_prive.sql
 --
 -- À exécuter dans SQL Editor du projet Supabase, dans l'ordre des numéros.
 -- Ces scripts ne sont pas rejouables : sur une base déjà installée,

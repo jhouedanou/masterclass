@@ -230,6 +230,7 @@ export type ChapitreRow = {
   script_format: 'srt' | 'vtt' | 'manuel' | null
   script_nom_fichier: string | null
   script_importe_le: string | null
+  sous_titres: boolean
 }
 
 export type UtilisateurRow = {
@@ -731,6 +732,7 @@ export type Database = {
         | 'script_format'
         | 'script_nom_fichier'
         | 'script_importe_le'
+        | 'sous_titres'
       >
       utilisateurs: Table<
         UtilisateurRow,

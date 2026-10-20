@@ -192,6 +192,7 @@ export function versChapitre(row: ChapitreRow): Chapitre {
     videoCle: row.video_cle ?? undefined,
     videoDureeSecondes: optionnelNombre(row.video_duree_secondes),
     videoFormat: row.video_format ?? undefined,
+    sousTitres: row.sous_titres || undefined,
     videoNomFichier: optionnel(row.video_nom_fichier),
     videoTailleOctets: optionnelNombre(row.video_taille_octets),
     videoImporteeLe: optionnel(row.video_importee_le),

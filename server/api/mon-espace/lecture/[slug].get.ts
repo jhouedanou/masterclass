@@ -1,7 +1,7 @@
 import { trouverModuleParSlug } from '../../../database/catalogue'
 import { trouverAcces } from '../../../database/comptes'
 import { exigerUtilisateur } from '../../../utils/session'
-import { DUREE_AUTORISATION_SECONDES, urlLectureSignee } from '../../../utils/video'
+import { DUREE_AUTORISATION_SECONDES, urlFichierSignee, urlLectureSignee } from '../../../utils/video'
 
 /**
  * Autorisations de lecture des vidéos d'un module.
@@ -41,6 +41,10 @@ export default defineEventHandler(async (event) => {
       // écran d'attente plutôt qu'une erreur.
       url: chapitre.videoCle
         ? await urlLectureSignee(chapitre.videoCle, utilisateur.id, chapitre.videoFormat ?? 'hls')
+        : null,
+      // Les sous-titres sont rangés à côté du flux : la même signature les ouvre.
+      sousTitres: chapitre.videoCle && chapitre.sousTitres
+        ? await urlFichierSignee(chapitre.videoCle, 'sous-titres.vtt', utilisateur.id)
         : null,
     })),
   )
