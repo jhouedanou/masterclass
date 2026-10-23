@@ -72,10 +72,14 @@ export const useAuthStore = defineStore('auth', () => {
     whatsapp?: string
     pays?: string
   }) {
+    // Consentement et cookies Meta : l'API Conversions compte l'inscription
+    // côté serveur, sous le même identifiant que le Pixel.
+    const { contexteSuivi } = useSuivi()
     utilisateur.value = await $fetch<Utilisateur>('/api/auth/inscription', {
       method: 'POST',
-      body: payload,
+      body: { ...payload, suivi: contexteSuivi() },
     })
+    return utilisateur.value
   }
 
   async function deconnexion() {

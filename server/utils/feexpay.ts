@@ -6,11 +6,13 @@ import {
   changerStatutCommande,
   cloreTransactionsCommande,
   confirmerCommande,
+  consommerSuiviMeta,
   transactionsDeCommande,
   trouverCommande,
   trouverTransactionParPrestataire,
 } from '../database/commerce'
 import type { MoyenTransactionSql } from '../database/types'
+import { envoyerEvenementMeta, type ContexteMeta } from './metaCapi'
 import { notifierCompte } from './notifications'
 
 /**
@@ -403,7 +405,10 @@ export async function rapprocherCommande(
         commentaire: `Paiement confirmé (commande ${commande.reference}).`,
       })
     }
-    if (premiereConfirmation) await confirmerAchat(confirmee, [], moyenDepuisReseau(reseau))
+    if (premiereConfirmation) {
+      await confirmerAchat(confirmee, [], moyenDepuisReseau(reseau))
+      await signalerAchatMeta(confirmee, [`coaching-${commande.demandeCoachingId}`])
+    }
     return { statut: 'confirmee', commande: confirmee }
   }
 
@@ -414,8 +419,35 @@ export async function rapprocherCommande(
         .filter((id): id is string => id !== null)
   await ouvrirAcces(commande.utilisateurId, modules)
 
-  if (premiereConfirmation) await confirmerAchat(confirmee, modules, moyenDepuisReseau(reseau))
+  if (premiereConfirmation) {
+    await confirmerAchat(confirmee, modules, moyenDepuisReseau(reseau))
+    await signalerAchatMeta(confirmee, modules)
+  }
   return { statut: 'confirmee', commande: confirmee }
+}
+
+/**
+ * Purchase vers l'API Conversions de Meta, sous l'identifiant que le Pixel
+ * emploie au même instant (`achat-<référence>`, app/pages/achat/paiement.vue).
+ * Seulement si l'acheteur avait consenti au marketing : la commande en garde
+ * alors le contexte, consommé ici. Ne lève jamais, comme l'e-mail ci-dessous.
+ */
+async function signalerAchatMeta(commande: Commande, contentIds: string[]): Promise<void> {
+  try {
+    const contexte = await consommerSuiviMeta(commande.reference)
+    if (!contexte) return
+    const acheteur = await trouverUtilisateur(commande.utilisateurId)
+    if (!acheteur) return
+    await envoyerEvenementMeta({
+      nom: 'Purchase',
+      eventId: `achat-${commande.reference}`,
+      utilisateur: acheteur,
+      contexte: contexte as ContexteMeta,
+      donnees: { valeur: commande.total, contentIds, reference: commande.reference },
+    })
+  } catch (erreur) {
+    console.error('[meta-capi] achat non signalé', commande.reference, (erreur as Error)?.message ?? erreur)
+  }
 }
 
 /**

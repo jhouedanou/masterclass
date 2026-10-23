@@ -2,6 +2,7 @@
 definePageMeta({ layout: 'auth' })
 
 const auth = useAuthStore()
+const { suivre } = useSuivi()
 const formulaire = reactive({
   prenom: '',
   nom: '',
@@ -26,7 +27,9 @@ async function soumettre() {
   erreur.value = ''
   enCours.value = true
   try {
-    await auth.inscription(formulaire)
+    const compte = await auth.inscription(formulaire)
+    // Même identifiant que l'événement serveur (server/api/auth/inscription.post.ts).
+    suivre('CompleteRegistration', { methode: 'page-inscription' }, `inscription-${compte?.id}`)
     await navigateTo('/mon-espace')
   } catch (e) {
     erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'La création du compte a échoué.'

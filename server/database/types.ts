@@ -436,6 +436,8 @@ export type CommandeRow = {
   statut: StatutCommandeSql
   creee_le: string
   demande_coaching_id: string | null
+  /** Contexte Meta retenu jusqu'à l'envoi de Purchase (API Conversions). */
+  suivi_meta: Record<string, unknown> | null
 }
 
 export type CommandeModuleRow = {
@@ -864,7 +866,7 @@ export type Database = {
         | 'a_la_une'
       >
       articles_modules: Table<ArticleModuleRow>
-      commandes: Table<CommandeRow, 'creee_le' | 'statut' | 'demande_coaching_id'>
+      commandes: Table<CommandeRow, 'creee_le' | 'statut' | 'demande_coaching_id' | 'suivi_meta'>
       commandes_modules: Table<CommandeModuleRow>
       transactions: Table<
         TransactionRow,

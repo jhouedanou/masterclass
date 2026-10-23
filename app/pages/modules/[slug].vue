@@ -132,8 +132,22 @@ async function copierLien() {
 }
 
 const auth = useAuthStore()
+const { suivre } = useSuivi()
+
+/** Le module tel que le décrivent GA4 et le Pixel Meta. */
+const articleSuivi = computed(() => ({
+  id: moduleCourant.value.id,
+  titre: moduleCourant.value.titre,
+  prixFcfa: moduleCourant.value.prixFcfa,
+  categorie: data.value!.programme?.nom,
+}))
+
+// ViewContent : consultation de la fiche. `onMounted` et non le rendu serveur,
+// les traqueurs ne vivant que dans le navigateur.
+onMounted(() => suivre('ViewContent', { articles: [articleSuivi.value] }))
 
 function acheter() {
+  suivre('InitiateCheckout', { articles: [articleSuivi.value] })
   achat.definir({
     id: moduleCourant.value.id,
     slug: moduleCourant.value.slug,

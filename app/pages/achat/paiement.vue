@@ -5,6 +5,7 @@ definePageMeta({ middleware: 'auth' })
 
 const achat = useAchatStore()
 const auth = useAuthStore()
+const { suivre, contexteSuivi } = useSuivi()
 const config = useRuntimeConfig()
 const route = useRoute()
 /** Numéro Mobile Money ou Wave (planche A, 04c), transmis à la fenêtre FeexPay. */
@@ -476,6 +477,7 @@ async function confirmer(referenceFeexPay: string | null, essai = 0, echecAnnonc
     )
     if (reponse.statut === 'confirmee') {
       achat.reference = reponse.reference
+      signalerAchat(reponse.reference)
       fermerFenetresFeexPay()
       try {
         sessionStorage.removeItem(CLE_ACHAT_EN_COURS)
@@ -543,8 +545,26 @@ function afficherEchec(code: CodeEchecPaiement, texte: string, reference?: strin
 
 // --- Tunnel -------------------------------------------------------------------
 
+/** Ce que l'on règle, tel que le décrivent GA4 et le Pixel Meta. */
+function articlesSuivis() {
+  if (achat.seance) {
+    return [{ id: `coaching-${achat.seance.demandeId}`, titre: achat.seance.titre, prixFcfa: achat.seance.prixFcfa, categorie: 'Coaching privé' }]
+  }
+  if (achat.module) {
+    return [{ id: achat.module.id, titre: achat.module.titre, prixFcfa: achat.module.prixFcfa, categorie: achat.module.programme }]
+  }
+  return []
+}
+
+/** Purchase, sous l'identifiant que l'API Conversions reprend côté serveur
+ *  (`rapprocherCommande`, server/utils/feexpay.ts) : Meta n'en compte qu'un. */
+function signalerAchat(reference: string) {
+  suivre('Purchase', { articles: articlesSuivis(), valeur: montant.value, reference }, `achat-${reference}`)
+}
+
 async function payer() {
   if (!achat.module && !achat.seance) return
+  suivre('AddPaymentInfo', { articles: articlesSuivis(), valeur: montant.value, moyen: achat.moyen })
   etat.value = 'attente'
   message.value = feexpayActif ? 'Ouverture de la commande…' : 'Validez la demande sur votre téléphone.'
   codeEchec.value = null
@@ -556,6 +576,7 @@ async function payer() {
         demandeId: achat.seance?.demandeId,
         moyen: achat.moyen,
         simulerEchec: dev && simulerEchec.value ? simulerEchec.value : undefined,
+        suivi: contexteSuivi(),
       },
     })
     commandeEnCours.value = commande.reference
@@ -566,6 +587,7 @@ async function payer() {
     // Simulation (développement) : la commande est déjà confirmée.
     etat.value = 'verification'
     achat.reference = commande.reference
+    signalerAchat(commande.reference)
     etat.value = 'succes'
   } catch (e) {
     const r = e as {

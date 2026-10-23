@@ -38,6 +38,8 @@ medias/hls
 medias/atelier
 docs/Comptes-de-test-E-Masterclass.xlsx
 docs/email-testeurs.md
+# Guides remis à l'équipe avec leurs mots de passe : jamais dans le dépôt.
+docs/acces/
 
 # Un seul gestionnaire de paquets : npm. package-lock.json fait foi.
 pnpm-lock.yaml
