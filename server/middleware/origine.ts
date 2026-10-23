@@ -20,7 +20,9 @@ import type { H3Event } from 'h3'
  * - le corps est du JSON, qu'un formulaire HTML ne sait pas envoyer et qu'un
  *   `fetch` d'un autre site ne peut envoyer qu'après une requête préalable
  *   que nous ne validons pas. Les dépôts de fichiers, en `multipart`, sont
- *   admis sur leurs seules routes. Une requête sans corps passe.
+ *   admis sur leurs seules routes. Une requête sans corps passe. Les rapports
+ *   CSP, que le navigateur envoie lui-même dans ses propres types, sont admis
+ *   sur la route de collecte : elle n'écrit que dans les journaux.
  *
  * Les appels de machine à machine — tâches planifiées, webhook FeexPay — n'ont
  * ni navigateur ni cookie : ils s'authentifient par une clé, et en sont exemptés.
@@ -36,6 +38,9 @@ const DEPOTS = [
   /^\/api\/formateur\/photo$/,
   /^\/api\/mon-espace\/compte\/photo$/,
 ]
+
+const COLLECTE_CSP = /^\/api\/csp-rapport$/
+const TYPES_RAPPORT = new Set(['application/csp-report', 'application/reports+json'])
 
 function hote(adresse: string): string | null {
   try {
@@ -71,6 +76,7 @@ export default defineEventHandler((event) => {
   const type = (getRequestHeader(event, 'content-type') ?? '').split(';')[0]!.trim().toLowerCase()
   if (!type || type === 'application/json') return
   if (type === 'multipart/form-data' && DEPOTS.some((motif) => motif.test(chemin))) return
+  if (TYPES_RAPPORT.has(type) && COLLECTE_CSP.test(chemin)) return
 
   throw createError({ statusCode: 415, statusMessage: 'Format de requête non accepté : JSON attendu.' })
 })
