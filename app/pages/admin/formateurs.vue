@@ -205,8 +205,8 @@ const confirmation = ref('')
 
     <p class="mt-3 text-[12px] leading-[1.6] text-discret">
       Le profil public (photo, bio, ancre) est modifiable ici ; l’ordre ⋮⋮ pilote la page
-      /formateurs. Tarif coaching privé : <b class="text-encre">50 000 FCFA / h, fixe pour tous les
-      formateurs</b>. L’accès (Formateur simple / Formateur avec coaching privé) se gère dans
+      /formateurs. Tarif coaching privé : <b class="text-encre">propre à chaque formateur</b> (colonne
+      « Tarif coaching », 50 000 FCFA / h par défaut) — c’est lui qui est facturé. L’accès (Formateur simple / Formateur avec coaching privé) se gère dans
       <NuxtLink to="/admin/parametres" class="font-bold">Paramètres → Administration des accès</NuxtLink>.
     </p>
 

@@ -53,7 +53,9 @@ function libelleCreneau(c: CreneauCoaching): string {
  * Traitement d'une demande par l'équipe (planche C, écran 05) : confirmation
  * et lien de paiement, encaissement, planification avec le lien de session,
  * clôture, refus motivé. Chaque action est journalisée et l'apprenant est
- * prévenu ; le formateur l'est à la planification.
+ * prévenu par e-mail. Le formateur ne reçoit rien : l'événement Google Agenda
+ * est posé sur l'agenda de l'équipe, sans invités (voir `utils/googleAgenda`),
+ * et aucun rappel n'est programmé côté plateforme.
  */
 export default defineEventHandler(async (event) => {
   const admin = await exigerSection(event, 'coaching-prive')
