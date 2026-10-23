@@ -116,6 +116,8 @@ watch(index, () => {
   renouvellementTente = false
 })
 
+// Pas au-delà de 2× sans revoir `enregistrer_visionnage` : la base n'admet que
+// 2,5 secondes de film par seconde écoulée, et rognerait une lecture plus rapide.
 const vitesses = [0.75, 1, 1.25, 1.5, 2]
 
 /**
