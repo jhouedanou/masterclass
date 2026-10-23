@@ -641,7 +641,7 @@ const ETIQUETTE = 'flex flex-col gap-1.5 text-[12.5px] font-bold text-texte'
           </label>
           <div class="flex gap-2.5">
             <UiBaseButton type="submit" taille="sm" variante="sombre" class="flex-1">
-              Attribuer et notifier
+              {{ attribution.notifier ? 'Attribuer et prévenir' : 'Attribuer sans prévenir' }}
             </UiBaseButton>
             <UiBaseButton taille="sm" variante="contour" class="flex-1" @click="attribution.ouverte = false">
               Annuler
