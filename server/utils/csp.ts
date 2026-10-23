@@ -60,7 +60,8 @@ const GOOGLE_CONNEXIONS = [
   'https://www.google.com',
 ]
 
-// Pixels Meta, TikTok et LinkedIn, que le conteneur GTM charge.
+// Pixels Meta (posé par app/plugins/tracking.client.ts), TikTok et LinkedIn
+// (que le conteneur GTM charge).
 const PIXELS_SCRIPTS = ['https://connect.facebook.net', 'https://analytics.tiktok.com', 'https://snap.licdn.com']
 const PIXELS_CONNEXIONS = ['https://www.facebook.com', 'https://analytics.tiktok.com', 'https://px.ads.linkedin.com']
 

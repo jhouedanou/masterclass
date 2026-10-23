@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const auth = useAuthStore()
+const { suivre } = useSuivi()
 
 /** Pays proposés par la maquette (planche A, écran 04) ; « Autre pays… » ouvre une saisie libre. */
 const PAYS = ['Côte d’Ivoire', 'Bénin', 'Burkina Faso', 'Sénégal', 'Autre pays…']
@@ -38,7 +39,7 @@ async function soumettre() {
   }
   enCours.value = true
   try {
-    await auth.inscription({
+    const compte = await auth.inscription({
       prenom: formulaire.prenom,
       nom: formulaire.nom,
       email: formulaire.email,
@@ -47,6 +48,8 @@ async function soumettre() {
       whatsapp: formulaire.whatsapp.startsWith('+') ? formulaire.whatsapp : `+225 ${formulaire.whatsapp}`,
       pays: formulaire.pays === 'Autre pays…' ? formulaire.autrePays.trim() || 'Autre' : formulaire.pays,
     })
+    // Même identifiant que l'événement serveur (server/api/auth/inscription.post.ts).
+    suivre('CompleteRegistration', { methode: 'tunnel-achat' }, `inscription-${compte?.id}`)
     await navigateTo('/achat/recapitulatif')
   } catch (e) {
     const r = e as { statusMessage?: string; data?: { statusMessage?: string } }

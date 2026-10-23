@@ -6,7 +6,7 @@ import {
   listerProgrammes,
   listerThematiques,
 } from '../../database/catalogue'
-import { exigerSection } from '../../utils/session'
+import { exigerUneSection } from '../../utils/session'
 
 /**
  * Arbre Programme → Phase → Thématique → Module (planche C, écran 02).
@@ -18,7 +18,9 @@ import { exigerSection } from '../../utils/session'
  * publié. Chacun lit désormais sa propre source.
  */
 export default defineEventHandler(async (event) => {
-  await exigerSection(event, 'modules-chapitres')
+  // L'écran « Fiches commerciales » liste ses modules dans ce même arbre : un
+  // admin qui n'a que cette section recevait un 403 et une page vide.
+  await exigerUneSection(event, ['modules-chapitres', 'fiches-commerciales'])
 
   const [programmes, phases, thematiques, modules, formateurs] = await Promise.all([
     listerProgrammes(),

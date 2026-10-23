@@ -1,4 +1,12 @@
-import type { AlerteLancement, Formateur, Module, Phase, Programme, Thematique } from '#shared/types'
+import type {
+  AlerteLancement,
+  BloquantsSuppressionFormateur,
+  Formateur,
+  Module,
+  Phase,
+  Programme,
+  Thematique,
+} from '#shared/types'
 import { supabase } from './client'
 import { traduireErreur, verifier, verifierOptionnel, verifierUn } from './erreurs'
 import {
@@ -490,6 +498,46 @@ export async function creerFormateur(champs: {
 
 export async function supprimerFormateur(id: string): Promise<void> {
   verifier(await supabase().from('formateurs').delete().eq('id', id).select('id'), 'suppression de la fiche formateur')
+}
+
+/**
+ * Ce qui bloque la suppression définitive, pour chaque formateur (ou pour
+ * celui demandé). Décomptes calculés en base, d'une seule requête.
+ */
+export async function bloquantsSuppressionFormateurs(
+  id?: string,
+): Promise<Map<string, BloquantsSuppressionFormateur>> {
+  const { data, error } = await supabase().rpc(
+    'bloquants_suppression_formateurs',
+    id ? { p_formateur_id: id } : {},
+  )
+  if (error) throw traduireErreur(error, 'décompte des liens du formateur')
+  return new Map(
+    (data ?? []).map((r) => [
+      r.formateur_id,
+      {
+        modules: r.modules,
+        sessions: r.sessions,
+        demandesCoaching: r.demandes_coaching,
+        candidatures: r.candidatures,
+        articles: r.articles,
+        commandes: r.commandes,
+        transactions: r.transactions,
+        certificats: r.certificats,
+      },
+    ]),
+  )
+}
+
+/**
+ * Suppression définitive : la fiche et le compte qui y entre, dans la même
+ * transaction. `supprimerFormateur`, au-dessus, ne retire que la fiche — il
+ * sert à défaire une création avortée, avant qu'aucun compte n'existe.
+ */
+export async function supprimerFormateurEtCompte(id: string): Promise<{ nom: string; comptes: string[] }> {
+  const { data, error } = await supabase().rpc('supprimer_formateur', { p_formateur_id: id })
+  if (error) throw traduireErreur(error, 'suppression du formateur')
+  return data
 }
 
 /**

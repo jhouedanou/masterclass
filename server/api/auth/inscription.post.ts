@@ -1,6 +1,7 @@
 import { creerUtilisateur } from '../../database/comptes'
 import { hacherMotDePasse, refusMotDePasse } from '../../utils/motDePasse'
 import { limiterDebit } from '../../utils/debit'
+import { contexteMeta, envoyerEvenementMeta, type SuiviNavigateur } from '../../utils/metaCapi'
 import { ouvrirSession } from '../../utils/session'
 
 /** Création d'un compte apprenant. Le pays est demandé ici et n'est plus
@@ -14,6 +15,8 @@ export default defineEventHandler(async (event) => {
     motDePasse?: string
     whatsapp?: string
     pays?: string
+    /** Consentement et cookies Meta (app/composables/useSuivi.ts). */
+    suivi?: SuiviNavigateur
   }>(event)
 
   const email = (body.email ?? '').trim().toLowerCase()
@@ -36,5 +39,21 @@ export default defineEventHandler(async (event) => {
   })
 
   await ouvrirSession(event, utilisateur)
+
+  // CompleteRegistration côté serveur, sous l'identifiant du Pixel
+  // (app/pages/inscription.vue, app/pages/achat/compte.vue). Hors du chemin de
+  // la réponse : l'inscription n'attend pas Meta.
+  const contexte = contexteMeta(event, body.suivi)
+  if (contexte) {
+    event.waitUntil(
+      envoyerEvenementMeta({
+        nom: 'CompleteRegistration',
+        eventId: `inscription-${utilisateur.id}`,
+        utilisateur,
+        contexte,
+      }),
+    )
+  }
+
   return utilisateur
 })

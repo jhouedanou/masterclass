@@ -105,8 +105,8 @@ export default defineEventHandler(async (event) => {
   return {
     utilisateur: compte,
     moduleAttribue,
-    // Tant qu'aucun fournisseur d'envoi n'est branché, l'équipe transmet le
-    // lien à la main : il est renvoyé à l'écran.
+    // Le lien part par e-mail (Resend) ; il est aussi renvoyé à l'écran pour
+    // que l'équipe le transmette si le message n'arrive pas.
     lienDefinition,
   }
 })

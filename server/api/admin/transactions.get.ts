@@ -24,8 +24,8 @@ const lendemain = (date: string) => new Date(new Date(`${date}T00:00:00Z`).getTi
 
 /**
  * Suite donnée à un échec : « Payé à J+1 ✓ » si l'apprenant a réglé le même
- * module dans les 24 h, « Relancé » s'il a retenté sans y parvenir, « Sans
- * suite » sinon.
+ * module dans les 24 h, « Retenté » (clé `relance`) s'il a retenté sans y
+ * parvenir, « Sans suite » sinon. Aucune relance ne lui est envoyée.
  */
 function suiteDe(echec: Transaction, toutes: Transaction[]): SuiteEchec {
   const memesTentatives = toutes.filter(

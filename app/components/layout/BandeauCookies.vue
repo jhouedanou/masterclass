@@ -52,7 +52,8 @@ onBeforeUnmount(() => import.meta.client && window.removeEventListener('keydown'
       <b id="cookies-titre" class="text-[15px]">Nous utilisons des cookies</b>
       <p class="mt-2 mb-4 text-[13.5px] leading-relaxed text-gris-perle">
         Des cookies essentiels font fonctionner le site (connexion, panier). Avec votre accord,
-        des cookies de mesure d’audience nous aident à améliorer les programmes. Détails dans la
+        des cookies de mesure d’audience nous aident à améliorer les programmes, et des pixels
+        publicitaires (Meta) mesurent l’efficacité de nos campagnes. Détails dans la
         <NuxtLink to="/cookies" class="text-social-clair underline">politique de cookies</NuxtLink>.
       </p>
       <div class="flex flex-wrap items-center gap-3">
@@ -102,7 +103,7 @@ onBeforeUnmount(() => import.meta.client && window.removeEventListener('keydown'
             <UiInterrupteur
               v-model="choix.marketing"
               libelle="Marketing"
-              description="Pixels publicitaires (Meta, TikTok) pour nos campagnes."
+              description="Pixel Meta et son API Conversions, pour mesurer nos campagnes."
             />
           </div>
         </div>

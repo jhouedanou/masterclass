@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CandidatureFormateur, Formateur } from '#shared/types'
-import { compterModules } from '#shared/utils/compteurs'
+import { listerMotifs } from '#shared/utils/suppressionFormateur'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Formateurs — administration')
@@ -10,6 +10,10 @@ type FormateurAdmin = Formateur & {
   nbProgrammes: number
   ordrePublic: number
   supprimable: boolean
+  /** Ce qui bloque la suppression, en toutes lettres (vide : supprimable). */
+  motifsBlocage: string[]
+  /** Faux tant que la migration 46 manque : les liens n'ont pas pu être comptés. */
+  verificationSuppression: boolean
   sessionsAVenir: number
   compte: { email: string; aUnMotDePasse: boolean } | null
 }
@@ -119,9 +123,52 @@ async function apresCreation() {
   await Promise.all([refresh(), rafraichirCandidatures()])
 }
 
+// --- Suppression définitive (écran 11) ----------------------------------------
 
+/**
+ * Le bouton « Supprimer définitivement » n'avait aucun gestionnaire. La route
+ * efface la fiche et le compte du formateur ensemble, et refuse tant qu'un
+ * module, une session, une demande, une candidature ou un article lui reste
+ * rattaché ; la modale affiche ces liens avant le clic. Réservée à
+ * l'administrateur supérieur, comme la route.
+ */
+const auth = useAuthStore()
 const suppression = ref<FormateurAdmin | null>(null)
 const confirmation = ref('')
+const suppressionEnCours = ref(false)
+const erreurSuppression = ref('')
+
+function fermerSuppression() {
+  suppression.value = null
+  confirmation.value = ''
+  erreurSuppression.value = ''
+}
+
+async function supprimerDefinitivement() {
+  const f = suppression.value
+  if (!f) return
+  erreurSuppression.value = ''
+  suppressionEnCours.value = true
+  try {
+    const r = await $fetch<{ nom: string; comptes: string[] }>(`/api/admin/formateurs/${f.id}`, {
+      method: 'DELETE',
+      body: { confirmation: confirmation.value },
+    })
+    message.value = r.comptes.length
+      ? `${r.nom} et son compte (${r.comptes.join(', ')}) sont supprimés — action journalisée.`
+      : `${r.nom} est supprimé — action journalisée.`
+    annoncer(message.value)
+    fermerSuppression()
+    await refresh()
+  } catch (e) {
+    // Le corps d'abord : la ligne de statut HTTP perd les accents et les
+    // apostrophes typographiques du refus, qui nomme ce qui bloque.
+    const r = e as { data?: { statusMessage?: string }; statusMessage?: string }
+    erreurSuppression.value = r.data?.statusMessage ?? r.statusMessage ?? 'Suppression impossible.'
+  } finally {
+    suppressionEnCours.value = false
+  }
+}
 </script>
 
 <template>
@@ -180,7 +227,6 @@ const confirmation = ref('')
         <td class="px-[18px] py-3.5">
           <template v-if="f.coachingPriveActif">
             <b>{{ formatFcfa(f.coachingPriveFcfaHeure) }}/h</b>
-            <span class="text-[11px] text-discret">(fixe)</span>
           </template>
           <button v-else class="text-[12px] font-bold text-social" @click="activation = f">
             Activer le coaching privé
@@ -197,7 +243,7 @@ const confirmation = ref('')
             >⋮⋮</span>
             <span class="font-normal">{{ f.ordrePublic }}</span>
             <button class="ml-auto text-social hover:underline" @click="ouvrirEdition(f)">Modifier</button>
-            <button class="text-erreur hover:underline" @click="suppression = f">Supprimer</button>
+            <button v-if="auth.estAdminSuperieur" class="text-erreur hover:underline" @click="suppression = f">Supprimer</button>
           </span>
         </td>
       </tr>
@@ -205,8 +251,8 @@ const confirmation = ref('')
 
     <p class="mt-3 text-[12px] leading-[1.6] text-discret">
       Le profil public (photo, bio, ancre) est modifiable ici ; l’ordre ⋮⋮ pilote la page
-      /formateurs. Tarif coaching privé : <b class="text-encre">50 000 FCFA / h, fixe pour tous les
-      formateurs</b>. L’accès (Formateur simple / Formateur avec coaching privé) se gère dans
+      /formateurs. Tarif coaching privé : <b class="text-encre">propre à chaque formateur</b> (colonne
+      « Tarif coaching », 50 000 FCFA / h par défaut) — c’est lui qui est facturé. L’accès (Formateur simple / Formateur avec coaching privé) se gère dans
       <NuxtLink to="/admin/parametres" class="font-bold">Paramètres → Administration des accès</NuxtLink>.
     </p>
 
@@ -230,7 +276,7 @@ const confirmation = ref('')
       v-if="creationOuverte"
       :candidature="creation"
       @fermer="creationOuverte = false"
-      @cree="creationOuverte = false; message = 'Compte formateur créé.'; apresCreation()"
+      @cree="message = 'Compte formateur créé.'; apresCreation()"
     />
 
     <!-- Activation du coaching privé (écran 07b), modale partagée avec
@@ -298,34 +344,50 @@ const confirmation = ref('')
       <div class="w-full max-w-[460px] rounded-carte bg-white p-[26px] shadow-[0_16px_40px_rgba(23,21,28,.12)]">
         <b class="text-[16px] text-erreur">Supprimer le formateur {{ suppression.nom }} ?</b>
         <p class="mt-2.5 mb-3 text-[13px] leading-[1.6] text-texte">
-          Son profil disparaît de la page /formateurs et il ne peut plus être choisi pour un
-          coaching privé. <b>Impossible si des modules publiés ou des sessions à venir lui sont
-          rattachés</b> — réassignez-les d’abord (ici : {{ compterModules(suppression.nbModules) }} ·
-          {{ suppression.sessionsAVenir }} session(s)).
+          Sa fiche disparaît de la page /formateurs<template v-if="suppression.compte">, et son
+          compte ({{ suppression.compte.email }}) est supprimé avec elle : il ne peut plus se
+          connecter</template>. Irréversible.
         </p>
-        <label v-if="suppression.supprimable" class="mb-3.5 flex flex-col gap-1.5 text-[12.5px] font-bold text-texte">
+        <p
+          v-if="!suppression.supprimable"
+          class="mb-3 rounded-[10px] border border-alerte bg-alerte-voile p-3 text-[12.5px] leading-[1.6] text-texte"
+        >
+          <b>Impossible pour l’instant</b> :
+          <template v-if="suppression.verificationSuppression">
+            il reste rattaché à {{ listerMotifs(suppression.motifsBlocage) }}. Réassignez ou
+            retirez ces éléments d’abord — quel que soit leur statut, ils bloquent.
+          </template>
+          <template v-else>
+            les liens de ce formateur n’ont pas pu être vérifiés (migration de la base à
+            appliquer).
+          </template>
+        </p>
+        <label v-else class="mb-3.5 flex flex-col gap-1.5 text-[12.5px] font-bold text-texte">
           Tapez « SUPPRIMER » pour confirmer
           <input
             v-model="confirmation"
             placeholder="SUPPRIMER"
+            autocomplete="off"
             class="w-full rounded-[10px] border-[1.5px] border-ligne px-[13px] py-[11px] text-[13.5px] font-normal"
           >
         </label>
+        <p v-if="erreurSuppression" class="mb-3 text-[13px] text-erreur">{{ erreurSuppression }}</p>
         <div class="flex gap-2.5">
           <UiBaseButton
             taille="sm"
             variante="danger"
             class="flex-1"
-            :disabled="!suppression.supprimable || confirmation !== 'SUPPRIMER'"
+            :disabled="!suppression.supprimable || confirmation !== 'SUPPRIMER' || suppressionEnCours"
+            @click="supprimerDefinitivement"
           >
-            Supprimer définitivement
+            {{ suppressionEnCours ? 'Suppression…' : 'Supprimer définitivement' }}
           </UiBaseButton>
-          <UiBaseButton taille="sm" variante="contour" class="flex-1" @click="suppression = null; confirmation = ''">
+          <UiBaseButton taille="sm" variante="contour" class="flex-1" @click="fermerSuppression">
             Annuler
           </UiBaseButton>
         </div>
         <p class="mt-2.5 text-[11.5px] text-discret">
-          Action journalisée · réservée aux admins avec le droit « Formateurs ».
+          Action journalisée · réservée à l’administrateur supérieur.
         </p>
       </div>
     </div>

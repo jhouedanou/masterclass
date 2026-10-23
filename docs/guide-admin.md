@@ -1,190 +1,281 @@
 # Guide de l'administration — E-Masterclass Big Five
 
-Ce guide s'adresse à l'équipe qui gère la plateforme depuis le back-office. Il décrit les
-écrans un à un, dans l'ordre où l'équipe s'en sert, et précise ce qui est automatique, ce qui est
-journalisé et ce qui reste à faire à la main tant que certains prestataires ne sont pas branchés.
+Ce guide s'adresse à l'équipe qui gère la plateforme depuis le back-office. Il décrit la
+connexion, puis les écrans dans l'ordre où l'équipe s'en sert, et dit ce qui est automatique, ce
+qui est journalisé et ce qui reste à faire à la main.
 
-Adresse du back-office : `/admin`. Comptes de démonstration : voir le README (mot de passe commun,
-à changer avant l'ouverture publique).
+Adresse du back-office : `/admin/login` (en production :
+`https://masterclass-jhouedanous-projects.vercel.app/admin/login`).
+
+Les identifiants des administrateurs ne figurent pas ici : ils sont remis à chacun séparément,
+avec un mot de passe provisoire à changer dès la première connexion. Le guide remis avec ces
+accès vit dans `docs/acces/`, exclu du dépôt.
+
+État de la plateforme décrit : 23 octobre 2026.
 
 ---
 
 ## 1. Se connecter
 
-1. Ouvrir `/admin/login`. Un compte d'administration **ne peut pas** passer par la page de
-   connexion du site : il y est renvoyé vers `/admin/login`.
-2. Saisir l'e-mail et le mot de passe. Chaque tentative est journalisée (adresse IP, appareil,
-   horodatage). **Cinq échecs en trente minutes bloquent le compte trente minutes.**
-3. Saisir le code à six chiffres reçu par e-mail. Il vaut dix minutes ; « Renvoyer le code » en
-   émet un nouveau, au plus un par minute.
+La connexion se fait en deux étapes : le mot de passe, puis un code à six chiffres donné par une
+application d'authentification (Google Authenticator, Authy, ou le gestionnaire de mots de passe
+du téléphone). **Aucun code n'est envoyé par e-mail ou SMS.**
 
-Le code est envoyé par Supabase Auth. Si rien n'arrive : vérifier les indésirables, puis que le
-gabarit « Magic Link » du projet Supabase contient bien `{{ .Token }}` (Authentication → Email
-Templates). Le SMTP intégré de Supabase est limité à quelques e-mails par heure ; au-delà,
-brancher un SMTP personnalisé (Authentication → SMTP Settings).
+### Première connexion
 
-**Mot de passe oublié** : lien « Mot de passe oublié ? » sur la page de connexion. Tant qu'aucun
-fournisseur d'e-mail n'est branché pour la plateforme, le lien de réinitialisation s'écrit dans la
-sortie du serveur : un développeur le transmet.
+1. Installer Google Authenticator (ou équivalent) sur son téléphone.
+2. Ouvrir `/admin/login`, saisir l'identifiant et le mot de passe provisoire. La page
+   « Connexion » du site renvoie les administrateurs vers `/admin/login`.
+3. Scanner le QR code affiché. Une clé à saisir à la main est proposée pour les téléphones qui ne
+   scannent pas.
+4. Saisir le code à six chiffres de l'application, puis « Activer ». Rien n'est enregistré avant
+   ce premier code correct : un QR code mal scanné ne condamne pas le compte.
+5. Noter les **8 codes de secours** (format `XXXXX-XXXXX`), affichés une seule fois. Chacun sert
+   une fois, en l'absence du téléphone. Il n'existe pas d'écran pour les régénérer.
+6. Changer le mot de passe : **Paramètres → Mon profil**, carte « Changer le mot de passe »
+   (10 caractères minimum, différent de l'actuel). Les autres sessions sont fermées, le
+   changement est journalisé.
 
-**Changer son mot de passe** : Paramètres → Mon profil. Le changement est journalisé.
+### Connexions suivantes
+
+Identifiant, mot de passe, puis le code du moment. Un code vaut 30 secondes (une période de
+tolérance de chaque côté) et ne sert qu'une fois. Une session admin dure **12 heures**.
+
+### Blocages
+
+- **5 mots de passe faux en 15 minutes** bloquent le compte 15 minutes. L'écran annonce encore
+  30 minutes, à tort.
+- 10 échecs de connexion admin par heure depuis une même adresse IP bloquent cette adresse
+  une heure.
+- À la deuxième étape, **5 codes faux** referment l'étape (il faut ressaisir le mot de passe) ;
+  elle se referme aussi après 10 minutes, et un compte ne peut pas tenter plus de 10 codes par
+  heure.
+- Chaque tentative est journalisée : adresse IP, appareil, horodatage.
+
+### Téléphone perdu
+
+1. « Utiliser un code de secours » à l'écran du code.
+2. Plus de codes : un autre administrateur supérieur ouvre **Paramètres → Administration des
+   accès** et clique **« Réinitialiser la 2FA »** sur le compte (confirmation, journalisé). Le
+   compte scanne un nouveau QR code à sa connexion suivante. Un compte déjà enrôlé ne peut pas
+   se réenrôler avec son seul mot de passe.
+3. Si plus aucun administrateur supérieur ne peut se connecter : un développeur passe
+   `CODE_ADMIN_FOURNISSEUR=aucun` le temps d'une connexion (voir README).
+
+### Mot de passe oublié
+
+Lien « Mot de passe oublié ? » de la page de connexion. Un e-mail (Resend) porte un lien valable
+30 minutes, à usage unique ; la page accepte 5 demandes par heure et par adresse IP. Après la
+réinitialisation, l'administrateur n'est pas connecté d'office : il repasse par `/admin/login`,
+mot de passe puis code. Une réinitialisation lève aussi un blocage en cours.
 
 ---
 
 ## 2. Ce que voit chaque compte
 
-Un compte d'administration reçoit ses **sections** une à une (Paramètres → Administration des
-accès). Une section non accordée est masquée, pas seulement grisée. Deux droits ne peuvent être
-accordés que par un administrateur supérieur : **Transactions & paiements** et **Référencement
-avancé** (slugs publiés, indexation, canonicals). Un administrateur qui n'est pas supérieur
-n'accorde que des sections qu'il détient lui-même.
+Un **administrateur supérieur** voit tout. Un administrateur de contenu reçoit ses **sections**
+une à une (Paramètres → Administration des accès) ; une section non accordée est masquée, pas
+grisée. Il n'accorde que des sections qu'il détient lui-même et ne peut agir ni sur son propre
+compte ni sur un administrateur supérieur.
 
-| Groupe | Écran | Droit |
+| Écran | Section requise |
+|---|---|
+| Vue d'ensemble | tous (ses blocs suivent les sections du compte) |
+| CMS Site vitrine | cms-site-vitrine |
+| Blog | blog |
+| Référencement (SEO) | referencement-contenu |
+| Programmes & phases, Modules & chapitres, Médiathèque vidéo | modules-chapitres |
+| Fiches commerciales | fiches-commerciales, **et** modules-chapitres (sans elle, les données renvoient une erreur 403) |
+| Prix d'un module, accès offert à un module | offres-commerciales |
+| Formateurs | formateurs |
+| Candidatures formateurs | candidatures-formateurs pour changer un statut ; formateurs pour créer le compte |
+| Calendrier des sessions | calendrier-sessions |
+| Coaching privé | coaching-prive |
+| Apprenants | apprenants |
+| Statistiques, Revenus | statistiques-performance |
+| Performances | performances-marketing |
+| Historique & versions | historique-versions |
+| Attestations (révocation, signatures en lecture) | attestations |
+| Paramètres → Administration des accès | administration-acces |
+| Transactions & paiements | **rôle administrateur supérieur**, quelle que soit la case cochée |
+| Slug, indexation, canonical | **rôle administrateur supérieur** (la case « Référencement avancé » est sans effet côté serveur) |
+
+**Créer un administrateur** : nom, e-mail, WhatsApp, mot de passe provisoire (10 caractères
+minimum) à transmettre soi-même : **aucune invitation n'est envoyée**. Un administrateur
+supérieur voit en plus la case « Administrateur supérieur ». Le compte passe par le QR code à sa
+première connexion.
+
+**Révoquer un administrateur** : le compte redevient « apprenant », ses sections sont vidées et
+son mot de passe effacé.
+
+---
+
+## 3. Le menu
+
+| Écran | Rôle |
+|---|---|
+| Vue d'ensemble | Inscriptions payantes, chiffre d'affaires, marge, complétion, certificats ; top 5 des modules ; « À traiter » (demandes de coaching, candidatures, sessions à reprogrammer) ; prochaines sessions ; dernières transactions ; activité récente. |
+| CMS Site vitrine | Blocs Accueil (chiffres clés, FAQ), Bannière, Programmes, Annonce, Légales ; témoignages. |
+| Blog | Articles : contenu, référencement, publication. |
+| Référencement (SEO) | Toutes les pages indexables : titre, description, image de partage. |
+| Programmes & phases | Arborescence programme → phases : nom, couleur, date d'ouverture, publication. Publier un parent ne publie jamais ses enfants ; une phase ne se supprime que vide. |
+| Fiches commerciales | Pages de vente des modules (onglets Toutes / Publiées / Annonces / Brouillons). Une fiche peut paraître en « Annonce » avant que le contenu existe. |
+| Modules & chapitres | Contenu des modules ; duplication d'un module (copie en brouillon, sans vidéo) ou d'un chapitre. |
+| Médiathèque vidéo | Toutes les vidéos déposées, les chapitres qui s'en servent, l'état d'encodage. Aperçu, Renommer, Encoder en multi-débit, Supprimer (seulement si aucun chapitre ne l'utilise). |
+| Formateurs | Fiches publiques, ordre d'affichage, tarif et activation du coaching privé. |
+| Calendrier des sessions | Coaching collectif : création, report, annulation, présence. |
+| Coaching privé | Demandes de séances individuelles ; le badge compte celles à traiter. |
+| Apprenants | Comptes, accès, attestations. |
+| Candidatures formateurs | Formulaire public « Devenir formateur ». |
+| Statistiques | Tableau par formateur en bas de Coaching privé : inscrits, complétion, présence, coaching privé. |
+| Performances | Onglets Résumé, Ventes, Visites, Clients, Funnel. Les ventes viennent de la base ; visites et sources restent « — » (à consulter dans Google Analytics). |
+| Revenus | CA (modules + coaching privé), frais FeexPay, marge, revenu Big Five, rémunération formateurs ; export CSV. |
+| Historique & versions | « Journal des actions » : chaque action, son auteur, son détail ; export CSV. La restauration se fait depuis le CMS et l'onglet Historique d'un module, pas d'ici. |
+| Paramètres | Six volets (section 10). |
+| Transactions & paiements | Paiements et échecs (section 4). |
+
+---
+
+## 4. Ventes et paiements
+
+Les paiements passent par **FeexPay, en production**. Seul le **Mobile Money** (Orange, MTN,
+Moov) est ouvert ; Wave et la carte attendent leur activation chez FeexPay et sont annoncés
+« Bientôt disponible » (le serveur les refuse).
+
+- Une commande est confirmée au retour du navigateur ou par le webhook FeexPay, qui relit la
+  transaction chez le prestataire. L'accès s'ouvre seul, l'apprenant reçoit un e-mail.
+- Une commande en attente depuis plus de 15 minutes est redemandée à FeexPay par une tâche
+  planifiée ; au bout de 24 h sans réponse, elle est close « délai dépassé ». **Sur Vercel, cette
+  tâche tourne une fois par jour, à 4 h** ; pour un rythme horaire, un cron externe doit appeler
+  `POST /api/taches/commandes` avec `Bearer TACHES_CLE`.
+- **Transactions & paiements** est en lecture seule : échecs du mois par motif (solde
+  insuffisant, validation MoMo expirée, refus opérateur, interruption réseau, carte refusée,
+  double paiement, autre), colonne « suite » (payé J+1, relancé, sans suite), liste des
+  transactions filtrable, export CSV. Les remboursements se font dans l'espace FeexPay. Le texte
+  « relance automatique » de l'écran ne correspond à aucun envoi.
+
+---
+
+## 5. Coaching privé
+
+Une demande arrive avec l'apprenant, le module, le formateur, l'objectif, la difficulté, une
+durée de **1 à 3 h** et **3 à 14 créneaux** proposés.
+
+1. **Confirmer + envoyer le lien de paiement** : choisir le créneau et la durée. Le prix est le
+   tarif horaire du formateur × la durée. L'apprenant reçoit un e-mail.
+2. L'apprenant clique **« Accepter et payer »** dans son espace (Mobile Money). La demande passe
+   **« payée » seule** au paiement. « Marquer payée » reste en secours.
+3. **Générer le lien de session** : la **réunion Zoom est créée automatiquement** (salle
+   d'attente, fuseau Africa/Abidjan). Le champ lien n'est qu'un secours. Sans date et heure
+   précises dans le créneau, la réunion démarre « maintenant ».
+4. **Marquer réalisée** après la séance ; l'apprenant peut noter le formateur.
+
+« Annuler » sur une carte ouvre le refus : motif obligatoire, transmis à l'apprenant. Chaque
+étape est journalisée et visible de l'apprenant (« Suivi »). Statuts : en attente, en étude,
+confirmée-attente de paiement, payée, réalisée, refusée, expirée, annulée par l'apprenant.
+
+Limites connues :
+
+- l'écran affiche un tarif fixe de 50 000 FCFA/h ; le montant facturé suit le tarif du formateur ;
+- quand l'apprenant propose un autre créneau, la demande repasse « en étude » et sa carte n'a
+  plus de bouton d'action ;
+- aucune expiration automatique, aucun rappel sous 48 h, aucun événement Google Agenda (mode
+  simulation) : surveiller le bloc « À traiter » ;
+- seul l'apprenant reçoit un e-mail aux changements de statut ; le formateur n'est pas prévenu.
+
+---
+
+## 6. Sessions collectives
+
+- **« Valider et créer la réunion Zoom »** crée la réunion automatiquement. Format fixe : 2 h,
+  25 places. Une session par couple thématique–formateur et par mois (hors sessions annulées).
+- **« Reporter et notifier »** déplace aussi la réunion Zoom ; **« Annuler et notifier »** la
+  supprime. Tous les inscrits reçoivent un e-mail. « Modifier » et la création ne notifient
+  personne.
+- **Relever la présence** après chaque séance (nombre de participants) : c'est la seule source
+  des taux de présence.
+
+---
+
+## 7. Apprenants
+
+- **« + Ajouter un apprenant »** : un e-mail porte un lien pour choisir le mot de passe, valable
+  72 h ; un module peut être offert d'emblée, avec motif.
+- **« Attribuer un accès à un module »** (offres-commerciales) : motif obligatoire, journalisé,
+  apprenant prévenu par e-mail.
+- Panneau **Historique** : accès et leur origine (achat, attribution), « Révoquer » / « Rétablir »
+  un accès (motif obligatoire) ; attestations : « Révoquer » / « Rétablir » (section attestations).
+  Une attestation révoquée paraît invalide sur la page publique de vérification.
+- **Suppression de compte par l'apprenant** : mot de passe ressaisi, compte désactivé, puis
+  supprimé définitivement **14 jours plus tard** par la tâche de nuit, avec un rappel à J-3. Se
+  reconnecter avant l'échéance le réactive. Commandes, transactions et attestations restent pour
+  la comptabilité. Les comptes formateur et admin se ferment par l'équipe.
+
+---
+
+## 8. Formateurs et candidatures
+
+**Candidatures formateurs** : « Marquer en étude », « Créer le compte formateur » (fiche publique
+et compte créés en une fois, préremplis), « Refuser », « Rouvrir ». Le formateur reçoit par e-mail
+un lien pour définir son mot de passe, valable 72 h, aussi affiché à l'écran ; un mot de passe
+temporaire est possible à la place. Le bouton « Contacter sur WhatsApp » ouvre pour l'instant le
+numéro de Big Five, pas celui du candidat.
+
+**Formateurs** : colonnes Modules, Accès, Tarif coaching, Ordre public. La poignée ⋮⋮ fixe
+l'ordre de `/formateurs`. « Modifier » ouvre la fiche publique (nom, expertise, bio, texte
+alternatif du portrait, programme, « Fiche complète ») ; une fiche incomplète reste hors index et
+hors sitemap. La case « Coaching privé » rend le formateur sélectionnable, ou non, dans les
+nouvelles demandes ; les séances payées restent honorées. Le bouton final « Supprimer
+définitivement » ne fait encore rien : la suppression se demande à un développeur.
+
+---
+
+## 9. Contenus et site public
+
+- **Éditeur de module**, 8 onglets : Informations, Chapitres, Ressources, Quiz, Fiche
+  commerciale, Offre & prix, Référencement et partage, Historique. « Marquer « Prêt » » est refusé
+  tant que la liste de contrôle n'est pas remplie ; « Prêt » ne veut pas dire « en vente ».
+  L'offre ne s'ouvre qu'avec promesse, « pourquoi » et au moins un chapitre ; la fermer ne retire
+  jamais un accès acquis ; le prix exige offres-commerciales.
+- **CMS Site vitrine** : par bloc, « Modifier », « Publier ce bloc sur le site », programmation
+  « du … au … », historique des versions avec restauration. Les images de la bannière d'accueil
+  se changent dans le bloc « Bannière » (champs « Image de fond » et « Visuel ») en y collant
+  l'adresse de l'image ; vides, elles reviennent à `public/images/hero/<programme>.svg`.
+- **Blog** : onglets Contenu, Référencement et partage, Publication. « Publier » est bloqué tant
+  que le texte alternatif d'une image manque. Pas de restauration de version pour les articles.
+- **Référencement** : changer un slug demande confirmation et crée une redirection permanente.
+  Slug, indexation et canonical sont réservés au rôle administrateur supérieur.
+
+---
+
+## 10. Paramètres
+
+| Volet | Contenu | Écriture |
 |---|---|---|
-| Pilotage | Vue d'ensemble | tous ; chiffre d'affaires et ventes avec performances-marketing ou statistiques-performance, dernières transactions avec transactions-paiements, activité récente avec historique-versions |
-| Pilotage | Performances | performances-marketing |
-| Pilotage | Revenus | statistiques-performance |
-| Pilotage | Transactions | transactions-paiements (admin supérieur) |
-| Contenus | Modules et chapitres, CMS, Blog, Référencement | modules-chapitres, cms-site-vitrine, blog, referencement-contenu |
-| Contenus | Prix d'un module, accès gratuit à un module | offres-commerciales |
-| Communauté | Formateurs, Calendrier des sessions, Coaching privé | formateurs, calendrier-sessions, coaching-prive |
-| Communauté | Apprenants (fiches, création de compte, révocation d'accès) | apprenants |
-| Communauté | Révocation d'une attestation, volet Attestations en lecture | attestations |
-| Administration | Accès, Tracking, Historique, Paramètres | administration-acces, historique-versions |
+| Administration des accès | Créer, modifier (sections), révoquer un administrateur ; réinitialiser sa 2FA ; activer le coaching privé d'un formateur. | section administration-acces ; 2FA : supérieur |
+| Tracking & pixels | GTM (`GTM-KVFTGVVX`), GA4 (`G-7Y25B7NCW8`), Pixel Meta et jeton de l'API Conversions, TikTok, LinkedIn. « Déverrouiller » redemande le mot de passe ; chaque changement est journalisé avec l'ancienne valeur (le jeton : « valeur remplacée »). | GTM et code personnalisé : supérieur ; autres pixels : tout admin |
+| Référencement · règles globales | Règles du site en lecture seule ; référentiels du profil apprenant (réseaux, outils, canaux de vente, tranches d'audience) : ajout, renommage, désactivation. | référentiels : tout admin |
+| Attestations | Signature de la direction (dessinée ou image ≤ 256 Ko), nom sous la signature, signature de chaque formateur. S'applique aussi aux attestations déjà délivrées. | supérieur |
+| Paramètres financiers | Frais FeexPay, parts Big Five / formateur (100 % au total), objectifs mensuels. Journalisé. | supérieur |
+| Mon profil | Photo, nom complet, e-mail (mot de passe actuel demandé), WhatsApp, mot de passe. Le texte « code WhatsApp » de l'écran est périmé. | soi-même |
 
-Les griffes et le nom du signataire des attestations ne se changent que depuis un compte
-d'administrateur supérieur. Un compte ne peut pas se révoquer lui-même.
+Le suivi des conversions (GA4 via GTM, Pixel Meta, API Conversions) ne part qu'avec le
+consentement du visiteur et jamais depuis les espaces apprenant, formateur ou administration :
+voir `app/plugins/tracking.client.ts` et `docs/tracking/email-questions-tracking.md`.
 
 ---
 
-## 3. Coaching privé — traiter une demande
+## 11. Prestataires
 
-Écran **Coaching privé**. Tarif fixe : 50 000 FCFA par heure. Aucun paiement n'est demandé avant
-confirmation.
+| Fonction | État |
+|---|---|
+| E-mails (invitations, réinitialisations, coaching, sessions, achats) | envoyés par Resend |
+| WhatsApp | aucun envoi : pas de pilote, même là où l'écran annonce « e-mail + WhatsApp » |
+| Code de connexion admin | TOTP (application), rien n'est envoyé |
+| Paiement | FeexPay en production, Mobile Money seulement |
+| Zoom | en production, réunions créées automatiquement |
+| Google Agenda | simulation : aucun événement créé |
+| Audience dans Performances | « — » : à lire dans Google Analytics |
+| Relance des commandes en attente | quotidienne sur Vercel |
 
-Une demande arrive avec : l'apprenant, le module, le formateur choisi, l'objectif et la difficulté
-qu'il a décrits, la durée souhaitée (1 à 4 h), jusqu'à trois créneaux proposés.
-
-Le circuit, bouton par bouton :
-
-1. **Confirmer + envoyer le lien de paiement** — choisir le créneau retenu (parmi ceux proposés,
-   ou un autre convenu avec le formateur), ajouter un commentaire si besoin. La demande passe
-   « Confirmée — en attente de paiement ». *Le lien de paiement FeexPay est à envoyer à la main
-   tant que FeexPay n'est pas branché.*
-2. **Marquer payée** — une fois l'encaissement constaté.
-3. **Planifier + générer le lien de session** — saisir le créneau définitif et le lien Zoom
-   (créé dans Zoom). L'apprenant et le formateur voient alors le lien dans leur espace.
-4. **Marquer réalisée** — après la séance. L'apprenant peut alors noter le formateur.
-
-**Refuser** est possible tant que la demande n'est pas payée ; le motif est obligatoire et
-transmis tel quel à l'apprenant. L'apprenant peut lui-même retirer sa demande tant qu'elle n'est
-pas payée.
-
-Chaque action est journalisée et laisse une trace datée visible par l'apprenant (« Suivi » sous
-chaque demande). Les filtres en haut de l'écran isolent les demandes à traiter.
-
----
-
-## 4. Formateurs et candidatures
-
-Écran **Formateurs**.
-
-**Coaching privé : Simple / Activé.** La case de la colonne « Coaching privé » ouvre ou referme la
-section dans l'espace du formateur et le rend sélectionnable, ou non, dans les demandes des
-apprenants. Repasser « Simple » retire le formateur des nouvelles demandes ; les séances déjà
-payées restent honorées. Action journalisée.
-
-**Candidatures** (formulaire public « Devenir formateur »). Pour chacune :
-
-- **Marquer en étude** puis, si elle est retenue, **Créer le compte formateur** : la fiche
-  publique et le compte sont créés en une fois, préremplis depuis la candidature. Deux options
-  d'accès : un **lien pour définir le mot de passe** (valable 72 h) ou un **mot de passe
-  temporaire** que vous lui communiquez. Le lien s'affiche à l'écran : transmettez-le tant que
-  l'envoi automatique n'est pas branché.
-- **Refuser** ferme la candidature ; « Rouvrir » la remet en file.
-
-La fiche publique naît incomplète et hors index : le formateur la complète depuis son espace
-(Mon profil), et elle apparaît sur `/formateurs` une fois renseignée. Le bouton « + Ajouter un
-formateur » ouvre la même fenêtre, à vide.
-
----
-
-## 5. Apprenants
-
-Écran **Apprenants** : liste filtrable, fiche persona (secteur, expérience, réseaux, objectif)
-transmise aux formateurs avant une session. **Attribuer un accès** offre un module sans achat :
-motif obligatoire, journalisé, apprenant prévenu.
-
-Un apprenant peut supprimer son compte depuis ses paramètres. Le compte disparaît pour lui
-(connexion impossible, e-mail libéré) mais ses commandes, transactions et certificats restent en
-base pour la comptabilité.
-
----
-
-## 6. Sessions de coaching collectif
-
-Écran **Calendrier des sessions** : création d'une session par thématique (une seule par
-thématique et par date), report, annulation. Les inscrits sont prévenus par e-mail et WhatsApp
-dès que les envois sont branchés. *La réunion Zoom se crée à la main pour l'instant.*
-
-**Relever la présence** après chaque séance (colonne Présence) : sans ce relevé, les taux de
-participation restent vides côté formateur et dans les statistiques.
-
----
-
-## 7. Contenus : modules, blog, référencement
-
-**Modules et chapitres** → éditeur d'un module, six onglets : Informations, Chapitres,
-Ressources, Offre, **Référencement et partage**, Historique. L'offre ne s'ouvre pas sans promesse,
-« pourquoi » et au moins un chapitre. Un brouillon n'est ni visible, ni indexable, ni dans le
-sitemap.
-
-**Blog** → « + Nouvel article » ou « Modifier ». L'éditeur a deux onglets : Contenu (titre,
-chapô, corps en Markdown, catégorie, auteur, image, modules liés, « à la une ») et Référencement
-et partage. « Publier » rend l'article visible et l'ajoute au sitemap ; « Dépublier » l'en retire.
-
-**Référencement (SEO)** : la liste de toutes les pages indexables. Le panneau de droite est le
-même que l'onglet des éditeurs : ce qui est modifié à un endroit apparaît à l'autre. Un changement
-de slug demande confirmation et crée automatiquement une redirection permanente. Les champs slug,
-indexation et canonical sont réservés à l'administrateur supérieur.
-
-**CMS du site** : hero, bandeau, témoignages. **Historique** : toute écriture conserve la version
-précédente, restaurable en un clic.
-
----
-
-## 8. Transactions et échecs de paiement
-
-Écran **Transactions** (administrateur supérieur). Lecture seule : la source comptable reste
-FeexPay. Le bandeau du haut compte les échecs sur trente jours et les répartit par motif — solde
-insuffisant, annulé par l'utilisateur, délai dépassé, opérateur indisponible, carte refusée,
-erreur inconnue. Cliquer un motif filtre la liste.
-
-*FeexPay n'est pas encore branché* : la commande s'enregistre et l'accès s'ouvre sans
-encaissement réel. En développement, le tunnel permet de simuler chacun des six échecs.
-
----
-
-## 9. Paramètres
-
-- **Répartition et frais** (administrateur supérieur) : frais de paiement, parts Big Five /
-  formateur (total 100 %), objectifs mensuels. Journalisé.
-- **Mon profil** : identité, e-mail, changement de mot de passe.
-- **Administration des accès** : création d'un compte admin, sections cochées une à une,
-  révocation.
-- **Tracking et pixels** : écran verrouillé, déverrouillage par ressaisie du mot de passe, chaque
-  changement journalisé avec son ancienne valeur.
-
----
-
-## 10. Ce qui attend encore un prestataire
-
-| Fonction | État | Contournement |
-|---|---|---|
-| E-mails et WhatsApp de la plateforme (invitations, suivi coaching, sessions, réinitialisation) | pilote « console » : le message s'écrit dans la sortie du serveur | transmettre à la main ; le lien d'invitation formateur s'affiche aussi à l'écran |
-| Code de connexion admin | envoyé par Supabase Auth | compléter le gabarit Magic Link avec `{{ .Token }}` |
-| Paiement FeexPay | simulé | envoyer le lien de paiement à la main, marquer « payée » soi-même |
-| Zoom | lien saisi à la main | créer la réunion dans Zoom, coller le lien à la planification |
-| Mesures d'audience (Performances) | « — » tant que GA4/GTM ne sont pas saisis dans Tracking | — |
-
-Le détail des comptes et clés à obtenir est dans `TODO.md`.
+Le détail des comptes et clés est dans `TODO.md`.

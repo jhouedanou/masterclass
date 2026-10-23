@@ -53,7 +53,9 @@ function libelleCreneau(c: CreneauCoaching): string {
  * Traitement d'une demande par l'équipe (planche C, écran 05) : confirmation
  * et lien de paiement, encaissement, planification avec le lien de session,
  * clôture, refus motivé. Chaque action est journalisée et l'apprenant est
- * prévenu ; le formateur l'est à la planification.
+ * prévenu par e-mail. Le formateur ne reçoit rien : l'événement Google Agenda
+ * est posé sur l'agenda de l'équipe, sans invités (voir `utils/googleAgenda`),
+ * et aucun rappel n'est programmé côté plateforme.
  */
 export default defineEventHandler(async (event) => {
   const admin = await exigerSection(event, 'coaching-prive')
@@ -103,11 +105,15 @@ export default defineEventHandler(async (event) => {
 
   // Proposition : heures et montant (heures × tarif) accompagnent le créneau.
   let montant: number | undefined
+  // Les heures retenues, pas celles de la demande : l'e-mail annonçait
+  // « 210 000 FCFA pour 2 h » quand l'équipe venait d'en retenir trois.
+  let heuresRetenues = demande.heures
   if (body.action === 'confirmer') {
     const heures = Number(body.heures ?? demande.heures)
     if (![1, 2, 3].includes(heures)) throw createError({ statusCode: 422, statusMessage: '1, 2 ou 3 heures' })
     const formateurTarif = (await trouverFormateur(demande.formateurId))?.coachingPriveFcfaHeure ?? 50_000
     montant = heures * formateurTarif
+    heuresRetenues = heures
     if (heures !== demande.heures) {
       await supabaseHeures(demande.id, heures)
     }
@@ -176,7 +182,7 @@ export default defineEventHandler(async (event) => {
     prenom: apprenant?.prenom ?? '',
     statut: transition.vers,
     montant: montant ? String(montant) : '',
-    heures: String(demande.heures),
+    heures: String(heuresRetenues),
     creneau: majee.creneau ?? '',
     lien: majee.lienSession ?? '',
     motif,

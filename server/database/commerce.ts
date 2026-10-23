@@ -255,6 +255,18 @@ export async function purgerTentativesVerification(): Promise<number> {
  * Avec FeexPay, la commande naît `attente` et passe `confirmee` ou `echec` au
  * retour du prestataire ; en simulation elle est confirmée d'emblée.
  */
+/**
+ * Rend le contexte Meta d'une commande et l'efface : il ne sert qu'une fois.
+ * Appelé sur la seule première confirmation (`rapprocherCommande`), d'où
+ * l'absence de verrou entre la lecture et l'effacement.
+ */
+export async function consommerSuiviMeta(reference: string): Promise<Record<string, unknown> | null> {
+  const { data } = await supabase().from('commandes').select('suivi_meta').eq('reference', reference).maybeSingle()
+  const suivi = data?.suivi_meta ?? null
+  if (suivi) await supabase().from('commandes').update({ suivi_meta: null }).eq('reference', reference)
+  return suivi
+}
+
 export async function enregistrerCommande(champs: {
   utilisateurId: string
   lignes: { moduleId: string; prixFcfa: number }[]
@@ -264,6 +276,8 @@ export async function enregistrerCommande(champs: {
   demandeCoachingId?: string
   /** Montant imposé quand la commande ne porte pas de module (séance privée). */
   total?: number
+  /** Contexte Meta, avec le consentement marketing (voir server/utils/metaCapi.ts). */
+  suiviMeta?: object | null
 }): Promise<Commande> {
   // Référence transmise à FeexPay comme `custom_id` : un suffixe aléatoire
   // évite qu'un même instant produise deux commandes identiques.
@@ -280,6 +294,7 @@ export async function enregistrerCommande(champs: {
         moyen: champs.moyen,
         statut: champs.statut ?? 'confirmee',
         demande_coaching_id: champs.demandeCoachingId ?? null,
+        suivi_meta: (champs.suiviMeta as Record<string, unknown> | null | undefined) ?? null,
       })
       .select('*')
       .single(),

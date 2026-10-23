@@ -21,15 +21,17 @@ const emit = defineEmits<{ confirmer: []; annuler: [] }>()
         <li>✓ La section Coaching privé apparaît dans son dashboard formateur</li>
         <li>✓ Son profil /formateurs affiche « Coaching privé : {{ formatFcfa(formateur.coachingPriveFcfaHeure) }} / h »</li>
         <li>✓ Les apprenants peuvent le choisir dans une demande de coaching</li>
-        <li>✓ Il est notifié par email + WhatsApp</li>
       </ul>
+      <p class="mt-3 text-[13px] text-texte">
+        Aucun message ne lui est envoyé : prévenez-le vous-même.
+      </p>
       <div class="mt-5 flex flex-wrap gap-2">
         <UiBaseButton taille="sm" :disabled="enCours" @click="emit('confirmer')">Activer</UiBaseButton>
         <UiBaseButton taille="sm" variante="contour" @click="emit('annuler')">Annuler</UiBaseButton>
       </div>
       <p class="mt-4 text-[12px] text-discret">
         Réversible (« Repasser simple ») — les séances déjà payées restent honorées. Action
-        journalisée, réservée aux admins avec le droit « Administration des accès ».
+        journalisée, réservée aux admins avec le droit « Formateurs ».
       </p>
     </div>
   </div>
