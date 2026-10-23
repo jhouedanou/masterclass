@@ -94,8 +94,7 @@ export default defineEventHandler(async (event) => {
   return {
     etape: 'code' as const,
     masque: masquer(compte.email),
-    // Supabase Auth n'envoie que par e-mail ; le canal WhatsApp attend le pilote interne.
-    whatsapp: fournisseurCode() === 'interne' && Boolean(compte.whatsapp),
+    // Le code ne part que par e-mail : aucun pilote WhatsApp n'existe.
     fournisseur: fournisseurCode(),
   }
 })

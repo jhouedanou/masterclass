@@ -45,10 +45,10 @@ export const useAuthStore = defineStore('auth', () => {
    *  session directement. */
   async function connexionAdmin(email: string, motDePasse: string) {
     const reponse = await $fetch<
-      | { etape: 'code'; masque: string; whatsapp?: boolean; fournisseur?: 'interne' | 'supabase-auth' }
+      | { etape: 'code'; masque: string; fournisseur?: 'interne' | 'supabase-auth' }
       // Application d'authentification : rien n'est envoyé, donc ni adresse
       // masquée ni délai. `enrolement` quand le compte n'a pas encore de secret.
-      | { etape: 'totp' | 'enrolement'; masque?: string; whatsapp?: boolean; fournisseur: 'totp' }
+      | { etape: 'totp' | 'enrolement'; masque?: string; fournisseur: 'totp' }
       | { etape: 'session'; utilisateur: Utilisateur }
     >('/api/auth/admin/connexion', { method: 'POST', body: { email, motDePasse } })
     if (reponse.etape === 'session') utilisateur.value = reponse.utilisateur

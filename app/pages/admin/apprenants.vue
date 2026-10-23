@@ -169,11 +169,13 @@ async function attribuer() {
         utilisateurId: selection.value!.id,
         moduleId: attribution.moduleId,
         motif: attribution.motif,
+        notifier: attribution.notifier,
       },
     })
-    message.value = `Accès attribué à ${selection.value!.nom} — marqué « Attribution admin », apprenant notifié.`
-    annoncer(`Accès attribué à ${selection.value!.nom} — marqué « Attribution admin », apprenant notifié.`)
-    Object.assign(attribution, { ouverte: false, moduleId: '', motif: '' })
+    const suite = attribution.notifier ? 'apprenant prévenu par e-mail' : 'apprenant non prévenu'
+    message.value = `Accès attribué à ${selection.value!.nom} — marqué « Attribution admin », ${suite}.`
+    annoncer(message.value)
+    Object.assign(attribution, { ouverte: false, moduleId: '', motif: '', notifier: true })
     const id = selection.value!.id
     await refresh()
     selection.value = apprenants.value?.find((a) => a.id === id) ?? null
@@ -532,7 +534,7 @@ const ETIQUETTE = 'flex flex-col gap-1.5 text-[12.5px] font-bold text-texte'
         </div>
         <p v-if="peutAttribuer" class="mt-2.5 text-[11.5px] leading-[1.5] text-discret">
           « Attribuer un accès » ouvre une fenêtre pour offrir gratuitement une formation à cet
-          apprenant — il est notifié par email + WhatsApp dès l’attribution.
+          apprenant — il est prévenu par e-mail si vous le demandez.
         </p>
       </aside>
 
@@ -598,7 +600,7 @@ const ETIQUETTE = 'flex flex-col gap-1.5 text-[12.5px] font-bold text-texte'
             </UiBaseButton>
           </div>
           <p class="text-[11.5px] leading-[1.5] text-discret">
-            L’apprenant reçoit un email + WhatsApp d’invitation pour définir son mot de passe et
+            L’apprenant reçoit un e-mail d’invitation pour définir son mot de passe et
             compléter son profil. Compte marqué « Création admin » dans l’historique.
           </p>
         </div>
@@ -635,7 +637,7 @@ const ETIQUETTE = 'flex flex-col gap-1.5 text-[12.5px] font-bold text-texte'
           </label>
           <label class="flex items-center gap-2.5 text-[12.5px] font-semibold text-texte">
             <input v-model="attribution.notifier" type="checkbox" class="size-4 accent-social">
-            Notifier l’apprenant par email + WhatsApp dès l’attribution
+            Prévenir l’apprenant par e-mail dès l’attribution
           </label>
           <div class="flex gap-2.5">
             <UiBaseButton type="submit" taille="sm" variante="sombre" class="flex-1">
