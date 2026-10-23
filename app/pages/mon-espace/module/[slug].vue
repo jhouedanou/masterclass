@@ -51,6 +51,8 @@ const restants = computed(() => total.value - data.value!.chapitresVus)
 const quiz = computed(() => data.value!.quiz)
 /** L'attestation attend encore le quiz : tous les chapitres vus ne suffisent plus. */
 const quizEnAttente = computed(() => quizAReussir(quiz.value))
+/** Le quiz s'ouvre une fois toutes les vidéos vues (règle du serveur). */
+const quizOuvert = computed(() => quiz.value?.reussi === true || data.value!.acces.progression >= 100)
 const certificatDebloque = computed(() => restants.value === 0 && !quizEnAttente.value)
 
 function horloge(secondes: number): string {
@@ -257,9 +259,9 @@ const LIBELLE_SESSION = (date: string) =>
           <p v-else class="text-[13.5px] text-discret">Aucune session planifiée pour cette thématique pour l’instant.</p>
         </div>
 
-        <!-- Quiz du module : ouvert dès l'achat, sa réussite conditionne
-             l'attestation. Les tentatives du jour sont rappelées ici pour
-             qu'on ne découvre pas le verrou en arrivant sur le quiz. -->
+        <!-- Quiz du module : ouvert une fois les vidéos vues, sa réussite
+             conditionne l'attestation. Les tentatives du jour sont rappelées
+             ici pour qu'on ne découvre pas le verrou en arrivant sur le quiz. -->
         <div v-if="quiz" class="rounded-carte border border-ligne-douce bg-white p-[22px]">
           <div class="mb-2.5 flex items-center justify-between gap-3">
             <p class="font-title text-[17px] font-light">Quiz du module</p>
@@ -277,11 +279,24 @@ const LIBELLE_SESSION = (date: string) =>
               <template v-if="quiz.derniereNote !== undefined">Dernière note : <b>{{ quiz.derniereNote }} / 100</b>.</template>
             </template>
           </p>
-          <p v-if="!quiz.reussi" class="mb-3 text-[12.5px] text-discret">
+          <p v-if="!quizOuvert" class="mb-3 text-[12.5px] text-discret">
+            S’ouvre une fois toutes les vidéos vues.
+          </p>
+          <p v-else-if="!quiz.reussi" class="mb-3 text-[12.5px] text-discret">
             Tentatives restantes aujourd’hui :
             <b :class="quiz.tentativesRestantes === 0 ? 'text-erreur' : 'text-encre'">{{ quiz.tentativesRestantes }} / {{ quiz.tentativesMax }}</b>
           </p>
           <UiBaseButton
+            v-if="!quizOuvert"
+            class="w-full"
+            taille="sm"
+            variante="verrouille"
+            disabled
+          >
+            Quiz verrouillé
+          </UiBaseButton>
+          <UiBaseButton
+            v-else
             :to="`/mon-espace/quiz/${moduleCourant.slug}`"
             class="w-full"
             taille="sm"

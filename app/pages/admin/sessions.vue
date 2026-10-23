@@ -130,8 +130,8 @@ async function reporter() {
       method: 'PATCH',
       body: { id: report.value.id, action: 'reporter', date: nouvelleDate.date, heure: nouvelleDate.heure },
     })
-    message.value = `Séance reportée — ${r.notifies} apprenant(s) notifié(s) par email et WhatsApp.`
-    annoncer(`Séance reportée — ${r.notifies} apprenant(s) notifié(s) par email et WhatsApp.`)
+    message.value = `Séance reportée — ${r.notifies} apprenant(s) notifié(s) par e-mail.`
+    annoncer(`Séance reportée — ${r.notifies} apprenant(s) notifié(s) par e-mail.`)
     report.value = null
     await refresh()
   } catch (e) {
@@ -145,8 +145,8 @@ async function annuler() {
     method: 'PATCH',
     body: { id: annulation.value.id, action: 'annuler', motif: motif.value },
   })
-  message.value = `Session annulée — ${r.notifies} apprenant(s) notifié(s) par e-mail et WhatsApp.`
-  annoncer(`Session annulée — ${r.notifies} apprenant(s) notifié(s) par e-mail et WhatsApp.`)
+  message.value = `Session annulée — ${r.notifies} apprenant(s) notifié(s) par e-mail.`
+  annoncer(`Session annulée — ${r.notifies} apprenant(s) notifié(s) par e-mail.`)
   annulation.value = null
   motif.value = ''
   await refresh()
@@ -218,8 +218,8 @@ async function enregistrerModification() {
         method: 'PATCH',
         body: { id: session.id, action: 'reporter', date: retouche.date, heure: retouche.heure },
       })
-      message.value = `Séance reportée — ${r.notifies} apprenant(s) notifié(s) par e-mail et WhatsApp.`
-      annoncer(`Séance reportée — ${r.notifies} apprenant(s) notifié(s) par e-mail et WhatsApp.`)
+      message.value = `Séance reportée — ${r.notifies} apprenant(s) notifié(s) par e-mail.`
+      annoncer(`Séance reportée — ${r.notifies} apprenant(s) notifié(s) par e-mail.`)
     } else {
       message.value = 'Séance modifiée.'
       annoncer('Séance modifiée.')
@@ -355,7 +355,8 @@ async function creer() {
             <button class="text-social hover:underline" @click="ouvrirReport(session)">Reporter</button>
             <button class="text-erreur hover:underline" @click="annulation = session">Annuler</button>
           </span>
-          <span v-else class="text-[12.5px] text-discret">Notifiée — email + WhatsApp ✓</span>
+          <span v-else-if="session.statut === 'annulee'" class="text-[12.5px] text-discret">Inscrits prévenus par e-mail ✓</span>
+          <span v-else class="text-[12.5px] text-discret">Séance passée</span>
         </td>
       </tr>
     </AdminTableauSimple>
@@ -366,7 +367,8 @@ async function creer() {
       Une session par mois et par couple thématique–formateur · 10 sessions mensuelles en Phase 1 (5 SM + 5
       ENT) · {{ dureeSessionEnHeures() }} · {{ PLACES_SESSION }} participants max · jour fixe du mois · visible uniquement des apprenants
       ayant acheté un module couvert · lien Zoom personnel généré à la demande, jamais affiché en
-      clair · rappel automatique 24 h avant par email + WhatsApp.
+      clair · aucun rappel automatique avant la séance : seuls un report ou une annulation
+      préviennent les inscrits, par e-mail.
     </aside>
 
     <!-- Planification : carte cerclée de violet, à 1,5 px, sous le tableau. -->
@@ -474,7 +476,8 @@ async function creer() {
       <p class="mt-4 border-t border-ligne-claire pt-3 text-[12px] leading-[1.6] text-discret">
         Apprenants autorisés : acheteurs des modules couverts, profil à 100 %. À la validation :
         session visible dans leur calendrier, bouton « Rejoindre » activé à l’ouverture de la
-        salle · notification email + WhatsApp.
+        salle. Aucune notification ne part à la création : les inscrits sont prévenus par
+        e-mail en cas de report ou d’annulation.
       </p>
     </form>
 

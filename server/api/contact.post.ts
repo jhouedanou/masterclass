@@ -1,3 +1,4 @@
+import { SUJETS_CONTACT } from '#shared/utils/contact'
 import { limiterDebit } from '../utils/debit'
 import { notifier } from '../utils/notifications'
 
@@ -6,6 +7,10 @@ import { notifier } from '../utils/notifications'
  * séparément pour que l'écran signale l'erreur sous le bon champ
  * (« Adresse email incomplète — vérifiez le format. »), et un accusé de
  * réception part aussitôt : « un accusé vient de vous être adressé ».
+ *
+ * L'accusé part à une adresse que personne n'a vérifiée : il ne recopie aucun
+ * texte saisi. Seul le sujet y figure, et il est pris dans une liste fermée
+ * (SUJETS_CONTACT). Le nom et le message, eux, ne vont qu'à l'équipe.
  */
 export default defineEventHandler(async (event) => {
   await limiterDebit(event, 'contact')
@@ -47,7 +52,7 @@ export default defineEventHandler(async (event) => {
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
     erreurs.email = 'Adresse email incomplète — vérifiez le format.'
   }
-  if (!sujet) erreurs.sujet = 'Choisissez un sujet.'
+  if (!(SUJETS_CONTACT as readonly string[]).includes(sujet)) erreurs.sujet = 'Choisissez un sujet.'
   if (!message) erreurs.message = 'Écrivez votre message.'
 
   if (Object.keys(erreurs).length) {
@@ -68,7 +73,7 @@ export default defineEventHandler(async (event) => {
       message,
     },
   })
-  await notifier({ canal: 'email', a: email, modele: 'contact-accuse', variables: { nom, sujet } })
+  await notifier({ canal: 'email', a: email, modele: 'contact-accuse', variables: { sujet } })
 
   return { ok: true }
 })

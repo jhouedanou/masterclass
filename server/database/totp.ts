@@ -89,17 +89,24 @@ export async function lireTotp(utilisateurId: string): Promise<EtatTotp> {
 }
 
 /** Dépose un secret sans l'activer : l'enrôlement n'est confirmé qu'après un
- *  premier code correct. */
+ *  premier code correct.
+ *
+ *  Jamais par-dessus un secret actif : un enrôlement ne s'ouvre qu'au mot de
+ *  passe, et laisser l'écraser rendait le second facteur inutile — le mot de
+ *  passe suffisait à poser sa propre application à la place de celle de
+ *  l'admin. Seule la réinitialisation par un admin supérieur
+ *  (`reinitialiserTotp`) efface un secret actif. */
 export async function deposerSecret(utilisateurId: string, secret: string): Promise<void> {
   verifierUn(
     await supabase()
       .from('utilisateurs')
       .update({ totp_secret: chiffrer(secret), totp_active_le: null, totp_dernier_pas: null })
       .eq('id', utilisateurId)
+      .is('totp_active_le', null)
       .select('id')
       .maybeSingle(),
     'dépôt du secret',
-    'Compte introuvable',
+    'Compte introuvable, ou double authentification déjà active',
   )
 }
 
@@ -116,16 +123,25 @@ export async function activerTotp(utilisateurId: string, pas: number): Promise<v
   )
 }
 
-/** Retient le pas consommé. Tout pas inférieur ou égal sera refusé ensuite. */
-export async function marquerPas(utilisateurId: string, pas: number): Promise<void> {
-  verifier(
+/**
+ * Retient le pas consommé. Tout pas inférieur ou égal sera refusé ensuite.
+ *
+ * Conditionnel : la mise à jour n'a lieu que si le pas dépasse le dernier
+ * retenu. Deux requêtes portant le même code au même instant passaient toutes
+ * deux la lecture préalable ; une seule gagne maintenant l'écriture, et la
+ * réponse dit laquelle.
+ */
+export async function marquerPas(utilisateurId: string, pas: number): Promise<boolean> {
+  const rows = verifier(
     await supabase()
       .from('utilisateurs')
       .update({ totp_dernier_pas: pas })
       .eq('id', utilisateurId)
+      .or(`totp_dernier_pas.is.null,totp_dernier_pas.lt.${Math.trunc(pas)}`)
       .select('id'),
     'pas de temps consommé',
   )
+  return rows.length > 0
 }
 
 /** Remise à zéro : le compte devra se réenrôler. Sert au téléphone perdu sans

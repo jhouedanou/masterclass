@@ -512,9 +512,9 @@ watch(lecteur.erreur, async (message) => {
  *
  * Attendre le refus suffisait tant que le lecteur chargeait un manifeste au
  * démarrage. Un fichier unique, lui, redemande des plages pendant toute la
- * lecture : un chapitre de quarante minutes suivi avec des pauses dépasse
- * volontiers les quatre heures d'autorisation, et le refus tombe alors en
- * plein visionnage. La source est remplacée en gardant la place — changer le
+ * lecture, et un flux HLS ses segments : un chapitre suivi avec des pauses
+ * dépasse volontiers la demi-heure d'autorisation, et le refus tombait alors
+ * en plein visionnage. La source est remplacée en gardant la place — changer le
  * `src` d'une balise vidéo remet sinon le curseur à zéro.
  */
 const MARGE_RENOUVELLEMENT_SECONDES = 5 * 60
@@ -575,7 +575,7 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
              enregistrait tout aussi bien.
 
              Aucun de ces réglages n'est une protection : l'URL signée reste
-             lisible dans les outils de développement pendant ses quatre heures
+             lisible dans les outils de développement pendant ses trente minutes
              de validité, et rien n'empêche un enregistrement d'écran. Ils
              écartent le geste facile ; c'est le filigrane nominatif qui rend
              une rediffusion attribuable. -->

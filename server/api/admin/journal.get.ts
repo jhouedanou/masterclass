@@ -1,5 +1,5 @@
 import { listerJournal } from '../../database/administration'
-import { exigerAdmin } from '../../utils/session'
+import { exigerSection } from '../../utils/session'
 
 /**
  * Journal des actions (écran 16).
@@ -10,7 +10,7 @@ import { exigerAdmin } from '../../utils/session'
  * figée finirait par offrir des filtres qui ne renvoient rien.
  */
 export default defineEventHandler(async (event) => {
-  await exigerAdmin(event)
+  await exigerSection(event, 'historique-versions')
   const { auteur, type, objet } = getQuery(event) as Record<string, string | undefined>
 
   const entrees = await listerJournal()

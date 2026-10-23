@@ -20,6 +20,9 @@ const props = defineProps<{
   legende: string
   /** Formateur concerné ; absent, c'est la direction qui signe. */
   formateurId?: string
+  /** Griffe affichée sans action : son dépôt est réservé à l'administrateur
+   *  supérieur. */
+  lectureSeule?: boolean
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [string] }>()
@@ -161,7 +164,7 @@ async function retirer() {
           {{ modelValue ? 'Griffe déposée' : 'Aucune griffe — le document n’imprime que la ligne' }}
         </p>
       </div>
-      <div v-if="mode === 'apercu'" class="flex flex-wrap gap-2">
+      <div v-if="mode === 'apercu' && !lectureSeule" class="flex flex-wrap gap-2">
         <button
           type="button"
           class="rounded-full border-[1.5px] border-ligne px-4 py-2 text-[12.5px] font-bold text-texte transition hover:bg-fond-clair disabled:opacity-50"

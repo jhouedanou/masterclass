@@ -2,7 +2,7 @@ import { enregistrerJournal } from '../../database/administration'
 import { enregistrerVersion, listerVersions } from '../../database/backoffice'
 import { majModule, trouverModule } from '../../database/catalogue'
 import { assainirHtml } from '../../utils/texteRiche'
-import { exigerSection } from '../../utils/session'
+import { exigerSection, exigerUneSection } from '../../utils/session'
 
 /**
  * Édition d'un module. L'ouverture de l'offre — le passage à « disponible » —
@@ -14,11 +14,24 @@ import { exigerSection } from '../../utils/session'
 const INTERVALLE_VERSION_MINUTES = 10
 
 export default defineEventHandler(async (event) => {
-  const admin = await exigerSection(event, 'modules-chapitres')
+  // La fiche commerciale enregistre par cette route : la section « Fiches
+  // commerciales » seule y suffit. Le prix reste gardé plus bas.
+  const admin = await exigerUneSection(event, ['modules-chapitres', 'fiches-commerciales'])
   const body = await readBody<{ id: string; autosave?: boolean } & Record<string, unknown>>(event)
 
   const actuel = await trouverModule(body.id)
   if (!actuel) throw createError({ statusCode: 404, statusMessage: 'Module introuvable' })
+
+  // Le prix relève des offres commerciales, pas de l'édition du contenu : la
+  // section « Modules & chapitres » seule laissait n'importe quel rédacteur
+  // passer un module à 0 FCFA. Un prix renvoyé inchangé (l'éditeur envoie
+  // parfois le module entier) n'est pas une modification.
+  if (body.prixFcfa !== undefined && body.prixFcfa !== actuel.prixFcfa) {
+    await exigerSection(event, 'offres-commerciales')
+    if (!Number.isInteger(body.prixFcfa) || (body.prixFcfa as number) < 0) {
+      throw createError({ statusCode: 422, statusMessage: 'Prix invalide : un nombre entier de FCFA est attendu.' })
+    }
+  }
 
   if (body.statut === 'disponible') {
     const manques: string[] = []

@@ -11,7 +11,8 @@ import type { Formateur, Module } from '#shared/types'
  */
 const props = withDefaults(
   defineProps<{
-    module: Module & { formateur?: Formateur | null }
+    // Le prix est `null` quand l'équipe le masque (module annoncé).
+    module: Omit<Module, 'prixFcfa'> & { prixFcfa: number | null; formateur?: Formateur | null }
     thematiqueNom?: string
     statutVisible?: boolean
     /** Marque un module auquel l'apprenant a déjà accès (espace privé). Faux
@@ -92,12 +93,12 @@ const large = computed(() => props.variante === 'programme')
 
     <p class="text-[13px] text-discret">
       {{ module.formateur?.nom }} · {{ formatDuree(module.dureeMinutes) }}<template v-if="!large"> ·
-      {{ formatFcfa(module.prixFcfa, true) }}</template>
+      {{ module.prixFcfa != null ? formatFcfa(module.prixFcfa, true) : 'Prix au lancement' }}</template>
     </p>
 
     <!-- Pied de carte des pages programme : prix à gauche, bouton à droite. -->
     <div v-if="large" class="mt-auto flex items-center justify-between gap-3 pt-2">
-      <b class="text-[16px]">{{ formatFcfa(module.prixFcfa) }}</b>
+      <b class="text-[16px]">{{ module.prixFcfa != null ? formatFcfa(module.prixFcfa) : 'Prix au lancement' }}</b>
       <UiBaseButton :to="`/modules/${module.slug}`" variante="sombre" taille="sm">
         Découvrir le module
       </UiBaseButton>

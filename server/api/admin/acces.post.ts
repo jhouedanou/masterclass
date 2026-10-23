@@ -1,4 +1,5 @@
 import type { SectionAdmin } from '#shared/types'
+import { estSectionAdmin } from '#shared/utils/sectionsAdmin'
 import { enregistrerJournal } from '../../database/administration'
 import {
   creerCompteAdmin,
@@ -26,6 +27,16 @@ import { exigerSection } from '../../utils/session'
  *   rôle à « apprenant » en effaçant son empreinte de mot de passe. Un
  *   administrateur de contenu pouvait ainsi mettre un supérieur à la porte de
  *   son propre compte.
+ *
+ * Et deux encore, depuis l'audit du 20/10 :
+ *
+ * - un administrateur qui n'est pas supérieur n'accorde que des sections
+ *   qu'il détient lui-même. Avant, la seule section « Administration des
+ *   accès » suffisait à créer un compte doté de toutes les autres, puis à
+ *   s'en servir ;
+ * - les sections reçues sont validées contre l'énumération : une chaîne
+ *   inconnue était transmise telle quelle à la base, qui la refusait par une
+ *   erreur 500.
  */
 const RESERVEES: SectionAdmin[] = ['transactions-paiements', 'referencement-avance']
 
@@ -39,25 +50,28 @@ export default defineEventHandler(async (event) => {
     email?: string
     whatsapp?: string
     motDePasse?: string
-    sections?: SectionAdmin[]
+    sections?: unknown
     superieur?: boolean
   }>(event)
 
-  const auteur = `${admin.prenom} ${admin.nom}`
-  const sections = body.sections ?? []
-
-  if (body.action !== 'revoquer' && admin.role !== 'admin-superieur') {
-    const refusees = sections.filter((s) => RESERVEES.includes(s))
-    if (refusees.length || body.superieur) {
-      throw createError({
-        statusCode: 403,
-        statusMessage:
-          'Seul un administrateur supérieur peut accorder les transactions, le référencement avancé ou son propre rang.',
-      })
-    }
+  if (!['creer', 'droits', 'revoquer'].includes(body.action)) {
+    throw createError({ statusCode: 422, statusMessage: 'Action inconnue' })
   }
+  if (body.sections !== undefined && !Array.isArray(body.sections)) {
+    throw createError({ statusCode: 422, statusMessage: 'Sections illisibles' })
+  }
+  const recues: unknown[] = Array.isArray(body.sections) ? body.sections : []
+  const inconnue = recues.find((s) => !estSectionAdmin(s))
+  if (inconnue !== undefined) {
+    throw createError({ statusCode: 422, statusMessage: `Section inconnue : ${String(inconnue).slice(0, 40)}` })
+  }
+  const sections = [...new Set(recues as SectionAdmin[])]
+
+  const auteur = `${admin.prenom} ${admin.nom}`
+  const superieur = admin.role === 'admin-superieur'
 
   // Les deux actions qui visent un compte existant partagent leurs garde-fous.
+  let actuelles: SectionAdmin[] = []
   if (body.action === 'revoquer' || body.action === 'droits') {
     if (!body.id) throw createError({ statusCode: 422, statusMessage: 'Compte non précisé' })
     if (body.id === admin.id) {
@@ -66,7 +80,7 @@ export default defineEventHandler(async (event) => {
         statusMessage: 'Vous ne pouvez pas modifier ni révoquer votre propre compte.',
       })
     }
-    if (admin.role !== 'admin-superieur') {
+    if (!superieur) {
       const cible = await trouverUtilisateur(body.id)
       if (cible?.role === 'admin-superieur') {
         throw createError({
@@ -74,6 +88,28 @@ export default defineEventHandler(async (event) => {
           statusMessage: 'Seul un administrateur supérieur peut agir sur un administrateur supérieur.',
         })
       }
+      actuelles = cible?.sectionsAutorisees ?? []
+    }
+  }
+
+  // Seuls les ajouts sont un octroi. Une section que le compte détient déjà
+  // et garde n'en est pas un ; en retirer une reste permis, comme révoquer le
+  // compte entier : c'est le geste de défense.
+  if (body.action !== 'revoquer' && !superieur) {
+    const ajoutees = sections.filter((s) => !actuelles.includes(s))
+    if (ajoutees.some((s) => RESERVEES.includes(s)) || body.superieur) {
+      throw createError({
+        statusCode: 403,
+        statusMessage:
+          'Seul un administrateur supérieur peut accorder les transactions, le référencement avancé ou son propre rang.',
+      })
+    }
+    const siennes = admin.sectionsAutorisees ?? []
+    if (ajoutees.some((s) => !siennes.includes(s))) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Vous ne pouvez accorder que des sections que vous détenez vous-même.',
+      })
     }
   }
 

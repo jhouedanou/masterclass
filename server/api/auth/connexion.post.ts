@@ -1,4 +1,5 @@
 import { compterEchecsRecents, enregistrerTentative, trouverIdentifiants } from '../../database/comptes'
+import { limiterEchecs } from '../../utils/debit'
 import { verifierMotDePasse } from '../../utils/motDePasse'
 import { ouvrirSession } from '../../utils/session'
 
@@ -31,6 +32,11 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  // Plafond par adresse IP, en plus du verrou par compte : il arrête celui qui
+  // essaie un même mot de passe sur des centaines d'adresses.
+  const plafond = limiterEchecs(event, 'connexion')
+  await plafond.verifier()
+
   const identifiants = await trouverIdentifiants(adresse)
 
   // Compte verrouillé : on le dit avant même de regarder le mot de passe, pour
@@ -44,13 +50,15 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const valide =
-    identifiants !== null &&
-    (await verifierMotDePasse(motDePasse, identifiants.motDePasseHache))
+  // Le hachage est calculé même pour une adresse inconnue (empreinte
+  // factice) : la durée de la réponse ne dit pas si le compte existe.
+  const motDePasseJuste = await verifierMotDePasse(motDePasse, identifiants?.motDePasseHache ?? null)
+  const valide = identifiants !== null && motDePasseJuste
 
   const verrouille = await enregistrerTentative(adresse, ip, appareil, valide)
 
   if (!valide) {
+    await plafond.compter()
     if (verrouille) {
       throw createError({
         statusCode: 429,

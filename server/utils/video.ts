@@ -21,9 +21,11 @@
 
 import { dureeMp4, OCTETS_ENTETE_MP4 } from '#shared/utils/dureeMp4'
 
-/** Durée de validité d'une autorisation de lecture. Assez longue pour un
- *  chapitre entier, assez courte pour qu'un lien copié devienne vite inerte. */
-export const DUREE_AUTORISATION_SECONDES = 60 * 60 * 4
+/** Durée de validité d'une autorisation de lecture. Le lecteur la renouvelle
+ *  cinq minutes avant l'échéance sans interrompre la vidéo : elle peut donc
+ *  être courte, et un lien copié devient inerte en une demi-heure. Elle était
+ *  de quatre heures jusqu'à l'audit du 20/10. */
+export const DUREE_AUTORISATION_SECONDES = 30 * 60
 
 function encoderBase64Url(octets: ArrayBuffer): string {
   return Buffer.from(octets).toString('base64url')
@@ -31,9 +33,11 @@ function encoderBase64Url(octets: ArrayBuffer): string {
 
 /** Message signé : le dossier, l'échéance et le destinataire.
  *  Y inclure l'apprenant rend l'autorisation nominative — un lien copié reste
- *  attribuable à celui qui l'a obtenu. */
+ *  attribuable à celui qui l'a obtenu. Le préfixe « lecture. » sépare ce
+ *  message de tous ceux que le même secret signe par ailleurs (écriture,
+ *  aperçu) : aucun ne peut être présenté pour un autre. */
 export function messageASigner(cle: string, expiration: number, utilisateurId: string): string {
-  return `${cle}.${expiration}.${utilisateurId}`
+  return `lecture.${cle}.${expiration}.${utilisateurId}`
 }
 
 export async function signer(message: string, secret: string): Promise<string> {
@@ -228,6 +232,7 @@ export async function verifierEcriture(
 
   if (!expiration || !utilisateurId || !signature) return 'autorisation absente'
   if (expiration < maintenant) return 'autorisation expirée'
+  if (expiration > maintenant + 4 * 60 * 60) return 'autorisation trop longue'
   if (!cle) return 'chemin invalide'
 
   const attendue = await signer(
@@ -248,12 +253,21 @@ export async function verifierEcriture(
  * exactement la même règle en production.
  *
  * Renvoie `null` si tout est en ordre, sinon le motif du refus.
+ *
+ * Aucune autorisation n'est acceptée au-delà de quatre heures, quelle que soit
+ * l'échéance signée : c'est le plafond que l'application a jamais émis.
+ *
+ * `ancienFormat` accepte aussi le message d'avant le préfixe « lecture. »
+ * (`cle.expiration.utilisateur`), le temps que l'application déployée signe
+ * au nouveau format. Le Worker l'admet jusqu'à `LECTURE_ANCIEN_FORMAT_JUSQUA`
+ * (`ancienFormatAdmis`) ; la route locale ne l'accepte jamais.
  */
 export async function verifierSignature(
   chemin: string,
   parametres: URLSearchParams,
   secret: string,
   maintenant = Math.floor(Date.now() / 1000),
+  ancienFormat = false,
 ): Promise<string | null> {
   const expiration = Number(parametres.get('e'))
   const utilisateurId = parametres.get('u') ?? ''
@@ -261,22 +275,27 @@ export async function verifierSignature(
 
   if (!expiration || !utilisateurId || !signature) return 'autorisation absente'
   if (expiration < maintenant) return 'autorisation expirée'
+  if (expiration > maintenant + 4 * 60 * 60) return 'autorisation trop longue'
 
   // Le premier segment du chemin est le dossier du chapitre : c'est lui qui a
   // été signé. Tout ce qu'il contient est alors accessible, et rien d'autre.
   const cle = chemin.replace(/^\/+/, '').split('/')[0] ?? ''
   if (!cle) return 'chemin invalide'
 
-  const attendue = await signer(messageASigner(cle, expiration, utilisateurId), secret)
+  const attendues = [await signer(messageASigner(cle, expiration, utilisateurId), secret)]
+  if (ancienFormat) attendues.push(await signer(`${cle}.${expiration}.${utilisateurId}`, secret))
 
   // Comparaison à durée constante : une comparaison naïve laisserait deviner
   // la signature octet par octet.
-  if (signature.length !== attendue.length) return 'signature invalide'
-  let ecart = 0
-  for (let i = 0; i < attendue.length; i++) {
-    ecart |= signature.charCodeAt(i) ^ attendue.charCodeAt(i)
+  for (const attendue of attendues) {
+    if (signature.length !== attendue.length) continue
+    let ecart = 0
+    for (let i = 0; i < attendue.length; i++) {
+      ecart |= signature.charCodeAt(i) ^ attendue.charCodeAt(i)
+    }
+    if (ecart === 0) return null
   }
-  return ecart === 0 ? null : 'signature invalide'
+  return 'signature invalide'
 }
 
 /**

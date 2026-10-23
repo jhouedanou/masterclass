@@ -142,9 +142,7 @@ async function traiter(travail) {
 
     const info = JSON.parse(readFileSync(join(sortie, 'info.json'), 'utf8'))
 
-    // 3. Le flux rejoint le dossier du dépôt. `video.mp4` y reste : il rend la
-    //    bascule réversible, et couvre le cas où le report du format
-    //    n'atteindrait pas tous les chapitres.
+    // 3. Le flux rejoint le dossier du dépôt.
     const liste = fichiersDe(sortie)
     console.log(`  ↑ ${liste.length} fichiers vers ${BUCKET}`)
     for (const fichier of liste) {
@@ -159,6 +157,22 @@ async function traiter(travail) {
       octets: info.octets ?? null,
     })
     console.log(`  ✓ ${info.paliers.join(' · ')}`)
+
+    // 4. Le MP4 déposé part une fois la bascule faite. Laissé à côté du flux,
+    //    il restait servi sous la même autorisation que lui : tout apprenant
+    //    pouvait télécharger le chapitre entier, en pleine qualité, d'une
+    //    seule requête. L'application a confirmé que la vidéo et ses chapitres
+    //    lisent désormais `master.m3u8` ; revenir au fichier unique demandera
+    //    un nouveau dépôt.
+    try {
+      wrangler('r2', 'object', 'delete', `${BUCKET}/${travail.cle}/video.mp4`, '--remote')
+      console.log('  − video.mp4 retiré du stockage')
+    } catch (erreur) {
+      // Le travail est réussi et basculé : un effacement manqué ne le remet
+      // pas en cause, mais il doit se voir.
+      const motif = String(erreur?.stderr || erreur?.message || erreur).trim().split('\n').pop()
+      console.error(`  ⚠ video.mp4 non effacé (${motif}) : à retirer à la main du seau ${BUCKET}`)
+    }
   } catch (erreur) {
     const motif = String(erreur?.stderr || erreur?.message || erreur).trim().slice(0, 1000)
     console.error(`  ✗ ${motif.split('\n').slice(-3).join(' ')}`)

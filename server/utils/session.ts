@@ -1,6 +1,8 @@
+import { createHmac } from 'node:crypto'
 import type { H3Event } from 'h3'
 import type { SectionAdmin, Utilisateur } from '#shared/types'
 import { trouverUtilisateur } from '../database/comptes'
+import { compterTentativesPubliques, enregistrerTentativePublique } from '../database/debit'
 
 const COOKIE = 'emc_session'
 
@@ -8,6 +10,9 @@ const COOKIE = 'emc_session'
 const DUREE_SECONDES = 60 * 60 * 24 * 7
 /** « Rester connecté » (planche A, écran 04b) : trente jours. */
 const DUREE_LONGUE_SECONDES = 60 * 60 * 24 * 30
+/** Un compte d'administration : une journée de travail, « Rester connecté »
+ *  ou non. Ses droits ouvrent les paiements, les accès et les attestations. */
+const DUREE_ADMIN_SECONDES = 60 * 60 * 12
 
 interface DonneesSession {
   utilisateurId?: string
@@ -32,6 +37,12 @@ interface DonneesSession {
   adminEchecs?: number
   /** Session longue demandée à la connexion (« Rester connecté »). */
   longue?: boolean
+  /**
+   * Ouverture de la session, en millisecondes. Elle borne sa durée et la
+   * rattache au mot de passe du moment : un changement de mot de passe ferme
+   * toutes les sessions ouvertes avant lui, y compris un cookie volé.
+   */
+  ouverteLe?: number
 }
 
 /** Au-delà, l'étape 2 est refermée : il faut ressaisir le mot de passe. */
@@ -73,10 +84,22 @@ function secret(): string {
   return 'developpement-uniquement-e-masterclass-big-five'
 }
 
+/**
+ * Clé propre à un usage, tirée du secret de session : un HMAC ne réemploie
+ * jamais le secret brut, et deux usages n'ont jamais la même clé.
+ */
+export function cleDerivee(usage: string): Buffer {
+  return createHmac('sha256', secret()).update(usage).digest()
+}
+
 function session(event: H3Event, longue = false) {
   return useSession<DonneesSession>(event, {
     password: secret(),
     name: COOKIE,
+    // Durée de validité du sceau lui-même. Sans elle, h3 ne contrôle pas l'âge
+    // du cookie : passé à `cookie` seul, `maxAge` ne règle que son expiration
+    // dans le navigateur, et une copie gardée ailleurs restait valable à vie.
+    maxAge: DUREE_LONGUE_SECONDES,
     cookie: {
       sameSite: 'lax',
       path: '/',
@@ -100,7 +123,32 @@ function session(event: H3Event, longue = false) {
 export async function lireSession(event: H3Event): Promise<Utilisateur | null> {
   const { data } = await session(event)
   if (!data.utilisateurId) return null
-  return await trouverUtilisateur(data.utilisateurId)
+  // Une session sans date d'ouverture est antérieure à ces contrôles : elle
+  // n'est plus honorée, et il suffit de se reconnecter.
+  if (!data.ouverteLe) return null
+
+  const utilisateur = await trouverUtilisateur(data.utilisateurId)
+  if (!utilisateur) return null
+
+  const admin = utilisateur.role === 'admin-contenu' || utilisateur.role === 'admin-superieur'
+  const duree = admin ? DUREE_ADMIN_SECONDES : data.longue ? DUREE_LONGUE_SECONDES : DUREE_SECONDES
+  if (Date.now() - data.ouverteLe > duree * 1000) return null
+
+  // Mot de passe changé depuis l'ouverture (réinitialisation, changement
+  // depuis le profil) : la session appartient à l'ancien mot de passe.
+  const majLe = utilisateur.motDePasseMajLe ? Date.parse(utilisateur.motDePasseMajLe) : 0
+  if (majLe > data.ouverteLe) return null
+
+  return utilisateur
+}
+
+/**
+ * Après un changement de mot de passe depuis une session ouverte : celle-ci
+ * reprend la date du nouveau mot de passe, les autres restent fermées.
+ */
+export async function renouvelerSession(event: H3Event): Promise<void> {
+  const courante = await session(event)
+  if (courante.data.utilisateurId) await courante.update({ ouverteLe: Date.now() })
 }
 
 export async function ouvrirSession(
@@ -115,6 +163,7 @@ export async function ouvrirSession(
     adminEnAttenteDepuis: undefined,
     adminEchecs: undefined,
     longue: options.longue === true,
+    ouverteLe: Date.now(),
   })
 }
 
@@ -146,6 +195,35 @@ export async function lireSessionPartielle(event: H3Event): Promise<string | nul
     return null
   }
   return adminEnAttenteId
+}
+
+/** Essais de second facteur admis par compte sur la fenêtre de comptage des
+ *  routes publiques (une heure). */
+export const ESSAIS_CODE_ADMIN_MAX = 10
+
+/**
+ * Plafond d'essais de second facteur, tenu en base et par compte.
+ *
+ * Le compteur de la session d'attente (`adminEchecs`) vit dans le cookie : il
+ * suffisait de rejouer le cookie émis après le mot de passe, où il vaut zéro,
+ * pour essayer autant de codes qu'on voulait, en parallèle. Celui-ci est côté
+ * serveur. L'essai est inscrit **avant** d'être compté : des requêtes lancées
+ * ensemble se voient donc les unes les autres, et la rafale bute sur le plafond
+ * au lieu de passer d'un bloc. Réussites comprises — un admin en tape un ou
+ * deux, un script des milliers.
+ *
+ * Contrairement au plafond des formulaires publics, une base injoignable ferme
+ * ici la porte : c'est un contrôle d'accès, pas une digue contre l'abus.
+ */
+export async function plafonnerEssaisCode(utilisateurId: string): Promise<void> {
+  const cle = `compte:${utilisateurId}`
+  await enregistrerTentativePublique(cle, 'code-admin')
+  if ((await compterTentativesPubliques(cle, 'code-admin')) > ESSAIS_CODE_ADMIN_MAX) {
+    throw createError({
+      statusCode: 429,
+      statusMessage: 'Trop de codes essayés sur ce compte : réessayez dans une heure.',
+    })
+  }
 }
 
 /** Compte un code refusé et dit s'il reste des essais. */

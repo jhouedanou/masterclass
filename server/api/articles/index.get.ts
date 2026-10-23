@@ -1,5 +1,6 @@
 import { listerArticles } from '../../database/blog'
 import { listerFormateurs } from '../../database/catalogue'
+import { formateurPublic } from '../../utils/public'
 
 /** Articles publiés, avec pagination (planche A, écran 12 : « ← 1 2 3 → »). */
 export const ARTICLES_PAR_PAGE = 9
@@ -13,7 +14,11 @@ export default defineEventHandler(async (event) => {
     .filter((a) => a.statut === 'publie')
     .filter((a) => !categorie || a.categorie === categorie)
     .sort((a, b) => (b.publieLe ?? '').localeCompare(a.publieLe ?? ''))
-    .map((a) => ({ ...a, auteur: formateurs.find((f) => f.id === a.auteurId) ?? null }))
+    .map((a) => {
+      // L'objet formateur complet porte e-mail, WhatsApp et griffe de signature.
+      const auteur = formateurs.find((f) => f.id === a.auteurId)
+      return { ...a, auteur: auteur ? formateurPublic(auteur) : null }
+    })
 
   // Sans `page`, la liste complète est renvoyée (accueil, sitemap, back-office).
   if (page === undefined) return liste

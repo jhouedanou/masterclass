@@ -36,7 +36,7 @@ const PREFIXE_ECRITURE = '_televersement'
 const TAILLE_PART = 16 * 1024 * 1024
 
 function messageASigner(cle, expiration, utilisateurId) {
-  return `${cle}.${expiration}.${utilisateurId}`
+  return `lecture.${cle}.${expiration}.${utilisateurId}`
 }
 
 function encoderBase64Url(octets) {
@@ -58,25 +58,55 @@ async function signer(message, secret) {
   )
 }
 
-async function verifierSignature(chemin, parametres, secret, maintenant = Math.floor(Date.now() / 1000)) {
+/**
+ * Plafond de quatre heures, préfixe « lecture. » : voir `verifierSignature`
+ * dans server/utils/video.ts. `ancienFormat` vient de `ancienFormatAdmis`.
+ */
+/**
+ * L'ancien format (sans « lecture. ») n'est admis que pour une autorisation
+ * qui expire au plus tard à `LECTURE_ANCIEN_FORMAT_JUSQUA` (date ISO).
+ *
+ * Les derniers liens de l'ancien format ont été émis par l'application avant
+ * sa mise à jour, et valent quatre heures au plus : passé cette date, aucun
+ * ne peut plus être valable, et la transition se referme d'elle-même, sans
+ * redéploiement. Variable absente ou illisible : ancien format refusé.
+ */
+function ancienFormatAdmis(parametres, finTransition) {
+  const fin = Date.parse(finTransition ?? '')
+  if (!Number.isFinite(fin)) return false
+  return Number(parametres.get('e')) <= Math.floor(fin / 1000)
+}
+
+async function verifierSignature(
+  chemin,
+  parametres,
+  secret,
+  maintenant = Math.floor(Date.now() / 1000),
+  ancienFormat = false,
+) {
   const expiration = Number(parametres.get('e'))
   const utilisateurId = parametres.get('u') ?? ''
   const signature = parametres.get('s') ?? ''
 
   if (!expiration || !utilisateurId || !signature) return 'autorisation absente'
   if (expiration < maintenant) return 'autorisation expirée'
+  if (expiration > maintenant + 4 * 60 * 60) return 'autorisation trop longue'
 
   const cle = chemin.replace(/^\/+/, '').split('/')[0] ?? ''
   if (!cle) return 'chemin invalide'
 
-  const attendue = await signer(messageASigner(cle, expiration, utilisateurId), secret)
+  const attendues = [await signer(messageASigner(cle, expiration, utilisateurId), secret)]
+  if (ancienFormat) attendues.push(await signer(`${cle}.${expiration}.${utilisateurId}`, secret))
 
-  if (signature.length !== attendue.length) return 'signature invalide'
-  let ecart = 0
-  for (let i = 0; i < attendue.length; i++) {
-    ecart |= signature.charCodeAt(i) ^ attendue.charCodeAt(i)
+  for (const attendue of attendues) {
+    if (signature.length !== attendue.length) continue
+    let ecart = 0
+    for (let i = 0; i < attendue.length; i++) {
+      ecart |= signature.charCodeAt(i) ^ attendue.charCodeAt(i)
+    }
+    if (ecart === 0) return null
   }
-  return ecart === 0 ? null : 'signature invalide'
+  return 'signature invalide'
 }
 
 /**
@@ -146,6 +176,7 @@ async function verifierEcriture(
 
   if (!expiration || !utilisateurId || !signature) return 'autorisation absente'
   if (expiration < maintenant) return 'autorisation expirée'
+  if (expiration > maintenant + 4 * 60 * 60) return 'autorisation trop longue'
   if (!cle) return 'chemin invalide'
 
   const attendue = await signer(
@@ -394,7 +425,13 @@ export default {
       return new Response('Méthode non autorisée', { status: 405, headers: cors })
     }
 
-    const refus = await verifierSignature(chemin, url.searchParams, env.VIDEO_SIGNING_SECRET)
+    const refus = await verifierSignature(
+      chemin,
+      url.searchParams,
+      env.VIDEO_SIGNING_SECRET,
+      undefined,
+      ancienFormatAdmis(url.searchParams, env.LECTURE_ANCIEN_FORMAT_JUSQUA),
+    )
     if (refus) {
       // Le motif aide au diagnostic sans rien révéler d'exploitable.
       return new Response(`Lecture refusée — ${refus}`, { status: 403, headers: cors })

@@ -26,9 +26,13 @@ import { exigerAdmin } from '../../../utils/session'
  * formulaire : le corps est un `multipart` déjà lu par `lireImageDeposee`, et
  * le reparcourir pour un identifiant reviendrait à l'analyser deux fois.
  * Paramètre absent, c'est la direction qui signe.
+ *
+ * Une griffe s'imprime sur chaque attestation délivrée : la déposer revient à
+ * signer au nom de la direction ou d'un formateur. Administrateur supérieur
+ * seulement.
  */
 export default defineEventHandler(async (event) => {
-  await exigerAdmin(event)
+  await exigerAdmin(event, true)
 
   const formateurId = (getQuery(event).formateur as string | undefined)?.trim() || null
   const formateur = formateurId ? await trouverFormateur(formateurId) : null

@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { memeSecret } from './secrets'
 
 /**
  * Déclencheurs externes des tâches planifiées.
@@ -15,12 +16,16 @@ import type { H3Event } from 'h3'
  * Refuse aussi quand la clé n'est pas configurée : une clé vide qui laisserait
  * passer ouvrirait la purge définitive des comptes au premier venu. Porte
  * fermée par défaut.
+ *
+ * La comparaison est à temps constant (`memeSecret`) : `!==` s'arrêtait au
+ * premier caractère différent, et la durée du refus guidait une recherche de
+ * la clé caractère par caractère.
  */
 export function exigerCleTache(event: H3Event): void {
   const cle = (useRuntimeConfig().tachesCle || '').trim()
   const entete = getRequestHeader(event, 'authorization') ?? ''
 
-  if (!cle || entete !== `Bearer ${cle}`) {
+  if (!cle || !memeSecret(entete, `Bearer ${cle}`)) {
     throw createError({ statusCode: 401, statusMessage: 'Clé de tâche invalide' })
   }
 }

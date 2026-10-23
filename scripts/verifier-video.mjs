@@ -43,7 +43,7 @@ const CAS = [
 const SECRET = 'secret-de-controle-e-masterclass-32-caracteres'
 
 for (const [cle, expiration, utilisateur] of CAS) {
-  const message = `${cle}.${expiration}.${utilisateur}`
+  const message = `lecture.${cle}.${expiration}.${utilisateur}`
   const attendue = createHmac('sha256', SECRET).update(message).digest('base64url')
   const obtenue = await signerWorker(message, SECRET)
   if (obtenue === attendue) succes(`worker et référence concordent — ${cle}`)
@@ -60,7 +60,11 @@ const verifier = new Function(
 )()
 
 const maintenant = 1790000000
-const valide = await signerWorker(`demo.${maintenant + 100}.usr-aya`, SECRET)
+const valide = await signerWorker(`lecture.demo.${maintenant + 100}.usr-aya`, SECRET)
+const QUATRE_HEURES = 4 * 60 * 60
+const tropLongue = await signerWorker(`lecture.demo.${maintenant + QUATRE_HEURES + 1}.usr-aya`, SECRET)
+// Le format d'avant le préfixe « lecture. », émis jusqu'au 20/10.
+const ancienne = await signerWorker(`demo.${maintenant + 100}.usr-aya`, SECRET)
 
 const REFUS = [
   ['autorisation absente', 'demo/master.m3u8', {}],
@@ -70,6 +74,10 @@ const REFUS = [
   ['signature invalide', 'autre/master.m3u8', { e: maintenant + 100, u: 'usr-aya', s: valide }],
   // Le destinataire fait partie du message signé : on ne peut pas s'en réclamer d'un autre.
   ['signature invalide', 'demo/master.m3u8', { e: maintenant + 100, u: 'usr-moussa', s: valide }],
+  // Une échéance au-delà de quatre heures est refusée, même bien signée.
+  ['autorisation trop longue', 'demo/master.m3u8', { e: maintenant + QUATRE_HEURES + 1, u: 'usr-aya', s: tropLongue }],
+  // L'ancien format n'est accepté que sur demande expresse (transition).
+  ['signature invalide', 'demo/master.m3u8', { e: maintenant + 100, u: 'usr-aya', s: ancienne }],
 ]
 
 for (const [attendu, chemin, parametres] of REFUS) {
@@ -86,6 +94,46 @@ const accepte = await verifier(
 )
 if (accepte === null) succes('segment du dossier autorisé → accepté')
 else echec(`segment légitime refusé : ${accepte}`)
+
+const transition = await verifier(
+  'demo/master.m3u8',
+  new URLSearchParams({ e: String(maintenant + 100), u: 'usr-aya', s: ancienne }),
+  SECRET,
+  maintenant,
+  true,
+)
+if (transition === null) succes('ancien format accepté pendant la transition')
+else echec(`ancien format refusé en transition : ${transition}`)
+
+const nouveauEnTransition = await verifier(
+  'demo/master.m3u8',
+  new URLSearchParams({ e: String(maintenant + 100), u: 'usr-aya', s: valide }),
+  SECRET,
+  maintenant,
+  true,
+)
+if (nouveauEnTransition === null) succes('nouveau format accepté aussi pendant la transition')
+else echec(`nouveau format refusé en transition : ${nouveauEnTransition}`)
+
+// La transition se referme d'elle-même : l'ancien format n'est admis que pour
+// une échéance antérieure à LECTURE_ANCIEN_FORMAT_JUSQUA.
+const ancienFormatAdmis = new Function(
+  `${source.slice(source.indexOf('function messageASigner'), source.indexOf('export default'))}
+   return ancienFormatAdmis`,
+)()
+const FIN = '2026-10-20T22:30:00Z'
+const finSecondes = Date.parse(FIN) / 1000
+for (const [nom, e, fin, attendu] of [
+  ['échéance avant la borne', finSecondes - 60, FIN, true],
+  ['échéance égale à la borne', finSecondes, FIN, true],
+  ['échéance après la borne', finSecondes + 1, FIN, false],
+  ['borne absente', finSecondes - 60, undefined, false],
+  ['borne illisible', finSecondes - 60, 'demain', false],
+]) {
+  const obtenu = ancienFormatAdmis(new URLSearchParams({ e: String(e) }), fin)
+  if (obtenu === attendu) succes(`ancien format, ${nom} → ${obtenu ? 'admis' : 'refusé'}`)
+  else echec(`ancien format, ${nom} : ${obtenu} au lieu de ${attendu}`)
+}
 
 // --- Le jeton d'écriture est-il bien étanche à celui de lecture ? ------------
 //
@@ -147,7 +195,7 @@ if (autreDepot === 'signature invalide') succes('jeton refusé pour un autre té
 else echec(`jeton accepté pour un autre téléversement : ${autreDepot}`)
 
 // Une autorisation de lecture rejouée en écriture : refusée.
-const jetonLecture = await signerWorker(`${CLE}.${ECHEANCE}.usr-houefa`, SECRET)
+const jetonLecture = await signerWorker(`lecture.${CLE}.${ECHEANCE}.usr-houefa`, SECRET)
 const lectureEnEcriture = await verifierEcritureWorker(
   'part',
   CLE,
@@ -181,6 +229,22 @@ const mauvaisParametre = await verifierEcritureWorker(
 )
 if (mauvaisParametre === 'autorisation absente') succes('jeton d’écriture attendu en « j », pas en « s »')
 else echec(`paramètre « s » accepté en écriture : ${mauvaisParametre}`)
+
+const ECHEANCE_LOINTAINE = maintenant + 4 * 60 * 60 + 1
+const jetonLointain = await signerWorker(
+  `ecriture.part.${CLE}.${UPLOAD}.${ECHEANCE_LOINTAINE}.usr-houefa`,
+  SECRET,
+)
+const ecritureLointaine = await verifierEcritureWorker(
+  'part',
+  CLE,
+  UPLOAD,
+  new URLSearchParams({ e: String(ECHEANCE_LOINTAINE), u: 'usr-houefa', j: jetonLointain }),
+  SECRET,
+  maintenant,
+)
+if (ecritureLointaine === 'autorisation trop longue') succes('jeton d’écriture au-delà de quatre heures refusé')
+else echec(`jeton d’écriture lointain : ${ecritureLointaine}`)
 
 // --- Les deux vérificateurs disent-ils la même chose ? -----------------------
 //

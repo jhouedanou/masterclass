@@ -49,22 +49,44 @@ export function formateurPublic(formateur: Formateur): FormateurPublic {
  * Le tableau `chapitres` reste là — les vues en comptent les éléments — mais
  * allégé de la transcription et de la comptabilité de téléversement, qui ne
  * regardent que l'éditeur du back-office.
+ *
+ * La clé de la vidéo n'en fait pas partie non plus : aucune vue publique ne la
+ * lit, et c'est le nom du dossier du chapitre payant dans le stockage. Seule
+ * la signature en ouvre la lecture, mais rien ne justifie de la publier.
+ *
+ * Toute route publique qui renvoie un module passe par ici — y compris
+ * `/api/formateurs/[slug]` et `/api/articles/[slug]`, qui renvoyaient l'objet
+ * entier, transcriptions comprises.
  */
 export type ChapitrePublic = Omit<
   Chapitre,
-  'script' | 'videoNomFichier' | 'videoTailleOctets' | 'videoImporteeLe' | 'scriptNomFichier' | 'scriptImporteLe'
+  'script' | 'videoCle' | 'videoNomFichier' | 'videoTailleOctets' | 'videoImporteeLe' | 'scriptNomFichier' | 'scriptImporteLe'
 >
 
-export type ModulePublic = Omit<Module, 'chapitres'> & { chapitres: ChapitrePublic[] }
+export type ModulePublic = Omit<Module, 'chapitres' | 'prixFcfa'> & {
+  chapitres: ChapitrePublic[]
+  /** `null` quand l'équipe masque le prix d'un module annoncé. */
+  prixFcfa: number | null
+}
+
+/**
+ * « Masquer le prix » (fiche commerciale d'un module annoncé) ne masquait que
+ * son affichage sur la fiche : le prix voyageait dans toutes les réponses
+ * publiques et s'affichait sur les cartes du catalogue. Il n'en sort plus.
+ * Un module en vente, lui, montre toujours son prix.
+ */
+export function prixPublic(module: Pick<Module, 'prixFcfa' | 'prixMasque' | 'statut'>): number | null {
+  return module.prixMasque && module.statut !== 'disponible' ? null : module.prixFcfa
+}
 
 export function modulePublic(module: Module): ModulePublic {
   return {
     ...module,
+    prixFcfa: prixPublic(module),
     chapitres: module.chapitres.map((c) => ({
       libelle: c.libelle,
       titre: c.titre,
       dureeMinutes: c.dureeMinutes,
-      videoCle: c.videoCle,
       videoDureeSecondes: c.videoDureeSecondes,
       videoFormat: c.videoFormat,
       scriptFormat: c.scriptFormat,

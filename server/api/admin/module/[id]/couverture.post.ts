@@ -8,7 +8,7 @@ import {
   televerserImage,
   urlPhoto,
 } from '../../../../utils/photos'
-import { exigerSection } from '../../../../utils/session'
+import { exigerUneSection } from '../../../../utils/session'
 
 /**
  * Dépôt de la couverture d'un module (écran 02B, bloc 1).
@@ -24,7 +24,8 @@ import { exigerSection } from '../../../../utils/session'
  * serveur pour un gain que la relecture humaine donne déjà.
  */
 export default defineEventHandler(async (event) => {
-  const admin = await exigerSection(event, 'modules-chapitres')
+  // La couverture se dépose depuis la fiche commerciale.
+  const admin = await exigerUneSection(event, ['modules-chapitres', 'fiches-commerciales'])
 
   const parties = await lireImageDeposee(event, SEAU_COUVERTURES, 'image')
   const moduleId = getRouterParam(event, 'id') ?? ''

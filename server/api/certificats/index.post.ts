@@ -9,7 +9,7 @@ import { exigerUtilisateur } from '../../utils/session'
  * nom, qui figureront tels quels sur le PDF ; une correction met le compte à
  * jour avant la génération.
  *
- * Le numéro EMBF-<programme>-<année>-<séquence> est tiré d'une séquence
+ * Le numéro EMBF-<programme>-<année>-<séquence>-<suffixe aléatoire> est tiré d'une séquence
  * Postgres : deux délivrances simultanées ne peuvent plus produire le même.
  * L'opération est idempotente — redemander son certificat le renvoie. L'e-mail
  * de l'attestation (recette ATT-09) ne part qu'à la première délivrance : deux

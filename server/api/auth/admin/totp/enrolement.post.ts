@@ -1,6 +1,6 @@
 import QRCode from 'qrcode'
 import { trouverUtilisateur } from '../../../../database/comptes'
-import { deposerSecret } from '../../../../database/totp'
+import { deposerSecret, lireTotp } from '../../../../database/totp'
 import { lireSessionPartielle } from '../../../../utils/session'
 import { genererSecret, secretLisible, uriOtpauth } from '../../../../utils/totp'
 
@@ -23,6 +23,17 @@ export default defineEventHandler(async (event) => {
   const utilisateur = await trouverUtilisateur(utilisateurId)
   if (!utilisateur || (utilisateur.role !== 'admin-contenu' && utilisateur.role !== 'admin-superieur')) {
     throw createError({ statusCode: 403, statusMessage: 'Compte sans accès à l’administration.' })
+  }
+
+  // Un compte déjà enrôlé ne se réenrôle pas au mot de passe seul : c'était la
+  // porte pour remplacer l'application de l'admin par la sienne et passer le
+  // second facteur. Une application perdue se réinitialise par un admin
+  // supérieur (Accès › Réinitialiser la double authentification).
+  if ((await lireTotp(utilisateur.id)).activeLe) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: 'Double authentification déjà active : saisissez le code de votre application, ou demandez sa réinitialisation à un administrateur supérieur.',
+    })
   }
 
   const secret = genererSecret()

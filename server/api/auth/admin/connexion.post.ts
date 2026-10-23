@@ -1,11 +1,12 @@
 import { enregistrerTentative, trouverIdentifiants } from '../../../database/comptes'
 import { lireTotp } from '../../../database/totp'
 import { emettreCode, fournisseurCode } from '../../../utils/codeAdmin'
+import { limiterEchecs } from '../../../utils/debit'
 import { verifierMotDePasse } from '../../../utils/motDePasse'
 import { ouvrirSession, ouvrirSessionPartielle } from '../../../utils/session'
 
 const VERROU =
-  'Trop de tentatives : ce compte est bloqué 30 minutes. Réessayez plus tard ou réinitialisez votre mot de passe.'
+  'Trop de tentatives : ce compte est bloqué 15 minutes. Réessayez plus tard ou réinitialisez votre mot de passe.'
 
 /** « f***@bigfive.ci » : on confirme où part le code sans le révéler. */
 function masquer(email: string): string {
@@ -16,8 +17,11 @@ function masquer(email: string): string {
 /**
  * Connexion admin, étape 1 (planche C, écran 08) : mêmes règles que la
  * connexion apprenant — journalisation, verrouillage après cinq échecs — mais
- * la session ne s'ouvre pas : un code à six chiffres part par e-mail et
- * WhatsApp, valable dix minutes.
+ * la session ne s'ouvre pas tout de suite. En production
+ * (CODE_ADMIN_FOURNISSEUR=totp), l'étape 2 demande le code de l'application
+ * d'authentification, ou présente le QR code d'enrôlement ; rien n'est
+ * envoyé. Les fournisseurs `interne` et `supabase-auth` émettent, eux, un
+ * code à six chiffres par e-mail, valable dix minutes.
  */
 export default defineEventHandler(async (event) => {
   const { email, motDePasse } = await readBody<{ email?: string; motDePasse?: string }>(event)
@@ -29,6 +33,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 422, statusMessage: 'Renseignez votre adresse e-mail et votre mot de passe.' })
   }
 
+  // Plafond d'échecs par adresse IP, plus serré que pour les apprenants.
+  const plafond = limiterEchecs(event, 'connexion-admin')
+  await plafond.verifier()
+
   const identifiants = await trouverIdentifiants(adresse)
   const verrou = identifiants?.utilisateur.verrouilleJusquA
   if (verrou && new Date(verrou) > new Date()) {
@@ -37,11 +45,14 @@ export default defineEventHandler(async (event) => {
 
   const role = identifiants?.utilisateur.role
   const estAdmin = role === 'admin-contenu' || role === 'admin-superieur'
-  const valide =
-    identifiants !== null && estAdmin && (await verifierMotDePasse(motDePasse, identifiants.motDePasseHache))
+  // Toujours un scrypt, compte inconnu ou non administrateur compris : la
+  // durée de la réponse ne doit rien dire de l'existence ni du rôle du compte.
+  const motDePasseJuste = await verifierMotDePasse(motDePasse, identifiants?.motDePasseHache ?? null)
+  const valide = identifiants !== null && estAdmin && motDePasseJuste
 
   const verrouille = await enregistrerTentative(adresse, ip, appareil, valide)
   if (!valide) {
+    await plafond.compter()
     if (verrouille) throw createError({ statusCode: 429, statusMessage: VERROU })
     // Un seul et même message pour les trois refus possibles — compte inconnu,
     // mot de passe faux, rôle sans accès à l'administration. Les énumérer n'en
@@ -83,8 +94,7 @@ export default defineEventHandler(async (event) => {
   return {
     etape: 'code' as const,
     masque: masquer(compte.email),
-    // Supabase Auth n'envoie que par e-mail ; le canal WhatsApp attend le pilote interne.
-    whatsapp: fournisseurCode() === 'interne' && Boolean(compte.whatsapp),
+    // Le code ne part que par e-mail : aucun pilote WhatsApp n'existe.
     fournisseur: fournisseurCode(),
   }
 })

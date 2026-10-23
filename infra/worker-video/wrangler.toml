@@ -28,10 +28,32 @@ compatibility_date = "2026-01-01"
 
 # Origines autorisées à lire les vidéos depuis un navigateur. Sans cette liste,
 # le lecteur du site se voit refuser la réponse par le navigateur lui-même.
+# Aucune adresse locale en production (audit du 20/10) : le poste de
+# développement passe par l'environnement `developpement`, plus bas.
 [vars]
-ORIGINES_AUTORISEES = "https://emasterclass.bigfive.solutions,https://masterclass-omega-five.vercel.app,https://masterclass-jhouedanous-projects.vercel.app,http://localhost:3000,http://localhost:3001"
+ORIGINES_AUTORISEES = "https://emasterclass.bigfive.solutions,https://masterclass-omega-five.vercel.app,https://masterclass-jhouedanous-projects.vercel.app"
+# Transition du préfixe « lecture. » (20/10/2026). L'ancien format n'est admis
+# que pour une autorisation qui expire au plus tard à cette date. L'application
+# signe au nouveau format depuis 18 h 25 UTC le 20/10, et un lien vaut 4 h au
+# plus : passé 22 h 30 UTC, plus aucun lien de l'ancien format n'est valable,
+# et la transition se referme d'elle-même. La ligne peut ensuite être retirée
+# au prochain déploiement, sans effet sur la lecture.
+LECTURE_ANCIEN_FORMAT_JUSQUA = "2026-10-20T22:30:00Z"
 
 [[r2_buckets]]
+binding = "VIDEOS"
+bucket_name = "emasterclass-videos"
+
+# Poste de développement : un second Worker, `emasterclass-videos-developpement`,
+# qui lit le même seau pour les origines locales.
+#   npx wrangler deploy --env developpement
+#   npx wrangler secret put VIDEO_SIGNING_SECRET --env developpement
+# puis VIDEO_BASE_URL du .env local vers son adresse. Les variables et le seau
+# ne s'héritent pas d'un environnement à l'autre : ils sont redéclarés ici.
+[env.developpement.vars]
+ORIGINES_AUTORISEES = "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3002"
+
+[[env.developpement.r2_buckets]]
 binding = "VIDEOS"
 bucket_name = "emasterclass-videos"
 

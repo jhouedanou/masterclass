@@ -9,14 +9,16 @@ const programme = ref('')
 
 const { data } = await useFetch<{
   role: string
-  inscriptions: number
-  objectifInscriptions: number
-  ca: number
-  objectifCa: number
-  margeBrute: number
+  // Les blocs que les sections du compte ne couvrent pas arrivent à `null`
+  // (voir server/api/admin/vue-ensemble.get.ts) et ne sont pas affichés.
+  inscriptions: number | null
+  objectifInscriptions: number | null
+  ca: number | null
+  objectifCa: number | null
+  margeBrute: number | null
   completionMoyenne: number
   certificatsGeneres: number
-  topModules: { titre: string; programme: string; ventes: number }[]
+  topModules: { titre: string; programme: string; ventes: number }[] | null
   aTraiter: { coachingPrive: number; candidatures: number; sessionsAReprogrammer: number }
   prochainesSessions: {
     date: string
@@ -32,8 +34,8 @@ const { data } = await useFetch<{
     montant: number
     statut: string
     referenceFeexpay: string | null
-  }[]
-  journal: EntreeJournal[]
+  }[] | null
+  journal: EntreeJournal[] | null
   comptesActifs: number
   moisDisponibles: string[]
 }>('/api/admin/vue-ensemble', {
@@ -41,8 +43,13 @@ const { data } = await useFetch<{
 })
 
 const partObjectif = computed(() =>
-  data.value ? Math.round((data.value.inscriptions / data.value.objectifInscriptions) * 100) : 0,
+  data.value?.inscriptions != null && data.value.objectifInscriptions
+    ? Math.round((data.value.inscriptions / data.value.objectifInscriptions) * 100)
+    : 0,
 )
+
+/** Chiffre d'affaires et ventes : sections « Performances » ou « Statistiques ». */
+const voitChiffres = computed(() => data.value?.ca != null)
 
 const optionsMois = computed(() => [
   { valeur: '', libelle: '30 derniers jours' },
@@ -56,41 +63,43 @@ const optionsProgrammes = [
 ]
 
 /** La barre la plus longue du top 5 sert d'étalon aux autres. */
-const ventesMax = computed(() => data.value?.topModules[0]?.ventes || 1)
+const ventesMax = computed(() => data.value?.topModules?.[0]?.ventes || 1)
 </script>
 
 <template>
   <div v-if="data">
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
       <h1 class="font-title text-[26px] font-light">Vue d’ensemble</h1>
-      <div class="flex flex-wrap gap-2.5">
+      <div v-if="voitChiffres" class="flex flex-wrap gap-2.5">
         <UiFiltrePilule v-model="mois" etiquette="Mois" :options="optionsMois" />
         <UiFiltrePilule v-model="programme" etiquette="Programme" :options="optionsProgrammes" />
       </div>
     </div>
 
-    <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      <AdminCarteIndicateur
-        taille="xl"
-        libelle="Inscriptions payantes"
-        :valeur="String(data.inscriptions)"
-        :detail="`${partObjectif} % de l’objectif (${data.objectifInscriptions}/mois)`"
-        detail-accent
-      />
-      <AdminCarteIndicateur
-        taille="xl"
-        libelle="Chiffre d’affaires"
-        :valeur="formatNombre(data.ca)"
-        unite="FCFA"
-        :detail="`Objectif : ${formatFcfa(data.objectifCa)} / mois`"
-      />
-      <AdminCarteIndicateur
-        taille="xl"
-        libelle="Marge brute"
-        :valeur="formatNombre(data.margeBrute)"
-        unite="FCFA"
-        detail="CA − frais de paiement FeexPay"
-      />
+    <div class="mb-6 grid gap-4 sm:grid-cols-2" :class="voitChiffres ? 'lg:grid-cols-5' : 'lg:grid-cols-2'">
+      <template v-if="voitChiffres">
+        <AdminCarteIndicateur
+          taille="xl"
+          libelle="Inscriptions payantes"
+          :valeur="String(data.inscriptions)"
+          :detail="`${partObjectif} % de l’objectif (${data.objectifInscriptions}/mois)`"
+          detail-accent
+        />
+        <AdminCarteIndicateur
+          taille="xl"
+          libelle="Chiffre d’affaires"
+          :valeur="formatNombre(data.ca ?? 0)"
+          unite="FCFA"
+          :detail="`Objectif : ${formatFcfa(data.objectifCa ?? 0)} / mois`"
+        />
+        <AdminCarteIndicateur
+          taille="xl"
+          libelle="Marge brute"
+          :valeur="formatNombre(data.margeBrute ?? 0)"
+          unite="FCFA"
+          detail="CA − frais de paiement FeexPay"
+        />
+      </template>
       <AdminCarteIndicateur
         taille="xl"
         libelle="Taux de complétion moyen"
@@ -105,8 +114,10 @@ const ventesMax = computed(() => data.value?.topModules[0]?.ventes || 1)
       />
     </div>
 
-    <div class="grid gap-4 lg:grid-cols-[1.35fr_1fr]">
-      <section class="rounded-[14px] border border-ligne-douce bg-white p-[22px]">
+    <!-- Sans le top 5 (section non accordée), « À traiter » et les sessions
+         se partagent la largeur au lieu de laisser une colonne vide. -->
+    <div class="grid gap-4" :class="data.topModules ? 'lg:grid-cols-[1.35fr_1fr]' : ''">
+      <section v-if="data.topModules" class="rounded-[14px] border border-ligne-douce bg-white p-[22px]">
         <div class="mb-3.5 flex items-center justify-between gap-4">
           <h2 class="font-sans text-[15px] font-bold">Ventes par module — top 5</h2>
           <NuxtLink to="/admin/performances" class="shrink-0 text-[12.5px] font-bold">
@@ -132,7 +143,7 @@ const ventesMax = computed(() => data.value?.topModules[0]?.ventes || 1)
         </ul>
       </section>
 
-      <div class="flex flex-col gap-4">
+      <div :class="data.topModules ? 'flex flex-col gap-4' : 'grid gap-4 lg:grid-cols-2'">
         <section class="rounded-[14px] border border-ligne-douce bg-white p-[22px]">
           <h2 class="font-sans text-[15px] font-bold">À traiter</h2>
           <ul class="mt-3 flex flex-col gap-2.5 text-[13.5px]">
@@ -176,8 +187,12 @@ const ventesMax = computed(() => data.value?.topModules[0]?.ventes || 1)
       </div>
     </div>
 
-    <div class="mt-4 grid gap-4 lg:grid-cols-[1.35fr_1fr]">
-      <section class="rounded-[14px] border border-ligne-douce bg-white p-[22px]">
+    <div
+      v-if="data.dernieresTransactions || data.journal"
+      class="mt-4 grid gap-4"
+      :class="data.dernieresTransactions && data.journal ? 'lg:grid-cols-[1.35fr_1fr]' : ''"
+    >
+      <section v-if="data.dernieresTransactions" class="rounded-[14px] border border-ligne-douce bg-white p-[22px]">
         <div class="mb-3.5 flex items-center justify-between gap-4">
           <h2 class="font-sans text-[15px] font-bold">Dernières transactions</h2>
           <NuxtLink to="/admin/transactions" class="shrink-0 text-[12.5px] font-bold">
@@ -223,7 +238,7 @@ const ventesMax = computed(() => data.value?.topModules[0]?.ventes || 1)
         </div>
       </section>
 
-      <section class="rounded-[14px] border border-ligne-douce bg-white p-[22px]">
+      <section v-if="data.journal" class="rounded-[14px] border border-ligne-douce bg-white p-[22px]">
         <div class="mb-3.5 flex items-center justify-between gap-4">
           <h2 class="font-sans text-[15px] font-bold">Activité récente</h2>
           <NuxtLink to="/admin/historique" class="shrink-0 text-[12.5px] font-bold">

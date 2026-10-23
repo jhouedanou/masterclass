@@ -8,6 +8,8 @@ type Demande = DemandeCoachingPrive & {
   module: string
   formateur: string
   montant: number
+  /** Tarif horaire du formateur choisi : celui que la confirmation facture. */
+  tarifHoraire: number
   historique: HistoriqueCoachingPrive[]
 }
 type Action = 'confirmer' | 'marquer-payee' | 'planifier' | 'realisee' | 'refuser'
@@ -40,9 +42,12 @@ const filtres: { valeur: string; libelle: string }[] = [
 
 /**
  * La maquette ne dessine une carte complète que pour les demandes qui
- * appellent une décision ; les autres se rangent en ligne-carte.
+ * appellent une décision ; les autres se rangent en ligne-carte. Une demande
+ * « en étude » attend encore sa réponse : le serveur la laisse confirmer ou
+ * refuser comme une demande à traiter, elle en reprend donc les boutons.
  */
-const AVEC_ACTIONS: string[] = ['en-attente', 'confirmee-attente-paiement', 'payee']
+const AVEC_ACTIONS: string[] = ['en-attente', 'en-etude', 'confirmee-attente-paiement', 'payee']
+const A_DECIDER: string[] = ['en-attente', 'en-etude']
 const visibles = computed(() =>
   (data.value?.demandes ?? []).filter((d) => filtre.value === 'toutes' || d.statut === filtre.value),
 )
@@ -66,7 +71,6 @@ watch(
   },
   { immediate: true },
 )
-const TARIF_HORAIRE = 50_000
 const message = ref('')
 const { annoncer } = useToasts()
 const erreur = ref('')
@@ -103,10 +107,15 @@ function valider() {
   if (!modale.value) return
   const { demande, action } = modale.value
   const creneau = creneauChoisi.value ?? creneauLibre.value
-  if (action === 'refuser') return agir(demande, action, { motif })
-  if (action === 'planifier') return agir(demande, action, { creneau, lienSession })
-  if (action === 'confirmer') return agir(demande, action, { creneau, commentaire, heures: heures.value })
-  return agir(demande, action, { creneau, commentaire })
+  // Les valeurs, pas les refs : `{ motif }` sérialisait l'objet ref entier, et
+  // la route recevait un objet là où elle attend du texte — la modale ne
+  // validait plus rien (« Action impossible. »).
+  if (action === 'refuser') return agir(demande, action, { motif: motif.value })
+  if (action === 'planifier') return agir(demande, action, { creneau, lienSession: lienSession.value })
+  if (action === 'confirmer') {
+    return agir(demande, action, { creneau, commentaire: commentaire.value, heures: heures.value })
+  }
+  return agir(demande, action, { creneau, commentaire: commentaire.value })
 }
 
 const filtreFormateur = ref('')
@@ -183,7 +192,7 @@ const TITRES: Record<Action, string> = {
           </p>
 
           <div class="flex flex-wrap items-center gap-2.5">
-            <template v-if="demande.statut === 'en-attente'">
+            <template v-if="A_DECIDER.includes(demande.statut)">
               <label class="flex items-center gap-2 text-[12.5px] font-bold">
                 Heures
                 <select
@@ -191,11 +200,13 @@ const TITRES: Record<Action, string> = {
                   class="rounded-[8px] border-[1.5px] border-ligne px-3 py-2.5 text-[13px] font-normal"
                 >
                   <option v-for="h in [1, 2, 3]" :key="h" :value="h">
-                    {{ h }} h — {{ formatFcfa(h * TARIF_HORAIRE) }}
+                    {{ h }} h — {{ formatFcfa(h * demande.tarifHoraire) }}
                   </option>
                 </select>
               </label>
-              <span class="text-[11.5px] text-discret">Tarif fixe : 50 000 FCFA / h</span>
+              <span class="text-[11.5px] text-discret">
+                Tarif de {{ demande.formateur }} : {{ formatFcfa(demande.tarifHoraire) }} / h
+              </span>
               <UiBaseButton taille="sm" variante="sombre" @click="ouvrir(demande, 'confirmer')">
                 Confirmer + envoyer le lien de paiement
               </UiBaseButton>
@@ -229,13 +240,17 @@ const TITRES: Record<Action, string> = {
 
           <p class="mt-2.5 text-[11.5px] leading-[1.6] text-discret">
             <template v-if="demande.statut === 'payee'">
-              Crée l’événement dans l’agenda Google — invités : apprenant + formateur choisi — avec
-              date, heure, thématique et problématique · notifications programmées · email de
-              confirmation envoyé automatiquement aux participants.
+              Crée la réunion Zoom et un événement sur l’agenda Google de l’équipe (titre, besoins,
+              lien ; rappels la veille et une heure avant), sans invités. L’apprenant reçoit le lien
+              par e-mail ; prévenez vous-même le formateur.
+            </template>
+            <template v-else-if="A_DECIDER.includes(demande.statut)">
+              Aucun rappel automatique : surveillez le délai de réponse. Aucun paiement demandé
+              avant confirmation.
             </template>
             <template v-else>
-              Rappel automatique à l’équipe si aucune réponse sous 48 h. Aucun paiement demandé
-              avant confirmation.
+              L’apprenant règle par FeexPay depuis son espace ; la demande passe payée à
+              l’encaissement, ou à la main ci-dessus.
             </template>
           </p>
         </article>
@@ -319,8 +334,8 @@ const TITRES: Record<Action, string> = {
               </label>
             </div>
             <p class="mt-2 text-[13px] text-texte">
-              Montant proposé : <b>{{ formatFcfa(heures * TARIF_HORAIRE) }}</b>
-              <span class="text-discret"> — {{ heures }} × {{ formatFcfa(TARIF_HORAIRE) }} / h</span>
+              Montant proposé : <b>{{ formatFcfa(heures * modale.demande.tarifHoraire) }}</b>
+              <span class="text-discret"> — {{ heures }} × {{ formatFcfa(modale.demande.tarifHoraire) }} / h</span>
             </p>
           </fieldset>
 
@@ -330,8 +345,8 @@ const TITRES: Record<Action, string> = {
             </span>
             <input v-model="lienSession" type="url" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]" placeholder="Laissez vide : la réunion Zoom est générée">
             <span class="mt-1 block text-[12.5px] text-discret">
-              Laissé vide, le lien est généré avec la réunion Zoom et l’événement Google Agenda,
-              rappels compris. Un lien fourni à la main reste accepté en secours.
+              Laissé vide, le lien est généré avec la réunion Zoom ; l’événement est posé sur
+              l’agenda Google de l’équipe. Un lien fourni à la main reste accepté en secours.
             </span>
           </label>
 
@@ -354,10 +369,13 @@ const TITRES: Record<Action, string> = {
         </form>
 
         <p class="mt-4 text-[12px] text-discret">
-          <template v-if="modale.action === 'confirmer'">L’apprenant reçoit la confirmation du créneau et le lien de paiement FeexPay.</template>
+          <template v-if="modale.action === 'confirmer'">
+            L’apprenant reçoit par e-mail le créneau et le montant ; il règle par FeexPay depuis
+            son espace.
+          </template>
           <template v-else-if="modale.action === 'planifier'">
-            L’apprenant et le formateur reçoivent la date, l’heure et le lien de la séance, puis un
-            rappel 48 h avant.
+            L’apprenant reçoit par e-mail le créneau et le lien de la séance. Le formateur n’est
+            pas prévenu automatiquement, et aucun rappel ne part avant la séance.
           </template>
           <template v-else-if="modale.action === 'refuser'">Le motif est transmis tel quel à l’apprenant.</template>
         </p>

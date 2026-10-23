@@ -6,11 +6,13 @@ import {
   changerStatutCommande,
   cloreTransactionsCommande,
   confirmerCommande,
+  consommerSuiviMeta,
   transactionsDeCommande,
   trouverCommande,
   trouverTransactionParPrestataire,
 } from '../database/commerce'
 import type { MoyenTransactionSql } from '../database/types'
+import { envoyerEvenementMeta, type ContexteMeta } from './metaCapi'
 import { notifierCompte } from './notifications'
 
 /**
@@ -368,7 +370,9 @@ export async function rapprocherCommande(
 
   // Réussite : le montant encaissé doit couvrir la commande, sinon on n'ouvre
   // rien et on laisse une trace lisible pour l'administration.
-  if (transaction.montant + 0.5 < commande.total) {
+  // `Number.isFinite` d'abord : un montant illisible donne `NaN`, et `NaN + 0.5
+  // < total` est faux — la commande passait pour payée.
+  if (!Number.isFinite(transaction.montant) || transaction.montant + 0.5 < commande.total) {
     const detail = `Montant encaissé (${transaction.montant}) inférieur au total de la commande (${commande.total}).`
     await cloreTransactionsCommande(commande.reference, {
       statut: 'echouee',
@@ -401,7 +405,10 @@ export async function rapprocherCommande(
         commentaire: `Paiement confirmé (commande ${commande.reference}).`,
       })
     }
-    if (premiereConfirmation) await confirmerAchat(confirmee, [], moyenDepuisReseau(reseau))
+    if (premiereConfirmation) {
+      await confirmerAchat(confirmee, [], moyenDepuisReseau(reseau))
+      await signalerAchatMeta(confirmee, [`coaching-${commande.demandeCoachingId}`])
+    }
     return { statut: 'confirmee', commande: confirmee }
   }
 
@@ -412,8 +419,35 @@ export async function rapprocherCommande(
         .filter((id): id is string => id !== null)
   await ouvrirAcces(commande.utilisateurId, modules)
 
-  if (premiereConfirmation) await confirmerAchat(confirmee, modules, moyenDepuisReseau(reseau))
+  if (premiereConfirmation) {
+    await confirmerAchat(confirmee, modules, moyenDepuisReseau(reseau))
+    await signalerAchatMeta(confirmee, modules)
+  }
   return { statut: 'confirmee', commande: confirmee }
+}
+
+/**
+ * Purchase vers l'API Conversions de Meta, sous l'identifiant que le Pixel
+ * emploie au même instant (`achat-<référence>`, app/pages/achat/paiement.vue).
+ * Seulement si l'acheteur avait consenti au marketing : la commande en garde
+ * alors le contexte, consommé ici. Ne lève jamais, comme l'e-mail ci-dessous.
+ */
+async function signalerAchatMeta(commande: Commande, contentIds: string[]): Promise<void> {
+  try {
+    const contexte = await consommerSuiviMeta(commande.reference)
+    if (!contexte) return
+    const acheteur = await trouverUtilisateur(commande.utilisateurId)
+    if (!acheteur) return
+    await envoyerEvenementMeta({
+      nom: 'Purchase',
+      eventId: `achat-${commande.reference}`,
+      utilisateur: acheteur,
+      contexte: contexte as ContexteMeta,
+      donnees: { valeur: commande.total, contentIds, reference: commande.reference },
+    })
+  } catch (erreur) {
+    console.error('[meta-capi] achat non signalé', commande.reference, (erreur as Error)?.message ?? erreur)
+  }
 }
 
 /**
@@ -500,6 +534,22 @@ export async function verifierEtRapprocher(
 
   let transaction: TransactionFeexPay | null = null
   if (referenceFeexPay) transaction = await lireStatutFeexPay(referenceFeexPay)
+
+  // Une réussite lue sur le point d'entrée public, à partir d'une référence
+  // que le navigateur a fournie, ne prouve pas qu'elle a été encaissée chez
+  // nous : ce point d'entrée couvre toutes les boutiques, et la réponse ne dit
+  // pas toujours laquelle. Il suffisait d'encaisser le montant sur sa propre
+  // boutique FeexPay, avec notre référence de commande en `custom_id`, pour
+  // s'ouvrir les accès en se remboursant soi-même. Sans boutique annoncée qui
+  // soit la nôtre, la réussite doit donc se retrouver dans l'historique de
+  // notre boutique — authentifié par la clé et filtré par `shop`. Absente, la
+  // commande reste en vérification : le rattrapage de nuit réessaiera.
+  if (transaction?.statut === 'SUCCESSFUL' && transaction.shop !== configFeexPay().shopId) {
+    const notre = await rechercherParCommandeFeexPay(commande.reference, commande.creeeLe).catch(() => null)
+    transaction = notre?.statut === 'SUCCESSFUL' ? notre : null
+    if (!transaction) return { statut: 'attente', commande }
+  }
+
   if (!transaction) transaction = await rechercherParCommandeFeexPay(commande.reference, commande.creeeLe)
   if (!transaction) return { statut: 'attente', commande }
 

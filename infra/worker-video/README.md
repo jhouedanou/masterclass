@@ -9,7 +9,8 @@ Trois pièces, et rien de plus :
 | Ce Worker | vérifie l'autorisation et sert les fichiers | gratuit sous 100 000 requêtes par jour |
 
 L'application ne diffuse aucune vidéo. Elle vérifie l'accès une fois, puis
-remet à l'apprenant une URL signée valable quelques heures. Le Worker recalcule
+remet à l'apprenant une URL signée valable une demi-heure, que le lecteur
+renouvelle sans interrompre la vidéo. Le Worker recalcule
 la signature et sert le fichier. Aucun segment ne traverse le serveur Nuxt.
 
 ## En service depuis le 2 septembre 2026
@@ -44,6 +45,32 @@ lui-même, avant toute vérification de signature : la vidéo reste sur son écr
 chargement, sans erreur visible ailleurs que dans la console. Un appel `curl` ne le montre
 pas — il faut un vrai navigateur. Ajouter ici tout nouveau domaine de préproduction.
 
+Le Worker de production n'accepte plus d'adresse locale (audit du 20/10). Pour lire les
+vidéos depuis un poste de développement, déployer l'environnement `developpement`, qui lit
+le même seau :
+
+```bash
+npx wrangler deploy --env developpement
+npx wrangler secret put VIDEO_SIGNING_SECRET --env developpement
+```
+
+puis faire pointer `VIDEO_BASE_URL` du `.env` local sur son adresse
+(`emasterclass-videos-developpement.<compte>.workers.dev`).
+
+## Format de l'autorisation (20/10/2026)
+
+Le message signé commence désormais par `lecture.` : `lecture.<dossier>.<échéance>.<apprenant>`.
+Une échéance à plus de quatre heures est refusée, même bien signée. Pour ne couper aucune
+vidéo pendant la mise à jour :
+
+1. redéployer ce Worker, qui accepte les deux formats ;
+2. déployer l'application, qui signe au nouveau format ;
+3. borner l'ancien format : `LECTURE_ANCIEN_FORMAT_JUSQUA` (date ISO) ne l'admet que pour une
+   autorisation qui expire au plus tard à cette date. Réglée à la mise en ligne de l'application
+   plus quatre heures, elle referme la transition d'elle-même ; absente, l'ancien format est refusé.
+
+Fait le 20/10/2026 : application en ligne à 18 h 25 UTC, borne au 20/10 à 22 h 30 UTC.
+
 ## Cycle d'une vidéo
 
 ```bash
@@ -62,7 +89,9 @@ update chapitres set video_cle = 'mod-monslug-ch01', video_duree_secondes = 612
 ## Ce que la signature protège, et ce qu'elle ne protège pas
 
 Elle empêche un lien d'être partagé durablement : l'autorisation expire après
-quatre heures et reste nominative, donc traçable. Elle n'empêche pas un
+une demi-heure et reste nominative, donc traçable. Le MP4 déposé est effacé du seau dès
+que la vidéo passe en multi-débit (`npm run video:encoder`) : il ne reste pas
+téléchargeable d'une seule requête sous la même autorisation que le flux. Elle n'empêche pas un
 apprenant déterminé d'enregistrer son écran — aucune technologie grand public
 ne le fait. C'est le rôle du filigrane nominatif affiché par le lecteur, qui
 rend une rediffusion attribuable.

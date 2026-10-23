@@ -223,7 +223,7 @@ const etiquette = 'mb-1.5 block text-[12.5px] font-bold'
       <p class="text-[11.5px] text-discret">
         Les deux s’appliquent à tout le module. Le blocage masque le bouton de téléchargement ; il
         n’empêche ni un enregistrement d’écran, ni la récupération de l’URL signée pendant ses
-        quatre heures de validité. C’est le filigrane qui rend une rediffusion attribuable.
+        trente minutes de validité. C’est le filigrane qui rend une rediffusion attribuable.
       </p>
     </div>
 

@@ -211,14 +211,27 @@ await attendErreur(
   `select delivrer_certificat('usr-aya', 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting')`,
 )
 await db.query(
-  `update acces set progression = 100, termine_le = '2026-10-20'
+  `update acces set progression = 100, termine_le = '2026-10-20', revoque_le = now()
    where utilisateur_id = 'usr-aya'
      and module_id = 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting'`,
 )
+await attendErreur(
+  'accès révoqué : attestation refusée malgré 100 %',
+  'EM409',
+  `select delivrer_certificat('usr-aya', 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting')`,
+)
+await db.query(
+  `update acces set revoque_le = null
+   where utilisateur_id = 'usr-aya'
+     and module_id = 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting'`,
+)
+// Migration 44 : le rang suit la séquence, un suffixe tiré au sort le rend
+// impossible à deviner.
 await attendValeur(
-  'numéro tiré de la séquence',
-  'EMBF-SOM-2026-000129',
-  `select (delivrer_certificat('usr-aya', 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting')).numero`,
+  'numéro : rang de la séquence et suffixe aléatoire de 8 caractères',
+  'true',
+  `select (delivrer_certificat('usr-aya', 'mod-accroches-qui-stoppent-le-scroll-et-ia-copywriting')).numero
+          ~ '^EMBF-SOM-2026-000129-[0-9A-F]{8}$'`,
 )
 
 // --- Attribution d'un accès gratuit -----------------------------------------
@@ -974,6 +987,16 @@ await attendErreur(
   'EM403',
   `select soumettre_quiz('usr-moussa', '${QUIZ_MODULE}', '{"Q01":"A","Q02":"B"}'::jsonb)`,
 )
+// Migration 43 : le quiz suit la formation.
+await attendErreur(
+  'vidéos non terminées : quiz fermé, même avec les bonnes réponses',
+  'EM409',
+  `select ${SOUMETTRE({ Q01: 'A', Q02: 'B' })}`,
+)
+await db.query(
+  `update acces set progression = 100, termine_le = '2026-10-20'
+    where utilisateur_id = 'usr-fatou' and module_id = '${QUIZ_MODULE}'`,
+)
 await attendErreur('réponse manquante', 'EM422', `select ${SOUMETTRE({ Q01: 'A' })}`)
 await attendErreur('lettre inventée', 'EM422', `select ${SOUMETTRE({ Q01: 'A', Q02: 'Z' })}`)
 await attendValeur(
@@ -1030,6 +1053,28 @@ await attendValeur(
   'attestation délivrée après réussite',
   'true',
   `select (delivrer_certificat('usr-fatou', '${QUIZ_MODULE}')).numero like 'EMBF-%'`,
+)
+
+// --- Sections du back-office (audit du 20/10) --------------------------------
+
+console.log('\nSections « Apprenants » et « Attestations »')
+await attendValeur(
+  'les deux sections existent dans l’énumération',
+  2,
+  `select count(*)::int from pg_enum e join pg_type t on t.oid = e.enumtypid
+    where t.typname = 'section_admin' and e.enumlabel in ('apprenants', 'attestations')`,
+)
+await attendValeur(
+  'un compte peut les recevoir',
+  'true',
+  `update utilisateurs set sections_autorisees = '{apprenants,attestations}'
+    where id = 'usr-moussa' returning sections_autorisees @> '{apprenants}'::section_admin[]`,
+)
+await db.query(`update utilisateurs set sections_autorisees = '{}' where id = 'usr-moussa'`)
+await attendErreur(
+  'une section inconnue est refusée par la base',
+  '22P02',
+  `update utilisateurs set sections_autorisees = '{tout}' where id = 'usr-moussa'`,
 )
 
 await db.close()

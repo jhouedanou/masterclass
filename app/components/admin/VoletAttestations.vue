@@ -11,6 +11,11 @@
  * une signature ici signe aussi ce qui est sorti avant elle. C'est voulu — le
  * contraire aurait laissé le passé non signé pour toujours.
  */
+/** Griffes et signataire s'impriment sur toutes les attestations : seul un
+ *  administrateur supérieur les change. Les autres consultent. */
+const auth = useAuthStore()
+const lectureSeule = computed(() => auth.utilisateur?.role !== 'admin-superieur')
+
 const { data, refresh } = await useFetch<{
   reglages: { signature: string; signataire: string }
   formateurs: { id: string; nom: string; signature: string }[]
@@ -53,6 +58,11 @@ const champ =
     <p v-if="message" class="rounded-[10px] border border-succes bg-succes-voile px-4 py-3 text-[14px] text-succes">{{ message }}</p>
     <p v-if="erreur" class="rounded-[10px] border border-erreur bg-erreur-voile px-4 py-3 text-[14px] text-erreur">{{ erreur }}</p>
 
+    <p v-if="lectureSeule" class="rounded-[10px] border border-ligne-douce bg-fond-clair px-4 py-3 text-[13px] text-texte">
+      Lecture seule : les griffes et le nom du signataire ne se modifient que depuis un compte
+      d’administrateur supérieur.
+    </p>
+
     <section :class="carte">
       <h2 :class="titreCarte">Griffe de la direction</h2>
       <p class="mt-1.5 text-[12.5px] leading-[1.6] text-discret">
@@ -64,8 +74,8 @@ const champ =
       <label class="mt-4 block max-w-[420px]">
         <span class="mb-1.5 block text-[12.5px] font-bold">Nom sous la ligne de signature</span>
         <div class="flex flex-wrap gap-2">
-          <input v-model="signataire" :class="champ" class="min-w-[220px] flex-1">
-          <UiBaseButton taille="sm" variante="sombre" :disabled="enCours" @click="enregistrerSignataire">
+          <input v-model="signataire" :class="champ" class="min-w-[220px] flex-1" :readonly="lectureSeule">
+          <UiBaseButton v-if="!lectureSeule" taille="sm" variante="sombre" :disabled="enCours" @click="enregistrerSignataire">
             {{ enCours ? 'Enregistrement…' : 'Enregistrer' }}
           </UiBaseButton>
         </div>
@@ -75,6 +85,7 @@ const champ =
         class="mt-4"
         :model-value="data.reglages.signature"
         :legende="data.reglages.signataire"
+        :lecture-seule="lectureSeule"
         @update:model-value="refresh()"
       />
     </section>
@@ -94,6 +105,7 @@ const champ =
           :model-value="formateur.signature"
           :legende="formateur.nom"
           :formateur-id="formateur.id"
+          :lecture-seule="lectureSeule"
           @update:model-value="refresh()"
         />
       </div>

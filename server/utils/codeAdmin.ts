@@ -114,10 +114,8 @@ async function controlerTotp(compte: Utilisateur, code: string): Promise<Resulta
   if (!etat.secret || !etat.activeLe) return 'expire'
 
   const pas = verifierTotp(etat.secret, code, { pasMinimal: etat.dernierPas })
-  if (pas !== null) {
-    await marquerPas(compte.id, pas)
-    return 'ok'
-  }
+  // Un pas déjà pris par une requête concurrente vaut un code rejoué.
+  if (pas !== null) return (await marquerPas(compte.id, pas)) ? 'ok' : 'incorrect'
 
   if (await consommerCodeSecours(compte.id, code) !== null) return 'ok'
   return 'incorrect'

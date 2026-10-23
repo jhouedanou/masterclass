@@ -104,12 +104,18 @@ const A_TRAITER: string[] = ['nouvelle', 'en-etude']
           </p>
           <div class="flex flex-wrap items-center gap-2 text-[12.5px] font-bold">
             <UiBaseButton
+              v-if="lienWhatsAppVers(candidature.whatsapp)"
               taille="sm"
               variante="sombre"
-              :href="lienWhatsApp(`Bonjour ${candidature.nom}, nous revenons vers vous au sujet de votre candidature formateur.`)"
+              :href="lienWhatsAppVers(candidature.whatsapp, `Bonjour ${candidature.nom}, nous revenons vers vous au sujet de votre candidature formateur.`)!"
             >
               Contacter sur WhatsApp
             </UiBaseButton>
+            <!-- Numéro saisi sans indicatif : wa.me ne saurait pas dans quel
+                 pays l'appeler. Mieux vaut le dire que d'ouvrir un inconnu. -->
+            <span v-else class="font-normal text-discret">
+              Numéro sans indicatif international : WhatsApp ne peut pas l’ouvrir.
+            </span>
             <UiBaseButton
               v-if="candidature.statut === 'nouvelle'"
               taille="sm"
@@ -161,7 +167,7 @@ const A_TRAITER: string[] = ['nouvelle', 'en-etude']
       v-if="creationOuverte"
       :candidature="creation"
       @fermer="creationOuverte = false"
-      @cree="creationOuverte = false; message = 'Compte formateur créé.'; refresh()"
+      @cree="message = 'Compte formateur créé.'; refresh()"
     />
   </div>
 </template>

@@ -10,11 +10,18 @@ const slug = computed(() => String(route.params.slug))
  * Quiz du module (règles Big Five) : dix questions, réussite à 100 %, trois
  * tentatives par jour remises à zéro à minuit, heure d'Abidjan. La correction
  * vient du serveur à la soumission ; la page ne connaît jamais la bonne réponse.
+ *
+ * Les options arrivent mélangées pour la tentative en cours : leurs lettres ne
+ * valent que pour elle, et `ordre` les accompagne à la soumission. Chaque
+ * nouvelle tentative recharge donc les questions. Le quiz reste fermé tant que
+ * les vidéos ne sont pas toutes vues.
  */
 const { data, error, refresh } = await useFetch<{
   module: { id: string; slug: string; titre: string; formateur: string | null }
   progression: number
+  ouvert: boolean
   questions: QuestionQuiz[]
+  ordre: { jour: string; numero: number } | null
   etat: EtatQuiz
   copie: { reponses: Record<string, string>; note: number; corrections: CorrectionQuiz[] } | null
 }>(() => `/api/mon-espace/quiz/${slug.value}`)
@@ -31,6 +38,7 @@ if (!data.value) {
 usePagePrivee(`Quiz — ${data.value.module.titre}`)
 
 const questions = computed(() => data.value!.questions)
+const ouvert = computed(() => data.value!.ouvert)
 const etat = ref<EtatQuiz>(data.value.etat)
 const reponses = ref<Record<string, string>>({})
 const resultat = ref<{ note: number; reussi: boolean; corrections: Map<string, CorrectionQuiz> } | null>(null)
@@ -60,7 +68,7 @@ async function soumettre() {
   try {
     const r = await $fetch<ResultatQuiz>(`/api/mon-espace/quiz/${slug.value}`, {
       method: 'POST',
-      body: { reponses: reponses.value },
+      body: { reponses: reponses.value, ordre: data.value!.ordre },
     })
     etat.value = r.etat
     resultat.value = { note: r.note, reussi: r.reussi, corrections: new Map(r.corrections.map((c) => [c.code, c])) }
@@ -71,10 +79,14 @@ async function soumettre() {
     const err = e as { data?: { statusMessage?: string }; statusMessage?: string }
     erreurEnvoi.value = err.data?.statusMessage ?? err.statusMessage ?? 'La soumission a échoué. Réessayez.'
     // Un refus du serveur (quota atteint dans un autre onglet, quiz réussi
-    // ailleurs) : on reprend l'état qui fait foi.
+    // ailleurs, nouveau jour) : on reprend l'état qui fait foi. Si l'ordre des
+    // options a changé, les lettres cochées ne désignent plus les mêmes
+    // réponses : on les efface.
+    const avant = JSON.stringify(data.value?.ordre)
     await refresh()
     if (data.value) {
       etat.value = data.value.etat
+      if (JSON.stringify(data.value.ordre) !== avant) reponses.value = {}
       afficherCopie(data.value.copie)
     }
   } finally {
@@ -82,7 +94,10 @@ async function soumettre() {
   }
 }
 
-function reprendre() {
+/** Nouvelle tentative : nouvel ordre des options, à recharger. */
+async function reprendre() {
+  await refresh()
+  if (data.value) etat.value = data.value.etat
   reponses.value = {}
   resultat.value = null
   erreurEnvoi.value = null
@@ -131,12 +146,26 @@ const chapitresARevoir = computed(() => {
     <h1 class="mt-2 text-[28px] font-light lg:text-[32px]">{{ data.module.titre }}</h1>
     <p class="mt-2 text-[14px] leading-[1.6] text-texte">
       <template v-if="data.module.formateur">{{ data.module.formateur }} · </template>
-      Répondez aux {{ questions.length }} questions puis soumettez. Note sur 100, réussite à 100 %,
+      Répondez aux {{ etat.questions }} questions puis soumettez. Note sur 100, réussite à 100 %,
       {{ etat.tentativesMax }} tentatives par jour (remises à zéro à minuit, heure d’Abidjan).
     </p>
-    <p v-if="!videosFinies && !etat.reussi" class="mt-3 rounded-champ bg-social-nuage px-4 py-3 text-[13px] leading-[1.55] text-texte">
-      Conseil : regardez d’abord toutes les vidéos du module. Chaque question manquée vous renvoie au passage à revoir.
-    </p>
+    <!-- Fermé tant que les vidéos ne sont pas toutes vues : le quiz vérifie
+         la formation, il ne la remplace pas. -->
+    <div
+      v-if="!ouvert"
+      class="mt-6 flex items-start gap-2.5 rounded-carte border border-ligne-douce bg-white px-5 py-4 text-[14px] leading-[1.6] text-texte"
+    >
+      <Icon name="ph:lock-simple-fill" class="mt-[3px] size-4 shrink-0 text-social" />
+      <div>
+        <p>
+          Le quiz s’ouvre une fois toutes les vidéos du module vues. Vous en êtes à
+          <b class="text-encre">{{ Math.round(data.progression) }} %</b>.
+        </p>
+        <UiBaseButton :to="`/mon-espace/lecture/${data.module.slug}`" class="mt-3" taille="sm">
+          Reprendre les vidéos
+        </UiBaseButton>
+      </div>
+    </div>
 
     <!-- Résultat de la copie : annoncé aux lecteurs d'écran, et le focus y est
          porté après la soumission. -->
@@ -206,7 +235,7 @@ const chapitresARevoir = computed(() => {
       </span>
     </p>
 
-    <form class="mt-6 flex flex-col gap-4" @submit.prevent="soumettre">
+    <form v-if="ouvert" class="mt-6 flex flex-col gap-4" @submit.prevent="soumettre">
       <EspaceQuestionQuiz
         v-for="(question, i) in questions"
         :key="question.code"

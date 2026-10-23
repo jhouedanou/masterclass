@@ -5,7 +5,7 @@ import { listerDemandesCoachingPrive } from '../../database/coaching'
 import { listerCertificats, listerTransactions } from '../../database/commerce'
 import { listerAcces, listerPersonas, listerUtilisateurs } from '../../database/comptes'
 import { listerReferentiels } from '../../database/referentiels'
-import { exigerAdmin } from '../../utils/session'
+import { exigerSection } from '../../utils/session'
 
 /**
  * Liste des apprenants et méga-filtre de l'écran 04.
@@ -18,7 +18,7 @@ import { exigerAdmin } from '../../utils/session'
  * en pure forme.
  */
 export default defineEventHandler(async (event) => {
-  await exigerAdmin(event)
+  await exigerSection(event, 'apprenants')
   const f = getQuery(event) as Record<string, string | undefined>
 
   const [

@@ -6,6 +6,7 @@ import { listerAccesUtilisateur, ouvrirAcces } from '../database/comptes'
 import { notifierCompte } from '../utils/notifications'
 import type { MoyenTransactionSql } from '../database/types'
 import { configFeexPay, descriptionFeexPay } from '../utils/feexpay'
+import { contexteMeta, type SuiviNavigateur } from '../utils/metaCapi'
 import { exigerUtilisateur } from '../utils/session'
 
 /** Motifs d'échec tels que le prestataire les remonte (planche A, écran 04c). */
@@ -69,14 +70,19 @@ const CAS_FEEXPAY: Record<string, 'MOBILE' | 'WALLET' | 'CARD' | ''> = {
  */
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerUtilisateur(event)
-  const { moduleIds, moyen, simulerEchec, demandeId } = await readBody<{
+  const { moduleIds, moyen, simulerEchec, demandeId, suivi } = await readBody<{
     moduleIds?: string[]
     moyen?: 'mobile-money' | 'wave' | 'djamo' | 'visa'
     /** Hors production seulement : force un des six motifs d'échec. */
     simulerEchec?: CodeEchecPaiement
     /** Séance de coaching privé à régler (« Accepter et payer », planche B, 10). */
     demandeId?: string
+    /** Consentement et cookies Meta (app/composables/useSuivi.ts). */
+    suivi?: SuiviNavigateur
   }>(event)
+  // Retenu sur la commande : Purchase part du serveur quand FeexPay confirme,
+  // souvent loin de ce navigateur (webhook, relance). Nul sans consentement.
+  const suiviMeta = contexteMeta(event, suivi)
 
   // Un moyen que FeexPay refuserait n'est pas proposé par le tunnel, et une
   // commande forgée ne doit pas ouvrir une fenêtre vouée à l'échec : Wave
@@ -118,6 +124,7 @@ export default defineEventHandler(async (event) => {
       statut: feexpay.mode === 'simulation' ? 'confirmee' : 'attente',
       demandeCoachingId: demande.id,
       total,
+      suiviMeta: feexpay.mode === 'simulation' ? null : suiviMeta,
     })
     // Une ligne sans module : sans elle, la séance payée manquait à l'écran
     // Transactions et au rapprochement avec le relevé FeexPay (PRI-08).
@@ -186,6 +193,7 @@ export default defineEventHandler(async (event) => {
       lignes: achetes.map((m) => ({ moduleId: m.id, prixFcfa: m.prixFcfa })),
       moyen: moyenCommande,
       statut: 'attente',
+      suiviMeta,
     })
     for (const m of achetes) {
       await enregistrerTransaction({

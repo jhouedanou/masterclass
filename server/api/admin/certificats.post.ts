@@ -1,6 +1,6 @@
 import { enregistrerJournal } from '../../database/administration'
 import { retablirCertificat, revoquerCertificat } from '../../database/commerce'
-import { exigerAdmin } from '../../utils/session'
+import { exigerSection } from '../../utils/session'
 
 /**
  * Révocation d'une attestation délivrée à tort, et retour en arrière.
@@ -11,7 +11,7 @@ import { exigerAdmin } from '../../utils/session'
  * être imprimé — mais la page publique de vérification le déclare non valable.
  */
 export default defineEventHandler(async (event) => {
-  const admin = await exigerAdmin(event)
+  const admin = await exigerSection(event, 'attestations')
   const { numero, motif, action } = await readBody<{
     numero?: string
     motif?: string

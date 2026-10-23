@@ -131,7 +131,7 @@ const html = computed(() => rendreTexteRiche(article.value.contenu))
               Module {{ numeroModule(m.numero) }}
             </span>
             <span class="font-title text-[17px] font-light">{{ m.titre }}</span>
-            <span class="text-[12.5px] text-discret">{{ formateurDe(m) }}{{ formatFcfa(m.prixFcfa, true) }}</span>
+            <span class="text-[12.5px] text-discret">{{ formateurDe(m) }}{{ m.prixFcfa != null ? formatFcfa(m.prixFcfa, true) : 'Prix au lancement' }}</span>
           </NuxtLink>
         </div>
       </div>
