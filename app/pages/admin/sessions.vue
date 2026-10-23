@@ -367,7 +367,8 @@ async function creer() {
       Une session par mois et par couple thématique–formateur · 10 sessions mensuelles en Phase 1 (5 SM + 5
       ENT) · {{ dureeSessionEnHeures() }} · {{ PLACES_SESSION }} participants max · jour fixe du mois · visible uniquement des apprenants
       ayant acheté un module couvert · lien Zoom personnel généré à la demande, jamais affiché en
-      clair · rappel automatique 24 h avant par email + WhatsApp.
+      clair · aucun rappel automatique avant la séance : seuls un report ou une annulation
+      préviennent les inscrits, par e-mail.
     </aside>
 
     <!-- Planification : carte cerclée de violet, à 1,5 px, sous le tableau. -->

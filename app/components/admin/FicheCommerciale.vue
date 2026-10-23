@@ -413,7 +413,9 @@ const STATUTS: { valeur: Module['statut']; titre: string; suite: string }[] = [
             </label>
             <p class="mt-2 leading-[1.6]">
               En mode Annonce : badge « Bientôt disponible », bouton d’achat inactif, prix masquable,
-              CTA « Être prévenu du lancement » (email / WhatsApp).
+              CTA « Être prévenu du lancement » (email / WhatsApp). Les contacts sont enregistrés,
+              mais aucun message ne part automatiquement au lancement et le back-office ne les
+              affiche pas encore.
             </p>
           </div>
         </section>
