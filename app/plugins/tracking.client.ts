@@ -43,6 +43,14 @@ export default defineNuxtPlugin(() => {
     _fbq?: unknown
   }
 
+  // Le nonce de la page (server/plugins/csp.ts). Posé sur gtm.js, il est
+  // reporté par GTM sur les scripts qu'il ajoute ; posé sur les copies du
+  // code additionnel, il les fait admettre comme les scripts de Nuxt. Le
+  // navigateur vide l'attribut, mais la propriété `nonce` garde la valeur.
+  function nonceDeLaPage(): string | undefined {
+    return document.querySelector<HTMLScriptElement>('script[nonce]')?.nonce || undefined
+  }
+
   /** `gtag()` du mode Consentement : GTM lit des `arguments`, pas des tableaux. */
   function gtag(..._args: unknown[]) {
     const w = window as Fenetre
@@ -72,6 +80,8 @@ export default defineNuxtPlugin(() => {
     const script = document.createElement('script')
     script.async = true
     script.src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(conteneur)}`
+    const nonce = nonceDeLaPage()
+    if (nonce) script.nonce = nonce
     document.head.appendChild(script)
   }
 
@@ -93,6 +103,8 @@ export default defineNuxtPlugin(() => {
       const script = document.createElement('script')
       script.async = true
       script.src = 'https://connect.facebook.net/en_US/fbevents.js'
+      const nonce = nonceDeLaPage()
+      if (nonce) script.nonce = nonce
       document.head.appendChild(script)
     }
     // Pas d'appariement avancé ici : l'e-mail et le téléphone partent hachés
@@ -140,9 +152,11 @@ export default defineNuxtPlugin(() => {
       if (ids.codePersonnalise?.trim()) {
         const conteneur = document.createElement('div')
         conteneur.innerHTML = ids.codePersonnalise
+        const nonce = nonceDeLaPage()
         for (const balise of conteneur.querySelectorAll('script')) {
           const copie = document.createElement('script')
           for (const attribut of balise.attributes) copie.setAttribute(attribut.name, attribut.value)
+          if (nonce) copie.nonce = nonce
           copie.textContent = balise.textContent
           document.head.appendChild(copie)
         }
