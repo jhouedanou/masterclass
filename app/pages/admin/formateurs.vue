@@ -229,7 +229,7 @@ const confirmation = ref('')
       v-if="creationOuverte"
       :candidature="creation"
       @fermer="creationOuverte = false"
-      @cree="creationOuverte = false; message = 'Compte formateur créé.'; apresCreation()"
+      @cree="message = 'Compte formateur créé.'; apresCreation()"
     />
 
     <!-- Activation du coaching privé (écran 07b), modale partagée avec

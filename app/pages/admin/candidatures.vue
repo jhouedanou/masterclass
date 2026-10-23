@@ -167,7 +167,7 @@ const A_TRAITER: string[] = ['nouvelle', 'en-etude']
       v-if="creationOuverte"
       :candidature="creation"
       @fermer="creationOuverte = false"
-      @cree="creationOuverte = false; message = 'Compte formateur créé.'; refresh()"
+      @cree="message = 'Compte formateur créé.'; refresh()"
     />
   </div>
 </template>
