@@ -107,10 +107,15 @@ function valider() {
   if (!modale.value) return
   const { demande, action } = modale.value
   const creneau = creneauChoisi.value ?? creneauLibre.value
-  if (action === 'refuser') return agir(demande, action, { motif })
-  if (action === 'planifier') return agir(demande, action, { creneau, lienSession })
-  if (action === 'confirmer') return agir(demande, action, { creneau, commentaire, heures: heures.value })
-  return agir(demande, action, { creneau, commentaire })
+  // Les valeurs, pas les refs : `{ motif }` sérialisait l'objet ref entier, et
+  // la route recevait un objet là où elle attend du texte — la modale ne
+  // validait plus rien (« Action impossible. »).
+  if (action === 'refuser') return agir(demande, action, { motif: motif.value })
+  if (action === 'planifier') return agir(demande, action, { creneau, lienSession: lienSession.value })
+  if (action === 'confirmer') {
+    return agir(demande, action, { creneau, commentaire: commentaire.value, heures: heures.value })
+  }
+  return agir(demande, action, { creneau, commentaire: commentaire.value })
 }
 
 const filtreFormateur = ref('')
