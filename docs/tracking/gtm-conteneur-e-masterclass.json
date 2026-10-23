@@ -1,0 +1,122 @@
+{
+  "exportFormatVersion": 2,
+  "exportTime": "2026-10-23 18:00:00",
+  "containerVersion": {
+    "path": "accounts/0/containers/0/versions/0",
+    "accountId": "0",
+    "containerId": "0",
+    "containerVersionId": "0",
+    "name": "E-Masterclass Big Five — GA4 tunnel e-commerce",
+    "description": "Balise Google G-7Y25B7NCW8 et événements GA4 du tunnel (view_item, sign_up, begin_checkout, add_payment_info, purchase) poussés par le site dans le dataLayer. Le Pixel Meta est chargé par le site lui-même : aucune balise Meta ici, pour ne pas compter deux fois.",
+    "container": {
+      "path": "accounts/0/containers/0",
+      "accountId": "0",
+      "containerId": "0",
+      "name": "E-Masterclass Big Five",
+      "publicId": "GTM-KVFTGVVX",
+      "usageContext": ["WEB"]
+    },
+    "tag": [
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "tagId": "1",
+        "name": "GA4 - Balise Google",
+        "type": "googtag",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "tagId", "value": "G-7Y25B7NCW8" }
+        ],
+        "firingTriggerId": ["2147479573"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": { "type": "MAP" },
+        "consentSettings": { "consentStatus": "NOT_SET" }
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "tagId": "2",
+        "name": "GA4 - Événements du tunnel",
+        "type": "gaawe",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "eventName", "value": "{{Event}}" },
+          { "type": "TEMPLATE", "key": "measurementIdOverride", "value": "G-7Y25B7NCW8" },
+          { "type": "BOOLEAN", "key": "sendEcommerceData", "value": "true" },
+          { "type": "TEMPLATE", "key": "getEcommerceDataFrom", "value": "dataLayer" },
+          {
+            "type": "LIST",
+            "key": "eventSettingsTable",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "parameter", "value": "event_id" },
+                  { "type": "TEMPLATE", "key": "parameterValue", "value": "{{DLV - event_id}}" }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "parameter", "value": "method" },
+                  { "type": "TEMPLATE", "key": "parameterValue", "value": "{{DLV - method}}" }
+                ]
+              }
+            ]
+          }
+        ],
+        "firingTriggerId": ["10"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "monitoringMetadata": { "type": "MAP" },
+        "consentSettings": { "consentStatus": "NOT_SET" }
+      }
+    ],
+    "trigger": [
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "triggerId": "10",
+        "name": "CE - Tunnel e-commerce",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "MATCH_REGEX",
+            "parameter": [
+              { "type": "TEMPLATE", "key": "arg0", "value": "{{_event}}" },
+              { "type": "TEMPLATE", "key": "arg1", "value": "^(view_item|sign_up|begin_checkout|add_payment_info|purchase)$" }
+            ]
+          }
+        ]
+      }
+    ],
+    "variable": [
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "20",
+        "name": "DLV - event_id",
+        "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
+          { "type": "TEMPLATE", "key": "name", "value": "event_id" }
+        ]
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "21",
+        "name": "DLV - method",
+        "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
+          { "type": "TEMPLATE", "key": "name", "value": "method" }
+        ]
+      }
+    ],
+    "builtInVariable": [
+      { "accountId": "0", "containerId": "0", "type": "EVENT", "name": "Event" },
+      { "accountId": "0", "containerId": "0", "type": "PAGE_URL", "name": "Page URL" },
+      { "accountId": "0", "containerId": "0", "type": "PAGE_PATH", "name": "Page Path" }
+    ]
+  }
+}
