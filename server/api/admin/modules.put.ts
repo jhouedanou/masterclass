@@ -2,7 +2,7 @@ import { enregistrerJournal } from '../../database/administration'
 import { enregistrerVersion, listerVersions } from '../../database/backoffice'
 import { majModule, trouverModule } from '../../database/catalogue'
 import { assainirHtml } from '../../utils/texteRiche'
-import { exigerSection } from '../../utils/session'
+import { exigerSection, exigerUneSection } from '../../utils/session'
 
 /**
  * Édition d'un module. L'ouverture de l'offre — le passage à « disponible » —
@@ -14,7 +14,9 @@ import { exigerSection } from '../../utils/session'
 const INTERVALLE_VERSION_MINUTES = 10
 
 export default defineEventHandler(async (event) => {
-  const admin = await exigerSection(event, 'modules-chapitres')
+  // La fiche commerciale enregistre par cette route : la section « Fiches
+  // commerciales » seule y suffit. Le prix reste gardé plus bas.
+  const admin = await exigerUneSection(event, ['modules-chapitres', 'fiches-commerciales'])
   const body = await readBody<{ id: string; autosave?: boolean } & Record<string, unknown>>(event)
 
   const actuel = await trouverModule(body.id)

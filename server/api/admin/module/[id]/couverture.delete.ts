@@ -1,11 +1,11 @@
 import { enregistrerJournal } from '../../../../database/administration'
 import { majModule, trouverModule } from '../../../../database/catalogue'
 import { SEAU_COUVERTURES, cheminDansSeau, effacerImage } from '../../../../utils/photos'
-import { exigerSection } from '../../../../utils/session'
+import { exigerUneSection } from '../../../../utils/session'
 
 /** Retrait de la couverture : la fiche retombe sur le visuel du programme. */
 export default defineEventHandler(async (event) => {
-  const admin = await exigerSection(event, 'modules-chapitres')
+  const admin = await exigerUneSection(event, ['modules-chapitres', 'fiches-commerciales'])
   const module = await trouverModule(getRouterParam(event, 'id') ?? '')
   if (!module) throw createError({ statusCode: 404, statusMessage: 'Module introuvable' })
 
