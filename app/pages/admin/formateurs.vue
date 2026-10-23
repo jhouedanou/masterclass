@@ -180,7 +180,6 @@ const confirmation = ref('')
         <td class="px-[18px] py-3.5">
           <template v-if="f.coachingPriveActif">
             <b>{{ formatFcfa(f.coachingPriveFcfaHeure) }}/h</b>
-            <span class="text-[11px] text-discret">(fixe)</span>
           </template>
           <button v-else class="text-[12px] font-bold text-social" @click="activation = f">
             Activer le coaching privé
