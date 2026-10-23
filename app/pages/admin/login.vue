@@ -282,7 +282,7 @@ async function renvoyer() {
         {{ enCours ? 'Vérification…' : 'Continuer' }}
       </UiBaseButton>
       <p class="text-[12px] leading-relaxed text-nuit-discret">
-        Chaque tentative est journalisée (adresse IP, appareil, horodatage). Cinq échecs bloquent le compte 30 minutes.
+        Chaque tentative est journalisée (adresse IP, appareil, horodatage). Cinq échecs en 15 minutes bloquent le compte 15 minutes.
       </p>
       <NuxtLink to="/mot-de-passe-oublie" class="block text-[13px] text-nuit-discret hover:underline">Mot de passe oublié ?</NuxtLink>
       <!--

@@ -6,7 +6,7 @@ import { verifierMotDePasse } from '../../../utils/motDePasse'
 import { ouvrirSession, ouvrirSessionPartielle } from '../../../utils/session'
 
 const VERROU =
-  'Trop de tentatives : ce compte est bloqué 30 minutes. Réessayez plus tard ou réinitialisez votre mot de passe.'
+  'Trop de tentatives : ce compte est bloqué 15 minutes. Réessayez plus tard ou réinitialisez votre mot de passe.'
 
 /** « f***@bigfive.ci » : on confirme où part le code sans le révéler. */
 function masquer(email: string): string {
