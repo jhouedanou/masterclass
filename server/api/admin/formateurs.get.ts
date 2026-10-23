@@ -12,13 +12,15 @@ export default defineEventHandler(async (event) => {
     listerModules(),
     listerSessions(),
     listerUtilisateurs(),
-    bloquantsSuppressionFormateurs(),
+    // Sans la migration 46 (fonction absente), la liste doit rester lisible :
+    // la suppression se dit alors indisponible au lieu de faire tomber l'écran.
+    bloquantsSuppressionFormateurs().catch(() => null),
   ])
 
   return formateurs.map((f, i) => {
     const siens = modules.filter((m) => m.formateurId === f.id)
     const aVenir = sessions.filter((s) => s.formateurId === f.id && s.statut === 'planifiee')
-    const b = bloquants.get(f.id)
+    const b = bloquants?.get(f.id)
     // Les mêmes décomptes que la route de suppression : la modale dit avant le
     // clic ce que la route refuserait. L'ancien critère (« ni module publié ni
     // session à venir ») laissait croire supprimable un formateur que la base
@@ -36,7 +38,8 @@ export default defineEventHandler(async (event) => {
         return u ? { email: u.email, aUnMotDePasse: true } : null
       })(),
       motifsBlocage,
-      supprimable: !motifsBlocage.length,
+      verificationSuppression: Boolean(bloquants),
+      supprimable: Boolean(bloquants) && !motifsBlocage.length,
       sessionsAVenir: aVenir.length,
     }
   })

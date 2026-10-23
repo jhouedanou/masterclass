@@ -12,6 +12,8 @@ type FormateurAdmin = Formateur & {
   supprimable: boolean
   /** Ce qui bloque la suppression, en toutes lettres (vide : supprimable). */
   motifsBlocage: string[]
+  /** Faux tant que la migration 46 manque : les liens n'ont pas pu être comptés. */
+  verificationSuppression: boolean
   sessionsAVenir: number
   compte: { email: string; aUnMotDePasse: boolean } | null
 }
@@ -350,9 +352,15 @@ async function supprimerDefinitivement() {
           v-if="!suppression.supprimable"
           class="mb-3 rounded-[10px] border border-alerte bg-alerte-voile p-3 text-[12.5px] leading-[1.6] text-texte"
         >
-          <b>Impossible pour l’instant</b> : il reste rattaché à
-          {{ listerMotifs(suppression.motifsBlocage) }}. Réassignez ou retirez ces éléments
-          d’abord — quel que soit leur statut, ils bloquent.
+          <b>Impossible pour l’instant</b> :
+          <template v-if="suppression.verificationSuppression">
+            il reste rattaché à {{ listerMotifs(suppression.motifsBlocage) }}. Réassignez ou
+            retirez ces éléments d’abord — quel que soit leur statut, ils bloquent.
+          </template>
+          <template v-else>
+            les liens de ce formateur n’ont pas pu être vérifiés (migration de la base à
+            appliquer).
+          </template>
         </p>
         <label v-else class="mb-3.5 flex flex-col gap-1.5 text-[12.5px] font-bold text-texte">
           Tapez « SUPPRIMER » pour confirmer
