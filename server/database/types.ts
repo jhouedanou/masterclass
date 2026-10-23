@@ -705,6 +705,19 @@ export type EtatQuizRow = {
 }
 
 /** Valeur renvoyée par `soumettre_quiz` : jamais la bonne réponse. */
+/** Une ligne de `bloquants_suppression_formateurs` : des décomptes. */
+export interface BloquantsSuppressionFormateurRow {
+  formateur_id: string
+  modules: number
+  sessions: number
+  demandes_coaching: number
+  candidatures: number
+  articles: number
+  commandes: number
+  transactions: number
+  certificats: number
+}
+
 export type ResultatQuizSql = {
   note: number
   reussi: boolean
@@ -988,6 +1001,16 @@ export type Database = {
         Returns: undefined
       }
       compter_echecs_connexion: { Args: { p_email: string }; Returns: number }
+      /** Ce qui empêche de supprimer chaque formateur (tous, ou celui demandé). */
+      bloquants_suppression_formateurs: {
+        Args: { p_formateur_id?: string }
+        Returns: BloquantsSuppressionFormateurRow[]
+      }
+      /** Supprime fiche et compte ensemble ; refuse (EM409) si un lien subsiste. */
+      supprimer_formateur: {
+        Args: { p_formateur_id: string }
+        Returns: { nom: string; comptes: string[] }
+      }
       /** Renvoie la date de fin de verrouillage, ou `null`. */
       enregistrer_tentative_connexion: {
         Args: {

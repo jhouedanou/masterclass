@@ -16,7 +16,7 @@ import { debutSession, modifierReunion, supprimerReunion } from '../../utils/zoo
  * Annulation, report ou modification.
  *
  * Les deux premières touchent l'apprenant : ses inscrits sont notifiés par
- * e-mail et WhatsApp. La troisième ne change que des réglages internes —
+ * e-mail (aucun pilote WhatsApp n'existe, voir `utils/notifications`). La troisième ne change que des réglages internes —
  * formateur, capacité, ouverture de la salle — et ne dérange personne.
  *
  * La durée n'en fait plus partie : le modèle économique fixe deux heures, et la
@@ -92,7 +92,7 @@ export default defineEventHandler(async (event) => {
     )
   }
 
-  // Les inscrits sont prévenus sur les deux canaux (planche C, écran 03).
+  // Les inscrits sont prévenus par e-mail (planche C, écran 03).
   const inscrits = await listerInscritsSession(id)
   const modele = action === 'annuler' ? 'session-annulee' : 'session-reportee'
   await Promise.all(
@@ -107,5 +107,5 @@ export default defineEventHandler(async (event) => {
     ),
   )
 
-  return { session, notifies: inscrits.length, canaux: ['email', 'whatsapp'] }
+  return { session, notifies: inscrits.length, canaux: ['email'] }
 })

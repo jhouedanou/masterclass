@@ -213,7 +213,7 @@ const titreCarte = 'font-sans text-[15px] font-bold'
               <input v-model="motDePasseEmail" type="password" autocomplete="current-password" :class="champ">
             </label>
             <label class="block">
-              <span :class="etiquette">Numéro WhatsApp (reçoit les codes de connexion)</span>
+              <span :class="etiquette">Numéro WhatsApp (contact)</span>
               <input v-model="profil.whatsapp" placeholder="+225…" :class="champ">
             </label>
             <div>
@@ -224,8 +224,9 @@ const titreCarte = 'font-sans text-[15px] font-bold'
           </form>
 
           <p class="mt-3 text-[12px] leading-[1.6] text-discret">
-            Le changement d’email ou de numéro WhatsApp exige une revérification par code (les deux
-            servent à la double vérification).
+            Changer d’adresse e-mail exige votre mot de passe actuel : c’est elle qui identifie le compte.
+            La double vérification passe par votre application d’authentification (Google Authenticator) :
+            aucun code n’est envoyé par e-mail ni par WhatsApp.
           </p>
         </section>
 
@@ -237,7 +238,7 @@ const titreCarte = 'font-sans text-[15px] font-bold'
             libelle-bouton="Mettre à jour le mot de passe"
           />
           <p class="mt-3 text-[12px] leading-[1.6] text-discret">
-            Confirmation par code envoyé sur WhatsApp. Toutes les autres sessions sont déconnectées.
+            Le mot de passe actuel est demandé. Toutes les autres sessions sont déconnectées.
             Action journalisée.
           </p>
         </section>

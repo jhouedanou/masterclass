@@ -4,8 +4,12 @@ import type { CandidatureFormateur, ProgrammeSlug } from '#shared/types'
 /**
  * Création d'un compte formateur (planche C, écran 07b), depuis une
  * candidature ou à vide. Le mot de passe temporaire est facultatif : sans lui,
- * un lien d'invitation valable 72 h est envoyé — et affiché ici tant que
- * l'envoi n'est pas automatisé.
+ * un lien d'invitation valable 72 h part par e-mail, et s'affiche aussi ici
+ * pour être transmis si le message n'arrive pas.
+ *
+ * `cree` sert au parent à rafraîchir sa liste, pas à fermer : l'écran de
+ * résultat, qui porte ce lien, reste ouvert jusqu'à « Fermer ». Les deux
+ * parents le refermaient aussitôt, et personne ne voyait jamais le lien.
  */
 const props = defineProps<{ candidature?: CandidatureFormateur | null }>()
 const emit = defineEmits<{ fermer: []; cree: [] }>()
@@ -76,8 +80,8 @@ async function creer() {
           <p class="text-[13px] font-bold text-alerte">Lien de définition du mot de passe (72 h)</p>
           <p class="mt-1 break-all text-[12.5px] text-texte">{{ resultat.lienDefinition }}</p>
           <p class="mt-2 text-[12px] text-discret">
-            Envoyé par e-mail et WhatsApp dès que le fournisseur d’envoi est branché ; d’ici là,
-            transmettez-le vous-même.
+            Envoyé à {{ resultat.email }} par e-mail. S’il ne le reçoit pas, transmettez-le
+            vous-même — la plateforme n’envoie rien par WhatsApp.
           </p>
         </div>
         <UiBaseButton class="mt-5" taille="sm" @click="emit('fermer')">Fermer</UiBaseButton>

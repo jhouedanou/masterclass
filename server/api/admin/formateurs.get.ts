@@ -1,4 +1,5 @@
-import { listerFormateurs, listerModules } from '../../database/catalogue'
+import { motifsBlocageSuppression } from '#shared/utils/suppressionFormateur'
+import { bloquantsSuppressionFormateurs, listerFormateurs, listerModules } from '../../database/catalogue'
 import { listerSessions } from '../../database/coaching'
 import { listerUtilisateurs } from '../../database/comptes'
 import { exigerSection } from '../../utils/session'
@@ -6,16 +7,25 @@ import { exigerSection } from '../../utils/session'
 export default defineEventHandler(async (event) => {
   await exigerSection(event, 'formateurs')
 
-  const [formateurs, modules, sessions, utilisateurs] = await Promise.all([
+  const [formateurs, modules, sessions, utilisateurs, bloquants] = await Promise.all([
     listerFormateurs(),
     listerModules(),
     listerSessions(),
     listerUtilisateurs(),
+    // Sans la migration 46 (fonction absente), la liste doit rester lisible :
+    // la suppression se dit alors indisponible au lieu de faire tomber l'écran.
+    bloquantsSuppressionFormateurs().catch(() => null),
   ])
 
   return formateurs.map((f, i) => {
     const siens = modules.filter((m) => m.formateurId === f.id)
     const aVenir = sessions.filter((s) => s.formateurId === f.id && s.statut === 'planifiee')
+    const b = bloquants?.get(f.id)
+    // Les mêmes décomptes que la route de suppression : la modale dit avant le
+    // clic ce que la route refuserait. L'ancien critère (« ni module publié ni
+    // session à venir ») laissait croire supprimable un formateur que la base
+    // refusait d'effacer.
+    const motifsBlocage = b ? motifsBlocageSuppression(b) : []
     return {
       ...f,
       nbModules: siens.length,
@@ -27,9 +37,9 @@ export default defineEventHandler(async (event) => {
         const u = utilisateurs.find((x) => x.formateurId === f.id)
         return u ? { email: u.email, aUnMotDePasse: true } : null
       })(),
-      // La suppression est bloquée tant que des modules publiés ou des sessions
-      // à venir lui sont rattachés.
-      supprimable: !siens.some((m) => m.statut === 'disponible') && !aVenir.length,
+      motifsBlocage,
+      verificationSuppression: Boolean(bloquants),
+      supprimable: Boolean(bloquants) && !motifsBlocage.length,
       sessionsAVenir: aVenir.length,
     }
   })

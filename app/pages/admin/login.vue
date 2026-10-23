@@ -22,7 +22,6 @@ const code = ref('')
  *  chargement : l'écran peut être ouvert devant quelqu'un. */
 const motDePasseVisible = ref(false)
 const masque = ref('')
-const whatsapp = ref(false)
 const fournisseur = ref<'interne' | 'supabase-auth' | 'totp'>('interne')
 const totp = computed(() => fournisseur.value === 'totp')
 
@@ -141,7 +140,6 @@ async function soumettreIdentifiants() {
       return
     }
     masque.value = reponse.masque ?? ''
-    whatsapp.value = reponse.whatsapp === true
     fournisseur.value = reponse.fournisseur ?? 'interne'
     code.value = ''
 
@@ -282,7 +280,7 @@ async function renvoyer() {
         {{ enCours ? 'Vérification…' : 'Continuer' }}
       </UiBaseButton>
       <p class="text-[12px] leading-relaxed text-nuit-discret">
-        Chaque tentative est journalisée (adresse IP, appareil, horodatage). Cinq échecs bloquent le compte 30 minutes.
+        Chaque tentative est journalisée (adresse IP, appareil, horodatage). Cinq échecs en 15 minutes bloquent le compte 15 minutes.
       </p>
       <NuxtLink to="/mot-de-passe-oublie" class="block text-[13px] text-nuit-discret hover:underline">Mot de passe oublié ?</NuxtLink>
       <!--
@@ -359,7 +357,7 @@ async function renvoyer() {
         Saisissez le code à six chiffres affiché par votre application d’authentification.
       </p>
       <p v-else class="text-[13px] leading-relaxed text-gris-perle">
-        Un code à six chiffres a été envoyé à <b>{{ masque }}</b><span v-if="whatsapp"> et sur votre WhatsApp</span>.
+        Un code à six chiffres a été envoyé à <b>{{ masque }}</b>.
         Il reste valable <b>{{ compteARebours }}</b>.
       </p>
       <fieldset v-if="!codeDeSecours">

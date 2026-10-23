@@ -21,8 +21,11 @@ export default defineEventHandler(async (event) => {
         ...d,
         module: modules.find((m) => m.id === d.moduleId)?.titre ?? '—',
         formateur: formateur?.nom ?? '—',
-        // Le tarif horaire est porté par le formateur choisi.
-        montant: d.heures * (formateur?.coachingPriveFcfaHeure ?? 0),
+        // Le tarif horaire est porté par le formateur choisi ; c'est lui que
+        // la confirmation multiplie et que FeexPay encaisse. Une fois la
+        // demande confirmée, le montant enregistré fait foi.
+        tarifHoraire: formateur?.coachingPriveFcfaHeure ?? 50_000,
+        montant: d.montantFcfa ?? d.heures * (formateur?.coachingPriveFcfaHeure ?? 50_000),
         historique: historique.filter((h) => h.demandeId === d.id),
       }
     }),

@@ -8,11 +8,12 @@ import {
 } from '../../../database/catalogue'
 import { quizAdmin } from '../../../database/quiz'
 import { checklistPret } from '../../../utils/pret'
-import { exigerSection } from '../../../utils/session'
+import { exigerUneSection } from '../../../utils/session'
 
 /** Éditeur d'un module : ses cinq onglets en une seule requête. */
 export default defineEventHandler(async (event) => {
-  await exigerSection(event, 'modules-chapitres')
+  // La fiche commerciale (écran 02B) se charge aussi par ici.
+  await exigerUneSection(event, ['modules-chapitres', 'fiches-commerciales'])
   const id = getRouterParam(event, 'id') ?? ''
 
   const moduleTrouve = await trouverModule(id)

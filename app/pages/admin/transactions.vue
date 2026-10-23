@@ -32,9 +32,11 @@ const { data, error } = await useFetch<{
 })
 
 const LIBELLES_STATUT = { reussie: 'Réussie', echouee: 'Échouée', 'en-attente': 'En attente' } as const
+// « relance » désigne une nouvelle tentative de l'apprenant, restée sans
+// succès : personne ne l'a relancé, aucune notification ne part.
 const LIBELLES_SUITE: Record<Suite, string> = {
   'paye-j1': 'Payé à J+1 ✓',
-  relance: 'Relancé',
+  relance: 'Retenté',
   'sans-suite': 'Sans suite',
 }
 
@@ -145,7 +147,8 @@ function exporter() {
               24 h —
             </template>
             <template v-else>Aucun échec sur le mois —</template>
-            relance automatique email + WhatsApp après un échec « solde insuffisant ».
+            aucune relance n’est envoyée à l’apprenant. Chaque nuit, une tâche revérifie seulement
+            auprès de FeexPay les paiements restés en attente.
           </p>
         </section>
 
