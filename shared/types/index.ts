@@ -176,6 +176,22 @@ export interface Module {
   seo: SeoFields
 }
 
+/**
+ * Ce qui empêche de supprimer un formateur : des décomptes, sans exception de
+ * statut (voir la migration `…_suppression_formateur.sql`). Les trois derniers
+ * portent sur son compte utilisateur, supprimé avec la fiche.
+ */
+export interface BloquantsSuppressionFormateur {
+  modules: number
+  sessions: number
+  demandesCoaching: number
+  candidatures: number
+  articles: number
+  commandes: number
+  transactions: number
+  certificats: number
+}
+
 export interface Formateur {
   id: string
   slug: string
