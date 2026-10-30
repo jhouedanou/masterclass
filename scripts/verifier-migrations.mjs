@@ -1077,6 +1077,99 @@ await attendErreur(
   `update utilisateurs set sections_autorisees = '{tout}' where id = 'usr-moussa'`,
 )
 
+// --- Live Sessions (CDC v1.3) ------------------------------------------------
+
+console.log('\nLive Sessions')
+const {
+  rows: [moduleLive],
+} = await db.query(
+  `select id, formateur_id from modules
+    where id not in (select module_id from acces where utilisateur_id in ('usr-moussa', 'usr-fatou'))
+    order by id limit 1`,
+)
+const SESSION_LIVE = '00000000-0000-4000-8000-00000000live'.replace('live', '0001')
+await db.query(
+  `insert into sessions_live (id, module_id, slug, debut, duree_minutes, capacite, formateur_id, moderateur_id, zoom_reunion_id, statut)
+   values ($1, $2, 'verif-live', now() + interval '2 days', 90, 1, $3, 'usr-admin', '81244710932', 'publiee')`,
+  [SESSION_LIVE, moduleLive.id, moduleLive.formateur_id],
+)
+for (const [reference, utilisateur] of [['CMD-L1', 'usr-moussa'], ['CMD-L2', 'usr-fatou'], ['CMD-L3', 'usr-moussa']]) {
+  await db.query(
+    `insert into commandes (reference, utilisateur_id, total, moyen, statut, session_live_id)
+     values ($1, $2, 10000, 'mobile-money', 'attente', $3)`,
+    [reference, utilisateur, SESSION_LIVE],
+  )
+}
+await attendValeur(
+  'réservation : place tenue 15 minutes',
+  'attente',
+  `select (reserver_place_live('${SESSION_LIVE}', 'usr-moussa', 'CMD-L1')).statut`,
+)
+await attendErreur(
+  'capacité atteinte : le suivant voit « Complet » (T5)',
+  'EM410',
+  `select reserver_place_live('${SESSION_LIVE}', 'usr-fatou', 'CMD-L2')`,
+)
+await attendValeur(
+  'double clic : la réservation en attente est réutilisée',
+  1,
+  `select count(*)::int from (select reserver_place_live('${SESSION_LIVE}', 'usr-moussa', 'CMD-L3')) r,
+     lateral (select 1 from inscriptions_live where session_live_id = '${SESSION_LIVE}' and utilisateur_id = 'usr-moussa') i`,
+)
+await attendValeur(
+  'webhook : inscription confirmée, accès ouvert',
+  'confirmee|true',
+  `select (r ->> 'statut') || '|' || (r ->> 'premiere_confirmation') from confirmer_inscription_live('CMD-L3') r`,
+)
+await attendValeur(
+  'webhook rejoué : rien de plus (T11)',
+  'false',
+  `select confirmer_inscription_live('CMD-L3') ->> 'premiere_confirmation'`,
+)
+await attendValeur(
+  'accès au module, origine Live Session',
+  'live-session',
+  `select origine from acces where utilisateur_id = 'usr-moussa' and module_id = '${moduleLive.id}'`,
+)
+await attendErreur(
+  'module acquis : pas de seconde inscription',
+  'EM409',
+  `select reserver_place_live('${SESSION_LIVE}', 'usr-moussa', 'CMD-L1')`,
+)
+await db.query(
+  `insert into inscriptions_live (session_live_id, utilisateur_id, commande_reference, statut, reservation_expire_le)
+   values ($1, 'usr-fatou', 'CMD-L2', 'attente', now() - interval '1 minute')`,
+  [SESSION_LIVE],
+)
+await attendValeur(
+  'paiement reçu après expiration, session pleine : à rembourser',
+  'a-rembourser',
+  `select confirmer_inscription_live('CMD-L2') ->> 'statut'`,
+)
+await attendErreur(
+  'une seule session active par module',
+  '23505',
+  `insert into sessions_live (module_id, slug, debut, capacite, formateur_id)
+   values ('${moduleLive.id}', 'verif-live-2', now() + interval '3 days', 10, '${moduleLive.formateur_id}')`,
+)
+await attendErreur(
+  'publiée sans modérateur ni réunion Zoom : refusé (T2)',
+  '23514',
+  `update sessions_live set moderateur_id = null where id = '${SESSION_LIVE}'`,
+)
+await attendValeur(
+  'quiz fermé tant que la session n’est pas terminée',
+  'false',
+  `select live_terminee_pour('usr-moussa', '${moduleLive.id}')`,
+)
+await db.query(`update sessions_live set statut = 'terminee', termine_le = now() where id = $1`, [SESSION_LIVE])
+await attendValeur(
+  'session terminée : quiz ouvert à l’inscrit (10.D)',
+  'true',
+  `select live_terminee_pour('usr-moussa', '${moduleLive.id}')`,
+)
+await attendValeur('réglage de visibilité : masqué par défaut (10.G)', 'personne', `select visibilite from reglages_live`)
+
 await db.close()
 
 // --- Fichiers d'installation pour le Supabase hébergé ------------------------

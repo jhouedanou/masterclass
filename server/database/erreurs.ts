@@ -11,6 +11,9 @@ const STATUTS_METIER: Record<string, number> = {
   EM404: 404,
   EM403: 403,
   EM409: 409,
+  // Live Session complète (reserver_place_live) : 409 distinct, pour que la
+  // fiche bascule sur « Complet » sans lire le message.
+  EM410: 410,
   EM422: 422,
 }
 

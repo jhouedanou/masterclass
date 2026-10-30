@@ -382,7 +382,14 @@ const STATUTS: { valeur: Module['statut']; titre: string; suite: string }[] = [
           <h2 class="font-sans text-[15px] font-bold">Statut de publication</h2>
           <!-- Chaque statut est une case cliquable entière, pas un point de
                radio isolé : la maquette encadre le libellé avec le bouton. -->
-          <div class="mt-3 flex flex-col gap-[9px] text-[13.5px]">
+          <p
+            v-if="fiche.statut === 'live-session'"
+            class="mt-3 rounded-[10px] border-[1.5px] border-live-bordure bg-live-voile px-3.5 py-[11px] text-[13px] text-live-fonce"
+          >
+            <b>Live Session</b> — ce statut se gère depuis
+            <NuxtLink to="/admin/live-sessions" class="font-bold underline">Live Sessions</NuxtLink>.
+          </p>
+          <div v-else class="mt-3 flex flex-col gap-[9px] text-[13.5px]">
             <label
               v-for="choix in STATUTS"
               :key="choix.valeur"

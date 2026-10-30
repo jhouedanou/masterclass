@@ -21,6 +21,14 @@ const { data: banniere } = useFetch<{ cle: string, contenu: Partial<ContenuBanni
 )
 const { data: formateurs } = await useFetch<(Formateur & { nbModules: number })[]>('/api/formateurs')
 
+// Live Sessions (CDC §5.3) : bloc et calendrier, absents tant que la
+// fonctionnalité est masquée (la liste arrive vide).
+const liveSessions = useLiveSessions()
+const { data: catalogue } = useFetch<(Module & { formateur?: Formateur | null })[]>('/api/modules', {
+  lazy: true,
+  default: () => [],
+})
+
 // Les repères chiffrés de la maquette — « 18 modules », « 9 modules », « 3
 // thématiques » — étaient écrits en dur et mentaient dès qu'un module changeait
 // de statut. Chaque programme porte désormais ses décomptes : la page les lit
@@ -96,6 +104,7 @@ useJsonLd({
     <div class="border-b border-ligne-claire bg-fond-clair">
       <div class="conteneur flex flex-wrap gap-x-7 gap-y-2 py-4.5 text-[14px] text-texte">
         <NuxtLink to="/modules" class="hover:underline"><b class="text-encre">{{ compterModules(nbModulesTotal) }}</b><span class="hidden lg:inline"> {{ nbModulesTotal > 1 ? 'disponibles' : 'disponible' }}</span></NuxtLink>
+        <NuxtLink v-if="liveSessions.length" to="/live-sessions" class="hover:underline"><b class="text-live">{{ liveSessions.length }} Live Session{{ liveSessions.length > 1 ? 's' : '' }}</b><span class="hidden lg:inline"> à venir</span></NuxtLink>
         <span><b class="text-encre">10 000 FCFA TTC</b><span class="hidden lg:inline"> par module</span></span>
         <span><b class="text-encre">Accès à vie</b><span class="hidden lg:inline"> après l’achat</span></span>
       </div>
@@ -162,6 +171,8 @@ useJsonLd({
       </div>
     </section>
 
+    <HomeBlocLiveSessions :sessions="liveSessions" :modules="catalogue ?? []" />
+
     <!-- thématiques -->
     <section class="py-14">
       <div class="conteneur">
@@ -192,7 +203,8 @@ useJsonLd({
         </div>
 
         <p class="mt-2.5 mb-7 max-w-[760px] text-[15px] leading-relaxed text-texte">
-          Sélectionnez un programme, puis explorez les modules disponibles dans chaque thématique.
+          Sélectionnez un programme, puis explorez les modules de chaque thématique : disponibles en
+          vidéo<template v-if="liveSessions.length">, en Live Session</template> ou bientôt disponibles.
           Chaque module peut être choisi et acheté indépendamment.
         </p>
 

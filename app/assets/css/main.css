@@ -47,6 +47,17 @@
   --color-erreur: #c03434;
   --color-erreur-fonce: #a3242f;
 
+  /* Live Session (maquette Live Session, planches 01 à 08) : rose, distinct
+     des deux programmes. `live` sur `live-voile` : 5,1:1 ; blanc sur `live` :
+     5,8:1. `live-vif` et `live-pastel` ne servent que de pastille et de
+     texte sur fond sombre. */
+  --color-live: #c2255c;
+  --color-live-fonce: #a01d4b;
+  --color-live-voile: #fdecf1;
+  --color-live-bordure: #f6c9d8;
+  --color-live-vif: #ff4d7e;
+  --color-live-pastel: #ff8fb0;
+
   /*
     Palette complémentaire relevée dans les quatre planches. Les maquettes
     emploient 101 couleurs ; celles-ci revenaient au moins trois fois sans

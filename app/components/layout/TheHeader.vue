@@ -9,16 +9,21 @@ watch(() => route.fullPath, () => (ouvert.value = false))
 // les pages intérieures, où le contenu prime sur la marque.
 const accueil = computed(() => route.path === '/')
 
-const liens = [
+const liveVisible = useLiveVisible()
+
+// « Live Sessions » entre « Entrepreneurs » et « Formateurs » (CDC §5.3),
+// seulement quand la fonctionnalité est visible pour ce visiteur (10.G).
+const liens = computed(() => [
   { libelle: 'Accueil', chemin: '/', couleur: '' },
   { libelle: 'Social Média', chemin: '/programmes/social-media', couleur: 'text-social' },
   { libelle: 'Entrepreneurs', chemin: '/programmes/entrepreneurs', couleur: 'text-entrepreneurs' },
   // Le catalogue complet n'avait aucune entrée depuis la navigation (recette, VIT-11).
   { libelle: 'Modules', chemin: '/modules', couleur: '' },
+  ...(liveVisible.value ? [{ libelle: 'Live Sessions', chemin: '/live-sessions', couleur: 'text-live' }] : []),
   { libelle: 'Formateurs', chemin: '/formateurs', couleur: '' },
   { libelle: 'Blog', chemin: '/blog', couleur: '' },
   { libelle: 'Contact & FAQ', chemin: '/contact', couleur: '' },
-]
+])
 </script>
 
 <template>
@@ -35,9 +40,10 @@ const liens = [
         >
       </NuxtLink>
 
-      <!-- Sept entrées depuis l'ajout de « Modules » : sous 1280 px, l'écart,
-           le corps et le logo se resserrent pour tenir sur une ligne. -->
-      <nav aria-label="Navigation principale" class="flex items-center gap-4 text-[14px] font-semibold xl:gap-8 xl:text-[15px]">
+      <!-- Sept entrées depuis l'ajout de « Modules », huit avec « Live
+           Sessions » : sous 1280 px, l'écart, le corps et le logo se
+           resserrent pour tenir sur une ligne. -->
+      <nav aria-label="Navigation principale" class="flex items-center gap-3.5 text-[14px] font-semibold xl:gap-7 xl:text-[15px]">
         <NuxtLink
           v-for="lien in liens"
           :key="lien.chemin"

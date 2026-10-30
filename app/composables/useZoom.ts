@@ -54,7 +54,7 @@ export function useZoom() {
     return true
   }
 
-  async function rejoindre(conteneur: HTMLElement, autorisation: AutorisationZoom) {
+  async function rejoindre(conteneur: HTMLElement, autorisation: AutorisationZoom, options: { retour?: string } = {}) {
     vue.value = detecterVueZoom()
     if (!(await verifierCompatibilite())) return
     etat.value = 'connexion'
@@ -89,7 +89,7 @@ export function useZoom() {
         await ZoomMtg.i18n.load('fr-FR')
         await new Promise<void>((resoudre, rejeter) => {
           ZoomMtg.init({
-            leaveUrl: `${window.location.origin}/mon-espace/sessions`,
+            leaveUrl: `${window.location.origin}${options.retour ?? '/mon-espace/sessions'}`,
             patchJsMedia: true,
             leaveOnPageUnload: true,
             success: () => {

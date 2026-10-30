@@ -1,7 +1,7 @@
 export type ProgrammeSlug = 'social-media' | 'entrepreneurs'
 
 /** Statuts issus de la planche C (contenus) et de la spec SEO §5. */
-export type StatutModule = 'disponible' | 'en-preparation' | 'brouillon' | 'annonce'
+export type StatutModule = 'disponible' | 'en-preparation' | 'brouillon' | 'annonce' | 'live-session'
 export type StatutPublication = 'brouillon' | 'publie'
 
 /** Bloc « Référencement et partage » du back-office (spec SEO §3). */
@@ -300,6 +300,8 @@ export type SectionAdmin =
   /** Révocation des attestations et lecture de leurs réglages. Les griffes et
    *  le signataire restent réservés à l'administrateur supérieur. */
   | 'attestations'
+  /** Live Sessions : planification, publication, inscrits, bascule vidéo. */
+  | 'live-sessions'
 
 export interface Utilisateur {
   id: string
@@ -352,7 +354,9 @@ export interface Acces {
   acheteLe: string
   termineLe: string | null
   /** Achat ou attribution gratuite par l'équipe (C-04). */
-  origine: 'achat' | 'attribution'
+  origine: 'achat' | 'attribution' | 'live-session'
+  /** Inscription à la Live Session qui a ouvert l'accès (CDC §3.4). */
+  inscriptionLiveId?: string
   revoqueLe?: string | null
   motifRevocation?: string
 }
@@ -464,6 +468,8 @@ export interface Commande {
   moduleIds: string[]
   /** Séance de coaching privé réglée par cette commande (« Accepter et payer »). */
   demandeCoachingId?: string
+  /** Live Session réglée par cette commande : aucune ligne module. */
+  sessionLiveId?: string
   total: number
   moyen: 'mobile-money' | 'wave' | 'djamo' | 'visa'
   statut: 'attente' | 'verification' | 'confirmee' | 'echec'
@@ -698,3 +704,66 @@ export interface ContenuLegales {
   note?: string
   documents: DocumentLegal[]
 }
+
+// --- Live Session (CDC v1.3) -------------------------------------------------
+
+export type StatutSessionLive = 'brouillon' | 'publiee' | 'en-cours' | 'terminee' | 'annulee'
+export type StatutInscriptionLive = 'attente' | 'confirmee' | 'expiree' | 'annulee' | 'a-rembourser'
+/** Réglage live_sessions_visibility (10.G) : off | admins | all. */
+export type VisibiliteLive = 'personne' | 'admins' | 'tous'
+
+/** Étape du déroulé d'une session, repérée en minutes depuis le début. */
+export interface EtapeDeroule {
+  decalageMinutes: number
+  libelle: string
+  /** Temps de questions-réponses, géré par le modérateur. */
+  questionsReponses: boolean
+}
+
+/**
+ * Live Session telle que le serveur la manipule. Les champs Zoom et le
+ * support n'en font pas partie : ils ne sortent que par `liensZoomLive` et
+ * l'URL signée du support (RM4, RM5).
+ */
+export interface SessionLive {
+  id: string
+  moduleId: string
+  slug: string
+  /** Instant de début, ISO UTC (RM9). */
+  debut: string
+  dureeMinutes: number
+  capacite: number
+  formateurId: string
+  moderateurId: string | null
+  prerequis: string[]
+  gains: string[]
+  deroule: EtapeDeroule[]
+  derouleValideLe: string | null
+  testTechniqueLe: string | null
+  statut: StatutSessionLive
+  /** Le support est-il déposé ? Le chemin, lui, reste côté serveur. */
+  supportNom: string | null
+  aReunionZoom: boolean
+  publieeLe: string | null
+  termineLe: string | null
+  annuleLe: string | null
+  videoPublieeLe: string | null
+  creeLe: string
+}
+
+export interface InscriptionLive {
+  id: string
+  sessionLiveId: string
+  utilisateurId: string
+  commandeReference: string | null
+  statut: StatutInscriptionLive
+  reservationExpireLe: string | null
+  confirmeLe: string | null
+  creeLe: string
+}
+
+/** État d'une Live Session dans l'espace apprenant, dérivé côté serveur (§4.3). */
+export type EtatLiveApprenant = 'inscrit' | 'lien-disponible' | 'terminee' | 'module-disponible' | 'annulee'
+
+/** État d'une Live Session dans l'espace formateur, dérivé côté serveur (§4.4). */
+export type EtatLiveFormateur = 'planifiee' | 'aujourdhui' | 'terminee' | 'annulee'

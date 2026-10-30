@@ -104,6 +104,12 @@ export async function creerReunion(champs: {
   debutIso: string
   dureeMinutes: number
   enregistrement?: boolean
+  /**
+   * Réunion d'une Live Session (CDC §9, mode réunion) : pas de salle
+   * d'attente, participants en sourdine à l'entrée, enregistrement cloud
+   * automatique. L'hôte (le formateur) peut entrer avant l'heure.
+   */
+  live?: boolean
 }): Promise<ReunionZoom> {
   if (configZoom().mode === 'simulation') return reunionSimulee()
   const r = await api<{ id: number; password: string; join_url: string; start_url: string }>('/users/me/meetings', {
@@ -114,13 +120,23 @@ export async function creerReunion(champs: {
       start_time: champs.debutIso,
       duration: champs.dureeMinutes,
       timezone: 'Africa/Abidjan',
-      settings: {
-        join_before_host: false,
-        waiting_room: true,
-        mute_upon_entry: true,
-        approval_type: 2,
-        auto_recording: champs.enregistrement ? 'cloud' : 'none',
-      },
+      settings: champs.live
+        ? {
+            join_before_host: false,
+            waiting_room: false,
+            mute_upon_entry: true,
+            participant_video: false,
+            host_video: true,
+            approval_type: 2,
+            auto_recording: 'cloud',
+          }
+        : {
+            join_before_host: false,
+            waiting_room: true,
+            mute_upon_entry: true,
+            approval_type: 2,
+            auto_recording: champs.enregistrement ? 'cloud' : 'none',
+          },
     },
   })
   return { id: String(r.id), motDePasse: r.password, lienParticipation: r.join_url, lienHote: r.start_url }

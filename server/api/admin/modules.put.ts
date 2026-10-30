@@ -33,6 +33,17 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Un module en Live Session change de statut depuis le back-office Live
+  // Sessions seulement (CDC §4.1, §4.2) : annuler la session le ramène
+  // « À venir », publier la vidéo le rend « Disponible ». Le basculer ici
+  // laisserait une session publiée sur un module déjà en vente, ou l'inverse.
+  if (body.statut !== undefined && body.statut !== actuel.statut && (actuel.statut === 'live-session' || body.statut === 'live-session')) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: 'Le statut « Live Session » se gère depuis Live Sessions : publier, annuler la session ou publier la vidéo.',
+    })
+  }
+
   if (body.statut === 'disponible') {
     const manques: string[] = []
     if (!(body.promesse ?? actuel.promesse)) manques.push('la promesse')

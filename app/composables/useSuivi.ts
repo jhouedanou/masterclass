@@ -25,7 +25,7 @@ const NOMS_GA4 = {
 export type EvenementSuivi = keyof typeof NOMS_GA4
 
 /** `content_category` des événements Meta et GA4. */
-export type CategorieContenu = 'module' | 'coaching_prive'
+export type CategorieContenu = 'module' | 'coaching_prive' | 'live_session'
 
 export interface ArticleSuivi {
   id: string

@@ -152,6 +152,14 @@ export default defineNuxtConfig({
     // POST /api/taches/purger avec cette clé en en-tête Bearer.
     tachesCle: process.env.TACHES_CLE || '',
 
+    // Conversions publicitaires côté serveur des inscriptions Live Session
+    // (CDC 10.B), en plus de l'API Conversions de Meta. Vides, rien ne part.
+    // Le pixel TikTok est celui du back-office (Tracking) ; LinkedIn attend
+    // l'identifiant de la règle de conversion « Inscription Live Session ».
+    tiktokEventsJeton: process.env.TIKTOK_EVENTS_JETON || '',
+    linkedinCapiJeton: process.env.LINKEDIN_CAPI_JETON || '',
+    linkedinConversionId: process.env.LINKEDIN_CONVERSION_ID || '',
+
     // Zoom : `simulation` (réunion fictive, salle simulée) ou `live`. Deux
     // applications Zoom : Server-to-Server OAuth pour créer les réunions,
     // Meeting SDK pour les rejoindre depuis la plateforme (voir server/utils/zoom.ts).
@@ -402,6 +410,9 @@ export default defineNuxtConfig({
     '/api/commandes': { headers: { 'Cache-Control': 'no-store' } },
     '/api/commandes/**': { headers: { 'Cache-Control': 'no-store' } },
     '/api/zoom/**': { headers: { 'Cache-Control': 'no-store' } },
+    // Visibilité par profil (CDC 10.G) et disponibilité des places : jamais en cache.
+    '/api/live-sessions': { headers: { 'Cache-Control': 'no-store' } },
+    '/api/live-sessions/**': { headers: { 'Cache-Control': 'no-store' } },
     '/api/taches/**': { headers: { 'Cache-Control': 'no-store' } },
     '/api/paiements/**': { headers: { 'Cache-Control': 'no-store' } },
     '/api/certificats/**': { headers: { 'Cache-Control': 'no-store' } },
@@ -417,6 +428,9 @@ export default defineNuxtConfig({
       '0 3 * * *': ['comptes:purger', 'video:purger'],
       // Toutes les heures : commandes restées en attente, revérifiées chez FeexPay.
       '0 * * * *': ['commandes:relancer'],
+      // Toutes les 5 minutes : cycle des Live Sessions (CDC §7). Sur Vercel,
+      // c'est pg_cron qui appelle /api/taches/live-sessions (supabase/planification-live.sql).
+      '*/5 * * * *': ['live:cycle'],
     },
     // Les runtimes de ces modules doivent être inlinés : laissés externes, le
     // build de production émet des imports relatifs qui sortent du projet.

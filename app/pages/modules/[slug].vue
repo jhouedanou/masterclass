@@ -13,10 +13,16 @@ const { data } = await useFetch<{
   thematique: Thematique | null
   programme: Programme | null
   nbModulesThematique: number
+  redirectionLive: string | null
 }>(() => `/api/modules/${route.params.slug}`)
 
 if (!data.value) {
   throw createError({ statusCode: 404, statusMessage: 'Module introuvable', fatal: true })
+}
+
+// Module en Live Session : la fiche est celle de la session (CDC §5.3, 302).
+if (data.value.redirectionLive) {
+  await navigateTo(data.value.redirectionLive, { redirectCode: 302 })
 }
 
 const moduleCourant = computed(() => data.value!.module)

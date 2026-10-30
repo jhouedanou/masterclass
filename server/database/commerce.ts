@@ -274,7 +274,9 @@ export async function enregistrerCommande(champs: {
   statut?: Commande['statut']
   /** Séance de coaching privé réglée par la commande : aucune ligne module. */
   demandeCoachingId?: string
-  /** Montant imposé quand la commande ne porte pas de module (séance privée). */
+  /** Live Session réglée par la commande : aucune ligne module (CDC §6). */
+  sessionLiveId?: string
+  /** Montant imposé quand la commande ne porte pas de module (séance privée, Live Session). */
   total?: number
   /** Contexte Meta, avec le consentement marketing (voir server/utils/metaCapi.ts). */
   suiviMeta?: object | null
@@ -294,6 +296,7 @@ export async function enregistrerCommande(champs: {
         moyen: champs.moyen,
         statut: champs.statut ?? 'confirmee',
         demande_coaching_id: champs.demandeCoachingId ?? null,
+        session_live_id: champs.sessionLiveId ?? null,
         suivi_meta: (champs.suiviMeta as Record<string, unknown> | null | undefined) ?? null,
       })
       .select('*')
@@ -398,6 +401,11 @@ export async function listerCommandesEnCours(): Promise<Commande[]> {
   return rows.map((row) =>
     versCommande(row, lignes.filter((l) => l.commande_reference === row.reference).map((l) => l.module_id)),
   )
+}
+
+/** Retire une commande restée sans suite (réservation Live Session refusée). */
+export async function retirerCommande(reference: string): Promise<void> {
+  await supabase().from('commandes').delete().eq('reference', reference).eq('statut', 'attente')
 }
 
 export async function changerStatutCommande(

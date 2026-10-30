@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Formateur, Module } from '#shared/types'
+import { dateCourteLive, heureLive } from '#shared/utils/live'
 
 /**
  * Carte de module. Les maquettes en dessinent deux versions :
@@ -8,11 +9,18 @@ import type { Formateur, Module } from '#shared/types'
  *   - `programme` — plus grande, sans prix dans la méta, avec un pied de
  *     carte qui oppose le prix en gras à un bouton pilule encre (écrans 02
  *     et 02b). La phase 1 servait la version accueil sur les deux.
+ *
+ * Un module en Live Session (CDC §5.3) porte le badge rose daté et mène à
+ * la fiche de la session, avec « S'inscrire ».
  */
 const props = withDefaults(
   defineProps<{
     // Le prix est `null` quand l'équipe le masque (module annoncé).
-    module: Omit<Module, 'prixFcfa'> & { prixFcfa: number | null; formateur?: Formateur | null }
+    module: Omit<Module, 'prixFcfa'> & {
+      prixFcfa: number | null
+      formateur?: Formateur | null
+      live?: { slug: string; debut: string; dureeMinutes: number } | null
+    }
     thematiqueNom?: string
     statutVisible?: boolean
     /** Marque un module auquel l'apprenant a déjà accès (espace privé). Faux
@@ -28,6 +36,13 @@ const props = withDefaults(
 const social = computed(() => props.module.programme === 'social-media')
 const teinte = computed(() => (social.value ? 'text-social' : 'text-entrepreneurs'))
 const large = computed(() => props.variante === 'programme')
+const live = computed(() => (props.module.statut === 'live-session' ? (props.module.live ?? null) : null))
+const lien = computed(() => (live.value ? `/live-sessions/${live.value.slug}` : `/modules/${props.module.slug}`))
+const badge = computed(() => {
+  if (live.value) return `Live Session · ${dateCourteLive(live.value.debut)}`
+  if (props.module.statut === 'disponible') return 'Disponible'
+  return props.module.statut === 'annonce' || props.module.statut === 'live-session' ? 'Bientôt disponible' : 'À venir'
+})
 </script>
 
 <template>
@@ -42,7 +57,7 @@ const large = computed(() => props.variante === 'programme')
          catalogue à moitié illustré sont plus disparates qu'un catalogue nu. -->
     <NuxtLink
       v-if="module.image"
-      :to="`/modules/${module.slug}`"
+      :to="lien"
       class="block aspect-[1200/630] overflow-hidden bg-fond-voile"
       tabindex="-1"
       aria-hidden="true"
@@ -74,43 +89,45 @@ const large = computed(() => props.variante === 'programme')
           v-else-if="statutVisible"
           class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold"
           :class="
-            module.statut === 'disponible'
-              ? large
-                ? 'bg-succes-pale text-whatsapp'
-                : 'bg-succes-voile text-succes'
-              : 'bg-alerte-voile text-alerte'
+            live
+              ? 'bg-live-voile text-live'
+              : module.statut === 'disponible'
+                ? large
+                  ? 'bg-succes-pale text-whatsapp'
+                  : 'bg-succes-voile text-succes'
+                : 'bg-alerte-voile text-alerte'
           "
         >
-          {{ module.statut === 'disponible' ? 'Disponible' : module.statut === 'annonce' ? 'Bientôt disponible' : 'À venir' }}
+          {{ badge }}
         </span>
     </div>
 
     <h3 class="font-title leading-[1.3] font-light" :class="large ? 'text-[20px]' : 'text-[18px]'">
-      <NuxtLink :to="`/modules/${module.slug}`" class="text-encre hover:underline">
+      <NuxtLink :to="lien" class="text-encre hover:underline">
         {{ module.titre }}
       </NuxtLink>
     </h3>
 
     <p class="text-[13px] text-discret">
-      {{ module.formateur?.nom }} · {{ formatDuree(module.dureeMinutes) }}<template v-if="!large"> ·
+      {{ module.formateur?.nom }} · <template v-if="live">{{ heureLive(live.debut) }} GMT</template><template v-else>{{ formatDuree(module.dureeMinutes) }}</template><template v-if="!large"> ·
       {{ module.prixFcfa != null ? formatFcfa(module.prixFcfa, true) : 'Prix au lancement' }}</template>
     </p>
 
     <!-- Pied de carte des pages programme : prix à gauche, bouton à droite. -->
     <div v-if="large" class="mt-auto flex items-center justify-between gap-3 pt-2">
       <b class="text-[16px]">{{ module.prixFcfa != null ? formatFcfa(module.prixFcfa) : 'Prix au lancement' }}</b>
-      <UiBaseButton :to="`/modules/${module.slug}`" variante="sombre" taille="sm">
-        Découvrir le module
+      <UiBaseButton :to="lien" variante="sombre" taille="sm">
+        {{ live ? 'S’inscrire' : 'Découvrir le module' }}
       </UiBaseButton>
     </div>
 
     <NuxtLink
       v-else
-      :to="`/modules/${module.slug}`"
+      :to="lien"
       class="mt-auto pt-1 text-[14px] font-bold"
       :class="teinte"
     >
-      Découvrir le module<template v-if="fleche"> →</template>
+      {{ live ? 'S’inscrire' : 'Découvrir le module' }}<template v-if="fleche"> →</template>
     </NuxtLink>
     </div>
   </article>

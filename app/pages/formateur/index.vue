@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { compterModules } from '#shared/utils/compteurs'
+import { ligneHoraireLive, pastilleDateLive } from '#shared/utils/live'
 definePageMeta({ layout: 'formateur', middleware: 'formateur' })
 usePagePrivee('Espace formateur')
 
@@ -34,6 +35,16 @@ const { data } = await useFetch<{
     thematique: { nom: string } | null
   } | null
   sujets: { utilisateurId: string; apprenant: string; sujet: string; lu: boolean }[]
+  /** Prochaine Live Session à animer (CDC §4.4), au même format que la coaching session. */
+  prochaineLive: {
+    id: string
+    debut: string
+    dureeMinutes: number
+    etat: 'planifiee' | 'aujourdhui'
+    module: { titre: string }
+    moderateur: string
+    animerActif: boolean
+  } | null
   aTraiter: {
     coachingPrive: number
     sujetsALire: number
@@ -127,6 +138,31 @@ const optionsModules = computed(() => [
 
     <div class="mt-5.5 grid gap-4 lg:grid-cols-[1.35fr_1fr]">
       <div class="flex flex-col gap-4">
+        <!-- Prochaine Live Session (planche 08) : même format que la coaching session. -->
+        <section
+          v-if="data.prochaineLive"
+          class="sur-sombre flex flex-wrap items-center gap-5 rounded-[16px] bg-encre p-6 text-white"
+        >
+          <div class="rounded-[10px] bg-nuit-panneau px-4 py-2.5 text-center">
+            <b class="block text-[20px] text-live-pastel">{{ pastilleDateLive(data.prochaineLive.debut).jour }}</b>
+            <span class="text-[11px] font-bold text-live-pastel uppercase">{{ pastilleDateLive(data.prochaineLive.debut).mois }}</span>
+          </div>
+          <div class="min-w-[260px] flex-1">
+            <p class="text-[11.5px] font-bold tracking-[0.12em] text-live-pastel uppercase">Prochaine Live Session</p>
+            <b class="text-[15.5px]">{{ data.prochaineLive.module.titre }}</b>
+            <p class="mt-1 text-[13px] text-nuit-clair">
+              {{ ligneHoraireLive(data.prochaineLive.debut, data.prochaineLive.dureeMinutes) }} · modérateur : {{ data.prochaineLive.moderateur }}
+            </p>
+          </div>
+          <UiBaseButton
+            taille="sm"
+            :variante="data.prochaineLive.animerActif ? 'live' : 'verrouille-sombre'"
+            :to="data.prochaineLive.animerActif ? `/formateur/live/${data.prochaineLive.id}` : '/formateur/live-sessions'"
+          >
+            {{ data.prochaineLive.animerActif ? 'Animer sur Zoom' : 'Préparer la session' }}
+          </UiBaseButton>
+        </section>
+
         <!-- Prochaine séance à animer, quel que soit le mois affiché. -->
         <section
           v-if="data.prochaineSession"

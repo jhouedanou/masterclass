@@ -53,6 +53,7 @@ watch(
       >
         <CatalogueModuleCarte
           fleche
+          statut-visible
           v-for="module in thematique.modules"
           :key="module.id"
           :module="module"

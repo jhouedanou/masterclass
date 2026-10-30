@@ -98,7 +98,7 @@ export async function envoyerEvenementMeta(evenement: {
     contentIds?: string[]
     reference?: string
     /** Comme le Pixel (app/composables/useSuivi.ts) : module ou coaching privé. */
-    categorie?: 'module' | 'coaching_prive'
+    categorie?: 'module' | 'coaching_prive' | 'live_session'
   }
 }): Promise<void> {
   try {

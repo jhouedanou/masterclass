@@ -3,6 +3,7 @@ import type { EtatQuiz, Formateur, Module, StatutCoachingPrive, Thematique } fro
 import { quizAReussir } from '#shared/utils/attestation'
 import { compterPlaces } from '#shared/utils/compteurs'
 import { dureeSessionEnHeures, PLACES_SESSION } from '#shared/utils/coaching'
+import type { CarteLiveApprenant } from '~/utils/live'
 
 definePageMeta({ layout: 'espace', middleware: 'auth' })
 usePagePrivee('Tableau de bord')
@@ -33,9 +34,11 @@ interface Carte {
 
 interface TableauDeBord {
   completionProfil: number
+  /** Cartes Live Session, en tête de « Mes formations » (CDC §4.3). */
+  liveSessions: CarteLiveApprenant[]
   cartes: Carte[]
   coachingPrive: { id: string; date: string; formateur: string; statut: StatutCoachingPrive } | null
-  achats: { reference: string; date: string; total: number; libelle: string }[]
+  achats: { reference: string; date: string; total: number; libelle: string; type: 'module' | 'live' | 'coaching' }[]
   planning: {
     id: string
     date: string
@@ -131,7 +134,11 @@ const COULEUR_SURTITRE = {
           </span>
         </h1>
 
-        <!-- Cartes modules (planche B, écrans 01 et 07) -->
+        <!-- Live Sessions en tête (planche 05), puis les cartes modules
+             (planche B, écrans 01 et 07). -->
+        <div v-if="data.liveSessions.length" class="mb-4 flex flex-col gap-4">
+          <EspaceCarteLive v-for="carte in data.liveSessions" :key="carte.inscriptionId" :carte="carte" />
+        </div>
         <div v-if="data.cartes.length" class="flex flex-col gap-4">
           <article
             v-for="carte in data.cartes"
@@ -217,7 +224,7 @@ const COULEUR_SURTITRE = {
             </UiBaseButton>
           </article>
         </div>
-        <p v-else class="rounded-carte border border-dashed border-ligne p-8 text-center text-[14px] text-discret">
+        <p v-else-if="!data.liveSessions.length" class="rounded-carte border border-dashed border-ligne p-8 text-center text-[14px] text-discret">
           Aucun module pour l’instant.
           <NuxtLink to="/modules" class="font-bold">Voir le catalogue</NuxtLink>.
         </p>
@@ -246,8 +253,13 @@ const COULEUR_SURTITRE = {
             <h2 class="mb-3 font-title text-[18px] font-light">Historique d’achats</h2>
             <ul v-if="data.achats.length" class="flex flex-col gap-2.5 text-[13.5px]">
               <li v-for="achat in data.achats" :key="achat.reference" class="flex justify-between gap-3">
-                <span class="truncate text-encre">{{ achat.libelle }}</span>
-                <span class="shrink-0 text-discret">{{ formatDate(achat.date) }} · {{ formatFcfa(achat.total) }}</span>
+                <span class="min-w-0 truncate text-encre">
+                  <span v-if="achat.type === 'live'" class="mr-1.5 rounded-full bg-live-voile px-2 py-0.5 text-[11px] font-bold text-live">Live Session</span>{{ achat.libelle }}
+                </span>
+                <span class="shrink-0 text-discret">
+                  {{ formatDate(achat.date) }} · {{ formatFcfa(achat.total) }} ·
+                  <NuxtLink :to="`/mon-espace/recu/${achat.reference}`" class="font-bold text-encre hover:underline">Reçu</NuxtLink>
+                </span>
               </li>
             </ul>
             <p v-else class="text-[13.5px] text-discret">Aucun achat pour l’instant.</p>
@@ -305,6 +317,17 @@ const COULEUR_SURTITRE = {
           </ul>
           <p v-else class="text-[13.5px] text-nuit-clair">Aucune session à venir pour vos modules.</p>
           <EspaceVerrouProfil :completion="data.completionProfil" variante="sombre" class="mt-4 block" />
+        </section>
+
+        <!-- Après votre Live Session (planche 05) : ce qui suit la session. -->
+        <section v-if="data.liveSessions.length" class="mt-4 rounded-carte border border-live-bordure bg-live-voile p-6">
+          <h2 class="mb-3 font-title text-[18px] font-light text-encre">Après votre Live Session</h2>
+          <ul class="flex flex-col gap-2 text-[13.5px] text-texte">
+            <li class="flex gap-2"><Icon name="ph:check-bold" class="mt-0.5 shrink-0 text-succes" />Support de cours, s’il est fourni par le formateur</li>
+            <li class="flex gap-2"><Icon name="ph:check-bold" class="mt-0.5 shrink-0 text-succes" />Quiz et certificat</li>
+            <li class="flex gap-2"><Icon name="ph:check-bold" class="mt-0.5 shrink-0 text-succes" />Version vidéo ajoutée dès qu’elle est prête</li>
+            <li class="flex gap-2"><Icon name="ph:check-bold" class="mt-0.5 shrink-0 text-succes" />Coaching collectif, profil complété à 100 %</li>
+          </ul>
         </section>
       </aside>
     </div>

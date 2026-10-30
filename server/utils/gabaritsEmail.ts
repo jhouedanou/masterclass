@@ -50,6 +50,9 @@ const CLES = [
   'prenom', 'code', 'validiteMinutes', 'validiteHeures', 'lien', 'statut', 'formateur', 'creneau',
   'montant', 'heures', 'motif', 'thematique', 'date', 'heure', 'module', 'jours', 'nom', 'email',
   'whatsapp', 'sujet', 'reference', 'message', 'moyen', 'numero',
+  // Live Sessions : titre, « Vendredi 6 novembre · 19h00 GMT · 1h30 », prérequis
+  // séparés par « | », moment du rappel, ancien horaire, modérateur, durée.
+  'titre', 'horaire', 'prerequis', 'quand', 'ancien', 'moderateur', 'duree', 'agenda', 'recu', 'apprenant',
 ] as const
 type Variables = Record<(typeof CLES)[number], string>
 
@@ -174,6 +177,77 @@ function corps(modele: ModeleNotification, variables: Record<string, string>, si
         { bouton: 'Voir mon attestation', lien: `${site}/certificats/${encodeURIComponent(v.numero)}` },
         { p: `Toute personne à qui vous la présentez peut en vérifier l’authenticité à cette adresse : ${site}/verifier/${encodeURIComponent(v.numero)}` },
       ]
+    // --- Live Sessions (planche 06) -------------------------------------
+    // Aucun lien Zoom (RM4, option B) : les boutons mènent à la salle intégrée
+    // de l'espace, qui demande la connexion.
+    case 'live-confirmation':
+      return [
+        { p: 'Votre inscription est confirmée. Vous êtes convié(e) à la Live Session suivante :' },
+        { citation: `Live Session\n${v.titre}\n${v.horaire}${v.formateur ? `\nAvec ${v.formateur}` : ''}` },
+        { p: v.quand === 'tardive'
+          ? 'La session approche : le bouton « Rejoindre la session » est déjà dans votre espace.'
+          : 'Vous recevrez le lien de connexion par email la veille, 10 minutes avant et à l’heure de début.' },
+        { p: `À prévoir : ${[...v.prerequis.split('|').map((x) => x.trim()).filter(Boolean), 'Un navigateur récent (Chrome, Edge, Safari ou Firefox) sur ordinateur ou téléphone : la session s’ouvre directement dans votre espace'].join(' · ')}.` },
+        ...(v.agenda ? [{ bouton: 'Ajouter à mon agenda', lien: v.agenda }] : []),
+        ...(v.recu ? [{ bouton: 'Voir mon reçu', lien: v.recu }] : []),
+        { p: 'La session est enregistrée. Après la session, vous retrouverez le quiz dans votre espace, ainsi que le support de cours s’il est fourni par le formateur. La version vidéo de la session y sera ensuite ajoutée.' },
+      ]
+    case 'live-rappel':
+      return [
+        { p: `Votre Live Session commence ${v.quand}.` },
+        { citation: `Live Session\n${v.titre}\n${v.horaire}${v.formateur ? `\nAvec ${v.formateur}` : ''}` },
+        { bouton: 'Rejoindre la session', lien: v.lien },
+        { p: 'Pendant la session : votre micro est coupé pendant la formation · les questions-réponses ont lieu aux moments indiqués · la session est enregistrée.' },
+      ]
+    case 'live-fin':
+      return [
+        { p: `Merci pour votre participation à la Live Session « ${v.titre} ».` },
+        { p: 'Le support de cours est disponible dans votre espace, ainsi que le quiz pour obtenir votre certificat. Vous pouvez aussi vous inscrire aux sessions de coaching collectif du module. La version vidéo sera ajoutée à votre espace dès qu’elle sera prête.' },
+        { bouton: 'Ouvrir mon espace', lien: v.lien || espace },
+      ]
+    case 'live-module-disponible':
+      return [
+        { p: `La version vidéo de « ${v.titre} » est disponible dans votre espace${v.duree ? ` (${v.duree})` : ''}. Elle est incluse dans votre inscription : rien à payer.` },
+        { bouton: 'Regarder le module', lien: v.lien || `${espace}/modules` },
+      ]
+    case 'live-formateur-planifiee':
+      return [
+        { p: `Une Live Session est planifiée pour vous : « ${v.titre} », ${v.horaire}.` },
+        ...(v.moderateur ? [{ p: `Modérateur : ${v.moderateur}.` }] : []),
+        { p: 'À préparer : le déroulé à faire valider par l’équipe, le support de cours si vous en fournissez un, et le test micro et caméra avec le modérateur.' },
+        { bouton: 'Ouvrir mes Live Sessions', lien: `${site}/formateur/live-sessions` },
+      ]
+    case 'live-formateur-rappel':
+      return [
+        { p: `Rappel : vous animez demain la Live Session « ${v.titre} », ${v.horaire}.` },
+        { p: 'Le bouton « Animer sur Zoom » s’active dans votre espace 30 minutes avant le début.' },
+        { bouton: 'Ouvrir mes Live Sessions', lien: `${site}/formateur/live-sessions` },
+      ]
+    case 'live-changement-horaire':
+      return [
+        { p: `La Live Session « ${v.titre} » change d’horaire.` },
+        { p: `Ancien horaire : ${v.ancien}.` },
+        { p: `Nouvel horaire : ${v.horaire}.` },
+        { p: 'Votre inscription est conservée. Vous recevrez le lien de connexion la veille, 10 minutes avant et à l’heure de début.' },
+        { bouton: 'Ouvrir mon espace', lien: espace },
+      ]
+    case 'live-annulation':
+      return [
+        { p: `La Live Session « ${v.titre} » prévue ${v.horaire} est annulée.` },
+        { p: `Notre équipe vous contacte pour vous proposer un report ou le remboursement de votre inscription. Une question ? Écrivez-nous à ${contact}.` },
+      ]
+    case 'live-alerte-remboursement':
+      return [
+        { p: `Un paiement a été reçu pour la Live Session « ${v.titre} » (${v.horaire}) alors qu’il n’y avait plus de place, ou que la session n’était plus ouverte.` },
+        { p: `Apprenant : ${v.apprenant} <${v.email}>. Commande : ${v.reference}.` },
+        { p: 'L’inscription est passée « à rembourser » : le remboursement se traite hors plateforme.' },
+        { bouton: 'Ouvrir les Live Sessions', lien: `${site}/admin/live-sessions` },
+      ]
+    case 'live-ouverture':
+      return [
+        { p: `Le module « ${v.titre} » que vous attendiez est proposé en Live Session : ${v.horaire}, en direct avec le formateur.` },
+        { bouton: 'Voir la Live Session', lien: v.lien },
+      ]
   }
 }
 
@@ -186,8 +260,9 @@ export function composerEmail(
   variables: Record<string, string>,
   site: string,
   contact: string,
+  sujetPropre?: string,
 ): EmailCompose {
-  const sujet = SUJETS[modele]
+  const sujet = sujetPropre || SUJETS[modele]
   const blocs = corps(modele, variables, site, contact).filter((b) =>
     'p' in b ? b.p : 'lien' in b ? b.lien : b.citation,
   )
