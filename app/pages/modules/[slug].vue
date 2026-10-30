@@ -143,11 +143,16 @@ const articleSuivi = computed(() => ({
 }))
 
 // ViewContent : consultation de la fiche. `onMounted` et non le rendu serveur,
-// les traqueurs ne vivant que dans le navigateur.
-onMounted(() => suivre('ViewContent', { articles: [articleSuivi.value] }))
+// les traqueurs ne vivant que dans le navigateur. Pas pour un module déjà
+// acheté : l'élève qui revient sur sa fiche n'est plus un prospect, et Big
+// Five ne veut pas le voir dans ses audiences (arbitrage du 30/10).
+onMounted(() => {
+  if (dejaAchete.value) return
+  suivre('ViewContent', { articles: [articleSuivi.value], categorieContenu: 'module' })
+})
 
 function acheter() {
-  suivre('InitiateCheckout', { articles: [articleSuivi.value] })
+  suivre('InitiateCheckout', { articles: [articleSuivi.value], categorieContenu: 'module' })
   achat.definir({
     id: moduleCourant.value.id,
     slug: moduleCourant.value.slug,

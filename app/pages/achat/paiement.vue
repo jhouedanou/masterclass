@@ -556,15 +556,29 @@ function articlesSuivis() {
   return []
 }
 
+/** Module ou séance de coaching privé, pour `content_category`. */
+function categorieSuivie() {
+  return achat.seance ? ('coaching_prive' as const) : ('module' as const)
+}
+
 /** Purchase, sous l'identifiant que l'API Conversions reprend côté serveur
  *  (`rapprocherCommande`, server/utils/feexpay.ts) : Meta n'en compte qu'un. */
 function signalerAchat(reference: string) {
-  suivre('Purchase', { articles: articlesSuivis(), valeur: montant.value, reference }, `achat-${reference}`)
+  suivre(
+    'Purchase',
+    { articles: articlesSuivis(), valeur: montant.value, reference, categorieContenu: categorieSuivie() },
+    `achat-${reference}`,
+  )
 }
 
 async function payer() {
   if (!achat.module && !achat.seance) return
-  suivre('AddPaymentInfo', { articles: articlesSuivis(), valeur: montant.value, moyen: achat.moyen })
+  suivre('AddPaymentInfo', {
+    articles: articlesSuivis(),
+    valeur: montant.value,
+    moyen: achat.moyen,
+    categorieContenu: categorieSuivie(),
+  })
   etat.value = 'attente'
   message.value = feexpayActif ? 'Ouverture de la commande…' : 'Validez la demande sur votre téléphone.'
   codeEchec.value = null

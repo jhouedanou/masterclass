@@ -93,7 +93,13 @@ export async function envoyerEvenementMeta(evenement: {
   eventId: string
   utilisateur: Utilisateur
   contexte: ContexteMeta
-  donnees?: { valeur?: number; contentIds?: string[]; reference?: string }
+  donnees?: {
+    valeur?: number
+    contentIds?: string[]
+    reference?: string
+    /** Comme le Pixel (app/composables/useSuivi.ts) : module ou coaching privé. */
+    categorie?: 'module' | 'coaching_prive'
+  }
 }): Promise<void> {
   try {
     // La simulation de paiement ne doit pas gonfler les conversions du client.
@@ -130,12 +136,14 @@ export async function envoyerEvenementMeta(evenement: {
               ? { content_ids: donnees.contentIds, content_type: 'product' }
               : {}),
             ...(donnees?.reference ? { order_id: donnees.reference } : {}),
+            ...(donnees?.categorie ? { content_category: donnees.categorie } : {}),
           },
         },
       ],
     }
     // Code de l'onglet « Tester les événements » du gestionnaire d'événements :
-    // les envois y apparaissent sans compter dans les statistiques.
+    // les envois y apparaissent sans compter dans les statistiques. À retirer
+    // une fois la recette faite, sinon aucun achat serveur ne compte.
     const codeTest = process.env.META_CAPI_TEST_CODE
     if (codeTest) corps.test_event_code = codeTest
 

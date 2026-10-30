@@ -24,6 +24,9 @@ const NOMS_GA4 = {
 
 export type EvenementSuivi = keyof typeof NOMS_GA4
 
+/** `content_category` des événements Meta et GA4. */
+export type CategorieContenu = 'module' | 'coaching_prive'
+
 export interface ArticleSuivi {
   id: string
   titre: string
@@ -42,6 +45,8 @@ export interface DonneesSuivi {
   reference?: string
   /** `sign_up` : d'où vient l'inscription (tunnel d'achat ou page dédiée). */
   methode?: string
+  /** Ce que l'on vend : Big Five distingue les modules du coaching privé (30/10). */
+  categorieContenu?: CategorieContenu
 }
 
 /** Ce que le navigateur joint aux appels serveur pour l'API Conversions. */
@@ -110,6 +115,7 @@ export function useSuivi() {
         event: NOMS_GA4[evenement],
         event_id: eventId,
         ...(donnees.methode ? { method: donnees.methode } : {}),
+        ...(donnees.categorieContenu ? { content_category: donnees.categorieContenu } : {}),
         ecommerce: {
           currency: 'XOF',
           value: valeur,
@@ -139,6 +145,7 @@ export function useSuivi() {
       parametres.currency = 'XOF'
     }
     if (donnees.moyen) parametres.payment_method = donnees.moyen
+    if (donnees.categorieContenu) parametres.content_category = donnees.categorieContenu
     w.fbq('track', evenement, parametres, eventId ? { eventID: eventId } : undefined)
   }
 

@@ -407,7 +407,7 @@ export async function rapprocherCommande(
     }
     if (premiereConfirmation) {
       await confirmerAchat(confirmee, [], moyenDepuisReseau(reseau))
-      await signalerAchatMeta(confirmee, [`coaching-${commande.demandeCoachingId}`])
+      await signalerAchatMeta(confirmee, [`coaching-${commande.demandeCoachingId}`], 'coaching_prive')
     }
     return { statut: 'confirmee', commande: confirmee }
   }
@@ -421,7 +421,7 @@ export async function rapprocherCommande(
 
   if (premiereConfirmation) {
     await confirmerAchat(confirmee, modules, moyenDepuisReseau(reseau))
-    await signalerAchatMeta(confirmee, modules)
+    await signalerAchatMeta(confirmee, modules, 'module')
   }
   return { statut: 'confirmee', commande: confirmee }
 }
@@ -432,7 +432,11 @@ export async function rapprocherCommande(
  * Seulement si l'acheteur avait consenti au marketing : la commande en garde
  * alors le contexte, consommé ici. Ne lève jamais, comme l'e-mail ci-dessous.
  */
-async function signalerAchatMeta(commande: Commande, contentIds: string[]): Promise<void> {
+async function signalerAchatMeta(
+  commande: Commande,
+  contentIds: string[],
+  categorie: 'module' | 'coaching_prive',
+): Promise<void> {
   try {
     const contexte = await consommerSuiviMeta(commande.reference)
     if (!contexte) return
@@ -443,7 +447,7 @@ async function signalerAchatMeta(commande: Commande, contentIds: string[]): Prom
       eventId: `achat-${commande.reference}`,
       utilisateur: acheteur,
       contexte: contexte as ContexteMeta,
-      donnees: { valeur: commande.total, contentIds, reference: commande.reference },
+      donnees: { valeur: commande.total, contentIds, reference: commande.reference, categorie },
     })
   } catch (erreur) {
     console.error('[meta-capi] achat non signalé', commande.reference, (erreur as Error)?.message ?? erreur)

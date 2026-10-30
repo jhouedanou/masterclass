@@ -1,6 +1,6 @@
 {
   "exportFormatVersion": 2,
-  "exportTime": "2026-10-23 18:00:00",
+  "exportTime": "2026-10-30 12:00:00",
   "containerVersion": {
     "path": "accounts/0/containers/0/versions/0",
     "accountId": "0",
@@ -59,6 +59,13 @@
                   { "type": "TEMPLATE", "key": "parameter", "value": "method" },
                   { "type": "TEMPLATE", "key": "parameterValue", "value": "{{DLV - method}}" }
                 ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "parameter", "value": "content_category" },
+                  { "type": "TEMPLATE", "key": "parameterValue", "value": "{{DLV - content_category}}" }
+                ]
               }
             ]
           }
@@ -110,6 +117,18 @@
           { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
           { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
           { "type": "TEMPLATE", "key": "name", "value": "method" }
+        ]
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "22",
+        "name": "DLV - content_category",
+        "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "BOOLEAN", "key": "setDefaultValue", "value": "false" },
+          { "type": "TEMPLATE", "key": "name", "value": "content_category" }
         ]
       }
     ],

@@ -8,7 +8,7 @@ Ce qu'il contient :
 - **GA4 - Événements du tunnel** : une balise d'événement GA4 qui reprend tel quel le nom poussé
   par le site (`view_item`, `sign_up`, `begin_checkout`, `add_payment_info`, `purchase`), avec les
   données e-commerce du `dataLayer` (articles, valeur en XOF, `transaction_id`, `payment_type`)
-  et les paramètres `event_id` et `method` ;
+  et les paramètres `event_id`, `method` et `content_category` (`module` ou `coaching_prive`) ;
 - le déclencheur et les deux variables de couche de données qu'elle utilise.
 
 Aucune balise Meta : le Pixel est chargé par le site lui-même, avec son API Conversions côté
