@@ -41,6 +41,7 @@ const tousLesLiens: Lien[] = [
   { libelle: 'Live Sessions', chemin: '/admin/live-sessions', icone: 'ph:broadcast', section: 'live-sessions' },
   { libelle: 'Coaching privé', chemin: '/admin/coaching-prive', icone: 'ph:target', section: 'coaching-prive' },
   { libelle: 'Apprenants', chemin: '/admin/apprenants', icone: 'ph:student', section: 'apprenants' },
+  { libelle: 'Pédagogie', chemin: '/admin/pedagogie', icone: 'ph:graduation-cap', section: 'apprenants' },
   { libelle: 'Candidatures formateurs', chemin: '/admin/candidatures', icone: 'ph:user-plus', section: 'candidatures-formateurs' },
   { libelle: 'Statistiques', chemin: '/admin/coaching-prive#statistiques', icone: 'ph:chart-bar', section: 'statistiques-performance' },
   { libelle: 'Performances', chemin: '/admin/performances', icone: 'ph:chart-line-up', section: 'performances-marketing' },

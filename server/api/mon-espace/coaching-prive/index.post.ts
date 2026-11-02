@@ -64,7 +64,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const acces = await trouverAcces(utilisateur.id, body.moduleId)
-  if (!acces) {
+  if (!acces || acces.revoqueLe) {
     throw createError({ statusCode: 403, statusMessage: 'Ce module ne fait pas partie de vos accès' })
   }
 
