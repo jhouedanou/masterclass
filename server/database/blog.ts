@@ -172,3 +172,8 @@ function tempsLecture(contenu: string): number {
   const mots = sansBalises(contenu)
   return Math.max(1, Math.ceil((mots ? mots.split(/\s+/).length : 0) / 220))
 }
+
+/** Suppression définitive d'un article ; ses modules liés partent avec lui (cascade). */
+export async function supprimerArticle(id: string): Promise<void> {
+  verifier(await supabase().from('articles').delete().eq('id', id).select('id'), 'suppression d’article')
+}

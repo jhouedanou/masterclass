@@ -400,6 +400,8 @@ export type ChampsProfilFormateur = Partial<
     | 'nom'
     | 'expertise'
     | 'bio'
+    | 'presentation'
+    | 'linkedin'
     | 'photo'
     | 'photoAlt'
     | 'signature'
@@ -418,6 +420,9 @@ export async function majFormateur(
   if (champs.nom !== undefined) colonnes.nom = champs.nom
   if (champs.expertise !== undefined) colonnes.expertise = champs.expertise
   if (champs.bio !== undefined) colonnes.bio = champs.bio
+  if (champs.presentation !== undefined) colonnes.presentation = champs.presentation
+  // Chaîne vide : on retire le lien.
+  if (champs.linkedin !== undefined) colonnes.linkedin = champs.linkedin || null
   if (champs.photo !== undefined) colonnes.photo = champs.photo
   // Chaîne vide acceptée : c'est ainsi qu'on efface un texte alternatif.
   if (champs.photoAlt !== undefined) colonnes.photo_alt = champs.photoAlt || null

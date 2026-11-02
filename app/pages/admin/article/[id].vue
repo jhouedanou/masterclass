@@ -91,6 +91,29 @@ function slugDepuisTitre() {
     .replace(/^-+|-+$/g, '')
 }
 
+/** Suppression en deux temps, sans boîte de dialogue du navigateur : le
+ *  premier clic arme le bouton, le second supprime. */
+const suppressionArmee = ref(false)
+async function supprimer() {
+  if (!data.value?.article) return
+  if (!suppressionArmee.value) {
+    suppressionArmee.value = true
+    return
+  }
+  enCours.value = true
+  try {
+    await $fetch(`/api/admin/articles/${data.value.article.id}`, { method: 'DELETE' })
+    annoncer('Article supprimé. Sa dernière version reste dans l’historique.')
+    await navigateTo('/admin/blog')
+  } catch (e) {
+    const err = e as { data?: { statusMessage?: string }; statusMessage?: string }
+    annoncer(err.data?.statusMessage ?? err.statusMessage ?? 'Suppression impossible.', 'erreur')
+  } finally {
+    enCours.value = false
+    suppressionArmee.value = false
+  }
+}
+
 async function enregistrer(statut?: 'brouillon' | 'publie') {
   erreur.value = ''
   succes.value = ''
@@ -343,6 +366,9 @@ async function enregistrer(statut?: 'brouillon' | 'publie') {
           <UiBaseButton v-else taille="sm" variante="sombre" :disabled="enCours" @click="enregistrer('brouillon')">Dépublier</UiBaseButton>
           <UiBaseButton taille="sm" variante="contour" :disabled="enCours" @click="enregistrer()">Enregistrer le brouillon</UiBaseButton>
           <UiBaseButton v-if="data.article?.statut === 'publie'" taille="sm" variante="contour" :to="`/blog/${data.article.slug}`">Prévisualiser</UiBaseButton>
+          <UiBaseButton v-if="data.article" taille="sm" variante="danger" class="ml-auto" :disabled="enCours" @click="supprimer">
+            {{ suppressionArmee ? 'Confirmer la suppression' : 'Supprimer l’article' }}
+          </UiBaseButton>
         </div>
       </div>
     </section>

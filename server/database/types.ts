@@ -139,6 +139,8 @@ export type FormateurRow = ColonnesSeo & {
   nom: string
   expertise: string
   bio: string
+  presentation: string
+  linkedin: string | null
   programme_principal: ProgrammeSlugSql
   photo: string
   photo_alt: string | null
@@ -800,6 +802,8 @@ export type Database = {
         | 'whatsapp'
         | 'activation_coaching_demandee_le'
         | 'position'
+        | 'presentation'
+        | 'linkedin'
         | keyof ColonnesSeo
       >
       modules: Table<

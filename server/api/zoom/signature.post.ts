@@ -30,6 +30,8 @@ export default defineEventHandler(async (event) => {
   let motDePasse: string | null = null
   let lienSecours: string | null = null
   let role: 0 | 1 = 0
+  /** Formateur de la séance : seul destinataire possible du ZAK. */
+  let formateurHote = false
   let sujet = ''
   let debut: Date
   let dureeMinutes = 120
@@ -45,6 +47,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 403, statusMessage: 'Inscrivez-vous à cette Live Session pour la rejoindre' })
     }
     role = hote || admin ? 1 : 0
+    formateurHote = hote
     const liens = await liensZoomLive(live.id)
     numeroReunion = liens.reunionId
     motDePasse = liens.motDePasse
@@ -64,6 +67,7 @@ export default defineEventHandler(async (event) => {
       }
     }
     role = hote || admin ? 1 : 0
+    formateurHote = hote
     const liens = await liensZoomSession(session.id)
     numeroReunion = liens.reunionId
     motDePasse = liens.motDePasse
@@ -84,6 +88,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 409, statusMessage: 'La séance n’est pas encore confirmée' })
     }
     role = hote || admin ? 1 : 0
+    formateurHote = hote
     numeroReunion = demande.zoomReunionId ?? null
     motDePasse = await motDePasseZoomDemande(demande.id)
     lienSecours = demande.lienSession ?? null
@@ -111,8 +116,13 @@ export default defineEventHandler(async (event) => {
 
   const reunion = numeroReunion ?? 'simulation'
   const { signature, sdkKey } = signatureSdk(reunion, role)
+  // Le ZAK est celui du compte Zoom de Big Five, propriétaire de toutes les
+  // réunions : il permettrait d'en démarrer d'autres pendant sa durée de vie.
+  // Il ne part donc qu'au formateur de la séance (pas à l'administration),
+  // et seulement salle ouverte. Le lien de démarrage relu suit la même règle
+  // (il porte lui aussi un jeton d'hôte).
   let zak: string | null = null
-  if (role === 1 && numeroReunion) {
+  if (formateurHote && ouverte && numeroReunion) {
     const hote = await accesHote(numeroReunion)
     zak = hote.zak
     lienSecours = hote.lienHote ?? lienSecours
