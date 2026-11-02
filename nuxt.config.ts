@@ -6,6 +6,10 @@ import tailwindcss from '@tailwindcss/vite'
 // apporter.
 const enDeveloppement = process.env.NODE_ENV === 'development'
 
+// Adresse canonique : sitemap, robots.txt, balises canoniques, schema.org.
+// L'adresse Vercel n'est qu'un repli de préproduction, jamais à indexer.
+const SITE_URL = process.env.NUXT_PUBLIC_SITE_URL || 'https://emasterclass.bigfive.solutions'
+
 /**
  * Politique de sécurité du contenu (audit du 20/10).
  *
@@ -179,7 +183,7 @@ export default defineNuxtConfig({
     googleAgendaId: process.env.GOOGLE_AGENDA_ID || '',
 
     public: {
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://masterclass-jhouedanous-projects.vercel.app',
+      siteUrl: SITE_URL,
       // Le tunnel charge le SDK FeexPay seulement quand le prestataire est branché.
       feexpayActif: (process.env.FEEXPAY_MODE || 'simulation') !== 'simulation',
       feexpaySdkUrl: `${(process.env.FEEXPAY_BASE_URL || 'https://api-v2.feexpay.me').replace(/\/$/, '')}/feexpay-javascript-sdk/index.js`,
@@ -210,7 +214,7 @@ export default defineNuxtConfig({
   },
 
   site: {
-    url: process.env.NUXT_PUBLIC_SITE_URL || 'https://masterclass-jhouedanous-projects.vercel.app',
+    url: SITE_URL,
     name: 'E-Masterclass Big Five',
     description:
       "Plateforme de formation en ligne de BigFiveAbidjan SARL : programmes Social Média et Entrepreneurs, modules courts et attestations de suivi.",
@@ -260,6 +264,7 @@ export default defineNuxtConfig({
       // /verifier du sitemap sans rien signaler.
       '/verifier/*',
       '/apercu/**',
+      '/hors-ligne',
     ],
     sources: ['/api/__sitemap__/urls'],
     // Le module met le sitemap en cache dix minutes en production. La spec
@@ -273,7 +278,7 @@ export default defineNuxtConfig({
       type: 'Organization',
       name: 'E-Masterclass Big Five',
       legalName: 'BigFiveAbidjan SARL',
-      url: process.env.NUXT_PUBLIC_SITE_URL || 'https://masterclass-jhouedanous-projects.vercel.app',
+      url: SITE_URL,
       logo: '/images/logo.svg',
       sameAs: [],
     },

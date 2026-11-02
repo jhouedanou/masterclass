@@ -38,7 +38,7 @@ npm run build && node .output/server/index.mjs
 Créer un fichier `.env` à la racine (non versionné, comme tout fichier `.env*`) :
 
 ```bash
-NUXT_PUBLIC_SITE_URL=https://masterclass-jhouedanous-projects.vercel.app
+NUXT_PUBLIC_SITE_URL=https://emasterclass.bigfive.solutions
 SUPABASE_URL=            # console Supabase → Settings → API
 SUPABASE_SECRET_KEY=         # Settings → API keys → Secret keys — jamais la clé publishable
 ```
