@@ -16,6 +16,7 @@ const liens = [
   // Le catalogue complet n'avait aucune entrée depuis la navigation (recette, VIT-11).
   { libelle: 'Modules', chemin: '/modules', couleur: '' },
   { libelle: 'Formateurs', chemin: '/formateurs', couleur: '' },
+  { libelle: 'Live Sessions', chemin: '/live-sessions', couleur: '' },
   { libelle: 'Blog', chemin: '/blog', couleur: '' },
   { libelle: 'Contact & FAQ', chemin: '/contact', couleur: '' },
 ]
@@ -35,15 +36,16 @@ const liens = [
         >
       </NuxtLink>
 
-      <!-- Sept entrées depuis l'ajout de « Modules » : sous 1280 px, l'écart,
-           le corps et le logo se resserrent pour tenir sur une ligne. -->
-      <nav aria-label="Navigation principale" class="flex items-center gap-4 text-[14px] font-semibold xl:gap-8 xl:text-[15px]">
+      <!-- Huit entrées depuis l'ajout de « Live Sessions » (brief du 02/11) :
+           sous 1280 px, l'écart, le corps et le logo se resserrent, et
+           « Accueil » s'efface — le logo y mène — pour tenir sur une ligne. -->
+      <nav aria-label="Navigation principale" class="flex items-center gap-3.5 text-[13.5px] font-semibold xl:gap-6 xl:text-[15px]">
         <NuxtLink
           v-for="lien in liens"
           :key="lien.chemin"
           :to="lien.chemin"
-          class="hidden border-b-2 border-transparent pb-[3px] whitespace-nowrap hover:opacity-70 lg:inline"
-          :class="lien.couleur || 'text-encre'"
+          class="hidden border-b-2 border-transparent pb-[3px] whitespace-nowrap hover:opacity-70"
+          :class="[lien.couleur || 'text-encre', lien.chemin === '/' ? 'xl:inline' : 'lg:inline']"
           exact-active-class="lien-actif"
           :active-class="lien.chemin === '/' ? '' : 'lien-actif'"
         >

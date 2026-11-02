@@ -49,7 +49,8 @@ function dateLisible(valeur = ''): string {
 const CLES = [
   'prenom', 'code', 'validiteMinutes', 'validiteHeures', 'lien', 'statut', 'formateur', 'creneau',
   'montant', 'heures', 'motif', 'thematique', 'date', 'heure', 'module', 'jours', 'nom', 'email',
-  'whatsapp', 'sujet', 'reference', 'message', 'moyen', 'numero',
+  'whatsapp', 'sujet', 'reference', 'message', 'moyen', 'numero', 'titre', 'salle', 'lienZoom',
+  'ouvertureMinutes',
 ] as const
 type Variables = Record<(typeof CLES)[number], string>
 
@@ -166,6 +167,25 @@ function corps(modele: ModeleNotification, variables: Record<string, string>, si
         v.module
           ? { bouton: 'Ouvrir mes modules', lien: `${espace}/modules` }
           : { bouton: 'Voir ma séance', lien: `${espace}/coaching-prive` },
+      ]
+    // Le lien Zoom direct est un secours : la salle de la plateforme reste la
+    // voie normale, elle vérifie l'inscription et ouvre à l'heure.
+    case 'live-inscription':
+    case 'session-reservee':
+      return [
+        { p: modele === 'live-inscription'
+          ? `Votre inscription à la Live Session « ${v.titre} » est confirmée.`
+          : `Votre place à la session de coaching collectif « ${v.titre} » est réservée.` },
+        { p: `Rendez-vous le ${dateLisible(v.date)}${v.heure ? ` à ${v.heure} (heure d’Abidjan)` : ''}${v.formateur ? `, avec ${v.formateur}` : ''}.` },
+        { p: `La salle ouvre ${v.ouvertureMinutes || '15'} minutes avant le début. Connectez-vous à votre espace, puis entrez dans la salle : micro et caméra se règlent sur place.` },
+        { bouton: 'Accéder à la salle', lien: `${site}${v.salle}` },
+        ...(v.lienZoom ? [{ p: `En cas de difficulté, rejoignez directement la réunion Zoom : ${v.lienZoom}` }] : []),
+      ]
+    case 'coaching-prive-formateur':
+      return [
+        { p: `Une séance de coaching privé est planifiée avec ${v.nom || 'un apprenant'} : ${v.creneau}${v.heures ? ` (${v.heures} h)` : ''}.` },
+        { p: 'Vous êtes l’hôte de la réunion : entrez dans la salle depuis votre espace formateur, elle démarre avec vous.' },
+        { bouton: 'Ouvrir la salle', lien: `${site}${v.salle}` },
       ]
     case 'attestation-delivree':
       return [

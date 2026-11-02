@@ -24,6 +24,8 @@ export function formateurPublic(formateur: Formateur): FormateurPublic {
     nom: formateur.nom,
     expertise: formateur.expertise,
     bio: formateur.bio,
+    presentation: formateur.presentation,
+    linkedin: formateur.linkedin,
     programmePrincipal: formateur.programmePrincipal,
     photo: formateur.photo,
     photoAlt: formateur.photoAlt,

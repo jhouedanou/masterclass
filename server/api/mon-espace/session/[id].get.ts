@@ -6,6 +6,7 @@ import {
   trouverSession,
 } from '../../../database/coaching'
 import { listerRessources } from '../../../database/backoffice'
+import { estInscritLive, listerInscritsLive, trouverLiveSession } from '../../../database/live'
 import { exigerUtilisateur } from '../../../utils/session'
 import { debutSession, salleOuverte } from '../../../utils/zoom'
 
@@ -43,6 +44,38 @@ export default defineEventHandler(async (event) => {
         fermeture: finP.toISOString(),
         debut: debutP.toISOString(),
         fin: finP.toISOString(),
+      },
+    }
+  }
+
+  // Live Session : `live-<numéro>`.
+  if (id.startsWith('live-')) {
+    const live = await trouverLiveSession(id)
+    if (!live || live.statut === 'brouillon') throw createError({ statusCode: 404, statusMessage: 'Live Session introuvable' })
+    const hoteL = utilisateur.role === 'formateur' && utilisateur.formateurId === live.formateurId
+    const adminL = utilisateur.role === 'admin-contenu' || utilisateur.role === 'admin-superieur'
+    if (!hoteL && !adminL && !(await estInscritLive(live.id, utilisateur.id))) {
+      throw createError({ statusCode: 403, statusMessage: 'Inscrivez-vous à cette Live Session pour la rejoindre' })
+    }
+    const [formateursL, inscritsL] = await Promise.all([listerFormateurs(), listerInscritsLive(live.id)])
+    const debutL = debutSession(live.date, live.heure)
+    const salleL = salleOuverte(debutL, live.dureeMinutes, 15)
+    return {
+      session: null,
+      demande: null,
+      live,
+      thematique: null,
+      formateur: formateursL.find((f) => f.id === live.formateurId) ?? null,
+      modulesCouverts: [],
+      participants: inscritsL.map((u) => ({ id: u.id, nom: `${u.prenom} ${u.nom[0] ?? ''}.` })),
+      ressources: [],
+      role: hoteL || adminL ? 'hote' : 'participant',
+      salle: {
+        ouverte: salleL.ouverte && live.statut === 'publiee',
+        ouverture: salleL.ouverture.toISOString(),
+        fermeture: salleL.fermeture.toISOString(),
+        debut: debutL.toISOString(),
+        fin: new Date(debutL.getTime() + live.dureeMinutes * 60_000).toISOString(),
       },
     }
   }

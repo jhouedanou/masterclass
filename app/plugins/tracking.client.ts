@@ -12,13 +12,18 @@
  *     Pixel Meta le consentement « marketing » ;
  *   — le chargement est différé après l'hydratation, pour ne pas retarder
  *     l'affichage sur une connexion mobile ;
- *   — les pages privées ne sont pas mesurées : l'espace apprenant et le
- *     back-office n'ont rien à faire dans une audience publicitaire ;
- *   — le tunnel d'achat, lui, l'est : Big Five suit la conversion de la fiche
- *     module jusqu'au paiement (demande du 23/10). Les événements eux-mêmes
- *     sont émis par les pages, voir app/composables/useSuivi.ts.
+ *   — les pages privées n'entrent dans aucune audience : ni page vue GA4, ni
+ *     Pixel. Seule exception, l'espace apprenant accepte GTM pour les
+ *     événements pédagogiques (GA4 seulement, brief du 02/11) ;
+ *   — le tunnel d'achat, lui, est mesuré : Big Five suit la conversion de la
+ *     fiche module jusqu'au paiement (demande du 23/10). Les événements
+ *     eux-mêmes sont émis par les pages, voir app/composables/useSuivi.ts.
+ *
+ * Les pages vues GA4 partent d'ici (`page_view` dans le `dataLayer`), pas de
+ * la mesure améliorée de GA4 : celle-ci suivait l'historique du navigateur
+ * et comptait aussi `/mon-espace` ou `/admin` après une navigation interne.
  */
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin((nuxtApp) => {
   const { consentement, lire } = useConsentement()
   const { suivre } = useSuivi()
   const route = useRoute()
@@ -29,9 +34,14 @@ export default defineNuxtPlugin(() => {
   // (`page_location`) à Google et à toute balise du conteneur. `/achat` et
   // `/inscription` n'en portent aucun.
   const PRIVEES = /^\/(admin|mon-espace|formateur|apercu|connexion|mot-de-passe-oublie|reinitialiser-mot-de-passe)/
+  // Parmi elles, l'espace apprenant charge GTM (consentement « mesure ») pour
+  // les seuls événements pédagogiques. Ses adresses ne portent aucun jeton.
+  const ESPACE_APPRENANT = /^\/mon-espace(\/|$)/
+  const sansGtm = (chemin: string) => PRIVEES.test(chemin) && !ESPACE_APPRENANT.test(chemin)
 
   let gtmCharge = false
   let pixelCharge = false
+  let codeCharge = false
   type Identifiants = { gtmConteneur: string; metaPixelId: string; codePersonnalise: string }
   // Une seule lecture, partagée : le chargement après hydratation et la
   // première navigation peuvent se croiser.
@@ -116,7 +126,7 @@ export default defineNuxtPlugin(() => {
   }
 
   async function charger() {
-    if (PRIVEES.test(route.path)) return
+    if (sansGtm(route.path)) return
 
     const choix = consentement.value ?? lire()
     if (!choix) return
@@ -144,36 +154,60 @@ export default defineNuxtPlugin(() => {
     if (choix.mesure && ids.gtmConteneur && !gtmCharge) {
       gtmCharge = true
       chargerGtm(ids.gtmConteneur, choix)
-
-      // Le code additionnel de l'écran 19. Il est saisi par un administrateur
-      // supérieur et s'exécute sur toutes les pages publiques : c'est ce qu'on
-      // attend d'un champ « scripts additionnels », et c'est exactement pourquoi
-      // son écriture lui est réservée.
-      if (ids.codePersonnalise?.trim()) {
-        const conteneur = document.createElement('div')
-        conteneur.innerHTML = ids.codePersonnalise
-        const nonce = nonceDeLaPage()
-        for (const balise of conteneur.querySelectorAll('script')) {
-          const copie = document.createElement('script')
-          for (const attribut of balise.attributes) copie.setAttribute(attribut.name, attribut.value)
-          if (nonce) copie.nonce = nonce
-          copie.textContent = balise.textContent
-          document.head.appendChild(copie)
-        }
-      }
+      pageVue()
     }
+
+    // Ni Pixel ni code additionnel dans l'espace apprenant : ils l'attendront
+    // sur la prochaine page publique.
+    if (PRIVEES.test(route.path)) return
 
     if (choix.marketing && ids.metaPixelId && !pixelCharge) {
       pixelCharge = true
       chargerPixel(ids.metaPixelId)
     }
+
+    // Le code additionnel de l'écran 19. Il est saisi par un administrateur
+    // supérieur et s'exécute sur toutes les pages publiques : c'est ce qu'on
+    // attend d'un champ « scripts additionnels », et c'est exactement pourquoi
+    // son écriture lui est réservée. Il sert d'ordinaire à poser d'autres
+    // pixels publicitaires (TikTok, LinkedIn) : il attend donc le consentement
+    // « marketing », comme le Pixel Meta.
+    if (choix.marketing && ids.codePersonnalise?.trim() && !codeCharge) {
+      codeCharge = true
+      const conteneur = document.createElement('div')
+      conteneur.innerHTML = ids.codePersonnalise
+      const nonce = nonceDeLaPage()
+      for (const balise of conteneur.querySelectorAll('script')) {
+        const copie = document.createElement('script')
+        for (const attribut of balise.attributes) copie.setAttribute(attribut.name, attribut.value)
+        if (nonce) copie.nonce = nonce
+        copie.textContent = balise.textContent
+        document.head.appendChild(copie)
+      }
+    }
   }
 
-  // GA4 suit seul les changements de page (mesure améliorée, historique du
-  // navigateur) ; le Pixel, lui, doit être prévenu de chaque navigation.
+  /** Page vue GA4, pages publiques seulement, une fois par adresse. Le titre
+   *  est lu après la mise à jour du `<head>` par la page. */
+  let derniereVue = ''
+  function pageVue() {
+    if (!gtmCharge || PRIVEES.test(route.path) || route.fullPath === derniereVue) return
+    derniereVue = route.fullPath
+    ;(window as Fenetre).dataLayer!.push({
+      event: 'page_view',
+      page_location: window.location.origin + route.fullPath,
+      page_title: document.title,
+    })
+  }
+
+  // Le Pixel doit être prévenu de chaque navigation ; GA4 aussi, une fois le
+  // titre de la nouvelle page posé.
   router.afterEach((vers, depuis) => {
     if (!pixelCharge || vers.path === depuis.path || PRIVEES.test(vers.path)) return
     suivre('PageView')
+  })
+  nuxtApp.hook('page:finish', () => {
+    setTimeout(pageVue, 0)
   })
 
   // Après l'hydratation, puis à chaque changement de consentement. Une
@@ -181,6 +215,6 @@ export default defineNuxtPlugin(() => {
   onNuxtReady(() => void charger())
   watch(consentement, () => void charger())
   router.afterEach(() => {
-    if (!gtmCharge || !pixelCharge) void charger()
+    if (!gtmCharge || !pixelCharge || !codeCharge) void charger()
   })
 })

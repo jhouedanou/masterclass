@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DemandeCoachingPrive, Formateur, SessionCoaching, Thematique } from '#shared/types'
+import type { DemandeCoachingPrive, Formateur, LiveSession, SessionCoaching, Thematique } from '#shared/types'
 
 /**
  * Salle de session Zoom (planche B, écran 11 ; planche D, écran 05).
@@ -11,7 +11,8 @@ import type { DemandeCoachingPrive, Formateur, SessionCoaching, Thematique } fro
  */
 const props = withDefaults(
   defineProps<{
-    /** Identifiant de session, ou `prive-<demande>` pour une séance de coaching privé. */
+    /** Identifiant de session (`live-…` pour une Live Session), ou
+     *  `prive-<demande>` pour une séance de coaching privé. */
     id: string
     espace?: 'apprenant' | 'formateur'
   }>(),
@@ -21,6 +22,7 @@ const props = withDefaults(
 const { data, error } = await useFetch<{
   session: SessionCoaching | null
   demande: DemandeCoachingPrive | null
+  live?: LiveSession | null
   thematique: Thematique | null
   formateur: Formateur | null
   modulesCouverts: { id: string; numero: number; titre: string; slug: string }[]
@@ -39,8 +41,10 @@ if (!data.value) {
 }
 
 const privee = computed(() => Boolean(data.value?.demande))
+const live = computed(() => data.value?.live ?? null)
 const titre = computed(
   () =>
+    live.value?.titre ??
     data.value?.session?.titre ??
     (privee.value ? `Coaching privé — ${data.value?.formateur?.nom ?? ''}` : `${data.value?.thematique?.nom ?? ''} — questions-réponses et cas pratiques`),
 )
@@ -98,10 +102,11 @@ async function demanderAutorisation() {
     role: 0 | 1
     sujet: string
     lienSecours: string | null
+    zak?: string | null
     ouverture: string
   }>('/api/zoom/signature', {
     method: 'POST',
-    body: privee.value ? { demandeId: data.value!.demande!.id } : { sessionId: data.value!.session!.id },
+    body: privee.value ? { demandeId: data.value!.demande!.id } : { sessionId: live.value?.id ?? data.value!.session!.id },
   })
 }
 
@@ -177,7 +182,7 @@ function envoyerChat() {
       <div class="min-w-0">
         <p class="truncate font-title text-[17px] font-light">{{ titre }}</p>
         <p class="text-[12.5px] text-[#8f8a9c]">
-          {{ privee ? 'Coaching privé' : 'Coaching session' }} · {{ data.formateur?.nom }}
+          {{ live ? 'Live Session' : privee ? 'Coaching privé' : 'Coaching session' }} · {{ data.formateur?.nom }}
           <template v-if="!privee && data.modulesCouverts.length">
             · modules {{ data.modulesCouverts.map((m) => numeroModule(m.numero)).join(', ') }}
           </template>
@@ -304,7 +309,7 @@ function envoyerChat() {
     <EspaceModaleNotation
       v-if="notation"
       titre="Notez votre formateur"
-      :sous-titre="`${privee ? 'Coaching privé' : 'Coaching collectif'} — ${data.formateur?.nom ?? ''}${data.thematique ? ` · ${data.thematique.nom}` : ''}`"
+      :sous-titre="`${live ? 'Live Session' : privee ? 'Coaching privé' : 'Coaching collectif'} — ${data.formateur?.nom ?? ''}${data.thematique ? ` · ${data.thematique.nom}` : ''}`"
       @fermer="plusTard"
       @envoyer="noter"
     />

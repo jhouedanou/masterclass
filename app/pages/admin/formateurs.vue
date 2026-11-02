@@ -52,18 +52,32 @@ async function basculerCoachingPrive(f: FormateurAdmin) {
 // --- Édition d'une fiche (écran 11) -----------------------------------------
 
 const edition = ref<FormateurAdmin | null>(null)
-const fiche = reactive({ nom: '', expertise: '', bio: '', photoAlt: '', programmePrincipal: 'social-media', ficheComplete: false })
+const fiche = reactive({ nom: '', expertise: '', presentation: '', bio: '', linkedin: '', photoAlt: '', programmePrincipal: 'social-media', ficheComplete: false })
 
 function ouvrirEdition(f: FormateurAdmin) {
   edition.value = f
   Object.assign(fiche, {
     nom: f.nom,
     expertise: f.expertise,
+    presentation: f.presentation ?? '',
     bio: f.bio,
+    linkedin: f.linkedin ?? '',
     photoAlt: f.photoAlt ?? '',
     programmePrincipal: f.programmePrincipal,
     ficheComplete: f.ficheComplete,
   })
+}
+
+/** Présentation et LinkedIn ne partent que s'ils ont changé : tant que la
+ *  migration 49 n'est pas passée, leur seule présence ferait échouer
+ *  l'enregistrement du reste de la fiche. */
+function champsModifies() {
+  const { presentation, linkedin, ...reste } = fiche
+  return {
+    ...reste,
+    ...(presentation !== (edition.value?.presentation ?? '') ? { presentation } : {}),
+    ...(linkedin !== (edition.value?.linkedin ?? '') ? { linkedin } : {}),
+  }
 }
 
 async function enregistrerFiche() {
@@ -71,7 +85,7 @@ async function enregistrerFiche() {
   try {
     await $fetch('/api/admin/formateurs', {
       method: 'PATCH',
-      body: { action: 'modifier', id: edition.value!.id, ...fiche },
+      body: { action: 'modifier', id: edition.value!.id, ...champsModifies() },
     })
     message.value = `Fiche de ${fiche.nom} enregistrée.`
     annoncer(`Fiche de ${fiche.nom} enregistrée.`)
@@ -306,8 +320,16 @@ async function supprimerDefinitivement() {
             <input v-model="fiche.expertise" required class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
           </label>
           <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Présentation (courte, en tête de fiche)</span>
+            <textarea v-model="fiche.presentation" rows="2" maxlength="400" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]" />
+          </label>
+          <label class="block">
             <span class="mb-1.5 block text-[13px] font-bold">Biographie</span>
             <textarea v-model="fiche.bio" rows="4" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]" />
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-[13px] font-bold">Profil LinkedIn</span>
+            <input v-model="fiche.linkedin" type="url" placeholder="https://www.linkedin.com/in/…" class="w-full rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]">
           </label>
           <label class="block">
             <span class="mb-1.5 block text-[13px] font-bold">Texte alternatif du portrait</span>

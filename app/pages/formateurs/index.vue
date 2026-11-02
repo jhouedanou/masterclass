@@ -91,7 +91,7 @@ useFilAriane(mailles)
             <p class="mb-2.5 text-[13.5px] font-bold" :class="teinte(formateur.programmePrincipal)">
               {{ formateur.expertise }} · {{ compterModules(formateur.nbModules) }}
             </p>
-            <p class="mb-3.5 text-[14px] leading-[1.65] text-texte">{{ formateur.bio }}</p>
+            <p class="mb-3.5 max-w-prose text-[14px] leading-[1.65] text-texte">{{ formateur.bio }}</p>
             <ul class="flex flex-wrap gap-2 text-[12.5px]">
               <li v-for="m in formateur.modules" :key="m.id">
                 <NuxtLink

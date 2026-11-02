@@ -44,7 +44,7 @@ function basculer(i: number) {
       </h3>
       <p
         v-if="ouvert === i"
-        class="mt-2.5 leading-relaxed text-texte"
+        class="mt-2.5 max-w-prose leading-relaxed text-texte"
         :class="petit ? 'text-[14px]' : 'text-[14.5px]'"
       >
         {{ item.reponse }}

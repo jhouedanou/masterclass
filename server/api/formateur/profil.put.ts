@@ -1,6 +1,7 @@
 import type { Formateur } from '#shared/types'
 import { majFormateur, trouverFormateur, type ChampsProfilFormateur } from '../../database/catalogue'
 import { exigerFormateur } from '../../utils/session'
+import { lienLinkedin } from '../../utils/texte'
 
 /**
  * Profil formateur (planche D, écran 02). Le formateur pilote son identité
@@ -17,7 +18,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody<
-    Partial<Pick<Formateur, 'nom' | 'expertise' | 'bio' | 'photoAlt' | 'emailPro' | 'whatsapp'>>
+    Partial<Pick<Formateur, 'nom' | 'expertise' | 'bio' | 'presentation' | 'linkedin' | 'photoAlt' | 'emailPro' | 'whatsapp'>>
   >(event)
 
   const champs: ChampsProfilFormateur = {}
@@ -27,6 +28,8 @@ export default defineEventHandler(async (event) => {
   }
   if (body.expertise !== undefined) champs.expertise = body.expertise.trim()
   if (body.bio !== undefined) champs.bio = body.bio.trim()
+  if (body.presentation !== undefined) champs.presentation = body.presentation.trim()
+  if (body.linkedin !== undefined) champs.linkedin = lienLinkedin(body.linkedin)
   if (body.photoAlt !== undefined) champs.photoAlt = body.photoAlt.trim()
   if (body.emailPro !== undefined) {
     const email = body.emailPro.trim()

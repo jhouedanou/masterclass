@@ -176,6 +176,9 @@ export function versFormateur(row: FormateurRow): Formateur {
     nom: row.nom,
     expertise: row.expertise,
     bio: row.bio,
+    // Absentes tant que la migration 49 n'est pas passée : la fiche s'affiche comme avant.
+    presentation: row.presentation || undefined,
+    linkedin: row.linkedin || undefined,
     programmePrincipal: row.programme_principal,
     photo: row.photo,
     photoAlt: row.photo_alt || undefined,

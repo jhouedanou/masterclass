@@ -181,7 +181,7 @@ Limites connues :
   plus de bouton d'action ;
 - aucune expiration automatique, aucun rappel sous 48 h, aucun événement Google Agenda (mode
   simulation) : surveiller le bloc « À traiter » ;
-- seul l'apprenant reçoit un e-mail aux changements de statut ; le formateur n'est pas prévenu.
+- l'apprenant reçoit un e-mail à chaque changement de statut ; le formateur reçoit un e-mail quand la séance est planifiée (date réelle obligatoire).
 
 ---
 

@@ -15,8 +15,8 @@ async function supabaseHeures(id: string, heures: number) {
   const { error } = await supabase().from('demandes_coaching_prive').update({ heures }).eq('id', id)
   if (error) throw createError({ statusCode: 500, statusMessage: 'Mise à jour des heures impossible' })
 }
-import { trouverUtilisateur } from '../../database/comptes'
-import { notifierCompte } from '../../utils/notifications'
+import { trouverCompteFormateur, trouverUtilisateur } from '../../database/comptes'
+import { notifier, notifierCompte } from '../../utils/notifications'
 import { exigerSection } from '../../utils/session'
 
 type Action = 'etudier' | 'confirmer' | 'marquer-payee' | 'planifier' | 'realisee' | 'refuser'
@@ -53,9 +53,9 @@ function libelleCreneau(c: CreneauCoaching): string {
  * Traitement d'une demande par l'équipe (planche C, écran 05) : confirmation
  * et lien de paiement, encaissement, planification avec le lien de session,
  * clôture, refus motivé. Chaque action est journalisée et l'apprenant est
- * prévenu par e-mail. Le formateur ne reçoit rien : l'événement Google Agenda
- * est posé sur l'agenda de l'équipe, sans invités (voir `utils/googleAgenda`),
- * et aucun rappel n'est programmé côté plateforme.
+ * prévenu par e-mail ; le formateur l'est aussi quand la séance est planifiée.
+ * L'événement Google Agenda est posé sur l'agenda de l'équipe, sans invités
+ * (voir `utils/googleAgenda`), et aucun rappel n'est programmé côté plateforme.
  */
 export default defineEventHandler(async (event) => {
   const admin = await exigerSection(event, 'coaching-prive')
@@ -68,6 +68,9 @@ export default defineEventHandler(async (event) => {
     commentaire?: string
     /** Heures retenues par l'équipe (1 h / 2 h / 3 h), à la proposition du créneau. */
     heures?: number
+    /** Planification : date et heure réelles de la séance (« 2026-11-14 », « 10:00 »). */
+    dateSeance?: string
+    heureSeance?: string
   }>(event)
 
   const transition = TRANSITIONS[body.action]
@@ -82,12 +85,28 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  // Planifier exige une date réelle : les créneaux de la demande sont
+  // hebdomadaires (« mardi 18h – 20h »), et la réunion Zoom partait sans date,
+  // à l'instant de la planification.
+  const dateSeance = (body.dateSeance ?? '').trim()
+  const heureSeance = (body.heureSeance ?? '').trim().slice(0, 5)
+  if (body.action === 'planifier' && (!/^\d{4}-\d{2}-\d{2}$/.test(dateSeance) || !/^\d{2}:\d{2}$/.test(heureSeance))) {
+    throw createError({ statusCode: 422, statusMessage: 'La date et l’heure de la séance sont obligatoires' })
+  }
+  const finSeance = () => {
+    const [h, m] = heureSeance.split(':').map(Number)
+    const total = (h ?? 0) * 60 + (m ?? 0) + demande.heures * 60
+    return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+  }
+
   const creneau =
-    typeof body.creneau === 'string'
-      ? body.creneau.trim()
-      : body.creneau?.date || body.creneau?.jour
-        ? libelleCreneau(body.creneau)
-        : ''
+    body.action === 'planifier'
+      ? libelleCreneau({ date: dateSeance, debut: heureSeance, fin: finSeance() })
+      : typeof body.creneau === 'string'
+        ? body.creneau.trim()
+        : body.creneau?.date || body.creneau?.jour
+          ? libelleCreneau(body.creneau)
+          : ''
   const lienSession = (body.lienSession ?? '').trim()
   const motif = (body.motif ?? '').trim()
 
@@ -128,12 +147,7 @@ export default defineEventHandler(async (event) => {
   if (body.action === 'planifier') {
     const formateur = await trouverFormateur(demande.formateurId)
     const sujet = `Coaching privé — ${formateur?.nom ?? ''} · ${demande.apprenant}`
-    // Le créneau structuré donne l'heure exacte ; un créneau saisi en toutes
-    // lettres ne la donne pas, la séance part alors de l'instant présent.
-    const debutIso =
-      typeof body.creneau === 'object' && body.creneau?.date
-        ? debutSession(body.creneau.date, body.creneau.debut).toISOString()
-        : new Date().toISOString()
+    const debutIso = debutSession(dateSeance, heureSeance).toISOString()
     const dureeMinutes = demande.heures * 60
 
     const reunion = await creerReunion({ sujet, debutIso, dureeMinutes })
@@ -189,6 +203,27 @@ export default defineEventHandler(async (event) => {
     formateur: formateur?.nom ?? '',
   }
   if (apprenant) await notifierCompte(apprenant, 'coaching-prive-statut', variables)
+
+  // Le formateur est prévenu de la séance planifiée : il en est l'hôte, et
+  // la réunion ne démarre pas sans lui.
+  if (body.action === 'planifier') {
+    const compte = await trouverCompteFormateur(demande.formateurId)
+    const adresse = compte?.email || formateur?.emailPro
+    if (adresse) {
+      await notifier({
+        canal: 'email',
+        a: adresse,
+        modele: 'coaching-prive-formateur',
+        variables: {
+          prenom: compte?.prenom ?? '',
+          nom: demande.apprenant,
+          creneau: majee.creneau ?? creneau,
+          heures: String(demande.heures),
+          salle: `/formateur/session/prive-${demande.id}`,
+        },
+      })
+    }
+  }
 
   return majee
 })

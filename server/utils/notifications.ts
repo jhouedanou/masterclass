@@ -40,6 +40,9 @@ export type ModeleNotification =
   | 'activation-coaching-demandee'
   | 'achat-confirme'
   | 'attestation-delivree'
+  | 'live-inscription'
+  | 'session-reservee'
+  | 'coaching-prive-formateur'
 
 export interface Notification {
   canal: CanalNotification
@@ -74,6 +77,9 @@ export const SUJETS: Record<ModeleNotification, string> = {
   'activation-coaching-demandee': 'Un formateur demande l’activation du coaching privé',
   'achat-confirme': 'Votre paiement est confirmé',
   'attestation-delivree': 'Votre attestation de participation est prête',
+  'live-inscription': 'Votre inscription à la Live Session est confirmée',
+  'session-reservee': 'Votre place en coaching collectif est réservée',
+  'coaching-prive-formateur': 'Une séance de coaching privé est planifiée avec vous',
 }
 
 const piloteConsole: PiloteNotifications = {

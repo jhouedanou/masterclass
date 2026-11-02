@@ -38,7 +38,7 @@ npm run build && node .output/server/index.mjs
 Créer un fichier `.env` à la racine (non versionné, comme tout fichier `.env*`) :
 
 ```bash
-NUXT_PUBLIC_SITE_URL=https://masterclass-jhouedanous-projects.vercel.app
+NUXT_PUBLIC_SITE_URL=https://emasterclass.bigfive.solutions
 SUPABASE_URL=            # console Supabase → Settings → API
 SUPABASE_SECRET_KEY=         # Settings → API keys → Secret keys — jamais la clé publishable
 ```
@@ -695,8 +695,10 @@ curl -X POST https://<site>/api/taches/purger -H "Authorization: Bearer $TACHES_
 - **Onglets détaillés de Performances** (Funnel / Ventes / Visites / Clients) : ils dépendent des
   mesures d'audience, donc du branchement de Google Tag Manager. Tous les autres écrans de la
   planche C sont en place.
-- **Zoom Meeting SDK** : la salle de session est en place côté interface ; le jeton serveur, la
-  sélection Component/Client View et le contrôle de compatibilité restent à brancher.
+- **Zoom Meeting SDK** : en place (`app/composables/useZoom.ts`, `server/api/zoom/signature.post.ts`) :
+  jeton signé par le serveur, Component View ou Client View selon l'appareil. Le formateur hôte
+  reçoit le ZAK du compte Zoom (salle ouverte seulement) : l'application Server-to-Server doit
+  avoir les portées `user:read:zak:admin` et `meeting:read:meeting:admin`.
 - **Mesures d'audience** : visites, visiteurs uniques, taux de conversion, appareils, sources et
   page la plus vue n'ont aucune source en base — leur collecte passe par Google Tag Manager. L'écran
   Performances affiche « — » à leur place plutôt qu'une estimation ; tout le reste (ventes, CA,

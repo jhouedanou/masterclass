@@ -16,7 +16,9 @@ const brouillon = reactive({
   expertise: profil.value?.expertise ?? '',
   emailPro: profil.value?.emailPro ?? '',
   whatsapp: profil.value?.whatsapp ?? '',
+  presentation: profil.value?.presentation ?? '',
   bio: profil.value?.bio ?? '',
+  linkedin: profil.value?.linkedin ?? '',
   photoAlt: profil.value?.photoAlt ?? '',
 })
 const enregistre = ref(false)
@@ -25,7 +27,16 @@ const erreur = ref('')
 async function enregistrer() {
   erreur.value = ''
   try {
-    await $fetch('/api/formateur/profil', { method: 'PUT', body: brouillon })
+    // Présentation et LinkedIn ne partent que s'ils ont changé (migration 49).
+    const { presentation, linkedin, ...reste } = brouillon
+    await $fetch('/api/formateur/profil', {
+      method: 'PUT',
+      body: {
+        ...reste,
+        ...(presentation !== (profil.value?.presentation ?? '') ? { presentation } : {}),
+        ...(linkedin !== (profil.value?.linkedin ?? '') ? { linkedin } : {}),
+      },
+    })
     await refresh()
     modification.value = false
     enregistre.value = true
@@ -121,7 +132,15 @@ async function envoyerPhoto(evenement: Event) {
         <input v-model="brouillon.whatsapp" type="tel" inputmode="tel" :disabled="!modification" class="w-full rounded-[10px] border-[1.5px] border-ligne px-3.5 py-3 text-[14px] disabled:bg-fond-clair">
       </label>
       <label class="block sm:col-span-2">
-        <span class="mb-1.5 block text-[13px] font-bold">Bio publique</span>
+        <span class="mb-1.5 block text-[13px] font-bold">Présentation (courte, en tête de votre fiche)</span>
+        <textarea v-model="brouillon.presentation" :disabled="!modification" rows="2" maxlength="400" class="w-full rounded-[10px] border-[1.5px] border-ligne px-3.5 py-3 text-[14px] leading-relaxed disabled:bg-fond-clair" />
+      </label>
+      <label class="block sm:col-span-2">
+        <span class="mb-1.5 block text-[13px] font-bold">Profil LinkedIn</span>
+        <input v-model="brouillon.linkedin" type="url" :disabled="!modification" placeholder="https://www.linkedin.com/in/…" class="w-full rounded-[10px] border-[1.5px] border-ligne px-3.5 py-3 text-[14px] disabled:bg-fond-clair">
+      </label>
+      <label class="block sm:col-span-2">
+        <span class="mb-1.5 block text-[13px] font-bold">Biographie publique</span>
         <textarea v-model="brouillon.bio" :disabled="!modification" rows="3" class="min-h-[84px] w-full rounded-[10px] border-[1.5px] border-ligne px-3.5 py-3 text-[14px] leading-relaxed disabled:bg-fond-clair" />
       </label>
       <label class="block sm:col-span-2">

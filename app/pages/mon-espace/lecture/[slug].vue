@@ -73,6 +73,7 @@ const lecteur = useLecteurVideo({
   // si bien qu'une reprise plus courte que la première séance ne comptait pour
   // rien. Un chapitre vu en deux fois plafonnait à sa plus longue moitié.
   dejaVues: () => data.value?.chapitres.find((c) => c.position === index.value)?.secondesVues ?? 0,
+  libelles: () => ({ module: moduleCourant.value.titre, chapitre: chapitre.value?.titre }),
 })
 
 const video = ref<HTMLVideoElement | null>(null)
@@ -256,6 +257,16 @@ const moduleComplet = computed(
  * obtenue — l'enchaînement devenait impraticable sur un module terminé.
  */
 const completALOuverture = (data.value?.acces.progression ?? 0) >= 100
+
+// Usage pédagogique (GA4 seulement) : ouverture, et module bouclé pendant la
+// séance — une relecture d'un module déjà terminé ne le compte pas deux fois.
+const { suivrePedagogie } = useSuivi()
+onMounted(() => signalerOuvertureModule(moduleCourant.value.id, moduleCourant.value.titre))
+const stopCompletion = watch(moduleComplet, (complet) => {
+  if (!complet || completALOuverture) return
+  stopCompletion()
+  suivrePedagogie('module_complete', { moduleId: moduleCourant.value.id, moduleTitre: moduleCourant.value.titre })
+})
 
 /**
  * Fin d'un chapitre : le suivant s'enchaîne, ou le module se clôt.

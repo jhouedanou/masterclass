@@ -44,6 +44,7 @@ if (!data.value) {
 
 const moduleCourant = computed(() => data.value!.module)
 usePagePrivee(moduleCourant.value.titre)
+onMounted(() => signalerOuvertureModule(moduleCourant.value.id, moduleCourant.value.titre))
 
 const social = computed(() => moduleCourant.value.programme === 'social-media')
 const total = computed(() => data.value!.chapitres.length)

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { LiveSession } from '#shared/types'
+
 definePageMeta({ layout: 'formateur', middleware: 'formateur' })
 usePagePrivee('Mes sessions — formateur')
 
@@ -23,6 +25,9 @@ const ordonnees = computed(() =>
   [...(sessions.value ?? [])].sort((a, b) => b.date.localeCompare(a.date)),
 )
 const aujourdhui = new Date().toISOString().slice(0, 10)
+
+const { data: lives } = await useFetch<LiveSession[]>('/api/formateur/live-sessions')
+const livesAVenir = computed(() => (lives.value ?? []).filter((l) => l.date >= aujourdhui && l.statut === 'publiee'))
 </script>
 
 <template>
@@ -83,9 +88,28 @@ const aujourdhui = new Date().toISOString().slice(0, 10)
     </AdminTableauSimple>
 
     <p class="mt-3 text-[12px] leading-relaxed text-discret">
-      Le planning est fixé par l’équipe Big Five. La présence Zoom est pointée automatiquement ; les
-      notes proviennent de l’évaluation post-session des apprenants. Cliquer « inscrits » ouvre la
+      Le planning est fixé par l’équipe Big Five. La présence est relevée par l’équipe après la
+      séance ; les notes proviennent de l’évaluation post-session des apprenants. Cliquer « inscrits » ouvre la
       liste avec accès aux fiches profils.
     </p>
+
+    <template v-if="livesAVenir.length">
+      <h2 class="mt-10 font-title text-[19px] font-light">Mes Live Sessions</h2>
+      <AdminTableauSimple
+        class="mt-4"
+        :colonnes="['Date · Heure', 'Live Session', 'Inscrits', '']"
+        :largeurs="['135px', 'auto', '120px', '170px']"
+        largeur-min="640px"
+      >
+        <tr v-for="live in livesAVenir" :key="live.id">
+          <td class="px-4 py-3">{{ formatDateCourte(live.date) }} · {{ live.heure }}</td>
+          <td class="px-4 py-3 font-bold">{{ live.titre }}</td>
+          <td class="px-4 py-3">{{ live.inscrits }} / {{ live.places }}</td>
+          <td class="px-4 py-3 text-right">
+            <NuxtLink :to="`/formateur/session/${live.id}`" class="text-[12.5px] font-bold text-social hover:underline">Démarrer la session →</NuxtLink>
+          </td>
+        </tr>
+      </AdminTableauSimple>
+    </template>
   </div>
 </template>
