@@ -8,7 +8,7 @@ import { listerFormateurs, listerModules, listerThematiques } from '../../databa
 import { listerDemandesCoachingPrive, listerSessions } from '../../database/coaching'
 import { listerCertificats, listerTransactions } from '../../database/commerce'
 import { listerAcces, listerUtilisateurs } from '../../database/comptes'
-import { chiffreAffaires, DEBUT_PERIODE, surPeriode } from '../../utils/indicateurs'
+import { chiffreAffaires, DEBUT_PERIODE, surPeriode, transactionsReussies } from '../../utils/indicateurs'
 import { exigerAdmin, sectionsEffectives } from '../../utils/session'
 
 /**
@@ -71,8 +71,11 @@ export default defineEventHandler(async (event) => {
 
   // Les objectifs du back-office sont mensuels : sans filtre de mois, les
   // compteurs comparés portent sur les trente derniers jours.
+  // Réussies seulement dans les deux cas : `surPeriode` les filtre, le filtre
+  // de mois doit en faire autant, sans quoi le CA et les inscriptions payantes
+  // du mois comptaient aussi les paiements échoués ou en attente.
   const periode = mois
-    ? retenues.filter((t) => t.date.slice(0, 7) === mois)
+    ? transactionsReussies(retenues).filter((t) => t.date.slice(0, 7) === mois)
     : surPeriode(retenues, DEBUT_PERIODE())
   const ca = chiffreAffaires(periode)
   const frais = Math.round((ca * reglages.fraisPaiementPourcent) / 100)

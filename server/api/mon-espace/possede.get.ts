@@ -6,5 +6,8 @@ export default defineEventHandler(async (event) => {
   const utilisateur = await lireSession(event)
   const { moduleId } = getQuery(event) as { moduleId?: string }
   if (!utilisateur || !moduleId) return { possede: false }
-  return { possede: (await trouverAcces(utilisateur.id, moduleId)) !== null }
+  // Un accès révoqué ne compte pas : la commande le rachète (commandes.post.ts)
+  // et la fiche doit alors émettre ViewContent et proposer l'achat.
+  const acces = await trouverAcces(utilisateur.id, moduleId)
+  return { possede: acces !== null && !acces.revoqueLe }
 })
