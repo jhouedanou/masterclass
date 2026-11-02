@@ -1,6 +1,6 @@
 <template>
   <div class="grid min-h-screen lg:grid-cols-2">
-    <div class="flex flex-col justify-center px-6 py-12 sm:px-12">
+    <div class="flex flex-col justify-center px-6 py-12 md:px-16">
       <NuxtLink to="/" class="mb-10 inline-block" aria-label="E-Masterclass Big Five — accueil">
         <img
           src="/images/brand/logo.png"

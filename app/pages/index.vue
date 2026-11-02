@@ -20,7 +20,9 @@ const { data: banniere } = useFetch<{ cle: string, contenu: Partial<ContenuBanni
   '/api/vitrine/banniere',
   { lazy: true },
 )
-const { data: formateurs } = await useFetch<(Formateur & { nbModules: number })[]>('/api/formateurs')
+const { data: formateurs } = await useFetch<(Formateur & { nbModules: number })[]>('/api/formateurs', {
+  query: { equipe: 1 },
+})
 
 // Prochaines Live Sessions (brief du 02/11) : le bloc s'efface tant qu'aucune
 // n'est programmée.
@@ -230,9 +232,17 @@ useJsonLd({
       </div>
     </section>
 
-    <!-- formateurs -->
-    <section class="sur-sombre bg-encre py-14 text-white">
-      <div class="conteneur">
+    <!-- formateurs : tous ceux de la base, en défilement, sur le motif de la marque -->
+    <section class="sur-sombre relative overflow-hidden bg-encre py-14 text-white">
+      <img
+        src="/images/brand/pattern.png"
+        alt=""
+        aria-hidden="true"
+        width="1144"
+        height="1090"
+        class="pointer-events-none absolute inset-y-0 right-0 h-full w-[60%] max-w-[720px] object-cover opacity-[.12]"
+      >
+      <div class="conteneur relative">
         <UiEnTeteSection
           taille-surtitre="page"
           surtitre="Nos formateurs"
@@ -241,13 +251,7 @@ useJsonLd({
           ton="clair"
           clair
         />
-        <div class="mt-8 grid gap-5.5 sm:grid-cols-2 lg:grid-cols-4">
-          <CatalogueFormateurCarteSombre
-            v-for="formateur in (formateurs ?? []).slice(0, 4)"
-            :key="formateur.id"
-            :formateur="formateur"
-          />
-        </div>
+        <HomeDefilementFormateurs v-if="formateurs?.length" :formateurs="formateurs" class="mt-8" />
         <UiBaseButton to="/formateurs" variante="blanc" class="mt-6.5">
           Découvrir tous les formateurs
         </UiBaseButton>

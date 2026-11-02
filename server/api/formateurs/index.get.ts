@@ -1,7 +1,10 @@
 import { listerFormateurs, listerModules, listerThematiques } from '../../database/catalogue'
 import { estDisponible, formateurPublic } from '../../utils/public'
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
+  // L'accueil présente toute l'équipe (brief du 02/11) : fiches complètes,
+  // module disponible ou non. La page /formateurs garde sa règle.
+  const { equipe } = getQuery(event) as { equipe?: string }
   const [formateurs, modules, thematiques] = await Promise.all([
     listerFormateurs(),
     listerModules(),
@@ -12,7 +15,7 @@ export default defineEventHandler(async () => {
   // rien proposer d'acheter avec lui.
   return formateurs.flatMap((f) => {
     const siens = modules.filter((m) => m.formateurId === f.id && estDisponible(m))
-    if (!siens.length) return []
+    if (!siens.length && !(equipe && f.ficheComplete)) return []
     return [{
       ...formateurPublic(f),
       nbModules: siens.length,
