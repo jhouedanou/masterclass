@@ -372,6 +372,39 @@ export type SessionCoachingRow = {
   cree_le: string
 }
 
+export type StatutLiveSessionSql = 'brouillon' | 'publiee' | 'annulee' | 'terminee'
+
+export type LiveSessionRow = {
+  id: string
+  slug: string
+  titre: string
+  resume: string
+  description: string
+  prerequis: string[]
+  objectifs: string[]
+  formateur_id: string
+  date_seance: string
+  heure: string
+  duree_minutes: number
+  prix_fcfa: number
+  places: number
+  inscrits: number
+  statut: StatutLiveSessionSql
+  image: string | null
+  zoom_reunion_id: string | null
+  zoom_mot_de_passe: string | null
+  zoom_lien_participation: string | null
+  zoom_lien_hote: string | null
+  cree_le: string
+  maj_le: string
+}
+
+export type InscriptionLiveRow = {
+  live_session_id: string
+  utilisateur_id: string
+  inscrit_le: string
+}
+
 export type InscriptionSessionRow = {
   session_id: string
   utilisateur_id: string
@@ -952,6 +985,27 @@ export type Database = {
       quiz: Table<QuizRow, 'seuil_reussite' | 'tentatives_par_jour' | 'cree_le' | 'maj_le'>
       quiz_questions: Table<QuizQuestionRow, 'id' | 'niveau' | 'competence' | 'renvois'>
       quiz_tentatives: Table<QuizTentativeRow, 'id' | 'jour' | 'cree_le'>
+      live_sessions: Table<
+        LiveSessionRow,
+        | 'id'
+        | 'resume'
+        | 'description'
+        | 'prerequis'
+        | 'objectifs'
+        | 'duree_minutes'
+        | 'prix_fcfa'
+        | 'places'
+        | 'inscrits'
+        | 'statut'
+        | 'image'
+        | 'zoom_reunion_id'
+        | 'zoom_mot_de_passe'
+        | 'zoom_lien_participation'
+        | 'zoom_lien_hote'
+        | 'cree_le'
+        | 'maj_le'
+      >
+      inscriptions_live: Table<InscriptionLiveRow, 'inscrit_le'>
     }
     // `{ [_ in never]: never }` est la forme qu'attend postgrest-js pour une
     // collection vide : `Record<string, never>` ne satisfait pas la contrainte
@@ -968,6 +1022,10 @@ export type Database = {
       }
       enregistrer_visionnage: {
         Args: { p_utilisateur_id: string; p_chapitre_id: string; p_secondes_vues: number }
+        Returns: number
+      }
+      inscrire_live_session: {
+        Args: { p_live_session_id: string; p_utilisateur_id: string }
         Returns: number
       }
       reserver_place_session: {

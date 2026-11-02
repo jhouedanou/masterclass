@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Formateur, SessionCoaching, Thematique } from '#shared/types'
+import type { Formateur, LiveSession, SessionCoaching, Thematique } from '#shared/types'
 import { dureeSessionEnHeures, PLACES_SESSION } from '#shared/utils/coaching'
 import { compterPlaces } from '#shared/utils/compteurs'
 
@@ -23,6 +23,10 @@ type SessionApprenant = SessionCoaching & {
 }
 
 const { data: sessions, refresh } = await useFetch<SessionApprenant[]>('/api/mon-espace/sessions')
+const { data: lives } = await useFetch<(LiveSession & { salleOuverte: boolean; passee: boolean })[]>(
+  '/api/mon-espace/live-sessions',
+)
+const livesAVenir = computed(() => (lives.value ?? []).filter((l) => !l.passee))
 
 const completion = computed(() => sessions.value?.[0]?.completionProfil ?? 100)
 const aVenir = computed(() => (sessions.value ?? []).filter((s) => !s.passee))
@@ -48,7 +52,7 @@ async function reserver(reponses: { preoccupation: string; attente: string }) {
       method: 'POST',
       body: { sessionId: reservation.value!.id, ...reponses },
     })
-    message.value = 'Place réservée. Vos sujets ont été transmis au formateur — rappel prévu.'
+    message.value = 'Place réservée. Vos sujets ont été transmis au formateur, et la confirmation vous a été envoyée par e-mail.'
     reservation.value = null
     await refresh()
   } catch (e) {
@@ -151,7 +155,7 @@ async function noter(valeurs: { note: number; commentaire: string }) {
             Rejoindre la session →
           </UiBaseButton>
           <span v-else-if="session.etat === 'inscrit'" class="rounded-full bg-succes-voile px-3 py-1.5 text-[12px] font-bold text-succes">
-            ✓ Inscrit · rappel prévu
+            ✓ Inscrit
           </span>
           <UiBaseButton v-else-if="session.etat === 'verrou-profil'" taille="sm" variante="contour" to="/mon-espace/profil">
             🔒 Complétez votre profil
@@ -174,8 +178,28 @@ async function noter(valeurs: { note: number; commentaire: string }) {
     </div>
 
     <p class="mt-6 text-[12.5px] text-discret">
-      Rappels automatiques : email + WhatsApp à J-1 et H-1. Le lien Zoom s’active 15 minutes avant le début.
+      La salle Zoom s’ouvre 15 minutes avant le début, depuis cette page.
     </p>
+
+    <template v-if="livesAVenir.length">
+      <h2 class="mt-12 text-[24px] font-light">Vos Live Sessions</h2>
+      <div class="mt-4 flex flex-col gap-3">
+        <article
+          v-for="live in livesAVenir"
+          :key="live.id"
+          class="flex flex-wrap items-center justify-between gap-4 rounded-[14px] border border-ligne-douce bg-white p-5"
+        >
+          <div>
+            <p class="text-[12px] font-bold tracking-[0.08em] text-social uppercase">Live Session</p>
+            <NuxtLink :to="`/live-sessions/${live.slug}`" class="mt-1 block text-[17px] font-bold hover:underline">{{ live.titre }}</NuxtLink>
+            <p class="mt-1 text-[13.5px] text-texte">{{ JOUR_COURT(live.date) }} · {{ live.heure.replace(':', 'h') }} · {{ formatDuree(live.dureeMinutes) }}</p>
+          </div>
+          <span v-if="live.statut === 'annulee'" class="rounded-full bg-[#fdeeee] px-3 py-1.5 text-[12px] font-bold text-erreur">Annulée</span>
+          <UiBaseButton v-else-if="live.salleOuverte" :to="`/mon-espace/session/${live.id}`" taille="sm">Rejoindre la session →</UiBaseButton>
+          <span v-else class="rounded-full bg-succes-voile px-3 py-1.5 text-[12px] font-bold text-succes">✓ Inscrit · salle ouverte 15 min avant</span>
+        </article>
+      </div>
+    </template>
 
     <EspaceModaleSujets
       v-if="reservation"

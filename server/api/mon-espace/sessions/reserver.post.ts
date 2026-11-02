@@ -1,4 +1,6 @@
-import { reserverPlace } from '../../../database/coaching'
+import { listerThematiques, trouverFormateur } from '../../../database/catalogue'
+import { liensZoomSession, reserverPlace, trouverSession } from '../../../database/coaching'
+import { notifier } from '../../../utils/notifications'
 import { exigerUtilisateur } from '../../../utils/session'
 
 /**
@@ -26,6 +28,32 @@ export default defineEventHandler(async (event) => {
     // Forme abrégée transmise au formateur avec les sujets.
     apprenant: `${utilisateur.prenom} ${utilisateur.nom[0]}.`,
   })
+
+  // Confirmation par e-mail, avec l'accès à la salle et le lien Zoom de
+  // secours : la réservation n'en envoyait aucune.
+  const session = await trouverSession(sessionId)
+  if (session) {
+    const [thematiques, formateur, liens] = await Promise.all([
+      listerThematiques(),
+      trouverFormateur(session.formateurId),
+      liensZoomSession(session.id),
+    ])
+    await notifier({
+      canal: 'email',
+      a: utilisateur.email,
+      modele: 'session-reservee',
+      variables: {
+        prenom: utilisateur.prenom,
+        titre: session.titre ?? thematiques.find((t) => t.id === session.thematiqueId)?.nom ?? 'Coaching collectif',
+        date: session.date,
+        heure: session.heure.slice(0, 5),
+        formateur: formateur?.nom ?? '',
+        salle: `/mon-espace/session/${session.id}`,
+        lienZoom: liens.lienParticipation ?? '',
+        ouvertureMinutes: String(session.ouvertureSalleMinutes),
+      },
+    })
+  }
 
   return { ok: true, inscrits }
 })

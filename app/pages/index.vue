@@ -2,6 +2,7 @@
 import type {
   ContenuBanniere,
   Formateur,
+  LiveSession,
   Module,
   ProgrammePublic,
   Thematique,
@@ -20,6 +21,13 @@ const { data: banniere } = useFetch<{ cle: string, contenu: Partial<ContenuBanni
   { lazy: true },
 )
 const { data: formateurs } = await useFetch<(Formateur & { nbModules: number })[]>('/api/formateurs')
+
+// Prochaines Live Sessions (brief du 02/11) : le bloc s'efface tant qu'aucune
+// n'est programmée.
+const { data: lives } = useFetch<{ aVenir: (LiveSession & { formateur: Formateur | null })[] }>(
+  '/api/live-sessions',
+  { query: { limite: 3 }, lazy: true },
+)
 
 // Les repères chiffrés de la maquette — « 18 modules », « 9 modules », « 3
 // thématiques » — étaient écrits en dur et mentaient dès qu'un module changeait
@@ -201,6 +209,24 @@ useJsonLd({
           :thematiques="programmeSelectionne.thematiques"
           :couleur="selection === 'social-media' ? 'social' : 'entrepreneurs'"
         />
+      </div>
+    </section>
+
+    <!-- Live Sessions à venir -->
+    <section v-if="lives?.aVenir.length" class="border-t border-ligne-claire bg-fond-clair py-14">
+      <div class="conteneur">
+        <div class="flex flex-wrap items-end justify-between gap-6">
+          <UiEnTeteSection
+            taille-surtitre="page"
+            surtitre="Live Sessions"
+            titre="Les prochaines séances en direct"
+            intro="Retrouvez nos formateurs en direct sur Zoom, depuis la plateforme."
+          />
+          <UiBaseButton to="/live-sessions" variante="contour">Toutes les Live Sessions</UiBaseButton>
+        </div>
+        <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <LiveCarteLiveSession v-for="live in lives.aVenir" :key="live.id" :live="live" />
+        </div>
       </div>
     </section>
 

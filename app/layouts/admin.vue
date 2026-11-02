@@ -38,6 +38,7 @@ const tousLesLiens: Lien[] = [
   { libelle: 'Médiathèque vidéo', chemin: '/admin/mediatheque', icone: 'ph:film-strip', section: 'modules-chapitres' },
   { libelle: 'Formateurs', chemin: '/admin/formateurs', icone: 'ph:users-three', section: 'formateurs' },
   { libelle: 'Calendrier des sessions', chemin: '/admin/sessions', icone: 'ph:calendar-dots', section: 'calendrier-sessions' },
+  { libelle: 'Live Sessions', chemin: '/admin/live-sessions', icone: 'ph:broadcast', section: 'calendrier-sessions' },
   { libelle: 'Coaching privé', chemin: '/admin/coaching-prive', icone: 'ph:target', section: 'coaching-prive' },
   { libelle: 'Apprenants', chemin: '/admin/apprenants', icone: 'ph:student', section: 'apprenants' },
   { libelle: 'Pédagogie', chemin: '/admin/pedagogie', icone: 'ph:graduation-cap', section: 'apprenants' },

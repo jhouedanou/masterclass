@@ -28,6 +28,7 @@ const { reinitialiser } = useConsentement()
         <NuxtLink to="/programmes/social-media">Social Média</NuxtLink>
         <NuxtLink to="/programmes/entrepreneurs">Entrepreneurs</NuxtLink>
         <NuxtLink to="/modules">Tous les modules</NuxtLink>
+        <NuxtLink to="/live-sessions">Live Sessions</NuxtLink>
         <NuxtLink to="/sessions">Calendrier des sessions</NuxtLink>
       </nav>
 

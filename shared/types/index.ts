@@ -249,6 +249,31 @@ export interface SessionCoaching {
   zoomReunionId?: string
 }
 
+/** Live Session (brief du 02/11) : séance en direct ouverte au public, avec
+ *  sa fiche et son prix. Rien à voir avec le coaching collectif, réservé aux
+ *  acheteurs d'un module. */
+export interface LiveSession {
+  id: string
+  slug: string
+  titre: string
+  resume: string
+  description: string
+  prerequis: string[]
+  objectifs: string[]
+  formateurId: string
+  /** « 2026-11-20 » */
+  date: string
+  /** « 19:00 », heure d'Abidjan */
+  heure: string
+  dureeMinutes: number
+  /** 0 : gratuite. */
+  prixFcfa: number
+  places: number
+  inscrits: number
+  statut: 'brouillon' | 'publiee' | 'annulee' | 'terminee'
+  image?: string
+}
+
 export type CategorieArticle = 'Social Média' | 'Entrepreneuriat' | 'Actualités E-Masterclass Big Five'
 
 export interface Article {
