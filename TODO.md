@@ -1,5 +1,49 @@
 # Reste à faire — E-Masterclass Big Five
 
+## Point au 2 novembre 2026 — brief tracking, Search Console, maquette, parcours
+
+Le code est sur la branche `jl/brief-tracking-maquette`. Ce qui suit se fait à la main.
+
+### Base hébergée (SQL Editor, dans l'ordre)
+- [ ] `supabase/en-ligne/48-live-sessions.sql` — tables des Live Sessions
+- [ ] `supabase/en-ligne/49-formateur-linkedin-presentation.sql` — présentation et LinkedIn
+- [ ] `supabase/en-ligne/rattrapage-articles-demo.sql` — retire les 5 articles de démonstration
+      (4 sont publiés aujourd'hui et figurent dans le sitemap)
+
+### Vercel
+- [ ] `NUXT_PUBLIC_SITE_URL=https://emasterclass.bigfive.solutions` en Production, et l'adresse
+      Preview sur l'environnement Preview (sinon les e-mails de Preview pointent vers la prod)
+- [ ] `META_CAPI_TEST_CODE=TEST88439` sur **Preview** seulement, le temps de la recette ; ignoré
+      en Production, à vider ensuite
+- [ ] `CRON_SECRET` = `TACHES_CLE`
+- [ ] Zoom : portées `user:read:zak:admin` et `meeting:read:meeting:admin` sur l'application
+      Server-to-Server (démarrage des réunions par le formateur)
+- [ ] Rappels J-1 / H-1 des sessions : non codés. Il faut l'offre Vercel Pro (tâches planifiées
+      à la minute ; l'offre Hobby est limitée à une exécution par jour et réservée à un usage
+      non commercial). Mail à la direction préparé.
+
+### GTM, GA4, Meta
+- [ ] Importer `docs/tracking/gtm-conteneur-e-masterclass.json` dans GTM-KVFTGVVX (fusion),
+      tester en Preview, publier — marche à suivre et checklist dans `docs/tracking/gtm-import.md`
+- [ ] GA4 : décocher « Changements de page basés sur l'historique du navigateur » (mesure
+      améliorée) et créer les dimensions personnalisées listées dans `gtm-import.md`
+
+### Search Console
+- [ ] DNS, zone `bigfive.solutions` : TXT `emasterclass` =
+      `google-site-verification=9d1VTQjQM6soBy_y1Woeot-dqMIIk5joFCJXy2nMzwg`
+      (contrôle : `dig TXT emasterclass.bigfive.solutions +short`)
+- [ ] Propriété de domaine validée, puis Sitemaps → `https://emasterclass.bigfive.solutions/sitemap.xml`
+
+### En attente d'autres personnes
+- Houefa : fiches formateurs (photo, présentation, biographie, LinkedIn)
+- Jérémie : signature en PNG transparent et nom du signataire (Paramètres → Attestations) ;
+  KYC carte et activation Wave auprès de FeexPay
+- Équipe : articles du blog
+- Big Five : passage à Vercel Pro, compte de service Google Agenda, paiement en ligne des Live
+  Sessions payantes (et sa `content_category`, proposée : `live_session`)
+
+---
+
 Point au **2 septembre 2026**. Le développement est à jour ; ce qui suit se commande, se fournit ou
 s'exécute. Le détail à transmettre à la direction de projet est dans la note partagée
 « Ouvrir E-Masterclass ».
