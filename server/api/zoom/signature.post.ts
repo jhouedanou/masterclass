@@ -10,7 +10,7 @@ import { liensZoomLive, trouverInscriptionLive, trouverSessionLive } from '../..
 import { DELAIS_LIVE } from '#shared/utils/live'
 import { liveVisiblePour, visibiliteLive } from '../../utils/live'
 import { exigerUtilisateur } from '../../utils/session'
-import { configZoom, debutSession, salleOuverte, signatureSdk } from '../../utils/zoom'
+import { accesHote, configZoom, debutSession, salleOuverte, signatureSdk } from '../../utils/zoom'
 
 /**
  * Autorisation d'entrée dans une salle (planche B, écran 11). Avant de signer :
@@ -33,6 +33,8 @@ export default defineEventHandler(async (event) => {
   let motDePasse: string | null = null
   let lienSecours: string | null = null
   let role: 0 | 1 = 0
+  /** Formateur de la séance : seul destinataire possible du ZAK. */
+  let formateurHote = false
   let sujet = ''
   let debut: Date
   let dureeMinutes = 120
@@ -57,6 +59,7 @@ export default defineEventHandler(async (event) => {
       }
     }
     role = hote || admin ? 1 : 0
+    formateurHote = hote
     const liens = await liensZoomLive(live.id)
     numeroReunion = liens.reunionId
     motDePasse = liens.motDePasse
@@ -85,6 +88,7 @@ export default defineEventHandler(async (event) => {
       }
     }
     role = hote || admin ? 1 : 0
+    formateurHote = hote
     const liens = await liensZoomSession(session.id)
     numeroReunion = liens.reunionId
     motDePasse = liens.motDePasse
@@ -105,6 +109,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 409, statusMessage: 'La séance n’est pas encore confirmée' })
     }
     role = hote || admin ? 1 : 0
+    formateurHote = hote
     numeroReunion = demande.zoomReunionId ?? null
     motDePasse = await motDePasseZoomDemande(demande.id)
     lienSecours = demande.lienSession ?? null
@@ -132,6 +137,19 @@ export default defineEventHandler(async (event) => {
 
   const reunion = numeroReunion ?? 'simulation'
   const { signature, sdkKey } = signatureSdk(reunion, role)
+
+  // Démarrage par le formateur : les réunions appartiennent au compte Zoom de
+  // Big Five et l'hôte entre le premier ; sans le ZAK de ce compte, le
+  // formateur attendait l'hôte comme ses apprenants. Ce ZAK permettrait de
+  // démarrer d'autres réunions du compte pendant sa durée de vie : il ne part
+  // qu'au formateur de la séance (pas à l'administration), salle ouverte. Le
+  // lien de démarrage relu suit la même règle (il porte lui aussi un jeton).
+  let zak: string | null = null
+  if (formateurHote && ouverte && numeroReunion) {
+    const hote = await accesHote(numeroReunion)
+    zak = hote.zak
+    lienSecours = hote.lienHote ?? lienSecours
+  }
   return {
     mode,
     signature,
@@ -143,6 +161,7 @@ export default defineEventHandler(async (event) => {
     role,
     sujet,
     lienSecours,
+    zak,
     ouverture: ouverture.toISOString(),
   }
 })

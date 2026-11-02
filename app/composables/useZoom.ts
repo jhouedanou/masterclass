@@ -15,6 +15,8 @@ export interface AutorisationZoom {
   role: 0 | 1
   sujet: string
   lienSecours: string | null
+  /** Jeton de démarrage de l'hôte (ZAK), pour le formateur seulement. */
+  zak?: string | null
   ouverture: string
 }
 
@@ -80,6 +82,7 @@ export function useZoom() {
           password: autorisation.motDePasse,
           userName: autorisation.nomAffiche,
           userEmail: autorisation.email,
+          ...(autorisation.zak ? { zak: autorisation.zak } : {}),
         })
       } else {
         const { ZoomMtg } = await import('@zoom/meetingsdk')
@@ -100,6 +103,7 @@ export function useZoom() {
                 passWord: autorisation.motDePasse,
                 userName: autorisation.nomAffiche,
                 userEmail: autorisation.email,
+                ...(autorisation.zak ? { zak: autorisation.zak } : {}),
                 success: () => resoudre(),
                 error: (e: unknown) => rejeter(e),
               })

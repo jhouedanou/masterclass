@@ -160,6 +160,35 @@ export async function supprimerReunion(id: string) {
   }
 }
 
+/**
+ * Démarrer une réunion en hôte.
+ *
+ * Les réunions sont créées sur le compte Zoom de Big Five (`/users/me`), avec
+ * « l'hôte entre le premier ». Un jeton du Meeting SDK au rôle 1 ne suffit pas
+ * à les démarrer : Zoom exige aussi le ZAK du compte propriétaire. Sans lui,
+ * le formateur restait devant « en attente de l'hôte », comme ses apprenants.
+ * Le lien `start_url` gardé à la création expire au bout de quelques heures :
+ * le lien de secours de l'hôte est donc relu au moment d'entrer.
+ *
+ * Portées de l'application Server-to-Server : `user:read:zak:admin` et
+ * `meeting:read:meeting:admin`. Une portée manquante ne bloque pas l'entrée :
+ * l'hôte retombe sur le lien enregistré.
+ */
+export async function accesHote(reunionId: string): Promise<{ zak: string | null; lienHote: string | null }> {
+  if (configZoom().mode === 'simulation' || !reunionId) return { zak: null, lienHote: null }
+  const [zak, reunion] = await Promise.all([
+    api<{ token: string }>('/users/me/token?type=zak').then((r) => r.token).catch((e) => {
+      console.warn('[zoom] ZAK indisponible', (e as Error).message)
+      return null
+    }),
+    api<{ start_url?: string }>(`/meetings/${encodeURIComponent(reunionId)}`).then((r) => r.start_url ?? null).catch((e) => {
+      console.warn('[zoom] lien hôte indisponible', reunionId, (e as Error).message)
+      return null
+    }),
+  ])
+  return { zak, lienHote: reunion }
+}
+
 // --- Signature du Meeting SDK ----------------------------------------------
 
 function base64Url(entree: Buffer | string): string {

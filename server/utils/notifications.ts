@@ -51,6 +51,8 @@ export type ModeleNotification =
   | 'live-annulation'
   | 'live-alerte-remboursement'
   | 'live-ouverture'
+  | 'session-reservee'
+  | 'coaching-prive-formateur'
 
 export interface Notification {
   canal: CanalNotification
@@ -99,6 +101,8 @@ export const SUJETS: Record<ModeleNotification, string> = {
   'live-annulation': 'Votre Live Session est annulée',
   'live-alerte-remboursement': 'Live Session : paiement reçu sans place, à rembourser',
   'live-ouverture': 'Le module que vous attendiez passe en Live Session',
+  'session-reservee': 'Votre place en coaching collectif est réservée',
+  'coaching-prive-formateur': 'Une séance de coaching privé est planifiée avec vous',
 }
 
 const piloteConsole: PiloteNotifications = {

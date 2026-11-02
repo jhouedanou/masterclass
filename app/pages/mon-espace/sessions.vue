@@ -48,7 +48,7 @@ async function reserver(reponses: { preoccupation: string; attente: string }) {
       method: 'POST',
       body: { sessionId: reservation.value!.id, ...reponses },
     })
-    message.value = 'Place réservée. Vos sujets ont été transmis au formateur — rappel prévu.'
+    message.value = 'Place réservée. Vos sujets ont été transmis au formateur, et la confirmation vous a été envoyée par e-mail.'
     reservation.value = null
     await refresh()
   } catch (e) {
@@ -151,7 +151,7 @@ async function noter(valeurs: { note: number; commentaire: string }) {
             Rejoindre la session →
           </UiBaseButton>
           <span v-else-if="session.etat === 'inscrit'" class="rounded-full bg-succes-voile px-3 py-1.5 text-[12px] font-bold text-succes">
-            ✓ Inscrit · rappel prévu
+            ✓ Inscrit
           </span>
           <UiBaseButton v-else-if="session.etat === 'verrou-profil'" taille="sm" variante="contour" to="/mon-espace/profil">
             🔒 Complétez votre profil
@@ -174,7 +174,7 @@ async function noter(valeurs: { note: number; commentaire: string }) {
     </div>
 
     <p class="mt-6 text-[12.5px] text-discret">
-      Rappels automatiques : email + WhatsApp à J-1 et H-1. Le lien Zoom s’active 15 minutes avant le début.
+      La salle Zoom s’ouvre 15 minutes avant le début, depuis cette page.
     </p>
 
     <EspaceModaleSujets

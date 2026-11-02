@@ -53,6 +53,8 @@ const CLES = [
   // Live Sessions : titre, « Vendredi 6 novembre · 19h00 GMT · 1h30 », prérequis
   // séparés par « | », moment du rappel, ancien horaire, modérateur, durée.
   'titre', 'horaire', 'prerequis', 'quand', 'ancien', 'moderateur', 'duree', 'agenda', 'recu', 'apprenant',
+  // Réservation de coaching collectif : chemin de la salle, ouverture en minutes.
+  'salle', 'ouvertureMinutes',
 ] as const
 type Variables = Record<(typeof CLES)[number], string>
 
@@ -169,6 +171,21 @@ function corps(modele: ModeleNotification, variables: Record<string, string>, si
         v.module
           ? { bouton: 'Ouvrir mes modules', lien: `${espace}/modules` }
           : { bouton: 'Voir ma séance', lien: `${espace}/coaching-prive` },
+      ]
+    // Pas de lien Zoom en clair (planche C, écran 03) : la session est
+    // réservée aux acheteurs d'un module, l'accès passe par la salle.
+    case 'session-reservee':
+      return [
+        { p: `Votre place à la session de coaching collectif « ${v.titre} » est réservée.` },
+        { p: `Rendez-vous le ${dateLisible(v.date)}${v.heure ? ` à ${v.heure} (heure d’Abidjan)` : ''}${v.formateur ? `, avec ${v.formateur}` : ''}.` },
+        { p: `La salle ouvre ${v.ouvertureMinutes || '15'} minutes avant le début. Connectez-vous à votre espace, puis entrez dans la salle : micro et caméra se règlent sur place.` },
+        { bouton: 'Accéder à la salle', lien: `${site}${v.salle}` },
+      ]
+    case 'coaching-prive-formateur':
+      return [
+        { p: `Une séance de coaching privé est planifiée avec ${v.apprenant || 'un apprenant'} : ${v.creneau}${v.heures ? ` (${v.heures} h)` : ''}.` },
+        { p: 'Vous êtes l’hôte de la réunion : entrez dans la salle depuis votre espace formateur, elle démarre avec vous.' },
+        { bouton: 'Ouvrir la salle', lien: `${site}${v.salle}` },
       ]
     case 'attestation-delivree':
       return [

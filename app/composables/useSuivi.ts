@@ -144,8 +144,11 @@ export function useSuivi() {
       w.dataLayer.push({
         event: NOMS_GA4[evenement],
         event_id: eventId,
-        ...(donnees.methode ? { method: donnees.methode } : {}),
-        ...(donnees.categorieContenu ? { content_category: donnees.categorieContenu } : {}),
+        // `method` et `content_category` toujours posés, `undefined` à défaut :
+        // le modèle de données de GTM garde la dernière valeur d'une clé, et un
+        // `sign_up` après un achat aurait hérité de `content_category`.
+        method: donnees.methode,
+        content_category: donnees.categorieContenu,
         ecommerce: {
           currency: 'XOF',
           value: valeur,
