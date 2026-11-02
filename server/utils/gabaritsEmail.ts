@@ -181,6 +181,12 @@ function corps(modele: ModeleNotification, variables: Record<string, string>, si
         { bouton: 'Accéder à la salle', lien: `${site}${v.salle}` },
         ...(v.lienZoom ? [{ p: `En cas de difficulté, rejoignez directement la réunion Zoom : ${v.lienZoom}` }] : []),
       ]
+    case 'coaching-prive-formateur':
+      return [
+        { p: `Une séance de coaching privé est planifiée avec ${v.nom || 'un apprenant'} : ${v.creneau}${v.heures ? ` (${v.heures} h)` : ''}.` },
+        { p: 'Vous êtes l’hôte de la réunion : entrez dans la salle depuis votre espace formateur, elle démarre avec vous.' },
+        { bouton: 'Ouvrir la salle', lien: `${site}${v.salle}` },
+      ]
     case 'attestation-delivree':
       return [
         { p: `Félicitations : votre attestation de participation${v.module ? ` au module « ${v.module} »` : ''} est délivrée.` },

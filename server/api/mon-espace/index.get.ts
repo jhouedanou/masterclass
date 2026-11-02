@@ -115,7 +115,11 @@ export default defineEventHandler(async (event) => {
         reference: c.reference,
         date: c.creeeLe,
         total: c.total,
-        libelle: c.moduleIds.map((id) => modules.find((m) => m.id === id)?.titre ?? id).join(' + '),
+        // Une commande sans module règle une séance de coaching privé : son
+        // libellé restait vide dans l'historique.
+        libelle: c.moduleIds.length
+          ? c.moduleIds.map((id) => modules.find((m) => m.id === id)?.titre ?? id).join(' + ')
+          : 'Séance de coaching privé',
       })),
     planning,
   }
