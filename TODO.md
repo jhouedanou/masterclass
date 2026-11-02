@@ -1,5 +1,52 @@
 # Reste à faire — E-Masterclass Big Five
 
+## Point au 2 novembre 2026 — brief tracking, Search Console, maquette, parcours
+
+Le code est sur la branche `jl/brief-sur-live-sessions`, construite sur `jl/live-sessions`
+(Live Sessions du CDC v1.3, 30/10). Ce qui suit se fait à la main.
+
+### Base hébergée (SQL Editor, dans l'ordre)
+- [ ] Vérifier que 48, 49 et 50 (Live Sessions, branche du 30/10) sont passés :
+      `select to_regclass('public.sessions_live'), to_regclass('public.reglages_live');`
+- [ ] `supabase/en-ligne/51-formateur-linkedin-presentation.sql` — présentation et LinkedIn
+- [ ] `supabase/en-ligne/rattrapage-articles-demo.sql` — retire les 5 articles de démonstration
+      (4 sont publiés aujourd'hui et figurent dans le sitemap)
+- [ ] `supabase/planification-live.sql` — cycle des Live Sessions toutes les 5 min par pg_cron
+      (rappels J-1, H-10, H0), s'il n'est pas déjà en place
+
+### Vercel
+- [ ] `NUXT_PUBLIC_SITE_URL=https://emasterclass.bigfive.solutions` en Production, et l'adresse
+      Preview sur l'environnement Preview (sinon les e-mails de Preview pointent vers la prod)
+- [ ] `META_CAPI_TEST_CODE=TEST88439` sur **Preview** seulement, le temps de la recette ; ignoré
+      en Production, à vider ensuite
+- [ ] `CRON_SECRET` = `TACHES_CLE`
+- [ ] Zoom : portées `user:read:zak:admin` et `meeting:read:meeting:admin` sur l'application
+      Server-to-Server (démarrage des réunions par le formateur)
+- [ ] Offre Hobby : réservée à un usage non commercial selon les conditions Vercel ; à discuter
+      avec Big Five (les rappels, eux, passent par pg_cron et n'exigent pas Pro)
+
+### GTM, GA4, Meta
+- [ ] Importer `docs/tracking/gtm-conteneur-e-masterclass.json` dans GTM-KVFTGVVX (fusion),
+      tester en Preview, publier — marche à suivre et checklist dans `docs/tracking/gtm-import.md`
+- [ ] GA4 : décocher « Changements de page basés sur l'historique du navigateur » (mesure
+      améliorée) et créer les dimensions personnalisées listées dans `gtm-import.md`
+
+### Search Console
+- [ ] DNS, zone `bigfive.solutions` : TXT `emasterclass` =
+      `google-site-verification=9d1VTQjQM6soBy_y1Woeot-dqMIIk5joFCJXy2nMzwg`
+      (contrôle : `dig TXT emasterclass.bigfive.solutions +short`)
+- [ ] Propriété de domaine validée, puis Sitemaps → `https://emasterclass.bigfive.solutions/sitemap.xml`
+
+### En attente d'autres personnes
+- Houefa : fiches formateurs (photo, présentation, biographie, LinkedIn)
+- Jérémie : signature en PNG transparent et nom du signataire (Paramètres → Attestations) ;
+  KYC carte et activation Wave auprès de FeexPay
+- Équipe : articles du blog
+- Big Five : compte de service Google Agenda ; offre Vercel (usage commercial) ; à terme, un
+  utilisateur Zoom par formateur pour ne plus remettre le ZAK du compte Big Five
+
+---
+
 Point au **2 septembre 2026**. Le développement est à jour ; ce qui suit se commande, se fournit ou
 s'exécute. Le détail à transmettre à la direction de projet est dans la note partagée
 « Ouvrir E-Masterclass ».
