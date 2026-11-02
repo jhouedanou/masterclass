@@ -164,8 +164,11 @@ function finToucher(e: TouchEvent) {
     @keydown.right.prevent="suivant"
   >
     <div class="grid min-h-[500px] lg:grid-cols-2">
+      <!-- Bord gauche du texte aligné sur la colonne du site : 64 px, et au-delà
+           de 1440 px la moitié de l'écart entre la colonne (1312 px) et l'écran,
+           soit, dans cette demi-largeur, 100 % − 656 px. -->
       <div
-        class="relative flex flex-col justify-center px-6 py-14 sm:px-10 lg:pt-14 lg:pr-14 lg:pb-[76px] lg:pl-16"
+        class="relative flex flex-col justify-center px-6 py-14 md:px-16 lg:pt-14 lg:pr-14 lg:pb-[76px] lg:pl-[max(4rem,calc(100%_-_656px))]"
         :class="courant.estSocial ? 'rayures-social' : 'rayures-entrepreneurs'"
       >
         <p
