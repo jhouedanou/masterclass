@@ -1,5 +1,6 @@
 /**
- * Événements du tunnel de conversion, vers GTM (GA4) et le Pixel Meta.
+ * Événements du tunnel de conversion, vers GTM (GA4) et le Pixel Meta ;
+ * événements pédagogiques, vers GTM (GA4) seulement — voir `suivrePedagogie`.
  *
  * Chaque événement part sous deux noms : le nom GA4 e-commerce dans le
  * `dataLayer`, que le conteneur GTM relaie à GA4 quelle que soit sa
@@ -48,6 +49,35 @@ export interface DonneesSuivi {
   /** Ce que l'on vend : Big Five distingue les modules du coaching privé (30/10). */
   categorieContenu?: CategorieContenu
 }
+
+/**
+ * Usage pédagogique (brief du 02/11) : vers GA4 seulement, jamais vers Meta,
+ * et seulement avec le consentement « mesure ». La progression elle-même est
+ * en base quoi qu'il arrive (reprise de lecture, attestation) : ces
+ * événements ne servent qu'à l'analyse d'audience.
+ */
+export type EvenementPedagogique =
+  | 'module_open'
+  | 'video_start'
+  | 'video_progress'
+  | 'quiz_complete'
+  | 'module_complete'
+
+export interface DonneesPedagogiques {
+  moduleId: string
+  moduleTitre?: string
+  /** Rang du chapitre, à partir de 1. */
+  chapitre?: number
+  chapitreTitre?: string
+  /** `video_progress` : palier atteint (25, 50, 75, 90). */
+  pourcent?: number
+  /** `quiz_complete` : note sur 100 et réussite. */
+  note?: number
+  reussi?: boolean
+}
+
+/** Paliers de `video_progress`. */
+export const PALIERS_VIDEO = [25, 50, 75, 90] as const
 
 /** Ce que le navigateur joint aux appels serveur pour l'API Conversions. */
 export interface ContexteSuivi {
@@ -149,6 +179,31 @@ export function useSuivi() {
     w.fbq('track', evenement, parametres, eventId ? { eventID: eventId } : undefined)
   }
 
+  function suivrePedagogie(evenement: EvenementPedagogique, donnees: DonneesPedagogiques) {
+    if (import.meta.server) return
+    const envoi = () => {
+      if (!choix()?.mesure) return
+      const w = window as Fenetre
+      w.dataLayer = w.dataLayer ?? []
+      // Toutes les clés à chaque fois : le modèle de données de GTM garde la
+      // dernière valeur d'une clé, et la note d'un quiz suivrait sinon les
+      // événements vidéo d'après. L'adresse part sans paramètres.
+      w.dataLayer.push({
+        event: evenement,
+        module_id: donnees.moduleId,
+        module_name: donnees.moduleTitre,
+        chapter_index: donnees.chapitre,
+        chapter_name: donnees.chapitreTitre,
+        video_percent: donnees.pourcent,
+        quiz_score: donnees.note,
+        quiz_passed: donnees.reussi,
+        page_location: window.location.origin + window.location.pathname,
+      })
+    }
+    if (!pret) enAttente.push(envoi)
+    else envoi()
+  }
+
   /** Consentement et cookies Meta, à joindre aux appels qui déclenchent un
    *  événement serveur (inscription, commande). Sans consentement marketing,
    *  rien d'autre que le refus ne part. */
@@ -162,5 +217,17 @@ export function useSuivi() {
     }
   }
 
-  return { suivre, contexteSuivi }
+  return { suivre, suivrePedagogie, contexteSuivi }
+}
+
+/**
+ * `module_open`, une fois par module et par visite : la fiche du module et
+ * l'écran de lecture l'émettent tous deux, et l'apprenant passe de l'une à
+ * l'autre sans rouvrir le module.
+ */
+const modulesOuverts = new Set<string>()
+export function signalerOuvertureModule(moduleId: string, moduleTitre: string) {
+  if (modulesOuverts.has(moduleId)) return
+  modulesOuverts.add(moduleId)
+  useSuivi().suivrePedagogie('module_open', { moduleId, moduleTitre })
 }
