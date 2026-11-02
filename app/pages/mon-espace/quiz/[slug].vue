@@ -57,6 +57,7 @@ const nbRepondues = computed(() => questions.value.filter((q) => reponses.value[
 const toutRepondu = computed(() => nbRepondues.value === questions.value.length)
 const videosFinies = computed(() => data.value!.progression >= 100)
 
+const { suivrePedagogie } = useSuivi()
 const envoi = ref(false)
 const erreurEnvoi = ref<string | null>(null)
 const blocResultat = ref<HTMLElement | null>(null)
@@ -72,6 +73,12 @@ async function soumettre() {
     })
     etat.value = r.etat
     resultat.value = { note: r.note, reussi: r.reussi, corrections: new Map(r.corrections.map((c) => [c.code, c])) }
+    suivrePedagogie('quiz_complete', {
+      moduleId: data.value!.module.id,
+      moduleTitre: data.value!.module.titre,
+      note: r.note,
+      reussi: r.reussi,
+    })
     await nextTick()
     blocResultat.value?.focus()
     blocResultat.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })

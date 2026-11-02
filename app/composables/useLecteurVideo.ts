@@ -39,7 +39,26 @@ export function useLecteurVideo(options: {
   /** Secondes déjà créditées par le serveur pour le chapitre qui se charge.
    *  Sans elle, une reprise repart de zéro — voir `creditAcquis`. */
   dejaVues?: () => number
+  /** Libellés joints aux événements pédagogiques GA4 (`video_start`,
+   *  `video_progress`), voir app/composables/useSuivi.ts. */
+  libelles?: () => { module: string; chapitre?: string }
 }) {
+  const { suivrePedagogie } = useSuivi()
+  /** Démarrage et paliers déjà signalés pour le chapitre chargé. */
+  let demarrageSignale = false
+  const paliersSignales = new Set<number>()
+
+  function signalerVideo(evenement: 'video_start' | 'video_progress', pourcent?: number) {
+    const libelles = options.libelles?.()
+    suivrePedagogie(evenement, {
+      moduleId: options.moduleId(),
+      moduleTitre: libelles?.module,
+      chapitre: (positionRelevee ?? options.position()) + 1,
+      chapitreTitre: libelles?.chapitre,
+      pourcent,
+    })
+  }
+
   const video = ref<HTMLVideoElement | null>(null)
   const enLecture = ref(false)
   const chargement = ref(false)
@@ -206,6 +225,18 @@ export function useLecteurVideo(options: {
     positionSecondes.value = position
     if (position > positionMax.value) positionMax.value = position
 
+    // Paliers de visionnage, une fois chacun par chapitre chargé, en lecture
+    // seulement : un saut au bout du rail n'est pas un visionnage.
+    if (!element.paused && element.duration > 0) {
+      const pourcent = (position / element.duration) * 100
+      for (const palier of PALIERS_VIDEO) {
+        if (pourcent >= palier && !paliersSignales.has(palier)) {
+          paliersSignales.add(palier)
+          signalerVideo('video_progress', palier)
+        }
+      }
+    }
+
     if (!element.paused && !element.seeking) {
       if (dernierePosition !== null) {
         const avance = position - dernierePosition
@@ -329,6 +360,8 @@ export function useLecteurVideo(options: {
     niveaux.value = []
     niveauChoisi.value = -1
     qualite.value = null
+    demarrageSignale = false
+    paliersSignales.clear()
     // Désormais le cumul se rapporte au chapitre qu'on ouvre.
     positionRelevee = options.position()
 
@@ -591,6 +624,10 @@ export function useLecteurVideo(options: {
       // Le point de départ est pris ici, et non au premier `timeupdate` : celui-ci
       // arrive un quart de seconde plus tard, qui serait perdu à chaque reprise.
       dernierePosition = video.value?.currentTime ?? null
+      if (!demarrageSignale) {
+        demarrageSignale = true
+        signalerVideo('video_start')
+      }
     },
     onPause: () => {
       enLecture.value = false
