@@ -142,13 +142,17 @@ export default defineEventHandler(async (event) => {
   // Big Five et l'hôte entre le premier ; sans le ZAK de ce compte, le
   // formateur attendait l'hôte comme ses apprenants. Ce ZAK permettrait de
   // démarrer d'autres réunions du compte pendant sa durée de vie : il ne part
-  // qu'au formateur de la séance (pas à l'administration), salle ouverte. Le
-  // lien de démarrage relu suit la même règle (il porte lui aussi un jeton).
+  // qu'au formateur de la séance (pas à l'administration), dans la fenêtre de
+  // la réunion telle que Zoom la connaît, et chaque remise est journalisée.
+  // Le lien de démarrage relu suit la même règle (il porte lui aussi un jeton).
+  // Pour s'en passer : un utilisateur Zoom par formateur (licences).
   let zak: string | null = null
-  if (formateurHote && ouverte && numeroReunion) {
+  if (formateurHote && numeroReunion) {
+    // `accesHote` vérifie lui-même la fenêtre, sur l'heure de la réunion chez Zoom.
     const hote = await accesHote(numeroReunion)
     zak = hote.zak
     lienSecours = hote.lienHote ?? lienSecours
+    if (zak) console.info('[zoom] ZAK remis', { formateur: utilisateur.formateurId, reunion: numeroReunion })
   }
   return {
     mode,

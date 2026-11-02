@@ -197,7 +197,12 @@ export interface Formateur {
   slug: string
   nom: string
   expertise: string
+  /** Biographie, sous la présentation. */
   bio: string
+  /** Présentation courte, en tête de fiche (brief du 02/11). */
+  presentation?: string
+  /** Profil LinkedIn public. */
+  linkedin?: string
   programmePrincipal: ProgrammeSlug
   photo: string
   /** Texte alternatif du portrait, éditable au back-office. Vide, l'affichage

@@ -174,19 +174,32 @@ export async function supprimerReunion(id: string) {
  * `meeting:read:meeting:admin`. Une portée manquante ne bloque pas l'entrée :
  * l'hôte retombe sur le lien enregistré.
  */
-export async function accesHote(reunionId: string): Promise<{ zak: string | null; lienHote: string | null }> {
+export async function accesHote(
+  reunionId: string,
+  maintenant = new Date(),
+): Promise<{ zak: string | null; lienHote: string | null }> {
   if (configZoom().mode === 'simulation' || !reunionId) return { zak: null, lienHote: null }
-  const [zak, reunion] = await Promise.all([
-    api<{ token: string }>('/users/me/token?type=zak').then((r) => r.token).catch((e) => {
+  // La fenêtre se lit sur la réunion chez Zoom, pas sur nos données : une
+  // séance de coaching privé n'a pas d'heure en base, et passait pour
+  // « ouverte » à toute heure. Hors de 30 min avant le début à 30 min après
+  // la fin, rien ne part.
+  const reunion = await api<{ start_url?: string; start_time?: string; duration?: number }>(
+    `/meetings/${encodeURIComponent(reunionId)}`,
+  ).catch((e) => {
+    console.warn('[zoom] réunion illisible', reunionId, (e as Error).message)
+    return null
+  })
+  if (!reunion?.start_time) return { zak: null, lienHote: null }
+  const { ouverte } = salleOuverte(new Date(reunion.start_time), reunion.duration ?? 120, 30, maintenant)
+  if (!ouverte) return { zak: null, lienHote: null }
+
+  const zak = await api<{ token: string }>('/users/me/token?type=zak')
+    .then((r) => r.token)
+    .catch((e) => {
       console.warn('[zoom] ZAK indisponible', (e as Error).message)
       return null
-    }),
-    api<{ start_url?: string }>(`/meetings/${encodeURIComponent(reunionId)}`).then((r) => r.start_url ?? null).catch((e) => {
-      console.warn('[zoom] lien hôte indisponible', reunionId, (e as Error).message)
-      return null
-    }),
-  ])
-  return { zak, lienHote: reunion }
+    })
+  return { zak, lienHote: reunion.start_url ?? null }
 }
 
 // --- Signature du Meeting SDK ----------------------------------------------

@@ -109,6 +109,7 @@ const RATTRAPAGES = [
   'rattrapage-og-image-png.sql',
   'rattrapage-ordre-chapitres.sql',
   'rattrapage-durees-deduites.sql',
+  'rattrapage-articles-demo.sql',
 ]
 
 for (const nom of RATTRAPAGES) {
