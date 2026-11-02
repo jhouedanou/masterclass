@@ -13,7 +13,8 @@ Fichier : `gtm-conteneur-e-masterclass.json` (conteneur `GTM-KVFTGVVX`).
   par le site :
   - événements : `view_item`, `sign_up`, `begin_checkout`, `add_payment_info`, `purchase` ;
   - données e-commerce du `dataLayer` : articles, valeur en XOF, `transaction_id`, `payment_type` ;
-  - paramètres : `event_id`, `method`, `content_category` (`module` ou `coaching_prive`).
+  - paramètres : `event_id`, `method`, `content_category` (`module`, `coaching_prive` ou
+    `live_session`).
 
   Le site n'envoie pas `view_item` sur la fiche d'un module que l'apprenant a déjà acheté.
 - **GA4 - Pédagogie** : l'usage des modules, sur l'espace apprenant :
