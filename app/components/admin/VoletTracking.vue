@@ -273,7 +273,8 @@ const champPixel =
       <h2 :class="titrePixel">Code personnalisé (avancé)</h2>
       <p class="mt-1 mb-2.5 text-[12px] text-discret">
         Scripts additionnels injectés dans le <code>&lt;head&gt;</code> — réservé aux admins avec le
-        droit « Performances (marketing) ». Chaque modification est journalisée.
+        droit « Performances (marketing) ». Chaque modification est journalisée. Ils ne s'exécutent
+        que sur les pages publiques, chez les visiteurs qui ont accepté les cookies « Marketing ».
       </p>
       <textarea
         v-model="champs.codePersonnalise"

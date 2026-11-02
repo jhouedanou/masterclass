@@ -57,6 +57,12 @@ const modale = ref<{ demande: Demande; action: Action } | null>(null)
 const creneauChoisi = ref<CreneauCoaching | null>(null)
 const creneauLibre = ref('')
 const lienSession = ref('')
+/** Planification : date réelle et heure de début de la séance. */
+const dateSeance = ref('')
+const heureSeance = ref('10:00')
+watch(creneauChoisi, (c) => {
+  if (c?.debut) heureSeance.value = c.debut.slice(0, 5)
+})
 const motif = ref('')
 const commentaire = ref('')
 /** Durée retenue avec le formateur : le montant en découle (heures × tarif).
@@ -82,6 +88,8 @@ function ouvrir(demande: Demande, action: Action) {
   creneauChoisi.value = demande.creneaux[0] ?? null
   creneauLibre.value = demande.creneau ?? ''
   lienSession.value = demande.lienSession ?? ''
+  dateSeance.value = ''
+  heureSeance.value = demande.creneaux[0]?.debut?.slice(0, 5) ?? '10:00'
   motif.value = ''
   commentaire.value = ''
   erreur.value = ''
@@ -111,7 +119,14 @@ function valider() {
   // la route recevait un objet là où elle attend du texte — la modale ne
   // validait plus rien (« Action impossible. »).
   if (action === 'refuser') return agir(demande, action, { motif: motif.value })
-  if (action === 'planifier') return agir(demande, action, { creneau, lienSession: lienSession.value })
+  if (action === 'planifier') {
+    return agir(demande, action, {
+      creneau,
+      lienSession: lienSession.value,
+      dateSeance: dateSeance.value,
+      heureSeance: heureSeance.value,
+    })
+  }
   if (action === 'confirmer') {
     return agir(demande, action, { creneau, commentaire: commentaire.value, heures: heures.value })
   }
@@ -339,6 +354,16 @@ const TITRES: Record<Action, string> = {
             </p>
           </fieldset>
 
+          <fieldset v-if="modale.action === 'planifier'" class="grid grid-cols-2 gap-3">
+            <legend class="mb-2 text-[13px] font-bold text-texte">Date et heure de la séance *</legend>
+            <input v-model="dateSeance" type="date" required class="rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]" aria-label="Date de la séance">
+            <input v-model="heureSeance" type="time" required class="rounded-[10px] border border-ligne px-3 py-2.5 text-[14px]" aria-label="Heure de début (Abidjan)">
+            <span class="col-span-2 text-[12.5px] text-discret">
+              Les créneaux de la demande sont hebdomadaires : choisissez le jour exact convenu. La
+              réunion Zoom est créée à cette date, et le formateur est prévenu par e-mail.
+            </span>
+          </fieldset>
+
           <label v-if="modale.action === 'planifier'" class="block">
             <span class="mb-1.5 block text-[13px] font-bold text-texte">
               Lien de la séance <span class="font-normal text-discret">(facultatif)</span>
@@ -374,8 +399,8 @@ const TITRES: Record<Action, string> = {
             son espace.
           </template>
           <template v-else-if="modale.action === 'planifier'">
-            L’apprenant reçoit par e-mail le créneau et le lien de la séance. Le formateur n’est
-            pas prévenu automatiquement, et aucun rappel ne part avant la séance.
+            L’apprenant reçoit par e-mail la date et le lien de la séance ; le formateur est
+            prévenu par e-mail. Aucun rappel ne part avant la séance.
           </template>
           <template v-else-if="modale.action === 'refuser'">Le motif est transmis tel quel à l’apprenant.</template>
         </p>

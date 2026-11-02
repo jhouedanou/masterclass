@@ -1,4 +1,4 @@
-import { trouverFormateur, listerThematiques } from '../../database/catalogue'
+import { listerThematiques, trouverFormateur, trouverModule } from '../../database/catalogue'
 import {
   liensZoomSession,
   listerInscriptionsUtilisateur,
@@ -6,8 +6,11 @@ import {
   trouverDemandeCoachingPrive,
   trouverSession,
 } from '../../database/coaching'
+import { liensZoomLive, trouverInscriptionLive, trouverSessionLive } from '../../database/live'
+import { DELAIS_LIVE } from '#shared/utils/live'
+import { liveVisiblePour, visibiliteLive } from '../../utils/live'
 import { exigerUtilisateur } from '../../utils/session'
-import { configZoom, debutSession, salleOuverte, signatureSdk } from '../../utils/zoom'
+import { accesHote, configZoom, debutSession, salleOuverte, signatureSdk } from '../../utils/zoom'
 
 /**
  * Autorisation d'entrée dans une salle (planche B, écran 11). Avant de signer :
@@ -17,7 +20,12 @@ import { configZoom, debutSession, salleOuverte, signatureSdk } from '../../util
  */
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerUtilisateur(event)
-  const { sessionId, demandeId } = await readBody<{ sessionId?: string; demandeId?: string }>(event)
+  const { sessionId, demandeId, sessionLiveId } = await readBody<{
+    sessionId?: string
+    demandeId?: string
+    /** Live Session (CDC v1.3, option B : salle intégrée). */
+    sessionLiveId?: string
+  }>(event)
   const admin = utilisateur.role === 'admin-contenu' || utilisateur.role === 'admin-superieur'
   const { mode } = configZoom()
 
@@ -25,12 +33,51 @@ export default defineEventHandler(async (event) => {
   let motDePasse: string | null = null
   let lienSecours: string | null = null
   let role: 0 | 1 = 0
+  /** Formateur de la séance : seul destinataire possible du ZAK. */
+  let formateurHote = false
   let sujet = ''
   let debut: Date
   let dureeMinutes = 120
   let ouvertureMinutes = 15
 
-  if (sessionId) {
+  if (sessionLiveId) {
+    // Live Session : inscrit confirmé (rôle 0), formateur de la session ou
+    // admin modérateur (rôle 1). La salle ouvre 15 min avant pour les
+    // inscrits, 30 min avant pour l'hôte (§4.4), et ferme 30 min après la fin.
+    if (!liveVisiblePour(await visibiliteLive(), utilisateur)) {
+      throw createError({ statusCode: 404, statusMessage: 'Live Session introuvable' })
+    }
+    const live = await trouverSessionLive(sessionLiveId)
+    if (!live || !['publiee', 'en-cours'].includes(live.statut)) {
+      throw createError({ statusCode: 404, statusMessage: 'Cette Live Session n’est pas ouverte' })
+    }
+    const hote = utilisateur.role === 'formateur' && utilisateur.formateurId === live.formateurId
+    if (!hote && !admin) {
+      const inscription = await trouverInscriptionLive(live.id, utilisateur.id)
+      if (inscription?.statut !== 'confirmee') {
+        throw createError({ statusCode: 403, statusMessage: 'Cette salle est réservée aux inscrits de la Live Session' })
+      }
+    }
+    role = hote || admin ? 1 : 0
+    formateurHote = hote
+    const liens = await liensZoomLive(live.id)
+    numeroReunion = liens.reunionId
+    motDePasse = liens.motDePasse
+    lienSecours = role === 1 ? liens.lienHote : null
+    const module = await trouverModule(live.moduleId)
+    sujet = `Live Session — ${module?.titre ?? ''}`
+    debut = new Date(live.debut)
+    dureeMinutes = live.dureeMinutes
+    ouvertureMinutes = role === 1 ? DELAIS_LIVE.animerMinutes : DELAIS_LIVE.salleApprenantMinutes
+    const salle = salleOuverte(debut, dureeMinutes, ouvertureMinutes)
+    if (!salle.ouverte && role === 1) {
+      throw createError({
+        statusCode: 425,
+        statusMessage: `La salle ouvre ${ouvertureMinutes} minutes avant le début de la session.`,
+        data: { ouverture: salle.ouverture.toISOString() },
+      })
+    }
+  } else if (sessionId) {
     const session = await trouverSession(sessionId)
     if (!session || session.statut === 'annulee') throw createError({ statusCode: 404, statusMessage: 'Session introuvable' })
     const hote = utilisateur.role === 'formateur' && utilisateur.formateurId === session.formateurId
@@ -41,6 +88,7 @@ export default defineEventHandler(async (event) => {
       }
     }
     role = hote || admin ? 1 : 0
+    formateurHote = hote
     const liens = await liensZoomSession(session.id)
     numeroReunion = liens.reunionId
     motDePasse = liens.motDePasse
@@ -61,6 +109,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 409, statusMessage: 'La séance n’est pas encore confirmée' })
     }
     role = hote || admin ? 1 : 0
+    formateurHote = hote
     numeroReunion = demande.zoomReunionId ?? null
     motDePasse = await motDePasseZoomDemande(demande.id)
     lienSecours = demande.lienSession ?? null
@@ -88,6 +137,23 @@ export default defineEventHandler(async (event) => {
 
   const reunion = numeroReunion ?? 'simulation'
   const { signature, sdkKey } = signatureSdk(reunion, role)
+
+  // Démarrage par le formateur : les réunions appartiennent au compte Zoom de
+  // Big Five et l'hôte entre le premier ; sans le ZAK de ce compte, le
+  // formateur attendait l'hôte comme ses apprenants. Ce ZAK permettrait de
+  // démarrer d'autres réunions du compte pendant sa durée de vie : il ne part
+  // qu'au formateur de la séance (pas à l'administration), dans la fenêtre de
+  // la réunion telle que Zoom la connaît, et chaque remise est journalisée.
+  // Le lien de démarrage relu suit la même règle (il porte lui aussi un jeton).
+  // Pour s'en passer : un utilisateur Zoom par formateur (licences).
+  let zak: string | null = null
+  if (formateurHote && numeroReunion) {
+    // `accesHote` vérifie lui-même la fenêtre, sur l'heure de la réunion chez Zoom.
+    const hote = await accesHote(numeroReunion)
+    zak = hote.zak
+    lienSecours = hote.lienHote ?? lienSecours
+    if (zak) console.info('[zoom] ZAK remis', { formateur: utilisateur.formateurId, reunion: numeroReunion })
+  }
   return {
     mode,
     signature,
@@ -99,6 +165,7 @@ export default defineEventHandler(async (event) => {
     role,
     sujet,
     lienSecours,
+    zak,
     ouverture: ouverture.toISOString(),
   }
 })

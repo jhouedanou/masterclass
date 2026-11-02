@@ -38,7 +38,8 @@ useJsonLd(() => ({
     '@type': 'Person',
     name: formateur.value.nom,
     jobTitle: formateur.value.expertise,
-    description: formateur.value.bio,
+    description: formateur.value.presentation || formateur.value.bio,
+    ...(formateur.value.linkedin ? { sameAs: [formateur.value.linkedin] } : {}),
     url: `${config.public.siteUrl}/formateurs/${formateur.value.slug}`,
   },
 }))
@@ -82,7 +83,23 @@ useJsonLd(() => ({
       <div>
         <h1 class="text-[40px] font-medium">{{ formateur.nom }}</h1>
         <p class="mt-2 text-[17px] text-texte">{{ formateur.expertise }}</p>
-        <p class="mt-6 max-w-[760px] text-[15.5px] leading-relaxed text-texte">{{ formateur.bio }}</p>
+        <a
+          v-if="formateur.linkedin"
+          :href="formateur.linkedin"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="mt-3 inline-flex items-center gap-2 text-[14px] font-bold text-encre hover:underline"
+        >
+          <Icon name="ph:linkedin-logo-fill" size="20" />
+          Profil LinkedIn
+        </a>
+        <p v-if="formateur.presentation" class="mt-6 max-w-prose text-[18px] leading-relaxed text-encre">
+          {{ formateur.presentation }}
+        </p>
+        <template v-if="formateur.bio">
+          <h2 class="mt-8 font-title text-[22px] font-light">Biographie</h2>
+          <p class="mt-3 max-w-prose text-[15.5px] leading-relaxed whitespace-pre-line text-texte">{{ formateur.bio }}</p>
+        </template>
 
         <h2 class="mt-10 font-title text-[27px] font-light">Ses modules</h2>
         <div class="mt-5 grid gap-5.5 sm:grid-cols-2">

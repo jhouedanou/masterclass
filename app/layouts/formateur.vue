@@ -24,10 +24,14 @@ const { data: aTraiter } = await useFetch<{ coachingPrive: number }>('/api/forma
 })
 
 const compteurPrive = computed(() => aTraiter.value.coachingPrive)
+// Onglet « Live Sessions » entre « Mes modules » et « Coaching collectif »
+// (CDC §5.2), quand la fonctionnalité est ouverte aux formateurs (10.G).
+const liveVisible = useLiveVisible()
 
 const liens = computed(() => [
   { libelle: 'Vue d’ensemble', chemin: '/formateur' },
   { libelle: 'Mes modules', chemin: '/formateur/modules' },
+  ...(liveVisible.value ? [{ libelle: 'Live Sessions', chemin: '/formateur/live-sessions' }] : []),
   { libelle: 'Coaching collectif', chemin: '/formateur/sessions' },
   { libelle: 'Coaching privé', chemin: '/formateur/coaching-prive', compteur: compteurPrive.value },
   { libelle: 'Revenus', chemin: '/formateur/revenus' },
@@ -36,6 +40,7 @@ const liens = computed(() => [
 const ongletsMobile = computed(() => [
   { libelle: 'Accueil', chemin: '/formateur', icone: 'ph:squares-four' },
   { libelle: 'Modules', chemin: '/formateur/modules', icone: 'ph:stack' },
+  ...(liveVisible.value ? [{ libelle: 'Live', chemin: '/formateur/live-sessions', icone: 'ph:broadcast' }] : []),
   { libelle: 'Sessions', chemin: '/formateur/sessions', icone: 'ph:calendar-dots' },
   { libelle: 'Privé', chemin: '/formateur/coaching-prive', icone: 'ph:target', compteur: compteurPrive.value },
   { libelle: 'Revenus', chemin: '/formateur/revenus', icone: 'ph:currency-circle-dollar' },

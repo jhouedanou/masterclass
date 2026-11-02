@@ -11,6 +11,7 @@ const SECTIONS = [
   { cle: 'offres-commerciales', libelle: 'Offres commerciales' },
   { cle: 'formateurs', libelle: 'Formateurs' },
   { cle: 'calendrier-sessions', libelle: 'Calendrier des sessions' },
+  { cle: 'live-sessions', libelle: 'Live Sessions', note: 'Planification, publication, inscrits, support et bascule vers la vidéo.' },
   { cle: 'coaching-prive', libelle: 'Coaching privé' },
   { cle: 'apprenants', libelle: 'Apprenants', note: 'Coordonnées, création de comptes, révocation des accès. L’attribution gratuite d’un module demande aussi « Offres commerciales ».' },
   { cle: 'attestations', libelle: 'Attestations', note: 'Révocation et rétablissement. Griffes et signataire : administrateur supérieur.' },

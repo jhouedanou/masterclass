@@ -12,6 +12,9 @@ import {
   trouverTransactionParPrestataire,
 } from '../database/commerce'
 import type { MoyenTransactionSql } from '../database/types'
+import { confirmerInscriptionLive, trouverInscriptionLiveParId, trouverSessionLive } from '../database/live'
+import { alerterRemboursementLive, envoyerConfirmationLive } from './emailsLive'
+import { envoyerConversionsLive } from './conversionsLive'
 import { envoyerEvenementMeta, type ContexteMeta } from './metaCapi'
 import { notifierCompte } from './notifications'
 
@@ -39,6 +42,26 @@ export interface ConfigFeexPay {
   cleApi: string
   baseUrl: string
   webhookCle: string
+}
+
+/** Le moyen choisi dans le tunnel, projeté sur les libellés du prestataire.
+ *  L'opérateur Mobile Money exact n'est connu qu'au retour FeexPay. */
+export const MOYENS_TRANSACTION: Record<string, MoyenTransactionSql> = {
+  'mobile-money': 'Orange Money',
+  wave: 'Wave',
+  djamo: 'Djamo',
+  visa: 'Visa',
+}
+
+/** Onglet de la fenêtre FeexPay selon le moyen choisi, pour que le client n'ait
+ *  pas à choisir une seconde fois. Le SDK range Wave (Côte d'Ivoire) parmi les
+ *  portefeuilles (`WALLET`), pas parmi les réseaux Mobile Money ; Djamo se
+ *  règle par sa carte. Vide = tous les moyens. */
+export const CAS_FEEXPAY: Record<string, 'MOBILE' | 'WALLET' | 'CARD' | ''> = {
+  'mobile-money': 'MOBILE',
+  wave: 'WALLET',
+  djamo: 'CARD',
+  visa: 'CARD',
 }
 
 export function configFeexPay(): ConfigFeexPay {
@@ -307,7 +330,12 @@ export async function rapprocherCommande(
   commande: Commande,
   transaction: TransactionFeexPay,
 ): Promise<ResultatRapprochement> {
-  if (commande.statut === 'confirmee') return { statut: 'confirmee', commande }
+  if (commande.statut === 'confirmee') {
+    // Une inscription Live Session interrompue après la confirmation de la
+    // commande se termine ici ; la fonction est idempotente.
+    if (commande.sessionLiveId) await finaliserInscriptionLive(commande)
+    return { statut: 'confirmee', commande }
+  }
 
   // La confirmation depuis le navigateur accepte une référence FeexPay fournie
   // par le client, et `lireStatutFeexPay` interroge un point d'entrée public,
@@ -412,6 +440,14 @@ export async function rapprocherCommande(
     return { statut: 'confirmee', commande: confirmee }
   }
 
+  // Live Session (CDC §6) : l'inscription réglée est confirmée en base, qui
+  // ouvre l'accès au module ; la confirmation d'achat générique ne part pas,
+  // l'invitation à la session la remplace.
+  if (commande.sessionLiveId) {
+    await finaliserInscriptionLive(confirmee)
+    return { statut: 'confirmee', commande: confirmee }
+  }
+
   const modules = commande.moduleIds.length
     ? commande.moduleIds
     : (await transactionsDeCommande(commande.reference))
@@ -435,7 +471,7 @@ export async function rapprocherCommande(
 async function signalerAchatMeta(
   commande: Commande,
   contentIds: string[],
-  categorie: 'module' | 'coaching_prive',
+  categorie: 'module' | 'coaching_prive' | 'live_session',
 ): Promise<void> {
   try {
     const contexte = await consommerSuiviMeta(commande.reference)
@@ -451,6 +487,35 @@ async function signalerAchatMeta(
     })
   } catch (erreur) {
     console.error('[meta-capi] achat non signalé', commande.reference, (erreur as Error)?.message ?? erreur)
+  }
+}
+
+/**
+ * Confirmation d'une inscription Live Session payée (§6, étapes 2 et 3).
+ * Idempotente : seule la première confirmation envoie l'invitation et les
+ * conversions. Un paiement reçu sans place passe « à rembourser » et l'équipe
+ * est alertée. Ne lève jamais : le paiement est acquis, la relance planifiée
+ * reprendra une confirmation interrompue.
+ */
+export async function finaliserInscriptionLive(commande: Commande): Promise<void> {
+  try {
+    const resultat = await confirmerInscriptionLive(commande.reference)
+    if (!resultat.premiereConfirmation) return
+    const [session, inscription, apprenant] = await Promise.all([
+      trouverSessionLive(resultat.sessionId),
+      trouverInscriptionLiveParId(resultat.inscriptionId),
+      trouverUtilisateur(commande.utilisateurId),
+    ])
+    if (!session || !inscription || !apprenant) return
+    if (resultat.statut === 'a-rembourser') {
+      await alerterRemboursementLive(session, apprenant, commande.reference)
+      return
+    }
+    await envoyerConfirmationLive(session, inscription, apprenant)
+    await signalerAchatMeta(commande, [session.moduleId], 'live_session')
+    await envoyerConversionsLive(inscription.id, apprenant, commande)
+  } catch (erreur) {
+    console.error('[live] inscription non finalisée', commande.reference, (erreur as Error)?.message ?? erreur)
   }
 }
 

@@ -98,6 +98,7 @@ async function demanderAutorisation() {
     role: 0 | 1
     sujet: string
     lienSecours: string | null
+    zak?: string | null
     ouverture: string
   }>('/api/zoom/signature', {
     method: 'POST',

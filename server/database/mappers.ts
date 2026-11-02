@@ -176,6 +176,9 @@ export function versFormateur(row: FormateurRow): Formateur {
     nom: row.nom,
     expertise: row.expertise,
     bio: row.bio,
+    // Absentes tant que la migration 49 n'est pas passée : la fiche s'affiche comme avant.
+    presentation: row.presentation || undefined,
+    linkedin: row.linkedin || undefined,
     programmePrincipal: row.programme_principal,
     photo: row.photo,
     photoAlt: row.photo_alt || undefined,
@@ -313,6 +316,7 @@ export function versAcces(row: AccesRow): Acces {
     acheteLe: row.achete_le,
     termineLe: row.termine_le,
     origine: row.origine,
+    inscriptionLiveId: optionnel(row.inscription_live_id),
     revoqueLe: row.revoque_le,
     motifRevocation: optionnel(row.motif_revocation),
   }
@@ -445,6 +449,7 @@ export function versCommande(row: CommandeRow, moduleIds: string[] = []): Comman
     statut: row.statut,
     creeeLe: row.creee_le,
     demandeCoachingId: optionnel(row.demande_coaching_id),
+    sessionLiveId: optionnel(row.session_live_id),
   }
 }
 

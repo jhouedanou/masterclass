@@ -2,6 +2,7 @@ import type { ProgrammeSlug } from '#shared/types'
 import { enregistrerJournal } from '../../database/administration'
 import { listerFormateurs, majFormateur, reordonnerFormateurs } from '../../database/catalogue'
 import { exigerSection } from '../../utils/session'
+import { lienLinkedin } from '../../utils/texte'
 
 /**
  * Édition et réordonnancement des fiches formateurs (écran 11).
@@ -17,6 +18,8 @@ export default defineEventHandler(async (event) => {
     nom?: string
     expertise?: string
     bio?: string
+    presentation?: string
+    linkedin?: string
     photoAlt?: string
     programmePrincipal?: ProgrammeSlug
     ficheComplete?: boolean
@@ -48,6 +51,8 @@ export default defineEventHandler(async (event) => {
     nom: body.nom?.trim(),
     expertise: body.expertise?.trim(),
     bio: body.bio?.trim(),
+    presentation: body.presentation?.trim(),
+    linkedin: body.linkedin === undefined ? undefined : lienLinkedin(body.linkedin),
     photoAlt: body.photoAlt?.trim(),
     programmePrincipal: body.programmePrincipal,
     ficheComplete: body.ficheComplete,

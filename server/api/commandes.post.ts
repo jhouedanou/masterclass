@@ -4,8 +4,7 @@ import { changerStatutDemandeCoachingPrive, trouverDemandeCoachingPrive } from '
 import { enregistrerCommande, enregistrerTransaction } from '../database/commerce'
 import { listerAccesUtilisateur, ouvrirAcces } from '../database/comptes'
 import { notifierCompte } from '../utils/notifications'
-import type { MoyenTransactionSql } from '../database/types'
-import { configFeexPay, descriptionFeexPay } from '../utils/feexpay'
+import { CAS_FEEXPAY, MOYENS_TRANSACTION as MOYENS, configFeexPay, descriptionFeexPay } from '../utils/feexpay'
 import { contexteMeta, type SuiviNavigateur } from '../utils/metaCapi'
 import { exigerUtilisateur } from '../utils/session'
 
@@ -32,30 +31,10 @@ const DETAILS: Record<CodeEchecPaiement, string> = {
   'erreur-inconnue': 'Erreur non identifiée côté prestataire.',
 }
 
-/** Le moyen choisi dans le tunnel, projeté sur les libellés du prestataire.
- *  L'opérateur Mobile Money exact n'est connu qu'au retour FeexPay. */
-const MOYENS: Record<string, MoyenTransactionSql> = {
-  'mobile-money': 'Orange Money',
-  wave: 'Wave',
-  djamo: 'Djamo',
-  visa: 'Visa',
-}
-
 function referenceFeexPay(): string {
   const d = new Date()
   const jour = `${String(d.getDate()).padStart(2, '0')}${String(d.getMonth() + 1).padStart(2, '0')}`
   return `FP-${jour}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`
-}
-
-/** Onglet de la fenêtre FeexPay selon le moyen choisi, pour que le client n'ait
- *  pas à choisir une seconde fois. Le SDK range Wave (Côte d'Ivoire) parmi les
- *  portefeuilles (`WALLET`), pas parmi les réseaux Mobile Money ; Djamo se
- *  règle par sa carte. Vide = tous les moyens. */
-const CAS_FEEXPAY: Record<string, 'MOBILE' | 'WALLET' | 'CARD' | ''> = {
-  'mobile-money': 'MOBILE',
-  wave: 'WALLET',
-  djamo: 'CARD',
-  visa: 'CARD',
 }
 
 /**

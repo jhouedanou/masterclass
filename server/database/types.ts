@@ -14,7 +14,7 @@
  */
 
 export type ProgrammeSlugSql = 'social-media' | 'entrepreneurs'
-export type StatutModuleSql = 'disponible' | 'en-preparation' | 'brouillon' | 'annonce'
+export type StatutModuleSql = 'disponible' | 'en-preparation' | 'brouillon' | 'annonce' | 'live-session'
 export type StatutPublicationSql = 'brouillon' | 'publie'
 export type RoleUtilisateurSql = 'apprenant' | 'formateur' | 'admin-contenu' | 'admin-superieur'
 export type StatutSessionSql = 'planifiee' | 'annulee' | 'terminee'
@@ -74,6 +74,10 @@ export type SectionAdminSql =
   | 'transactions-paiements'
   | 'apprenants'
   | 'attestations'
+  | 'live-sessions'
+export type StatutSessionLiveSql = 'brouillon' | 'publiee' | 'en-cours' | 'terminee' | 'annulee'
+export type StatutInscriptionLiveSql = 'attente' | 'confirmee' | 'expiree' | 'annulee' | 'a-rembourser'
+export type VisibiliteLiveSql = 'personne' | 'admins' | 'tous'
 
 /** Colonnes « Référencement et partage », dépliées sur les quatre entités
  *  éditables depuis le back-office. */
@@ -139,6 +143,8 @@ export type FormateurRow = ColonnesSeo & {
   nom: string
   expertise: string
   bio: string
+  presentation: string
+  linkedin: string | null
   programme_principal: ProgrammeSlugSql
   photo: string
   photo_alt: string | null
@@ -342,9 +348,11 @@ export type AccesRow = {
   progression: number
   achete_le: string
   termine_le: string | null
-  origine: 'achat' | 'attribution'
+  origine: 'achat' | 'attribution' | 'live-session'
   revoque_le: string | null
   motif_revocation: string | null
+  /** Inscription à la Live Session qui a ouvert l'accès (CDC §3.4). */
+  inscription_live_id: string | null
 }
 
 export type SessionCoachingRow = {
@@ -438,6 +446,8 @@ export type CommandeRow = {
   statut: StatutCommandeSql
   creee_le: string
   demande_coaching_id: string | null
+  /** Live Session réglée par la commande (aucune ligne module). */
+  session_live_id: string | null
   /** Contexte Meta retenu jusqu'à l'envoi de Purchase (API Conversions). */
   suivi_meta: Record<string, unknown> | null
 }
@@ -742,6 +752,67 @@ export type ReferentielRow = {
 }
 
 /** Les colonnes à valeur par défaut sont facultatives à l'insertion. */
+export type SessionLiveRow = {
+  id: string
+  module_id: string
+  slug: string
+  debut: string
+  duree_minutes: number
+  capacite: number
+  formateur_id: string
+  moderateur_id: string | null
+  zoom_reunion_id: string | null
+  zoom_mot_de_passe: string | null
+  zoom_lien_participation: string | null
+  zoom_lien_hote: string | null
+  support_chemin: string | null
+  support_nom: string | null
+  prerequis: string[]
+  gains: string[]
+  deroule: { decalageMinutes: number; libelle: string; questionsReponses: boolean }[]
+  deroule_valide_le: string | null
+  test_technique_le: string | null
+  statut: StatutSessionLiveSql
+  publiee_le: string | null
+  termine_le: string | null
+  annule_le: string | null
+  video_publiee_le: string | null
+  envoye_formateur_planifiee_le: string | null
+  envoye_formateur_j1_le: string | null
+  cree_le: string
+  maj_le: string
+}
+
+export type InscriptionLiveRow = {
+  id: string
+  session_live_id: string
+  utilisateur_id: string
+  commande_reference: string | null
+  statut: StatutInscriptionLiveSql
+  reservation_expire_le: string | null
+  confirme_le: string | null
+  envoye_j1_le: string | null
+  envoye_m10_le: string | null
+  envoye_h0_le: string | null
+  envoye_fin_le: string | null
+  envoye_video_le: string | null
+  utm_source: string | null
+  utm_medium: string | null
+  utm_campaign: string | null
+  fbclid: string | null
+  ttclid: string | null
+  li_fat_id: string | null
+  cree_le: string
+  maj_le: string
+}
+
+export type ReglagesLiveRow = {
+  id: boolean
+  visibilite: VisibiliteLiveSql
+  maj_le: string
+  maj_par: string | null
+}
+
 type Table<Row, Genere extends keyof Row = never> = {
   Row: Row
   Insert: Omit<Row, Genere> & Partial<Pick<Row, Genere>>
@@ -767,6 +838,8 @@ export type Database = {
         | 'whatsapp'
         | 'activation_coaching_demandee_le'
         | 'position'
+        | 'presentation'
+        | 'linkedin'
         | keyof ColonnesSeo
       >
       modules: Table<
@@ -846,7 +919,19 @@ export type Database = {
       reinitialisations_mot_de_passe: Table<ReinitialisationRow, 'cree_le' | 'utilise_le'>
       personas: Table<PersonaRow, Exclude<keyof PersonaRow, 'utilisateur_id'>>
       visionnages: Table<VisionnageRow, 'secondes_vues' | 'marge_secondes' | 'maj_le'>
-      acces: Table<AccesRow, 'progression' | 'achete_le' | 'termine_le' | 'origine' | 'revoque_le' | 'motif_revocation'>
+      acces: Table<
+        AccesRow,
+        'progression' | 'achete_le' | 'termine_le' | 'origine' | 'revoque_le' | 'motif_revocation' | 'inscription_live_id'
+      >
+      sessions_live: Table<
+        SessionLiveRow,
+        Exclude<keyof SessionLiveRow, 'module_id' | 'slug' | 'debut' | 'capacite' | 'formateur_id'>
+      >
+      inscriptions_live: Table<
+        InscriptionLiveRow,
+        Exclude<keyof InscriptionLiveRow, 'session_live_id' | 'utilisateur_id'>
+      >
+      reglages_live: Table<ReglagesLiveRow, 'id' | 'maj_le' | 'maj_par' | 'visibilite'>
       sessions_coaching: Table<
         SessionCoachingRow,
         | 'id'
@@ -881,7 +966,7 @@ export type Database = {
         | 'a_la_une'
       >
       articles_modules: Table<ArticleModuleRow>
-      commandes: Table<CommandeRow, 'creee_le' | 'statut' | 'demande_coaching_id' | 'suivi_meta'>
+      commandes: Table<CommandeRow, 'creee_le' | 'statut' | 'demande_coaching_id' | 'session_live_id' | 'suivi_meta'>
       commandes_modules: Table<CommandeModuleRow>
       transactions: Table<
         TransactionRow,
@@ -958,6 +1043,28 @@ export type Database = {
     // et fait retomber toutes les tables sur `never`.
     Views: { [_ in never]: never }
     Functions: {
+      reserver_place_live: {
+        Args: {
+          p_session_id: string
+          p_utilisateur_id: string
+          p_commande_reference: string
+          p_attribution?: Record<string, string>
+        }
+        Returns: InscriptionLiveRow
+      }
+      confirmer_inscription_live: {
+        Args: { p_commande_reference: string }
+        Returns: {
+          inscription_id: string
+          session_id: string
+          statut: StatutInscriptionLiveSql
+          premiere_confirmation: boolean
+        }
+      }
+      live_terminee_pour: {
+        Args: { p_utilisateur_id: string; p_module_id: string }
+        Returns: boolean
+      }
       enregistrer_erreur_404: {
         Args: { p_chemin: string }
         Returns: undefined
@@ -1042,6 +1149,9 @@ export type Database = {
       section_admin: SectionAdminSql
       cle_bloc_vitrine: CleBlocVitrineSql
       categorie_referentiel: CategorieReferentielSql
+      statut_session_live: StatutSessionLiveSql
+      statut_inscription_live: StatutInscriptionLiveSql
+      visibilite_live: VisibiliteLiveSql
     }
     CompositeTypes: { [_ in never]: never }
   }

@@ -104,6 +104,12 @@ export async function creerReunion(champs: {
   debutIso: string
   dureeMinutes: number
   enregistrement?: boolean
+  /**
+   * Réunion d'une Live Session (CDC §9, mode réunion) : pas de salle
+   * d'attente, participants en sourdine à l'entrée, enregistrement cloud
+   * automatique. L'hôte (le formateur) peut entrer avant l'heure.
+   */
+  live?: boolean
 }): Promise<ReunionZoom> {
   if (configZoom().mode === 'simulation') return reunionSimulee()
   const r = await api<{ id: number; password: string; join_url: string; start_url: string }>('/users/me/meetings', {
@@ -114,13 +120,23 @@ export async function creerReunion(champs: {
       start_time: champs.debutIso,
       duration: champs.dureeMinutes,
       timezone: 'Africa/Abidjan',
-      settings: {
-        join_before_host: false,
-        waiting_room: true,
-        mute_upon_entry: true,
-        approval_type: 2,
-        auto_recording: champs.enregistrement ? 'cloud' : 'none',
-      },
+      settings: champs.live
+        ? {
+            join_before_host: false,
+            waiting_room: false,
+            mute_upon_entry: true,
+            participant_video: false,
+            host_video: true,
+            approval_type: 2,
+            auto_recording: 'cloud',
+          }
+        : {
+            join_before_host: false,
+            waiting_room: true,
+            mute_upon_entry: true,
+            approval_type: 2,
+            auto_recording: champs.enregistrement ? 'cloud' : 'none',
+          },
     },
   })
   return { id: String(r.id), motDePasse: r.password, lienParticipation: r.join_url, lienHote: r.start_url }
@@ -142,6 +158,48 @@ export async function supprimerReunion(id: string) {
     // Une réunion déjà supprimée chez Zoom ne doit pas bloquer l'annulation.
     console.warn('[zoom] suppression de réunion', id, (e as Error).message)
   }
+}
+
+/**
+ * Démarrer une réunion en hôte.
+ *
+ * Les réunions sont créées sur le compte Zoom de Big Five (`/users/me`), avec
+ * « l'hôte entre le premier ». Un jeton du Meeting SDK au rôle 1 ne suffit pas
+ * à les démarrer : Zoom exige aussi le ZAK du compte propriétaire. Sans lui,
+ * le formateur restait devant « en attente de l'hôte », comme ses apprenants.
+ * Le lien `start_url` gardé à la création expire au bout de quelques heures :
+ * le lien de secours de l'hôte est donc relu au moment d'entrer.
+ *
+ * Portées de l'application Server-to-Server : `user:read:zak:admin` et
+ * `meeting:read:meeting:admin`. Une portée manquante ne bloque pas l'entrée :
+ * l'hôte retombe sur le lien enregistré.
+ */
+export async function accesHote(
+  reunionId: string,
+  maintenant = new Date(),
+): Promise<{ zak: string | null; lienHote: string | null }> {
+  if (configZoom().mode === 'simulation' || !reunionId) return { zak: null, lienHote: null }
+  // La fenêtre se lit sur la réunion chez Zoom, pas sur nos données : une
+  // séance de coaching privé n'a pas d'heure en base, et passait pour
+  // « ouverte » à toute heure. Hors de 30 min avant le début à 30 min après
+  // la fin, rien ne part.
+  const reunion = await api<{ start_url?: string; start_time?: string; duration?: number }>(
+    `/meetings/${encodeURIComponent(reunionId)}`,
+  ).catch((e) => {
+    console.warn('[zoom] réunion illisible', reunionId, (e as Error).message)
+    return null
+  })
+  if (!reunion?.start_time) return { zak: null, lienHote: null }
+  const { ouverte } = salleOuverte(new Date(reunion.start_time), reunion.duration ?? 120, 30, maintenant)
+  if (!ouverte) return { zak: null, lienHote: null }
+
+  const zak = await api<{ token: string }>('/users/me/token?type=zak')
+    .then((r) => r.token)
+    .catch((e) => {
+      console.warn('[zoom] ZAK indisponible', (e as Error).message)
+      return null
+    })
+  return { zak, lienHote: reunion.start_url ?? null }
 }
 
 // --- Signature du Meeting SDK ----------------------------------------------

@@ -1,17 +1,22 @@
 import { listerArticles } from '../../database/blog'
 import { listerFormateurs, listerModules, listerProgrammes } from '../../database/catalogue'
+import { listerSessionsLive } from '../../database/live'
+import { liveVisiblePour, visibiliteLive } from '../../utils/live'
 
 /**
  * Spec SEO §8 : le sitemap ne contient que les URL canoniques indexables.
  * Brouillons, fiches « en préparation » non activées et profils incomplets en sortent.
  */
 export default defineEventHandler(async () => {
-  const [programmes, modules, formateurs, articles] = await Promise.all([
+  const [programmes, modules, formateurs, articles, visibilite] = await Promise.all([
     listerProgrammes(),
     listerModules(),
     listerFormateurs(),
     listerArticles(),
+    visibiliteLive(),
   ])
+  // Live Sessions : seulement si la fonctionnalité est visible du public.
+  const lives = liveVisiblePour(visibilite, null) ? await listerSessionsLive({ statuts: ['publiee'] }) : []
 
   return [
     { loc: '/', changefreq: 'weekly', priority: 1 },
@@ -32,6 +37,12 @@ export default defineEventHandler(async () => {
     { loc: '/contact', priority: 0.4 },
     { loc: '/verifier', priority: 0.3 },
     { loc: '/sessions', priority: 0.4 },
+    ...(liveVisiblePour(visibilite, null)
+      ? [
+          { loc: '/live-sessions', changefreq: 'weekly', priority: 0.7 },
+          ...lives.map((l) => ({ loc: `/live-sessions/${l.slug}`, priority: 0.6 })),
+        ]
+      : []),
     { loc: '/blog', changefreq: 'weekly', priority: 0.7 },
     ...articles
       .filter((a) => a.statut === 'publie' && a.seo.indexable !== false)

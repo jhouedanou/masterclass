@@ -3,6 +3,9 @@ import { listerDemandesCoachingPriveUtilisateur, listerInscriptionsUtilisateur, 
 import { listerCertificatsUtilisateur, listerCommandesUtilisateur } from '../../database/commerce'
 import { completionProfil, listerAccesUtilisateur, listerVisionnagesUtilisateur } from '../../database/comptes'
 import { etatsQuiz } from '../../database/quiz'
+import { listerSessionsLive } from '../../database/live'
+import { dateCourteLive } from '#shared/utils/live'
+import { cartesLiveApprenant } from '../../utils/liveApprenant'
 import { exigerUtilisateur } from '../../utils/session'
 
 /** Nombre de jours entre aujourd'hui et une date « AAAA-MM-JJ » (J-8). */
@@ -20,7 +23,7 @@ function joursAvant(date: string): number {
 export default defineEventHandler(async (event) => {
   const utilisateur = await exigerUtilisateur(event)
 
-  const [acces, modules, formateurs, thematiques, sessions, inscriptions, demandes, commandes, certificats, visionnages, completion, quiz] =
+  const [acces, modules, formateurs, thematiques, sessions, inscriptions, demandes, commandes, certificats, visionnages, completion, quiz, liveSessions, sessionsLive] =
     await Promise.all([
       listerAccesUtilisateur(utilisateur.id),
       listerModules(),
@@ -34,6 +37,8 @@ export default defineEventHandler(async (event) => {
       listerVisionnagesUtilisateur(utilisateur.id),
       completionProfil(utilisateur),
       etatsQuiz(utilisateur.id),
+      cartesLiveApprenant(utilisateur),
+      listerSessionsLive(),
     ])
 
   const aujourdHui = new Date().toISOString().slice(0, 10)
@@ -44,7 +49,9 @@ export default defineEventHandler(async (event) => {
     .filter((a) => !a.revoqueLe)
     .map((a) => {
       const module = modules.find((m) => m.id === a.moduleId)
-      if (!module) return null
+      // Un module encore en Live Session a sa propre carte (`liveSessions`) :
+      // la vidéo n'existe pas encore (RM6).
+      if (!module || module.statut === 'live-session') return null
       const vus = visionnages.get(module.id) ?? []
       const chapitresVus = a.progression === 100 ? module.chapitres.length : vus.filter((v) => v.vu).length
       const prochaine = aVenir.find((s) => s.thematiqueId === module.thematiqueId) ?? null
@@ -97,8 +104,21 @@ export default defineEventHandler(async (event) => {
     }))
 
   const derniereDemande = demandes[0]
+  // « Live Session · titre · date de session » (CDC 10.C) ; sans module ni
+  // session, la commande réglait une séance de coaching privé.
+  const libelleAchat = (c: (typeof commandes)[number]): string => {
+    if (c.sessionLiveId) {
+      const live = sessionsLive.find((s) => s.id === c.sessionLiveId)
+      const module = live && modules.find((m) => m.id === live.moduleId)
+      return live && module ? `${module.titre} · ${dateCourteLive(live.debut)}` : 'Live Session'
+    }
+    if (c.demandeCoachingId) return 'Coaching privé'
+    return c.moduleIds.map((id) => modules.find((m) => m.id === id)?.titre ?? id).join(' + ')
+  }
   return {
     completionProfil: completion,
+    /** Cartes Live Session, en tête de « Mes formations » (CDC §4.3). */
+    liveSessions,
     cartes,
     coachingPrive: derniereDemande
       ? {
@@ -115,7 +135,8 @@ export default defineEventHandler(async (event) => {
         reference: c.reference,
         date: c.creeeLe,
         total: c.total,
-        libelle: c.moduleIds.map((id) => modules.find((m) => m.id === id)?.titre ?? id).join(' + '),
+        libelle: libelleAchat(c),
+        type: c.sessionLiveId ? ('live' as const) : c.demandeCoachingId ? ('coaching' as const) : ('module' as const),
       })),
     planning,
   }

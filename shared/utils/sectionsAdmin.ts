@@ -29,6 +29,7 @@ const PRESENCE: Record<SectionAdmin, true> = {
   'transactions-paiements': true,
   apprenants: true,
   attestations: true,
+  'live-sessions': true,
 }
 
 export const SECTIONS_ADMIN = Object.keys(PRESENCE) as SectionAdmin[]

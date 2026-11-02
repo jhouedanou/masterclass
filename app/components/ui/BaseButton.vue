@@ -5,6 +5,7 @@ interface Props {
   variante?:
     | 'social'
     | 'entrepreneurs'
+    | 'live'
     | 'sombre'
     | 'blanc'
     | 'whatsapp'
@@ -45,6 +46,8 @@ const classes = computed(() => {
   const variantes = {
     social: 'bg-social text-white hover:bg-social-fonce',
     entrepreneurs: 'bg-entrepreneurs text-white hover:bg-entrepreneurs-fonce',
+    // Live Session : rose de la maquette Live Session (blanc sur rose, 5,8:1).
+    live: 'bg-live text-white hover:bg-live-fonce',
     sombre: 'bg-encre text-white hover:bg-encre-800',
     blanc: 'bg-white text-encre hover:bg-fond-clair',
     whatsapp: 'bg-whatsapp text-white hover:brightness-95',

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CodeEchecPaiement } from '#shared/types'
+import { dateLongueLive, heureLive, ligneHoraireLive } from '#shared/utils/live'
 
 definePageMeta({ middleware: 'auth' })
 
@@ -96,8 +97,10 @@ usePagePrivee('Choisissez votre moyen de paiement')
 
 /** Objet réglé : un module (tunnel classique) ou une séance de coaching privé. */
 const seance = computed(() => achat.seance)
-const montant = computed(() => achat.seance?.prixFcfa ?? achat.module?.prixFcfa ?? 0)
-const libelleObjet = computed(() => achat.seance?.titre ?? achat.module?.titre ?? '')
+/** Inscription à une Live Session (CDC v1.3, planche 04). */
+const live = computed(() => achat.live)
+const montant = computed(() => achat.seance?.prixFcfa ?? achat.live?.prixFcfa ?? achat.module?.prixFcfa ?? 0)
+const libelleObjet = computed(() => achat.seance?.titre ?? (achat.live ? `Live Session · ${achat.live.titre}` : null) ?? achat.module?.titre ?? '')
 
 // --- FeexPay (SDK JavaScript, docs.feexpay.me) ------------------------------
 
@@ -116,7 +119,7 @@ interface ParametresFeexPay {
 
 interface ReponseCommande {
   reference: string
-  feexpay?: ParametresFeexPay
+  feexpay?: ParametresFeexPay | null
 }
 
 type FeexPayButtonGlobal = {
@@ -320,7 +323,7 @@ function mettreAchatDeCote(commande: string) {
   try {
     sessionStorage.setItem(
       CLE_ACHAT_EN_COURS,
-      JSON.stringify({ commande, module: achat.module, seance: achat.seance, moyen: achat.moyen }),
+      JSON.stringify({ commande, module: achat.module, seance: achat.seance, live: achat.live, moyen: achat.moyen }),
     )
   } catch {
     // Stockage indisponible (navigation privée) : le retour mènera à l'espace.
@@ -333,6 +336,7 @@ function reprendreAchatMisDeCote(commande: string) {
     const mis = brut ? JSON.parse(brut) : null
     if (mis?.commande !== commande) return
     if (mis.seance) achat.definirSeance(mis.seance)
+    else if (mis.live) achat.definirLive(mis.live)
     else if (mis.module) achat.definir(mis.module)
     if (moyens.some((m) => m.valeur === mis.moyen)) achat.moyen = mis.moyen
   } catch {
@@ -550,6 +554,9 @@ function articlesSuivis() {
   if (achat.seance) {
     return [{ id: `coaching-${achat.seance.demandeId}`, titre: achat.seance.titre, prixFcfa: achat.seance.prixFcfa, categorie: 'Coaching privé' }]
   }
+  if (achat.live) {
+    return [{ id: `live-${achat.live.slug}`, titre: achat.live.titre, prixFcfa: achat.live.prixFcfa, categorie: 'Live Session' }]
+  }
   if (achat.module) {
     return [{ id: achat.module.id, titre: achat.module.titre, prixFcfa: achat.module.prixFcfa, categorie: achat.module.programme }]
   }
@@ -558,7 +565,7 @@ function articlesSuivis() {
 
 /** Module ou séance de coaching privé, pour `content_category`. */
 function categorieSuivie() {
-  return achat.seance ? ('coaching_prive' as const) : ('module' as const)
+  return achat.seance ? ('coaching_prive' as const) : achat.live ? ('live_session' as const) : ('module' as const)
 }
 
 /** Purchase, sous l'identifiant que l'API Conversions reprend côté serveur
@@ -572,7 +579,7 @@ function signalerAchat(reference: string) {
 }
 
 async function payer() {
-  if (!achat.module && !achat.seance) return
+  if (!achat.module && !achat.seance && !achat.live) return
   suivre('AddPaymentInfo', {
     articles: articlesSuivis(),
     valeur: montant.value,
@@ -583,16 +590,23 @@ async function payer() {
   message.value = feexpayActif ? 'Ouverture de la commande…' : 'Validez la demande sur votre téléphone.'
   codeEchec.value = null
   try {
-    const commande = await $fetch<ReponseCommande>('/api/commandes', {
-      method: 'POST',
-      body: {
-        moduleIds: achat.module ? [achat.module.id] : [],
-        demandeId: achat.seance?.demandeId,
-        moyen: achat.moyen,
-        simulerEchec: dev && simulerEchec.value ? simulerEchec.value : undefined,
-        suivi: contexteSuivi(),
-      },
-    })
+    // Live Session : réservation de la place 15 min, puis la même fenêtre
+    // FeexPay et la même confirmation qu'un achat de module (CDC §6).
+    const commande = achat.live
+      ? await $fetch<ReponseCommande>(`/api/live-sessions/${encodeURIComponent(achat.live.slug)}/inscription`, {
+          method: 'POST',
+          body: { moyen: achat.moyen, suivi: contexteSuivi(), cgv: true },
+        })
+      : await $fetch<ReponseCommande>('/api/commandes', {
+          method: 'POST',
+          body: {
+            moduleIds: achat.module ? [achat.module.id] : [],
+            demandeId: achat.seance?.demandeId,
+            moyen: achat.moyen,
+            simulerEchec: dev && simulerEchec.value ? simulerEchec.value : undefined,
+            suivi: contexteSuivi(),
+          },
+        })
     commandeEnCours.value = commande.reference
     if (commande.feexpay) {
       await ouvrirFeexPay(commande.feexpay)
@@ -631,6 +645,11 @@ function changerDeMoyen() {
       <span class="lg:hidden">Moyen de paiement</span>
       <span class="hidden lg:inline">Choisissez votre moyen de paiement</span>
     </h1>
+    <div v-if="live" class="mb-4.5 rounded-bloc border border-live-bordure bg-live-voile p-5 text-[14px]">
+      <p class="font-bold text-live">Live Session</p>
+      <p class="mt-1 font-title text-[19px] font-light text-encre">{{ live.titre }}</p>
+      <p class="text-[13.5px] text-texte">{{ ligneHoraireLive(live.debut, live.dureeMinutes) }} · {{ formatFcfa(live.prixFcfa, true) }}</p>
+    </div>
     <div v-if="seance" class="mb-4.5 rounded-bloc border border-ligne-douce bg-fond-clair p-5 text-[14px]">
       <p class="text-discret">Séance de coaching privé</p>
       <p class="mt-1 font-title text-[19px] font-light">{{ seance.formateur }} · {{ seance.heures }} h</p>
@@ -755,6 +774,33 @@ function changerDeMoyen() {
       <button type="button" class="mt-4 text-[14px] text-discret hover:underline" @click="changerDeMoyen">
         Annuler et changer de moyen de paiement
       </button>
+    </div>
+
+    <!-- Live Session (planche 04, confirmation) : invitation, calendrier des envois, agenda. -->
+    <div v-else-if="live" class="text-center">
+      <p class="mx-auto mb-4 grid size-16 place-items-center rounded-full bg-succes-voile text-[28px] text-whatsapp" aria-hidden="true">✓</p>
+      <p class="mb-2 font-title text-[23px] font-light">Votre inscription est confirmée</p>
+      <p class="text-[14px] leading-relaxed text-texte">
+        Paiement confirmé pour <b class="text-encre">{{ live.titre }}</b>, le {{ dateLongueLive(live.debut).toLowerCase() }} à {{ heureLive(live.debut) }} GMT.
+      </p>
+      <ul class="mt-5 flex flex-col gap-2.5 rounded-bloc border border-ligne-douce p-4.5 text-left text-[13.5px]">
+        <li><b class="text-encre">Maintenant</b> · e-mail d’invitation, avec le fichier pour votre agenda</li>
+        <li><b class="text-encre">La veille, 10 min avant et à l’heure</b> · e-mail avec le bouton « Rejoindre la session »</li>
+        <li><b class="text-encre">Le jour J</b> · la session s’ouvre directement dans votre espace</li>
+        <li><b class="text-encre">Après</b> · quiz, support si fourni, puis version vidéo</li>
+      </ul>
+      <p v-if="achat.reference" class="mt-3 font-mono text-[13px] text-discret">Référence {{ achat.reference }}</p>
+      <UiBaseButton to="/mon-espace" class="mt-5 w-full" variante="sombre" taille="lg" @click="achat.vider()">
+        Accéder à mon espace
+      </UiBaseButton>
+      <UiBaseButton
+        :href="`/api/live-sessions/${encodeURIComponent(live.slug)}/agenda.ics`"
+        class="mt-3 w-full"
+        variante="contour"
+        taille="lg"
+      >
+        Ajouter à mon agenda
+      </UiBaseButton>
     </div>
 
     <div v-else class="text-center">

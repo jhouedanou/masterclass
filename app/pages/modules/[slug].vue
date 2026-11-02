@@ -13,10 +13,16 @@ const { data } = await useFetch<{
   thematique: Thematique | null
   programme: Programme | null
   nbModulesThematique: number
+  redirectionLive: string | null
 }>(() => `/api/modules/${route.params.slug}`)
 
 if (!data.value) {
   throw createError({ statusCode: 404, statusMessage: 'Module introuvable', fatal: true })
+}
+
+// Module en Live Session : la fiche est celle de la session (CDC §5.3, 302).
+if (data.value.redirectionLive) {
+  await navigateTo(data.value.redirectionLive, { redirectCode: 302 })
 }
 
 const moduleCourant = computed(() => data.value!.module)
@@ -171,7 +177,9 @@ function acheter() {
 <template>
   <div v-if="data">
     <div class="conteneur grid gap-14 pt-12 pb-16 lg:grid-cols-[1fr_400px] lg:items-start">
-      <article>
+      <!-- Colonne de lecture plafonnée : sur grand écran, les paragraphes ne
+           dépassent plus la largeur d'une ligne confortable (brief du 02/11). -->
+      <article class="max-w-[760px]">
         <FilAriane class="mb-[18px]" :mailles="mailles" />
 
         <h1 class="mb-4 font-title text-[40px] leading-[1.15] font-light text-pretty">

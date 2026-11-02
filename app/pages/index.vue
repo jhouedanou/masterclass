@@ -19,7 +19,17 @@ const { data: banniere } = useFetch<{ cle: string, contenu: Partial<ContenuBanni
   '/api/vitrine/banniere',
   { lazy: true },
 )
-const { data: formateurs } = await useFetch<(Formateur & { nbModules: number })[]>('/api/formateurs')
+const { data: formateurs } = await useFetch<(Formateur & { nbModules: number })[]>('/api/formateurs', {
+  query: { equipe: 1 },
+})
+
+// Live Sessions (CDC §5.3) : bloc et calendrier, absents tant que la
+// fonctionnalité est masquée (la liste arrive vide).
+const liveSessions = useLiveSessions()
+const { data: catalogue } = useFetch<(Module & { formateur?: Formateur | null })[]>('/api/modules', {
+  lazy: true,
+  default: () => [],
+})
 
 // Les repères chiffrés de la maquette — « 18 modules », « 9 modules », « 3
 // thématiques » — étaient écrits en dur et mentaient dès qu'un module changeait
@@ -96,6 +106,7 @@ useJsonLd({
     <div class="border-b border-ligne-claire bg-fond-clair">
       <div class="conteneur flex flex-wrap gap-x-7 gap-y-2 py-4.5 text-[14px] text-texte">
         <NuxtLink to="/modules" class="hover:underline"><b class="text-encre">{{ compterModules(nbModulesTotal) }}</b><span class="hidden lg:inline"> {{ nbModulesTotal > 1 ? 'disponibles' : 'disponible' }}</span></NuxtLink>
+        <NuxtLink v-if="liveSessions.length" to="/live-sessions" class="hover:underline"><b class="text-live">{{ liveSessions.length }} Live Session{{ liveSessions.length > 1 ? 's' : '' }}</b><span class="hidden lg:inline"> à venir</span></NuxtLink>
         <span><b class="text-encre">10 000 FCFA TTC</b><span class="hidden lg:inline"> par module</span></span>
         <span><b class="text-encre">Accès à vie</b><span class="hidden lg:inline"> après l’achat</span></span>
       </div>
@@ -162,6 +173,8 @@ useJsonLd({
       </div>
     </section>
 
+    <HomeBlocLiveSessions :sessions="liveSessions" :modules="catalogue ?? []" />
+
     <!-- thématiques -->
     <section class="py-14">
       <div class="conteneur">
@@ -192,7 +205,8 @@ useJsonLd({
         </div>
 
         <p class="mt-2.5 mb-7 max-w-[760px] text-[15px] leading-relaxed text-texte">
-          Sélectionnez un programme, puis explorez les modules disponibles dans chaque thématique.
+          Sélectionnez un programme, puis explorez les modules de chaque thématique : disponibles en
+          vidéo<template v-if="liveSessions.length">, en Live Session</template> ou bientôt disponibles.
           Chaque module peut être choisi et acheté indépendamment.
         </p>
 
@@ -204,9 +218,17 @@ useJsonLd({
       </div>
     </section>
 
-    <!-- formateurs -->
-    <section class="sur-sombre bg-encre py-14 text-white">
-      <div class="conteneur">
+    <!-- formateurs : tous ceux de la base, en défilement, sur le motif de la marque -->
+    <section class="sur-sombre relative overflow-hidden bg-encre py-14 text-white">
+      <img
+        src="/images/brand/pattern.png"
+        alt=""
+        aria-hidden="true"
+        width="1144"
+        height="1090"
+        class="pointer-events-none absolute inset-y-0 right-0 h-full w-[60%] max-w-[720px] object-cover opacity-[.12]"
+      >
+      <div class="conteneur relative">
         <UiEnTeteSection
           taille-surtitre="page"
           surtitre="Nos formateurs"
@@ -215,13 +237,7 @@ useJsonLd({
           ton="clair"
           clair
         />
-        <div class="mt-8 grid gap-5.5 sm:grid-cols-2 lg:grid-cols-4">
-          <CatalogueFormateurCarteSombre
-            v-for="formateur in (formateurs ?? []).slice(0, 4)"
-            :key="formateur.id"
-            :formateur="formateur"
-          />
-        </div>
+        <HomeDefilementFormateurs v-if="formateurs?.length" :formateurs="formateurs" class="mt-8" />
         <UiBaseButton to="/formateurs" variante="blanc" class="mt-6.5">
           Découvrir tous les formateurs
         </UiBaseButton>

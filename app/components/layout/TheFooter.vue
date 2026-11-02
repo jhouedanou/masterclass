@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const liveVisible = useLiveVisible()
 // Rouvrir le bandeau : un consentement doit pouvoir être retiré aussi
 // facilement qu'il a été donné.
 const { reinitialiser } = useConsentement()
@@ -28,6 +29,7 @@ const { reinitialiser } = useConsentement()
         <NuxtLink to="/programmes/social-media">Social Média</NuxtLink>
         <NuxtLink to="/programmes/entrepreneurs">Entrepreneurs</NuxtLink>
         <NuxtLink to="/modules">Tous les modules</NuxtLink>
+        <NuxtLink v-if="liveVisible" to="/live-sessions">Live Sessions</NuxtLink>
         <NuxtLink to="/sessions">Calendrier des sessions</NuxtLink>
       </nav>
 

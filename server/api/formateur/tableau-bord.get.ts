@@ -9,6 +9,7 @@ import {
   sessionsFormateur,
   statistiquesModules,
 } from '../../utils/formateur'
+import { sessionsLiveFormateur } from '../../utils/liveFormateur'
 import { exigerFormateur } from '../../utils/session'
 
 /**
@@ -96,6 +97,8 @@ export default defineEventHandler(async (event) => {
     remunerationDuMois: revenus.total.remuneration,
 
     prochaineSession: prochaine ? { ...prochaine, modulesCouverts, nbSujets: sujets.length } : null,
+    // Prochaine Live Session, en tête de la vue d'ensemble (CDC §4.4).
+    prochaineLive: (await sessionsLiveFormateur(utilisateur)).find((l) => l.etat === 'planifiee' || l.etat === 'aujourdhui') ?? null,
     // Sujets réellement soumis par les apprenants avant la prochaine session.
     sujets: sujets.map((s) => ({
       utilisateurId: s.utilisateurId,

@@ -1,4 +1,5 @@
 import { trouverFormateur } from '../../../database/catalogue'
+import { liveTermineePour } from '../../../database/live'
 import { copieReussie, etatQuiz, listerQuestionsQuiz } from '../../../database/quiz'
 import {
   PROGRESSION_QUIZ,
@@ -52,7 +53,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  if (acces.progression < PROGRESSION_QUIZ) {
+  if (acces.progression < PROGRESSION_QUIZ && !(await liveTermineePour(utilisateur.id, module.id))) {
     return { ...entete, ouvert: false, questions: [], ordre: null, copie: null }
   }
 

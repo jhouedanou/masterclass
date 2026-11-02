@@ -40,6 +40,19 @@ export type ModeleNotification =
   | 'activation-coaching-demandee'
   | 'achat-confirme'
   | 'attestation-delivree'
+  // Live Sessions (CDC v1.3, §7) : e-mail seulement.
+  | 'live-confirmation'
+  | 'live-rappel'
+  | 'live-fin'
+  | 'live-module-disponible'
+  | 'live-formateur-planifiee'
+  | 'live-formateur-rappel'
+  | 'live-changement-horaire'
+  | 'live-annulation'
+  | 'live-alerte-remboursement'
+  | 'live-ouverture'
+  | 'session-reservee'
+  | 'coaching-prive-formateur'
 
 export interface Notification {
   canal: CanalNotification
@@ -47,6 +60,10 @@ export interface Notification {
   a: string
   modele: ModeleNotification
   variables: Record<string, string>
+  /** Sujet propre à cet envoi, à la place de celui du modèle (rappels Live Session). */
+  sujet?: string
+  /** Pièces jointes, contenu en texte (le .ics d'une Live Session). */
+  piecesJointes?: { nom: string; contenu: string; type: string }[]
 }
 
 export interface PiloteNotifications {
@@ -74,6 +91,18 @@ export const SUJETS: Record<ModeleNotification, string> = {
   'activation-coaching-demandee': 'Un formateur demande l’activation du coaching privé',
   'achat-confirme': 'Votre paiement est confirmé',
   'attestation-delivree': 'Votre attestation de participation est prête',
+  'live-confirmation': 'Votre inscription à la Live Session est confirmée',
+  'live-rappel': 'Votre Live Session approche',
+  'live-fin': 'Merci pour votre participation à la Live Session',
+  'live-module-disponible': 'La version vidéo de votre Live Session est disponible',
+  'live-formateur-planifiee': 'Une Live Session est planifiée pour vous',
+  'live-formateur-rappel': 'Votre Live Session a lieu demain',
+  'live-changement-horaire': 'Changement d’horaire de votre Live Session',
+  'live-annulation': 'Votre Live Session est annulée',
+  'live-alerte-remboursement': 'Live Session : paiement reçu sans place, à rembourser',
+  'live-ouverture': 'Le module que vous attendiez passe en Live Session',
+  'session-reservee': 'Votre place en coaching collectif est réservée',
+  'coaching-prive-formateur': 'Une séance de coaching privé est planifiée avec vous',
 }
 
 const piloteConsole: PiloteNotifications = {
@@ -81,7 +110,8 @@ const piloteConsole: PiloteNotifications = {
     const variables = Object.entries(n.variables)
       .map(([cle, valeur]) => `${cle}=${valeur}`)
       .join(' · ')
-    console.info(`[notification/${n.canal}] → ${n.a} · ${SUJETS[n.modele]} · ${variables}`)
+    const pieces = n.piecesJointes?.length ? ` · pièces jointes : ${n.piecesJointes.map((p) => p.nom).join(', ')}` : ''
+    console.info(`[notification/${n.canal}] → ${n.a} · ${n.sujet ?? SUJETS[n.modele]} · ${variables}${pieces}`)
   },
 }
 
@@ -103,6 +133,7 @@ const piloteResend: PiloteNotifications = {
       n.variables,
       config.public.siteUrl.replace(/\/$/, ''),
       config.contactDestinataire,
+      n.sujet,
     )
     await $fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -113,6 +144,15 @@ const piloteResend: PiloteNotifications = {
         subject: sujet,
         text: texte,
         html,
+        ...(n.piecesJointes?.length
+          ? {
+              attachments: n.piecesJointes.map((p) => ({
+                filename: p.nom,
+                content: Buffer.from(p.contenu, 'utf8').toString('base64'),
+                content_type: p.type,
+              })),
+            }
+          : {}),
         // Le message de contact se répond directement à son auteur.
         ...(n.modele === 'contact-message' && n.variables.email ? { reply_to: n.variables.email } : {}),
       },
@@ -143,16 +183,19 @@ function pilote(): PiloteNotifications {
 /**
  * Envoie une notification. Ne lève jamais : un fournisseur indisponible ne
  * doit pas bloquer une réservation, un paiement ou une connexion — l'échec
- * est journalisé pour être repris.
+ * est journalisé pour être repris. Rend `false` en cas d'échec, pour les
+ * envois qui se retentent (relances des Live Sessions).
  */
-export async function notifier(notification: Notification): Promise<void> {
-  if (!notification.a) return
+export async function notifier(notification: Notification): Promise<boolean> {
+  if (!notification.a) return false
   try {
     await pilote().envoyer(notification)
+    return true
   } catch (erreur) {
     // Seul le motif est journalisé : la requête porte les variables du message.
     const motif = (erreur as { data?: { message?: string }; message?: string })
     console.error('[notification] échec d’envoi', notification.modele, motif?.data?.message ?? motif?.message ?? erreur)
+    return false
   }
 }
 

@@ -28,6 +28,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'Ce module ne fait pas partie de vos accès' })
   }
 
+  // Live Session : l'accès vaut droit à la vidéo, actif dès sa publication (RM6).
+  if (moduleTrouve.statut === 'live-session') {
+    throw createError({ statusCode: 409, statusMessage: 'La version vidéo sera ajoutée à votre espace dès qu’elle sera prête.' })
+  }
+
   const chapitres = await Promise.all(
     moduleTrouve.chapitres.map(async (chapitre, position) => ({
       position,

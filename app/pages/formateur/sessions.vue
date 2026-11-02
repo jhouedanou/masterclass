@@ -83,8 +83,8 @@ const aujourdhui = new Date().toISOString().slice(0, 10)
     </AdminTableauSimple>
 
     <p class="mt-3 text-[12px] leading-relaxed text-discret">
-      Le planning est fixé par l’équipe Big Five. La présence Zoom est pointée automatiquement ; les
-      notes proviennent de l’évaluation post-session des apprenants. Cliquer « inscrits » ouvre la
+      Le planning est fixé par l’équipe Big Five. La présence est relevée par l’équipe après la
+      séance ; les notes proviennent de l’évaluation post-session des apprenants. Cliquer « inscrits » ouvre la
       liste avec accès aux fiches profils.
     </p>
   </div>

@@ -1,3 +1,4 @@
+import { liveTermineePour } from '../../../database/live'
 import { etatQuiz, listerQuestionsQuiz, soumettreQuiz } from '../../../database/quiz'
 import {
   PROGRESSION_QUIZ,
@@ -35,7 +36,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 422, statusMessage: 'Réponses illisibles' })
   }
 
-  if (acces.progression < PROGRESSION_QUIZ) {
+  if (acces.progression < PROGRESSION_QUIZ && !(await liveTermineePour(utilisateur.id, module.id))) {
     throw createError({
       statusCode: 409,
       statusMessage: 'Terminez toutes les vidéos du module pour ouvrir le quiz.',

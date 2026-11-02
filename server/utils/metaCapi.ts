@@ -56,6 +56,22 @@ const PAYS_ISO: Record<string, string> = {
   senegal: 'sn',
 }
 
+let codeTestIgnoreSignale = false
+
+/** `META_CAPI_TEST_CODE`, sauf sur le déploiement de production où il est ignoré. */
+function codeTestMeta(): string | undefined {
+  const code = process.env.META_CAPI_TEST_CODE?.trim()
+  if (!code) return undefined
+  if (process.env.VERCEL_ENV === 'production') {
+    if (!codeTestIgnoreSignale) {
+      codeTestIgnoreSignale = true
+      console.warn('[meta-capi] META_CAPI_TEST_CODE ignoré en production : videz la variable dans Vercel.')
+    }
+    return undefined
+  }
+  return code
+}
+
 function hacher(valeur: string | undefined | null): string[] | undefined {
   const propre = valeur?.trim().toLowerCase()
   return propre ? [createHash('sha256').update(propre).digest('hex')] : undefined
@@ -98,7 +114,7 @@ export async function envoyerEvenementMeta(evenement: {
     contentIds?: string[]
     reference?: string
     /** Comme le Pixel (app/composables/useSuivi.ts) : module ou coaching privé. */
-    categorie?: 'module' | 'coaching_prive'
+    categorie?: 'module' | 'coaching_prive' | 'live_session'
   }
 }): Promise<void> {
   try {
@@ -142,9 +158,11 @@ export async function envoyerEvenementMeta(evenement: {
       ],
     }
     // Code de l'onglet « Tester les événements » du gestionnaire d'événements :
-    // les envois y apparaissent sans compter dans les statistiques. À retirer
-    // une fois la recette faite, sinon aucun achat serveur ne compte.
-    const codeTest = process.env.META_CAPI_TEST_CODE
+    // les envois y apparaissent sans compter dans les statistiques. Jamais en
+    // production : une variable oubliée dans Vercel ferait disparaître tous
+    // les achats serveur des statistiques. La recette se fait en préproduction
+    // (déploiement Preview) ou en local.
+    const codeTest = codeTestMeta()
     if (codeTest) corps.test_event_code = codeTest
 
     await $fetch(`https://graph.facebook.com/${VERSION_GRAPH}/${encodeURIComponent(metaPixelId)}/events`, {

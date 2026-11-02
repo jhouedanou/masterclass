@@ -3,7 +3,11 @@ import type { Formateur, Module, ProgrammePublic, Thematique } from '#shared/typ
 import { dureeSessionEnHeures, PLACES_SESSION } from '#shared/utils/coaching'
 import { compterModules } from '#shared/utils/compteurs'
 
-type ThematiqueGarnie = Thematique & { modules: (Module & { formateur: Formateur | null })[] }
+type ModuleGarni = Module & {
+  formateur: Formateur | null
+  live?: { slug: string; debut: string; dureeMinutes: number } | null
+}
+type ThematiqueGarnie = Thematique & { modules: ModuleGarni[] }
 
 const route = useRoute()
 const slug = computed(() => String(route.params.slug))
@@ -21,6 +25,25 @@ const social = computed(() => programme.value.slug === 'social-media')
 const filtre = ref('')
 
 /**
+ * Filtre par format (CDC §5.3) : Tous / Disponibles / Live Sessions /
+ * Bientôt disponibles. Un format sans module n'est pas proposé.
+ */
+type Format = '' | 'disponible' | 'live' | 'bientot'
+const format = ref<Format>('')
+const formatDe = (m: ModuleGarni): Exclude<Format, ''> =>
+  m.statut === 'disponible' ? 'disponible' : m.statut === 'live-session' && m.live ? 'live' : 'bientot'
+const formats = computed(() => {
+  const presents = new Set(tousLesModules.value.map(formatDe))
+  return (
+    [
+      { valeur: 'disponible', libelle: 'Disponibles' },
+      { valeur: 'live', libelle: 'Live Sessions' },
+      { valeur: 'bientot', libelle: 'Bientôt disponibles' },
+    ] as const
+  ).filter((f) => presents.has(f.valeur))
+})
+
+/**
  * Les quatre pilules du hero (planche A, écrans 02 et 02b). Elles annonçaient
  * « 9 modules » et « 10 000 FCFA » en dur : le nombre suit maintenant le
  * catalogue, et le prix les fiches. Le format de la session de coaching, lui,
@@ -29,7 +52,8 @@ const filtre = ref('')
 const tousLesModules = computed(() => data.value!.thematiques.flatMap((t) => t.modules))
 
 const reperes = computed(() => {
-  const modules = tousLesModules.value
+  const modules = tousLesModules.value.filter((m) => m.statut === 'disponible')
+  const lives = tousLesModules.value.filter((m) => formatDe(m) === 'live').length
   // Un prix masqué (module annoncé) arrive à `null` : il ne compte pas.
   const prix = [...new Set(modules.map((m) => m.prixFcfa as number | null))].filter((p): p is number => p != null)
   // Un prix unique s'annonce tel quel ; plusieurs, on annonce le plus bas.
@@ -41,6 +65,7 @@ const reperes = computed(() => {
   return [
     { valeur: compterModules(modules.length), suite: modules.length > 1 ? 'disponibles' : 'disponible' },
     { valeur: prixAffiche, suite: 'par module' },
+    ...(lives ? [{ valeur: compterLives(lives), suite: 'à venir' }] : []),
     { valeur: 'Accès à vie', suite: 'après l’achat' },
     {
       valeur: 'Coaching collectif',
@@ -52,8 +77,13 @@ const reperes = computed(() => {
 const modulesAffiches = computed(() =>
   data.value!.thematiques
     .filter((t) => !filtre.value || t.id === filtre.value)
-    .flatMap((t) => t.modules.map((m) => ({ module: m, thematique: t }))),
+    .flatMap((t) => t.modules.map((m) => ({ module: m, thematique: t })))
+    .filter((e) => !format.value || formatDe(e.module) === format.value),
 )
+
+function compterLives(n: number): string {
+  return `${n} Live Session${n > 1 ? 's' : ''}`
+}
 
 const faqSocial = [
   {
@@ -218,6 +248,33 @@ useJsonLd(() => ({
           </button>
         </div>
 
+        <div
+          v-if="formats.length > 1"
+          class="mt-3 flex flex-wrap gap-2"
+          role="group"
+          aria-label="Filtrer par format"
+        >
+          <button
+            v-for="f in [{ valeur: '' as Format, libelle: 'Tous les formats' }, ...formats]"
+            :key="f.valeur"
+            class="rounded-full border px-4 py-2 text-[13px] font-bold"
+            :class="
+              format === f.valeur
+                ? f.valeur === 'live'
+                  ? 'border-live bg-live text-white'
+                  : 'border-encre bg-encre text-white'
+                : 'border-ligne text-texte hover:border-discret'
+            "
+            :aria-pressed="format === f.valeur"
+            @click="format = f.valeur"
+          >
+            {{ f.libelle }}
+          </button>
+        </div>
+
+        <p v-if="!modulesAffiches.length" class="mt-7 text-[15px] text-discret">
+          Aucun module ne correspond à ce filtre pour l’instant.
+        </p>
         <div class="mt-7 grid gap-5.5 sm:grid-cols-2 lg:grid-cols-3">
           <CatalogueModuleCarte
             v-for="entree in modulesAffiches"
