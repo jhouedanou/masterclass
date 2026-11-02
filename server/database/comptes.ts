@@ -1066,3 +1066,19 @@ export async function listerConnexionsReussies(depuis: string): Promise<Connexio
   )
   return rows.map((r) => ({ utilisateurId: r.utilisateur_id as string, appareil: r.appareil, creeLe: r.cree_le }))
 }
+
+/** Compte de connexion d'un formateur (rôle formateur), pour le prévenir par e-mail. */
+export async function trouverCompteFormateur(formateurId: string): Promise<Utilisateur | null> {
+  const row = verifierOptionnel(
+    await supabase()
+      .from('utilisateurs')
+      .select('*')
+      .eq('formateur_id', formateurId)
+      .eq('role', 'formateur')
+      .is('supprime_le', null)
+      .limit(1)
+      .maybeSingle(),
+    'compte formateur',
+  )
+  return row ? versUtilisateur(row) : null
+}
