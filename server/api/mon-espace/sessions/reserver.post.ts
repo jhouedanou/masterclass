@@ -1,5 +1,5 @@
 import { listerThematiques, trouverFormateur } from '../../../database/catalogue'
-import { liensZoomSession, reserverPlace, trouverSession } from '../../../database/coaching'
+import { reserverPlace, trouverSession } from '../../../database/coaching'
 import { notifier } from '../../../utils/notifications'
 import { exigerUtilisateur } from '../../../utils/session'
 
@@ -29,15 +29,13 @@ export default defineEventHandler(async (event) => {
     apprenant: `${utilisateur.prenom} ${utilisateur.nom[0]}.`,
   })
 
-  // Confirmation par e-mail, avec l'accès à la salle et le lien Zoom de
-  // secours : la réservation n'en envoyait aucune.
+  // Confirmation par e-mail, avec l'accès à la salle : la réservation n'en
+  // envoyait aucune. Pas de lien Zoom en clair (planche C, écran 03) : la
+  // session est réservée aux acheteurs d'un module, un lien transféré
+  // contournerait cette règle.
   const session = await trouverSession(sessionId)
   if (session) {
-    const [thematiques, formateur, liens] = await Promise.all([
-      listerThematiques(),
-      trouverFormateur(session.formateurId),
-      liensZoomSession(session.id),
-    ])
+    const [thematiques, formateur] = await Promise.all([listerThematiques(), trouverFormateur(session.formateurId)])
     await notifier({
       canal: 'email',
       a: utilisateur.email,
@@ -49,7 +47,6 @@ export default defineEventHandler(async (event) => {
         heure: session.heure.slice(0, 5),
         formateur: formateur?.nom ?? '',
         salle: `/mon-espace/session/${session.id}`,
-        lienZoom: liens.lienParticipation ?? '',
         ouvertureMinutes: String(session.ouvertureSalleMinutes),
       },
     })
