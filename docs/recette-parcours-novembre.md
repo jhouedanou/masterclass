@@ -65,27 +65,37 @@ l'hôte », c'est qu'il manque à l'application Zoom la portée `user:read:zak:a
 
 ## 5. Live Session
 
-Le parcours détaillé est dans « Recette Live Sessions — E-Masterclass.xlsx » (CDC v1.3) :
-réservation, paiement au prix du module, e-mail de confirmation avec fichier agenda, rappels J-1,
-H-10 et H0, salle intégrée, quiz et attestation après la séance.
+Le parcours détaillé est dans « Recette Live Sessions — E-Masterclass.xlsx » (CDC v1.3).
 
-À vérifier en plus, côté brief :
-- le **formateur démarre** bien la réunion depuis son espace (même condition que pour le
-  coaching : portée Zoom `user:read:zak:admin`) ;
-- l'accès à la salle passe par la plateforme : aucun lien Zoom n'est envoyé (choix du CDC,
-  option B).
+**Pour tester sans montrer la fonctionnalité au public** : Admin → Live Sessions, réglage
+« visible sur le site pour » → **Admins seulement**. Les visiteurs reçoivent une 404, le sitemap
+ne liste rien ; jouez le parcours avec un compte admin. À la fin, remettez le réglage voulu et
+annulez la séance de test.
 
----|---|
-| Admin → Live Sessions → nouvelle séance **gratuite**, statut Publiée | Visible sur /live-sessions et sur l'accueil |
-| Visiteur → fiche | Prérequis, ce que l'on apprend, formateur, date, prix |
-| « Se connecter pour s'inscrire » → connexion → « Je m'inscris » | « Vous êtes inscrit », e-mail avec l'accès à la salle et le lien Zoom |
-| Mon espace → Mes sessions → « Vos Live Sessions » | La séance ; « Rejoindre » 15 min avant |
-| Formateur → Mes sessions → « Mes Live Sessions » → Démarrer | Démarre la réunion |
+| Étape | Attendu |
+|---|---|
+| Admin → Live Sessions → nouvelle séance, puis Publier | Visible sur /live-sessions et sur l'accueil |
+| Visiteur → fiche | Prérequis, ce que l'on apprend, formateur, date, prix (celui du module) |
+| « Se connecter pour s'inscrire » → connexion → CGV cochées → paiement **Mobile Money** | Fenêtre FeexPay au prix du module, puis « Vous êtes inscrit » |
+| E-mail de confirmation | Horaire, formateur, prérequis, lien vers le reçu, fichier agenda `.ics` joint ; **aucun lien Zoom** (CDC, option B) |
+| Admin → Transactions | L'inscription compte comme un achat du module |
+| Mon espace → Mes sessions → « Vos Live Sessions » | La séance ; la salle s'ouvre 15 min avant le début |
+| Formateur → Mes Live Sessions → « Animer sur Zoom », 30 min avant | La réunion **démarre** (hôte) |
+| Apprenant → salle intégrée | Entre dans la réunion |
+| Rappels J-1, H-10, H0 | Chacun porte le lien de la salle de la plateforme. Une inscription tardive ne reçoit pas les rappels dont l'heure est passée |
+| Fin : « Terminer » côté admin, ou automatiquement au début + durée + 60 min | Quiz et support ouverts ; e-mail de fin dès que le support est déposé |
 
-**Pas encore en place :**
-- Les rappels automatiques (veille et une heure avant). Ils demandent l'offre Vercel Pro.
-- L'inscription en ligne aux séances **payantes**. La fiche affiche le prix et renvoie vers le
-  contact, en attendant que Big Five arbitre le paiement.
+Pour voir H-10 et H0 sans attendre, créez la séance environ une heure à l'avance. L'apprenant
+inscrit à moins de 24 h ne reçoit pas J-1 (marqué comme passé) ; le formateur, lui, reçoit son
+rappel J-1. Pour tester J-1 côté apprenant, inscrivez-vous plus de 24 h avant la séance. Les rappels et les changements de statut passent par le cycle pg_cron toutes les
+5 minutes (`supabase/planification-live.sql`) ; s'il n'est pas planifié, rien ne part et la
+séance reste « Publiée ».
+
+À vérifier en priorité : que le formateur **démarre** bien la réunion. S'il reste « en attente
+de l'hôte », il manque à l'application Zoom la portée `user:read:zak:admin` (même condition que
+pour le coaching).
+
+**Bloqué, hors code :** Wave et carte, comme pour l'achat d'un module (§1).
 
 ---
 
@@ -96,4 +106,4 @@ Suivez la checklist de `docs/tracking/gtm-import.md` :
 - **Mesure d'audience seule** : GA4, sans Meta.
 - **Marketing** : Meta.
 - **Module déjà acheté** : pas de ViewContent.
-- **Achats** : Purchase avec `content_category` `module` ou `coaching_prive`.
+- **Achats** : Purchase avec `content_category` `module`, `coaching_prive` ou `live_session`.
