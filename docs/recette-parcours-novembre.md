@@ -65,27 +65,38 @@ l'hôte », c'est qu'il manque à l'application Zoom la portée `user:read:zak:a
 
 ## 5. Live Session
 
-Le parcours détaillé est dans « Recette Live Sessions — E-Masterclass.xlsx » (CDC v1.3) :
-réservation, paiement au prix du module, e-mail de confirmation avec fichier agenda, rappels J-1,
-H-10 et H0, salle intégrée, quiz et attestation après la séance.
+Le site n'est pas lancé : on teste directement en ligne, sans précaution particulière (les
+revenus de test peuvent rester). Le parcours détaillé est dans « Recette Live Sessions —
+E-Masterclass.xlsx » (CDC v1.3).
 
-À vérifier en plus, côté brief :
-- le **formateur démarre** bien la réunion depuis son espace (même condition que pour le
-  coaching : portée Zoom `user:read:zak:admin`) ;
-- l'accès à la salle passe par la plateforme : aucun lien Zoom n'est envoyé (choix du CDC,
-  option B).
+**Préparer.** Admin → Live Sessions → réglage « visible sur le site pour » → **Tout le monde**.
+Créer une séance qui commence **dans 1 h 15**, puis Publier.
 
----|---|
-| Admin → Live Sessions → nouvelle séance **gratuite**, statut Publiée | Visible sur /live-sessions et sur l'accueil |
-| Visiteur → fiche | Prérequis, ce que l'on apprend, formateur, date, prix |
-| « Se connecter pour s'inscrire » → connexion → « Je m'inscris » | « Vous êtes inscrit », e-mail avec l'accès à la salle et le lien Zoom |
-| Mon espace → Mes sessions → « Vos Live Sessions » | La séance ; « Rejoindre » 15 min avant |
-| Formateur → Mes sessions → « Mes Live Sessions » → Démarrer | Démarre la réunion |
+| # | Qui | Étape | Attendu |
+|---|---|---|---|
+| 1 | Visiteur | /live-sessions, puis l'accueil | La séance apparaît dans les deux |
+| 2 | Visiteur | Fiche de la séance | Prérequis, ce que l'on apprend, formateur, date, prix (celui du module) |
+| 3 | Apprenant | « Se connecter pour s'inscrire » → CGV → Mobile Money | Fenêtre FeexPay au prix du module, puis « Vous êtes inscrit » |
+| 4 | Apprenant | Boîte mail | Confirmation : horaire, formateur, prérequis, reçu, `.ics` joint ; **aucun lien Zoom** |
+| 5 | Admin | Transactions | L'inscription apparaît comme un achat du module |
+| 6 | Apprenant | Mon espace → Mes sessions | La séance, dans « Vos Live Sessions » |
+| 7 | Formateur | Boîte mail | Rappel J-1 du formateur (au premier passage du cycle, 5 min au plus) |
+| 8 | Formateur | Mes Live Sessions, à H-30 | « Animer sur Zoom » actif → la réunion **démarre** en hôte |
+| 9 | Apprenant | Boîte mail, à H-10 | Rappel H-10 avec le lien de la salle |
+| 10 | Apprenant | Salle, à H-15 puis au début | Salle ouverte, entre dans la réunion |
+| 11 | Apprenant | Boîte mail, au début | Rappel H0 |
+| 12 | Admin | « Terminer » la séance (ou attendre début + durée + 60 min) | Quiz et support ouverts côté apprenant |
+| 13 | Admin | Déposer le support | E-mail de fin aux inscrits |
 
-**Pas encore en place :**
-- Les rappels automatiques (veille et une heure avant). Ils demandent l'offre Vercel Pro.
-- L'inscription en ligne aux séances **payantes**. La fiche affiche le prix et renvoie vers le
-  contact, en attendant que Big Five arbitre le paiement.
+**Si ça coince :**
+- Le formateur reste « en attente de l'hôte » (étape 8) : il manque la portée Zoom
+  `user:read:zak:admin`.
+- Aucun rappel, séance toujours « Publiée » après l'heure : le cycle pg_cron n'est pas planifié
+  (`supabase/planification-live.sql`).
+- L'apprenant ne reçoit pas J-1 : normal, il s'est inscrit à moins de 24 h. Pour le tester,
+  s'inscrire à une séance du lendemain.
+
+**Bloqué, hors code :** Wave et carte, comme pour l'achat d'un module (§1).
 
 ---
 
@@ -96,4 +107,4 @@ Suivez la checklist de `docs/tracking/gtm-import.md` :
 - **Mesure d'audience seule** : GA4, sans Meta.
 - **Marketing** : Meta.
 - **Module déjà acheté** : pas de ViewContent.
-- **Achats** : Purchase avec `content_category` `module` ou `coaching_prive`.
+- **Achats** : Purchase avec `content_category` `module`, `coaching_prive` ou `live_session`.
