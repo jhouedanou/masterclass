@@ -65,35 +65,36 @@ l'hôte », c'est qu'il manque à l'application Zoom la portée `user:read:zak:a
 
 ## 5. Live Session
 
-Le parcours détaillé est dans « Recette Live Sessions — E-Masterclass.xlsx » (CDC v1.3).
+Le site n'est pas lancé : on teste directement en ligne, sans précaution particulière (les
+revenus de test peuvent rester). Le parcours détaillé est dans « Recette Live Sessions —
+E-Masterclass.xlsx » (CDC v1.3).
 
-**Pour tester sans montrer la fonctionnalité au public** : Admin → Live Sessions, réglage
-« visible sur le site pour » → **Admins seulement**. Les visiteurs reçoivent une 404, le sitemap
-ne liste rien ; jouez le parcours avec un compte admin. À la fin, remettez le réglage voulu et
-annulez la séance de test.
+**Préparer.** Admin → Live Sessions → réglage « visible sur le site pour » → **Tout le monde**.
+Créer une séance qui commence **dans 1 h 15**, puis Publier.
 
-| Étape | Attendu |
-|---|---|
-| Admin → Live Sessions → nouvelle séance, puis Publier | Visible sur /live-sessions et sur l'accueil |
-| Visiteur → fiche | Prérequis, ce que l'on apprend, formateur, date, prix (celui du module) |
-| « Se connecter pour s'inscrire » → connexion → CGV cochées → paiement **Mobile Money** | Fenêtre FeexPay au prix du module, puis « Vous êtes inscrit » |
-| E-mail de confirmation | Horaire, formateur, prérequis, lien vers le reçu, fichier agenda `.ics` joint ; **aucun lien Zoom** (CDC, option B) |
-| Admin → Transactions | L'inscription compte comme un achat du module |
-| Mon espace → Mes sessions → « Vos Live Sessions » | La séance ; la salle s'ouvre 15 min avant le début |
-| Formateur → Mes Live Sessions → « Animer sur Zoom », 30 min avant | La réunion **démarre** (hôte) |
-| Apprenant → salle intégrée | Entre dans la réunion |
-| Rappels J-1, H-10, H0 | Chacun porte le lien de la salle de la plateforme. Une inscription tardive ne reçoit pas les rappels dont l'heure est passée |
-| Fin : « Terminer » côté admin, ou automatiquement au début + durée + 60 min | Quiz et support ouverts ; e-mail de fin dès que le support est déposé |
+| # | Qui | Étape | Attendu |
+|---|---|---|---|
+| 1 | Visiteur | /live-sessions, puis l'accueil | La séance apparaît dans les deux |
+| 2 | Visiteur | Fiche de la séance | Prérequis, ce que l'on apprend, formateur, date, prix (celui du module) |
+| 3 | Apprenant | « Se connecter pour s'inscrire » → CGV → Mobile Money | Fenêtre FeexPay au prix du module, puis « Vous êtes inscrit » |
+| 4 | Apprenant | Boîte mail | Confirmation : horaire, formateur, prérequis, reçu, `.ics` joint ; **aucun lien Zoom** |
+| 5 | Admin | Transactions | L'inscription apparaît comme un achat du module |
+| 6 | Apprenant | Mon espace → Mes sessions | La séance, dans « Vos Live Sessions » |
+| 7 | Formateur | Boîte mail | Rappel J-1 du formateur (au premier passage du cycle, 5 min au plus) |
+| 8 | Formateur | Mes Live Sessions, à H-30 | « Animer sur Zoom » actif → la réunion **démarre** en hôte |
+| 9 | Apprenant | Boîte mail, à H-10 | Rappel H-10 avec le lien de la salle |
+| 10 | Apprenant | Salle, à H-15 puis au début | Salle ouverte, entre dans la réunion |
+| 11 | Apprenant | Boîte mail, au début | Rappel H0 |
+| 12 | Admin | « Terminer » la séance (ou attendre début + durée + 60 min) | Quiz et support ouverts côté apprenant |
+| 13 | Admin | Déposer le support | E-mail de fin aux inscrits |
 
-Pour voir H-10 et H0 sans attendre, créez la séance environ une heure à l'avance. L'apprenant
-inscrit à moins de 24 h ne reçoit pas J-1 (marqué comme passé) ; le formateur, lui, reçoit son
-rappel J-1. Pour tester J-1 côté apprenant, inscrivez-vous plus de 24 h avant la séance. Les rappels et les changements de statut passent par le cycle pg_cron toutes les
-5 minutes (`supabase/planification-live.sql`) ; s'il n'est pas planifié, rien ne part et la
-séance reste « Publiée ».
-
-À vérifier en priorité : que le formateur **démarre** bien la réunion. S'il reste « en attente
-de l'hôte », il manque à l'application Zoom la portée `user:read:zak:admin` (même condition que
-pour le coaching).
+**Si ça coince :**
+- Le formateur reste « en attente de l'hôte » (étape 8) : il manque la portée Zoom
+  `user:read:zak:admin`.
+- Aucun rappel, séance toujours « Publiée » après l'heure : le cycle pg_cron n'est pas planifié
+  (`supabase/planification-live.sql`).
+- L'apprenant ne reçoit pas J-1 : normal, il s'est inscrit à moins de 24 h. Pour le tester,
+  s'inscrire à une séance du lendemain.
 
 **Bloqué, hors code :** Wave et carte, comme pour l'achat d'un module (§1).
 
