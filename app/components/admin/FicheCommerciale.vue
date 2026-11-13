@@ -100,7 +100,7 @@ async function deposerCouverture(evenement: Event) {
     emit('enregistre')
     annoncer('Couverture déposée.')
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Le dépôt a échoué.'
+    erreur.value = messageErreurApi(e, 'Le dépôt a échoué.')
   } finally {
     envoiCouverture.value = false
     // Sans cela, redéposer le même fichier après une erreur n'émettrait aucun
@@ -118,7 +118,7 @@ async function retirerCouverture() {
     emit('enregistre')
     annoncer('Couverture retirée.')
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Le retrait a échoué.'
+    erreur.value = messageErreurApi(e, 'Le retrait a échoué.')
   } finally {
     envoiCouverture.value = false
   }
@@ -155,7 +155,7 @@ async function enregistrer() {
     succes.value = 'Fiche enregistrée.'
     annoncer('Fiche enregistrée.')
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'L’enregistrement a échoué.'
+    erreur.value = messageErreurApi(e, 'L’enregistrement a échoué.')
   } finally {
     enCours.value = false
   }

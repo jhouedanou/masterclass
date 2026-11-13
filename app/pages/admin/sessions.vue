@@ -106,7 +106,7 @@ async function enregistrerPresence(valeur: number | null) {
     await refresh()
   } catch (e) {
     erreurPresence.value =
-      (e as { statusMessage?: string }).statusMessage ?? 'L’enregistrement a échoué.'
+      messageErreurApi(e, 'L’enregistrement a échoué.')
   }
 }
 
@@ -135,7 +135,7 @@ async function reporter() {
     report.value = null
     await refresh()
   } catch (e) {
-    erreurReport.value = (e as { statusMessage?: string }).statusMessage ?? 'Le report a échoué.'
+    erreurReport.value = messageErreurApi(e, 'Le report a échoué.')
   }
 }
 
@@ -228,7 +228,7 @@ async function enregistrerModification() {
     await refresh()
   } catch (e) {
     erreurModification.value =
-      (e as { statusMessage?: string }).statusMessage ?? 'La modification a échoué.'
+      messageErreurApi(e, 'La modification a échoué.')
   }
 }
 
@@ -260,7 +260,7 @@ async function creer() {
     annoncer('Session créée. La réunion Zoom a été générée ; le formateur et les inscrits y entrent depuis la plateforme.')
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Création impossible.'
+    erreur.value = messageErreurApi(e, 'Création impossible.')
   }
 }
 </script>

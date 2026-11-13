@@ -51,7 +51,7 @@ async function envoyer() {
     message.value = 'Mot de passe modifié.'
     actuel.value = nouveau.value = confirmation.value = ''
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Modification impossible.'
+    erreur.value = messageErreurApi(e, 'Modification impossible.')
   } finally {
     envoi.value = false
   }

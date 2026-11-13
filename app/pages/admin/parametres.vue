@@ -96,7 +96,7 @@ async function enregistrerProfil() {
     message.value = 'Profil enregistré.'
     annoncer('Profil enregistré.')
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Enregistrement impossible.'
+    erreur.value = messageErreurApi(e, 'Enregistrement impossible.')
   } finally {
     enCours.value = false
   }
@@ -116,7 +116,7 @@ async function deposerPhoto(fichier: File | null | undefined) {
     message.value = 'Photo enregistrée.'
     annoncer('Photo enregistrée.')
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Dépôt impossible.'
+    erreur.value = messageErreurApi(e, 'Dépôt impossible.')
   } finally {
     photoEnCours.value = false
   }

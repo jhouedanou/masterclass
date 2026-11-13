@@ -44,7 +44,7 @@ async function soumettre() {
     setTimeout(() => navigateTo(versAdmin.value ? '/admin/login' : '/mon-espace'), 1800)
   } catch (e) {
     erreur.value =
-      (e as { statusMessage?: string }).statusMessage ?? 'La réinitialisation a échoué.'
+      messageErreurApi(e, 'La réinitialisation a échoué.')
   } finally {
     enCours.value = false
   }

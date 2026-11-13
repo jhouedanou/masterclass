@@ -60,7 +60,7 @@ async function creer() {
     resultat.value = { lienDefinition: reponse.lienDefinition, email: reponse.utilisateur.email }
     emit('cree')
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Création impossible.'
+    erreur.value = messageErreurApi(e, 'Création impossible.')
   } finally {
     envoi.value = false
   }

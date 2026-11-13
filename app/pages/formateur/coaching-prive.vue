@@ -38,7 +38,7 @@ async function demanderActivation() {
     await $fetch('/api/formateur/demande-activation', { method: 'POST' })
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Demande impossible pour l’instant.'
+    erreur.value = messageErreurApi(e, 'Demande impossible pour l’instant.')
   } finally {
     envoi.value = false
   }

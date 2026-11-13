@@ -124,7 +124,7 @@ async function creer() {
     })
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'La création a échoué.'
+    erreur.value = messageErreurApi(e, 'La création a échoué.')
   } finally {
     enCours.value = false
   }
@@ -157,7 +157,7 @@ async function enregistrerDroits() {
     edition.value = null
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'La modification a échoué.'
+    erreur.value = messageErreurApi(e, 'La modification a échoué.')
   }
 }
 
@@ -192,7 +192,7 @@ async function reinitialiserTotp(compte: { id: string; nom: string; email: strin
     message.value = `Double authentification réinitialisée pour ${compte.email} — modification journalisée.`
     annoncer(`Double authentification réinitialisée pour ${compte.email} — modification journalisée.`)
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Réinitialisation impossible.'
+    erreur.value = messageErreurApi(e, 'Réinitialisation impossible.')
   } finally {
     totpEnCours.value = ''
   }
@@ -208,7 +208,7 @@ async function revoquer() {
     revocation.value = null
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'La révocation a échoué.'
+    erreur.value = messageErreurApi(e, 'La révocation a échoué.')
   }
 }
 
@@ -231,7 +231,7 @@ async function basculerCoachingPrive(f: FormateurAcces) {
     activation.value = null
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Modification impossible.'
+    erreur.value = messageErreurApi(e, 'Modification impossible.')
   } finally {
     basculeEnCours.value = ''
   }

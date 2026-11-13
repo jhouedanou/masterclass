@@ -89,7 +89,7 @@ async function restaurer(versionId: string) {
     await refresh()
     annoncer('Version restaurée.')
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'La restauration a échoué.'
+    erreur.value = messageErreurApi(e, 'La restauration a échoué.')
   }
 }
 
@@ -115,7 +115,7 @@ async function enregistrer() {
     await refresh()
     annoncer(`Bloc « ${quoi} » enregistré.`)
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'L’enregistrement a échoué.'
+    erreur.value = messageErreurApi(e, 'L’enregistrement a échoué.')
   } finally {
     enCours.value = false
   }

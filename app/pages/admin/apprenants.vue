@@ -180,7 +180,7 @@ async function attribuer() {
     await refresh()
     selection.value = apprenants.value?.find((a) => a.id === id) ?? null
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Attribution impossible.'
+    erreur.value = messageErreurApi(e, 'Attribution impossible.')
   }
 }
 
@@ -218,7 +218,7 @@ async function agirSurAcces(moduleId: string, action: 'revoquer' | 'retablir') {
     await refresh()
     selection.value = apprenants.value?.find((a) => a.id === id) ?? null
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
+    erreur.value = messageErreurApi(e, 'Action impossible.')
   }
 }
 
@@ -331,7 +331,7 @@ async function agirSurAttestation(numero: string, action: 'revoquer' | 'retablir
     await refresh()
     selection.value = apprenants.value?.find((a) => a.id === id) ?? null
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
+    erreur.value = messageErreurApi(e, 'Action impossible.')
   }
 }
 

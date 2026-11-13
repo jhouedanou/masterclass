@@ -105,7 +105,7 @@ async function agir(demande: Demande, action: Action, extra: Record<string, unkn
     modale.value = null
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
+    erreur.value = messageErreurApi(e, 'Action impossible.')
   } finally {
     envoi.value = false
   }

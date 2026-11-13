@@ -45,7 +45,7 @@ async function basculerCoachingPrive(f: FormateurAdmin) {
     activation.value = null
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Modification impossible.'
+    erreur.value = messageErreurApi(e, 'Modification impossible.')
   }
 }
 
@@ -92,7 +92,7 @@ async function enregistrerFiche() {
     edition.value = null
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Enregistrement impossible.'
+    erreur.value = messageErreurApi(e, 'Enregistrement impossible.')
   }
 }
 
@@ -119,7 +119,7 @@ async function deposer(cible: FormateurAdmin) {
     annoncer('Ordre de la page publique mis à jour.')
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Réordonnancement impossible.'
+    erreur.value = messageErreurApi(e, 'Réordonnancement impossible.')
   }
 }
 const { data: candidatures, refresh: rafraichirCandidatures } = await useFetch<CandidatureFormateur[]>('/api/admin/candidatures')

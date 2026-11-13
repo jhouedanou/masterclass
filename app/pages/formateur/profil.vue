@@ -41,7 +41,7 @@ async function enregistrer() {
     modification.value = false
     enregistre.value = true
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Enregistrement impossible.'
+    erreur.value = messageErreurApi(e, 'Enregistrement impossible.')
   }
 }
 
@@ -60,7 +60,7 @@ async function envoyerPhoto(evenement: Event) {
     await $fetch('/api/formateur/photo', { method: 'POST', body: corps })
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Envoi de la photo impossible.'
+    erreur.value = messageErreurApi(e, 'Envoi de la photo impossible.')
   } finally {
     envoiPhoto.value = false
     if (champPhoto.value) champPhoto.value.value = ''

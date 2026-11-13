@@ -38,7 +38,7 @@ async function ouvrirFiche(utilisateurId: string) {
     fiche.value = await $fetch<FicheApprenant>(`/api/formateur/apprenant/${utilisateurId}`)
   } catch (e) {
     fiche.value = null
-    erreurFiche.value = (e as { statusMessage?: string }).statusMessage ?? 'Fiche indisponible.'
+    erreurFiche.value = messageErreurApi(e, 'Fiche indisponible.')
   }
 }
 </script>
