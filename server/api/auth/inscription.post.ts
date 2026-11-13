@@ -1,5 +1,6 @@
 import { creerUtilisateur } from '../../database/comptes'
 import { hacherMotDePasse, refusMotDePasse } from '../../utils/motDePasse'
+import { notifier } from '../../utils/notifications'
 import { limiterDebit } from '../../utils/debit'
 import { contexteMeta, envoyerEvenementMeta, type SuiviNavigateur } from '../../utils/metaCapi'
 import { ouvrirSession } from '../../utils/session'
@@ -39,6 +40,13 @@ export default defineEventHandler(async (event) => {
   })
 
   await ouvrirSession(event, utilisateur)
+
+  // E-mail de bienvenue, hors du chemin de la réponse : un envoi lent ou en
+  // échec ne doit ni retarder ni faire échouer la création du compte.
+  // `notifier` ne lève jamais. E-mail seulement : aucun modèle WhatsApp.
+  event.waitUntil(
+    notifier({ canal: 'email', a: utilisateur.email, modele: 'bienvenue', variables: { prenom: utilisateur.prenom } }),
+  )
 
   // CompleteRegistration côté serveur, sous l'identifiant du Pixel
   // (app/pages/inscription.vue, app/pages/achat/compte.vue). Hors du chemin de

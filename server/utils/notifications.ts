@@ -33,6 +33,7 @@ export type ModeleNotification =
   | 'suppression-programmee'
   | 'suppression-rappel'
   | 'compte-reactive'
+  | 'bienvenue'
   | 'contact-message'
   | 'contact-accuse'
   | 'paiement-verification'
@@ -84,6 +85,7 @@ export const SUJETS: Record<ModeleNotification, string> = {
   'suppression-programmee': 'Suppression de votre compte programmée',
   'suppression-rappel': 'Votre compte sera supprimé dans 3 jours',
   'compte-reactive': 'Bon retour sur E-Masterclass Big Five',
+  bienvenue: 'Bienvenue sur E-Masterclass Big Five',
   'contact-message': 'Nouveau message depuis le formulaire de contact',
   'contact-accuse': 'Nous avons bien reçu votre message',
   'paiement-verification': 'Votre paiement est en cours de vérification',
