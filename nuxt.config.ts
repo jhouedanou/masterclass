@@ -445,7 +445,21 @@ export default defineNuxtConfig({
     externals: enDeveloppement
       ? undefined
       : {
-          inline: ['@nuxtjs/robots', '@nuxtjs/sitemap', '@nuxt/icon', '@nuxt/image', 'nuxt-schema-org'],
+          // `sanitize-html` est en CommonJS et charge `htmlparser2` par
+          // `require()`, alors que celui-ci n'est plus publié qu'en ES Module :
+          // sur le runtime de production, l'appel échouait (ERR_REQUIRE_ESM)
+          // et toute route qui assainit du HTML répondait 500, à commencer
+          // par la bannière d'accueil. Inlinés, les deux sont compilés dans
+          // le paquet serveur et plus aucun `require()` ne part à l'exécution.
+          inline: [
+            '@nuxtjs/robots',
+            '@nuxtjs/sitemap',
+            '@nuxt/icon',
+            '@nuxt/image',
+            'nuxt-schema-org',
+            'sanitize-html',
+            'htmlparser2',
+          ],
         },
   },
 

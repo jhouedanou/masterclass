@@ -25,6 +25,15 @@ usePagePrivee('Créer un compte')
 
 async function soumettre() {
   erreur.value = ''
+
+  // Contrôlé ici plutôt que par l'attribut `minlength` : celui-ci bloquait
+  // l'envoi avec une simple bulle du navigateur, facile à manquer, et le
+  // cadre d'erreur restait vide.
+  if (formulaire.motDePasse.length < LONGUEUR_MINIMALE) {
+    erreur.value = `Le mot de passe doit contenir au moins ${LONGUEUR_MINIMALE} caractères.`
+    return
+  }
+
   enCours.value = true
   try {
     const compte = await auth.inscription(formulaire)
@@ -32,7 +41,7 @@ async function soumettre() {
     suivre('CompleteRegistration', { methode: 'page-inscription' }, `inscription-${compte?.id}`)
     await navigateTo('/mon-espace')
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'La création du compte a échoué.'
+    erreur.value = messageErreurApi(e, 'La création du compte a échoué.')
   } finally {
     enCours.value = false
   }
@@ -86,7 +95,6 @@ async function soumettre() {
           type="password"
           autocomplete="new-password"
           required
-          :minlength="LONGUEUR_MINIMALE"
           :placeholder="`${LONGUEUR_MINIMALE} caractères minimum`"
           :class="CHAMP"
         >

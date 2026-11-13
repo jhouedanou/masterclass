@@ -235,5 +235,6 @@ const perimetre = computed(() => {
     <!-- Posée une fois pour tout le back-office : chaque écran annonce ses
          actions par `useToasts()` sans se soucier du rendu. -->
     <UiToasts />
+    <LayoutWhatsAppFlottant />
   </div>
 </template>
