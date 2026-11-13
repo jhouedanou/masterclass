@@ -81,6 +81,17 @@ async function telechargerSupport() {
     <UiBaseButton v-if="carte.etat === 'lien-disponible'" :to="`/mon-espace/live/${carte.sessionId}`" taille="sm" variante="sombre">
       Rejoindre la session
     </UiBaseButton>
+    <!-- Inscrit, session encore loin (maquette du 13/11, étape 1) : le fichier
+         d'agenda est celui que joint l'e-mail de confirmation. -->
+    <UiBaseButton
+      v-else-if="carte.etat === 'inscrit'"
+      :href="`/api/live-sessions/${carte.slug}/agenda.ics`"
+      cible="_self"
+      taille="sm"
+      variante="contour"
+    >
+      Ajouter à mon agenda
+    </UiBaseButton>
     <div v-else-if="carte.etat === 'terminee'" class="flex shrink-0 flex-col items-stretch gap-2">
       <UiBaseButton v-if="carte.quiz && !quizReussi" :to="`/mon-espace/quiz/${carte.module.slug}`" taille="sm">
         Passer le quiz
@@ -90,6 +101,11 @@ async function telechargerSupport() {
       </UiBaseButton>
       <UiBaseButton v-if="carte.support" taille="sm" variante="contour" :disabled="telechargement" @click="telechargerSupport">
         Télécharger le support
+      </UiBaseButton>
+      <!-- Étape 4 de la maquette : la Live Session ouvre le coaching collectif
+           de sa thématique, comme un module acheté. -->
+      <UiBaseButton to="/mon-espace/sessions" taille="sm" variante="contour">
+        S’inscrire au coaching collectif
       </UiBaseButton>
     </div>
   </article>
