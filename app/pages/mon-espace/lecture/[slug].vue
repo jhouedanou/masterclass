@@ -938,5 +938,7 @@ onBeforeUnmount(() => minuteurAutorisation && clearTimeout(minuteurAutorisation)
         </button>
       </p>
     </div>
+    <!-- Écran plein, hors gabarit de l'espace : le bouton y est posé à la main. -->
+    <LayoutWhatsAppFlottant />
   </div>
 </template>
