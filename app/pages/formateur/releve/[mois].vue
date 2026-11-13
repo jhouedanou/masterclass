@@ -22,11 +22,6 @@ if (!data.value) {
 
 usePagePrivee(`Relevé ${formatMois(mois.value)}`)
 
-const partFormateur = computed(() => {
-  const { marge, remuneration } = data.value!.total
-  return marge ? Math.round((remuneration / marge) * 100) : 30
-})
-
 function imprimer() {
   window.print()
 }
@@ -78,7 +73,7 @@ onMounted(() => {
             <th class="py-2.5 font-bold">Ventes</th>
             <th class="py-2.5 font-bold">CA</th>
             <th class="py-2.5 font-bold">Marge brute</th>
-            <th class="py-2.5 text-right font-bold">Votre part ({{ partFormateur }} %)</th>
+            <th class="py-2.5 text-right font-bold">Votre part</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-ligne-claire">
