@@ -5,13 +5,17 @@ connexion, puis les écrans dans l'ordre où l'équipe s'en sert, et dit ce qui 
 qui est journalisé et ce qui reste à faire à la main.
 
 Adresse du back-office : `/admin/login` (en production :
-`https://masterclass-jhouedanous-projects.vercel.app/admin/login`).
+`https://emasterclass.bigfive.solutions/admin/login`).
+
+Une version courte et illustrée de ce guide est dans le back-office : **Admin → Guide**
+(`/admin/guide`, contenu dans `app/utils/guideAdmin.ts`). Elle dit où se trouve chaque réglage ;
+ce document-ci garde les règles de détail.
 
 Les identifiants des administrateurs ne figurent pas ici : ils sont remis à chacun séparément,
 avec un mot de passe provisoire à changer dès la première connexion. Le guide remis avec ces
 accès vit dans `docs/acces/`, exclu du dépôt.
 
-État de la plateforme décrit : 23 octobre 2026.
+État de la plateforme décrit : 23 octobre 2026, sections 12 et 13 ajoutées le 13 novembre 2026.
 
 ---
 
@@ -123,7 +127,8 @@ son mot de passe effacé.
 | Modules & chapitres | Contenu des modules ; duplication d'un module (copie en brouillon, sans vidéo) ou d'un chapitre. |
 | Médiathèque vidéo | Toutes les vidéos déposées, les chapitres qui s'en servent, l'état d'encodage. Aperçu, Renommer, Encoder en multi-débit, Supprimer (seulement si aucun chapitre ne l'utilise). |
 | Formateurs | Fiches publiques, ordre d'affichage, tarif et activation du coaching privé. |
-| Calendrier des sessions | Coaching collectif : création, report, annulation, présence. |
+| Coaching collectif → Calendrier des sessions | Coaching collectif : création, report, annulation, présence. |
+| Live Sessions | Séances en direct : visibilité, planification, publication, clôture (section 12). |
 | Coaching privé | Demandes de séances individuelles ; le badge compte celles à traiter. |
 | Apprenants | Comptes, accès, attestations. |
 | Candidatures formateurs | Formulaire public « Devenir formateur ». |
@@ -132,6 +137,8 @@ son mot de passe effacé.
 | Revenus | CA (modules + coaching privé), frais FeexPay, marge, revenu Big Five, rémunération formateurs ; export CSV. |
 | Historique & versions | « Journal des actions » : chaque action, son auteur, son détail ; export CSV. La restauration se fait depuis le CMS et l'onglet Historique d'un module, pas d'ici. |
 | Paramètres | Six volets (section 10). |
+| Recette | Contrôles à jouer, résultat de chaque testeur (section 13). Tout compte d'administration. |
+| Guide | Version courte et illustrée de ce document. Tout compte d'administration. |
 | Transactions & paiements | Paiements et échecs (section 4). |
 
 ---
@@ -279,3 +286,47 @@ voir `app/plugins/tracking.client.ts` et `docs/tracking/email-questions-tracking
 | Relance des commandes en attente | quotidienne sur Vercel |
 
 Le détail des comptes et clés est dans `TODO.md`.
+
+---
+
+## 12. Live Sessions
+
+Écran **Live Sessions** (section live-sessions).
+
+- **Visibilité** : en haut de l'écran, « visible sur le site pour » — Personne, Admins seulement,
+  Tout le monde. Sur « Personne », rien n'apparaît sur le site (menu, pages, badges, onglet du
+  formateur) et **aucun e-mail Live ne part**. « Admins seulement » sert à vérifier en ligne
+  avant d'ouvrir. Le changement est journalisé.
+- **Planifier** : « + Planifier une Live Session ». Un module qui n'est pas encore disponible
+  en vidéo, date et heure en GMT, durée, capacité (celle de la licence Zoom), formateur,
+  modérateur. Le prix est celui du module. La séance naît en brouillon.
+- **Publier** : refusé tant qu'il manque le modérateur ou la réunion Zoom (ID à saisir, ou
+  création automatique). À la publication, le module passe au statut « Live Session ».
+- **Le jour de la séance** : « Modérer la session » ouvre la salle.
+- **Clore** : « Marquer comme terminée » ouvre le quiz et le support aux inscrits. Sans clic, la
+  séance se clôt seule (début + durée + 60 minutes), si le cycle planifié tourne.
+- **Support** : PDF ou PowerPoint, 50 Mo au plus. Son dépôt envoie l'e-mail de fin aux inscrits.
+- **Vidéo** : la colonne « Suite » rappelle l'échéance de la version montée (fin + 21 jours,
+  orange à J-5, rouge une fois dépassée). Vidéo publiée, le module devient un module classique.
+- **Inscrits** : liste et export CSV sur la fiche. Le nombre d'inscrits n'est visible que des
+  administrateurs. Une inscription apparaît dans Transactions comme un achat du module.
+- **Annuler** : prévient les inscrits ; les remboursements se font dans l'espace FeexPay.
+
+Les rappels (veille, 10 minutes avant, début) dépendent du cycle planifié en base
+(`supabase/planification-live.sql`) et de l'envoi des e-mails.
+
+---
+
+## 13. Recette
+
+Écran **Recette** (`/admin/recette`), ouvert à tout compte d'administration. Un compte créé sans
+aucune section sert de compte testeur : il n'a que la vue d'ensemble, son profil, la Recette et
+le Guide.
+
+- Chaque contrôle se marque **OK**, **KO** ou **Passé** ; cliquer à nouveau efface son résultat.
+- Un KO attend une note : ce qui s'est affiché, le compte utilisé, l'appareil, l'heure.
+- Les résultats des autres testeurs s'affichent en pastilles ; « Mes résultats » les masque.
+- « Reste à jouer » et « KO seulement » filtrent la liste ; « Exporter en CSV » sort les résultats.
+- La liste des contrôles est dans `server/data/recette.ts`, les captures de référence dans
+  `public/recette/`. Les résultats sont dans la table `recette_resultats`
+  (`supabase/en-ligne/52-recette-resultats.sql`).

@@ -1,5 +1,10 @@
 # Recette des parcours — novembre 2026
 
+> **Depuis le 13/11, la recette se joue dans le back-office : Admin → Recette
+> (`/admin/recette`).** Chaque testeur y marque OK, KO ou Passé et y lit les résultats des
+> autres. Les contrôles sont décrits dans `server/data/recette.ts` ; ce document reste la
+> version à lire hors ligne.
+
 Pour Franck et Cossi. Cinq parcours à jouer de bout en bout sur
 `https://emasterclass.bigfive.solutions`, avec un compte apprenant de test et, pour le coaching,
 un compte formateur. Notez pour chaque étape : OK, ou ce qui s'affiche à la place, avec une
@@ -79,7 +84,7 @@ Créer une séance qui commence **dans 1 h 15**, puis Publier.
 | 3 | Apprenant | « Se connecter pour s'inscrire » → CGV → Mobile Money | Fenêtre FeexPay au prix du module, puis « Vous êtes inscrit » |
 | 4 | Apprenant | Boîte mail | Confirmation : horaire, formateur, prérequis, reçu, `.ics` joint ; **aucun lien Zoom** |
 | 5 | Admin | Transactions | L'inscription apparaît comme un achat du module |
-| 6 | Apprenant | Mon espace → Mes sessions | La séance, dans « Vos Live Sessions » |
+| 6 | Apprenant | Mon espace → Tableau de bord | La carte de la séance, en tête de page, avec « Ajouter à mon agenda » |
 | 7 | Formateur | Boîte mail | Rappel J-1 du formateur (au premier passage du cycle, 5 min au plus) |
 | 8 | Formateur | Mes Live Sessions, à H-30 | « Animer sur Zoom » actif → la réunion **démarre** en hôte |
 | 9 | Apprenant | Boîte mail, à H-10 | Rappel H-10 avec le lien de la salle |

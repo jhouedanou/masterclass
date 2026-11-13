@@ -813,6 +813,15 @@ export type ReglagesLiveRow = {
   maj_par: string | null
 }
 
+/** Résultat d'un testeur sur un contrôle de la recette partagée. */
+export type RecetteResultatRow = {
+  controle: string
+  testeur_id: string
+  statut: 'ok' | 'ko' | 'passe'
+  note: string
+  maj_le: string
+}
+
 type Table<Row, Genere extends keyof Row = never> = {
   Row: Row
   Insert: Omit<Row, Genere> & Partial<Pick<Row, Genere>>
@@ -1014,6 +1023,7 @@ export type Database = {
       >
       redirections: Table<RedirectionRow, 'id' | 'creee_le'>
       erreurs_404: Table<Erreur404Row, 'vues' | 'premiere_le' | 'derniere_le'>
+      recette_resultats: Table<RecetteResultatRow, 'note' | 'maj_le'>
       travaux_video: Table<
         TravailVideoRow,
         | 'id'
