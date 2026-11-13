@@ -26,6 +26,9 @@ const props = withDefaults(
     /** Marque un module auquel l'apprenant a déjà accès (espace privé). Faux
      *  partout ailleurs : sur le site public, personne n'est identifié. */
     possede?: boolean
+    /** Où mène la carte d'un module possédé (catalogue de l'espace apprenant) :
+     *  sa page dans l'espace, pas la fiche publique qui le lui revendrait. */
+    lienPossede?: string
     /** Flèche « → » après « Découvrir le module » : présente sur l'accueil, absente sur les pages programme (planche A). */
     fleche?: boolean
     variante?: 'accueil' | 'programme'
@@ -37,7 +40,15 @@ const social = computed(() => props.module.programme === 'social-media')
 const teinte = computed(() => (social.value ? 'text-social' : 'text-entrepreneurs'))
 const large = computed(() => props.variante === 'programme')
 const live = computed(() => (props.module.statut === 'live-session' ? (props.module.live ?? null) : null))
-const lien = computed(() => (live.value ? `/live-sessions/${live.value.slug}` : `/modules/${props.module.slug}`))
+const ouvrable = computed(() => Boolean(props.possede && props.lienPossede))
+const lien = computed(() => {
+  if (ouvrable.value) return props.lienPossede!
+  return live.value ? `/live-sessions/${live.value.slug}` : `/modules/${props.module.slug}`
+})
+const libelleLien = computed(() => {
+  if (ouvrable.value) return 'Ouvrir le module'
+  return live.value ? 'S’inscrire' : 'Découvrir le module'
+})
 const badge = computed(() => {
   if (live.value) return `Live Session · ${dateCourteLive(live.value.debut)}`
   if (props.module.statut === 'disponible') return 'Disponible'
@@ -109,7 +120,7 @@ const badge = computed(() => {
     </h3>
 
     <p class="text-[13px] text-discret">
-      {{ module.formateur?.nom }} · <template v-if="live">{{ heureLive(live.debut) }} GMT</template><template v-else>{{ formatDuree(module.dureeMinutes) }}</template><template v-if="!large"> ·
+      {{ module.formateur?.nom }} · <template v-if="live">{{ heureLive(live.debut) }} GMT</template><template v-else>{{ formatDuree(module.dureeMinutes) }}</template><template v-if="!large && !ouvrable"> ·
       {{ module.prixFcfa != null ? formatFcfa(module.prixFcfa, true) : 'Prix au lancement' }}</template>
     </p>
 
@@ -117,7 +128,7 @@ const badge = computed(() => {
     <div v-if="large" class="mt-auto flex items-center justify-between gap-3 pt-2">
       <b class="text-[16px]">{{ module.prixFcfa != null ? formatFcfa(module.prixFcfa) : 'Prix au lancement' }}</b>
       <UiBaseButton :to="lien" variante="sombre" taille="sm">
-        {{ live ? 'S’inscrire' : 'Découvrir le module' }}
+        {{ libelleLien }}
       </UiBaseButton>
     </div>
 
@@ -127,7 +138,7 @@ const badge = computed(() => {
       class="mt-auto pt-1 text-[14px] font-bold"
       :class="teinte"
     >
-      {{ live ? 'S’inscrire' : 'Découvrir le module' }}<template v-if="fleche"> →</template>
+      {{ libelleLien }}<template v-if="fleche"> →</template>
     </NuxtLink>
     </div>
   </article>

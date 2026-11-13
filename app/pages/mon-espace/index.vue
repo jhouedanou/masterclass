@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { EtatQuiz, Formateur, Module, StatutCoachingPrive, Thematique } from '#shared/types'
+import type { EtatQuiz, StatutCoachingPrive } from '#shared/types'
 import { quizAReussir } from '#shared/utils/attestation'
 import { compterPlaces } from '#shared/utils/compteurs'
 import { dureeSessionEnHeures, PLACES_SESSION } from '#shared/utils/coaching'
@@ -57,13 +57,6 @@ const auth = useAuthStore()
 const route = useRoute()
 const { data, refresh } = await useFetch<TableauDeBord>('/api/mon-espace')
 
-// Le catalogue complet, pour le rail de découverte. L'endpoint public suffit :
-// il écarte déjà les brouillons et joint formateur et thématique.
-const { data: catalogue } = await useFetch<
-  (Module & { formateur?: Formateur | null; thematique?: Thematique | null })[]
->('/api/modules', { default: () => [] })
-
-const moduleIdsPossedes = computed(() => data.value?.cartes.map((c) => c.moduleId) ?? [])
 
 const prenom = computed(() => auth.utilisateur?.prenom ?? '')
 const feminin = computed(() => /[ae]$/i.test(prenom.value))
@@ -332,7 +325,19 @@ const COULEUR_SURTITRE = {
       </aside>
     </div>
 
-    <!-- Hors de la grille : le rail occupe toute la largeur disponible. -->
-    <EspaceCarouselModules :modules="catalogue" :module-ids-possedes="moduleIdsPossedes" />
+    <!-- Le catalogue a sa page (maquette du 13/11) : filtres par programme et
+         par accès. Ce bandeau remplace le rail qui défilait ici. -->
+    <section class="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-carte bg-encre px-6 py-5.5 text-white">
+      <div>
+        <h2 class="font-title text-[21px] font-light text-white">Explorer le catalogue</h2>
+        <p class="mt-1 text-[13.5px] text-nuit-clair">
+          Tous les modules, Social Média et Entrepreneurs — filtrez par programme ou par accès.
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2.5">
+        <UiBaseButton to="/mon-espace/modules" variante="contour-clair" taille="sm">Mes modules</UiBaseButton>
+        <UiBaseButton to="/mon-espace/catalogue" variante="blanc" taille="sm">Voir le catalogue →</UiBaseButton>
+      </div>
+    </section>
   </div>
 </template>
