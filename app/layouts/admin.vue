@@ -50,6 +50,10 @@ const tousLesLiens: Lien[] = [
   // « Paramètres » se déplie sur ses volets (accès, tracking, référencement,
   // attestations, financier, profil) : voir `voletsParametres` plus bas.
   { libelle: 'Paramètres', chemin: '/admin/parametres', icone: 'ph:sliders', section: null },
+  // Recette partagée et guide : ouverts à tout compte d'administration, pour
+  // qu'un compte sans aucune section puisse servir de compte testeur.
+  { libelle: 'Recette', chemin: '/admin/recette', icone: 'ph:list-checks', section: null },
+  { libelle: 'Guide', chemin: '/admin/guide', icone: 'ph:book-open', section: null },
   { libelle: 'Transactions & paiements', chemin: '/admin/transactions', icone: 'ph:lock-key', section: 'transactions-paiements', restreint: true },
 ]
 

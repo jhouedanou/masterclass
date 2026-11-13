@@ -772,3 +772,49 @@ export type EtatLiveApprenant = 'inscrit' | 'lien-disponible' | 'terminee' | 'mo
 
 /** État d'une Live Session dans l'espace formateur, dérivé côté serveur (§4.4). */
 export type EtatLiveFormateur = 'planifiee' | 'aujourdhui' | 'terminee' | 'annulee'
+
+// --- Recette partagée (/admin/recette) ---------------------------------------
+
+export type StatutRecette = 'ok' | 'ko' | 'passe'
+
+/** Un contrôle : ce que le testeur fait, ce qu'il doit voir. */
+export interface ControleRecette {
+  /** Clé stable (« 1.4 ») : les résultats y sont rattachés. */
+  k: string
+  /** Qui joue l'étape : Visiteur, Apprenant, Formateur, Admin. */
+  qui?: string
+  etape: string
+  attendu: string
+  /** Chemin à ouvrir sur le site pour jouer l'étape. */
+  lien?: string
+  /** Capture de référence, servie depuis `/recette/`. */
+  capture?: string
+}
+
+export interface SectionRecette {
+  num: string
+  titre: string
+  contexte: string
+  /** Ce qui ne peut pas passer pour une raison extérieure au code. */
+  bloque?: string
+  controles: ControleRecette[]
+}
+
+export interface ResultatRecette {
+  controle: string
+  testeurId: string
+  /** « Prénom N. » */
+  testeur: string
+  statut: StatutRecette
+  note: string
+  majLe: string
+}
+
+export interface Recette {
+  version: string
+  adresse: string
+  sections: SectionRecette[]
+  resultats: ResultatRecette[]
+  /** `false` tant que la table des résultats n'existe pas en base. */
+  pret: boolean
+}
