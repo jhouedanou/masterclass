@@ -55,6 +55,6 @@ export type SujetContact = (typeof SUJETS_CONTACT)[number]
 export const ORGANISATION = {
   marque: 'E-Masterclass Big Five',
   raisonSociale: 'BigFiveAbidjan SARL',
-  email: 'contact@bigfive.ci',
+  email: 'contacts@bigfiveabidjan.com',
   ville: 'Abidjan, Côte d’Ivoire',
 } as const

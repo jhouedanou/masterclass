@@ -114,7 +114,7 @@ export default defineNuxtConfig({
     emailNom: process.env.SMTP_NOM || 'E-Masterclass Big Five',
     // Boîte de l'équipe : reçoit le formulaire de contact et les demandes
     // d'activation du coaching privé.
-    contactDestinataire: process.env.CONTACT_DESTINATAIRE || 'contact@bigfive.ci',
+    contactDestinataire: process.env.CONTACT_DESTINATAIRE || 'contacts@bigfiveabidjan.com',
 
     // Code de la double vérification admin : `interne` (table codes_verification
     // + notifier) ou `supabase-auth` (Supabase Auth émet, envoie et vérifie le
