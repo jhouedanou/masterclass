@@ -79,6 +79,29 @@ const lecteur = useLecteurVideo({
 const video = ref<HTMLVideoElement | null>(null)
 watch(video, (element) => lecteur.brancher(element))
 
+/**
+ * Dernier cumul connu de chaque chapitre quitté pendant cette visite.
+ *
+ * La liste des chapitres lit sa progression dans la réponse du serveur, figée
+ * à l'ouverture de la page, et ne recalcule à la volée que le chapitre en
+ * cours. Dès qu'on en changeait, celui qu'on venait de regarder retombait donc
+ * sur sa valeur d'ouverture — 0 % après en avoir vu 17 — jusqu'au rechargement
+ * (recette du 13/11 : « la progression se met à jour avec du retard »).
+ *
+ * `flush: 'sync'` : le relevé doit être pris à l'instant où l'index change,
+ * avant que `lecteur.charger()` ne remette les compteurs à zéro pour le
+ * chapitre suivant. Affichage seulement : ce qui est crédité reste décidé par
+ * le serveur, à partir des relevés du lecteur.
+ */
+const cumulsLocaux = reactive<Record<number, number>>({})
+watch(
+  index,
+  (_, ancien) => {
+    cumulsLocaux[ancien] = Math.max(cumulsLocaux[ancien] ?? 0, lecteur.secondesCumulees.value)
+  },
+  { flush: 'sync' },
+)
+
 // Dernière position, pour « Connexion rétablie — reprise de la lecture à 24:12 » (écran hors ligne).
 watch(
   () => Math.floor(lecteur.positionSecondes.value / 5),
@@ -414,20 +437,26 @@ watch(index, annulerEnchainement)
 type Avancement = { etat: 'vu' | 'en-cours' | 'a-voir'; pourcentage: number }
 
 const avancements = computed<Avancement[]>(() =>
-  moduleCourant.value.chapitres.map((_, position) => {
-    const serveur = data.value?.chapitres.find((c) => c.position === position)
+  moduleCourant.value.chapitres.map((c, position) => {
+    const serveur = data.value?.chapitres.find((s) => s.position === position)
     const repli: Avancement = serveur
       ? { etat: serveur.etat, pourcentage: serveur.pourcentage }
       : { etat: 'a-voir', pourcentage: 0 }
 
-    if (position !== index.value) return repli
+    const enCours = position === index.value
+    const local = cumulsLocaux[position] ?? 0
+    // Un chapitre ni en cours ni regardé pendant cette visite : le serveur
+    // fait foi, il n'y a rien de plus récent à lui opposer.
+    if (!enCours && !local) return repli
 
-    const duree = lecteur.dureeSecondes.value || (chapitre.value?.videoDureeSecondes ?? 0)
+    const duree = enCours
+      ? lecteur.dureeSecondes.value || (c.videoDureeSecondes ?? 0)
+      : (c.videoDureeSecondes ?? (c.dureeMinutes ?? 0) * 60)
     if (!duree) return repli
 
-    // Le cumul du lecteur ne peut que dépasser celui du serveur, jamais le
+    // Le cumul local ne peut que dépasser celui du serveur, jamais le
     // contredire : la base ne retient que la plus grande valeur.
-    const vues = Math.max(lecteur.secondesCumulees.value, (repli.pourcentage / 100) * duree)
+    const vues = Math.max(enCours ? lecteur.secondesCumulees.value : 0, local, (repli.pourcentage / 100) * duree)
     const part = Math.min(100, Math.round((vues / duree) * 100))
 
     if (repli.etat === 'vu' || vues >= duree * 0.95) return { etat: 'vu', pourcentage: 100 }
