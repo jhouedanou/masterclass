@@ -171,6 +171,8 @@ onMounted(() => {
         </footer>
       </div>
     </article>
+    <!-- Écran plein, hors gabarit ; le composant se masque seul à l'impression. -->
+    <LayoutWhatsAppFlottant />
   </div>
 </template>
 

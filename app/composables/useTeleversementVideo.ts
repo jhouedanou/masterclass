@@ -403,8 +403,9 @@ export function useTeleversementVideo() {
   }
 
   function messageDErreur(e: unknown): string {
-    const avecMessage = e as { statusMessage?: string; message?: string }
-    return avecMessage.statusMessage ?? avecMessage.message ?? 'Le téléversement a échoué.'
+    // Une erreur d'API porte son texte dans le corps de la réponse ; une erreur
+    // levée par le téléversement lui-même, dans `message`.
+    return messageErreurApi(e, (e as { message?: string }).message || 'Le téléversement a échoué.')
   }
 
   return {

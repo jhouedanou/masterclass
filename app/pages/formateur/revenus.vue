@@ -46,13 +46,11 @@ const optionsModules = computed(() => [
   ...(mesModules.value ?? []).map((m) => ({ valeur: m.id, libelle: m.titre })),
 ])
 
-/** Les parts sont paramétrées côté administration : les libellés de colonnes
- *  suivent le taux réellement appliqué plutôt qu'un 30 % figé. */
-const partFormateur = computed(() => {
-  const { marge, remuneration } = data.value?.total ?? { marge: 0, remuneration: 0 }
-  return marge ? Math.round((remuneration / marge) * 100) : 30
-})
-const partPlateforme = computed(() => 100 - partFormateur.value)
+/*
+ * Aucun pourcentage sur cet écran (maquette du 13/11) : ni le taux des frais de
+ * paiement, ni la répartition de la marge. Le formateur lit des montants ; les
+ * taux relèvent de son contrat et se règlent côté administration.
+ */
 
 /** Rangées de l'écran mobile (planche D, écran 07) : la maquette y remplace la
  *  bande de cartes par quatre lignes, dont celle du coaching privé. */
@@ -63,8 +61,8 @@ const rangeesMobile = computed(() => {
   if (!total) return []
   const rangees = [
     { libelle: 'CA généré', montant: total.ca },
-    { libelle: `Frais de paiement (${total.fraisPourcent} %)`, montant: total.frais },
-    { libelle: `Marge brute Big Five (${partPlateforme.value} %)`, montant: total.margePlateforme },
+    { libelle: 'Frais de paiement', montant: total.frais },
+    { libelle: 'Marge brute Big Five', montant: total.margePlateforme },
   ]
   if (ligneCoaching.value) {
     rangees.push({
@@ -102,7 +100,7 @@ const rangeesMobile = computed(() => {
       <p class="surtitre text-social">Votre rémunération</p>
       <p class="mt-1 font-title text-[30px] font-light">{{ formatFcfa(data.total.remuneration) }}</p>
       <p class="mt-1 text-[11.5px] text-discret">
-        marge brute {{ formatFcfa(data.total.marge) }} × {{ partFormateur }} %
+        sur une marge brute de {{ formatFcfa(data.total.marge) }}, selon votre contrat
       </p>
     </div>
 
@@ -132,7 +130,7 @@ const rangeesMobile = computed(() => {
         libelle="Frais de paiement"
         :valeur="formatNombre(data.total.frais)"
         unite="F"
-        :detail="`FeexPay — ${data.total.fraisPourcent} %`"
+        detail="FeexPay"
       />
       <AdminCarteIndicateur
         taille="sm"
@@ -147,20 +145,20 @@ const rangeesMobile = computed(() => {
         libelle="Votre rémunération"
         :valeur="formatNombre(data.total.remuneration)"
         unite="F"
-        :detail="`marge brute × ${partFormateur} %`"
+        detail="selon votre contrat"
       />
       <AdminCarteIndicateur
         taille="sm"
         libelle="Marge brute Big Five"
         :valeur="formatNombre(data.total.margePlateforme)"
         unite="F"
-        :detail="`marge brute × ${partPlateforme} %`"
+        detail="selon votre contrat"
       />
     </div>
 
     <AdminTableauSimple
       class="mt-5"
-      :colonnes="['Source', 'Ventes', 'CA', 'Marge brute', `Votre part (${partFormateur} %)`]"
+      :colonnes="['Source', 'Ventes', 'CA', 'Marge brute', 'Votre part']"
       :largeurs="['auto', '100px', '120px', '120px', '130px']"
       largeur-min="760px"
     >
@@ -196,8 +194,8 @@ const rangeesMobile = computed(() => {
     </UiBaseButton>
 
     <p class="mt-3 text-[12px] leading-relaxed text-discret">
-      Répartition marge brute : {{ partPlateforme }} % Big Five · {{ partFormateur }} % formateur
-      (pourcentages fixés par contrat, paramétrés côté admin). Versement mensuel par l’équipe —
+      Répartition de la marge brute selon les conditions de votre contrat. Versement mensuel par
+      l’équipe Big Five —
       <NuxtLink :to="`/formateur/releve/${mois}`" class="text-inherit hover:underline">
         le relevé PDF de chaque mois
       </NuxtLink>

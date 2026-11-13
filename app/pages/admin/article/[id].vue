@@ -179,7 +179,7 @@ async function enregistrer(statut?: 'brouillon' | 'publie') {
           : 'Enregistré. La version précédente reste restaurable.'
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'L’enregistrement a échoué.'
+    erreur.value = messageErreurApi(e, 'L’enregistrement a échoué.')
   } finally {
     enCours.value = false
   }

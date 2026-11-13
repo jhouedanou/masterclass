@@ -70,7 +70,7 @@ const initiales = computed(
             :key="lien.chemin"
             :to="lien.chemin"
             class="flex items-center gap-1.5 border-b-2 border-transparent pb-[3px] text-texte hover:text-encre"
-            active-class="border-encre text-encre"
+            active-class="border-social font-extrabold text-social"
           >
             {{ lien.libelle }}
             <span

@@ -127,7 +127,7 @@ async function enregistrer() {
     annoncer('Modifications enregistrées.')
     emit('enregistre')
   } catch (e) {
-    message.value = (e as { statusMessage?: string }).statusMessage ?? 'Enregistrement impossible.'
+    message.value = messageErreurApi(e, 'Enregistrement impossible.')
   } finally {
     enregistrement.value = false
   }

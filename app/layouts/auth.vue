@@ -23,5 +23,8 @@
         module, accès à vie.
       </p>
     </div>
+    <!-- Sur toutes les pages (maquette du 13/11), connexion comprise : c'est là
+         qu'un visiteur bloqué a le plus besoin de joindre l'équipe. -->
+    <LayoutWhatsAppFlottant />
   </div>
 </template>

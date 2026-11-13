@@ -35,7 +35,7 @@ async function traiterCandidature(
     await $fetch('/api/admin/candidatures', { method: 'PATCH', body: { id: c.id, action } })
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
+    erreur.value = messageErreurApi(e, 'Action impossible.')
   }
 }
 

@@ -84,7 +84,7 @@ async function appeler(
     if (confirmation) annoncer(confirmation)
     return true
   } catch (e) {
-    const souci = (e as { statusMessage?: string }).statusMessage ?? 'L’enregistrement a échoué.'
+    const souci = messageErreurApi(e, 'L’enregistrement a échoué.')
     erreur.value = souci
     annoncer(souci, 'erreur')
     return false
@@ -225,7 +225,7 @@ async function creerModule() {
     await refresh()
     await navigateTo(`/admin/module/${cree.id}`)
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'La création a échoué.'
+    erreur.value = messageErreurApi(e, 'La création a échoué.')
   } finally {
     enCours.value = false
   }
@@ -297,7 +297,7 @@ async function dupliquerModule(m: ModuleArbre) {
     await refresh()
     await navigateTo(`/admin/module/${copie.id}?onglet=chapitres`)
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'La duplication a échoué.'
+    erreur.value = messageErreurApi(e, 'La duplication a échoué.')
   } finally {
     enCours.value = false
   }

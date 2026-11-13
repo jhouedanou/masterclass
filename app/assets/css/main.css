@@ -297,13 +297,28 @@
 }
 
 /*
-  Lien de navigation de la page courante : filet inférieur de 2 px, dans la
-  couleur du lien lui-même — violet sur /programmes/social-media, bleu sur
-  Entrepreneurs, encre ailleurs (planche A, en-têtes des écrans 02, 05, 08, 12).
-  Posé hors de tout `@layer` : la règle doit battre l'utilitaire
-  `border-transparent` que le lien porte au repos pour réserver la place du
-  filet, et une classe placée dans `components` perdrait contre les utilitaires.
+  Entrée de navigation de la page courante : une pastille aux couleurs de la
+  charte (maquette du 13/11), et non plus le filet souligné de la planche A.
+  Violet par défaut, bleu sur l'entrée « Entrepreneurs » — le fond suit la
+  couleur que le lien porte déjà.
+
+  `.lien-actif` sert l'en-tête du site public, `.onglet-actif` l'espace
+  apprenant, où le texte passe aussi au violet.
+
+  Posées hors de tout `@layer` : elles doivent battre les utilitaires de
+  couleur et de survol que les liens portent au repos, et une classe placée
+  dans `components` perdrait contre eux.
 */
 .lien-actif {
-  border-bottom-color: currentColor;
+  background-color: var(--color-social-voile);
+  font-weight: 800;
+}
+.lien-actif.text-entrepreneurs {
+  background-color: var(--color-entrepreneurs-voile);
+}
+.onglet-actif,
+.onglet-actif:hover {
+  background-color: var(--color-social-voile);
+  color: var(--color-social);
+  font-weight: 800;
 }

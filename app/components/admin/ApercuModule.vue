@@ -36,7 +36,7 @@ async function engendrerLien() {
     lienPartage.value = r.lien
     validite.value = r.validiteMinutes
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Lien indisponible.'
+    erreur.value = messageErreurApi(e, 'Lien indisponible.')
   }
 }
 

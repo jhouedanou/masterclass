@@ -62,7 +62,7 @@ async function importerScript(fichier: File | null | undefined) {
     messageScript.value = `Script importé — ${r.lignes} passages.`
     emit('rafraichir')
   } catch (e) {
-    erreurScript.value = (e as { statusMessage?: string }).statusMessage ?? 'L’import a échoué.'
+    erreurScript.value = messageErreurApi(e, 'L’import a échoué.')
   } finally {
     importEnCours.value = false
   }
@@ -77,7 +77,7 @@ async function retirerVideo() {
     })
     emit('rafraichir')
   } catch (e) {
-    erreurScript.value = (e as { statusMessage?: string }).statusMessage ?? 'Le retrait a échoué.'
+    erreurScript.value = messageErreurApi(e, 'Le retrait a échoué.')
   }
 }
 

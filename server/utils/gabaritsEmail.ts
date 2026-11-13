@@ -124,6 +124,14 @@ function corps(modele: ModeleNotification, variables: Record<string, string>, si
         { p: 'Pour le conserver, reconnectez-vous avant cette date.' },
         { bouton: 'Me reconnecter', lien: `${site}/connexion` },
       ]
+    // Création de compte (interconnexions du 13/11, § 1). Rien n'y est promis
+    // qui dépende d'un achat : le compte seul n'ouvre aucun module.
+    case 'bienvenue':
+      return [
+        { p: 'Votre compte E-Masterclass Big Five est créé. Vous y retrouverez vos modules, vos Live Sessions, vos sessions de coaching et vos attestations.' },
+        { p: 'Pensez à compléter votre profil : il est demandé à 100 % pour réserver une place en coaching collectif, et il aide votre formateur à préparer la session.' },
+        { bouton: 'Accéder à mon espace', lien: espace },
+      ]
     case 'compte-reactive':
       return [
         { p: 'La suppression de votre compte est annulée : vos modules et vos attestations vous attendent.' },

@@ -33,7 +33,7 @@ async function appeler(chemin: string, body: Record<string, unknown>) {
     await refresh()
     return true
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'L’enregistrement a échoué.'
+    erreur.value = messageErreurApi(e, 'L’enregistrement a échoué.')
     return false
   } finally {
     enCours.value = false

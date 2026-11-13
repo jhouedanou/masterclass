@@ -155,7 +155,7 @@ async function soumettreIdentifiants() {
       bloquerRenvoi()
     }
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Connexion impossible.'
+    erreur.value = messageErreurApi(e, 'Connexion impossible.')
   } finally {
     enCours.value = false
   }
@@ -169,7 +169,7 @@ async function soumettreCode() {
     await navigateTo(String(route.query.suite ?? '/admin'))
   } catch (e) {
     const statut = (e as { statusCode?: number }).statusCode
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Code refusé.'
+    erreur.value = messageErreurApi(e, 'Code refusé.')
     if (statut === 401 && erreur.value.includes('Recommencez')) etape.value = 'identifiants'
   } finally {
     enCours.value = false
@@ -189,7 +189,7 @@ async function demarrerEnrolement() {
     secret.value = reponse.secret
     etape.value = 'enrolement'
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Enrôlement impossible.'
+    erreur.value = messageErreurApi(e, 'Enrôlement impossible.')
     etape.value = 'identifiants'
   } finally {
     enCours.value = false
@@ -208,7 +208,7 @@ async function activerEnrolement() {
     code.value = ''
     etape.value = 'secours'
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Code refusé.'
+    erreur.value = messageErreurApi(e, 'Code refusé.')
   } finally {
     enCours.value = false
   }
@@ -230,7 +230,7 @@ async function renvoyer() {
     demarrerCompteARebours()
     bloquerRenvoi()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Renvoi impossible.'
+    erreur.value = messageErreurApi(e, 'Renvoi impossible.')
   }
 }
 </script>

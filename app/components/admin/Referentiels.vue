@@ -39,7 +39,7 @@ async function agir(action: () => Promise<unknown>, succes: string) {
     await refresh()
     annoncer(succes)
   } catch (e) {
-    const souci = (e as { statusMessage?: string }).statusMessage ?? 'Opération impossible.'
+    const souci = messageErreurApi(e, 'Opération impossible.')
     erreur.value = souci
     annoncer(souci, 'erreur')
   }

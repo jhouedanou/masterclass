@@ -141,7 +141,7 @@ async function appliquer(champs: Record<string, unknown>, options: { silencieux?
     if (!options.silencieux) succes.value = 'Enregistré. La version précédente reste restaurable.'
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'L’enregistrement a échoué.'
+    erreur.value = messageErreurApi(e, 'L’enregistrement a échoué.')
   } finally {
     if (!options.silencieux) enCours.value = false
   }
@@ -170,7 +170,7 @@ async function chapitre(body: Record<string, unknown>, confirmation?: string) {
     await refresh()
     if (confirmation) annoncer(confirmation)
   } catch (e) {
-    const message = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
+    const message = messageErreurApi(e, 'Action impossible.')
     erreur.value = message
     annoncer(message, 'erreur')
   }
@@ -243,7 +243,7 @@ async function restaurer(versionId: string) {
     succes.value = 'Version restaurée.'
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'La restauration a échoué.'
+    erreur.value = messageErreurApi(e, 'La restauration a échoué.')
   }
 }
 
@@ -293,7 +293,7 @@ async function basculerPret() {
     })
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Action impossible.'
+    erreur.value = messageErreurApi(e, 'Action impossible.')
   }
 }
 

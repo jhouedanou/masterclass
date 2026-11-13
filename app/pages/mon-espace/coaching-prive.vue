@@ -88,7 +88,7 @@ async function annuler(d: Demande) {
     message.value = 'Demande retirée.'
     await refresh()
   } catch (e) {
-    erreur.value = (e as { statusMessage?: string }).statusMessage ?? 'Annulation impossible.'
+    erreur.value = messageErreurApi(e, 'Annulation impossible.')
   }
 }
 
