@@ -74,6 +74,16 @@ watch(surParametres, (sur) => {
 const voletActif = computed(() => (route.query.volet as string | undefined) ?? VOLET_PARAMETRES_DEFAUT)
 
 /**
+ * « Calendrier des sessions » est rangé sous un groupe « Coaching collectif »
+ * (maquette du 13/11) : posé à plat juste au-dessus de « Live Sessions », il se
+ * confondait avec elles. Le groupe est ouvert d'office — il n'a qu'une entrée,
+ * et la cacher derrière un clic ferait chercher l'écran le plus utilisé du
+ * coaching.
+ */
+const CHEMIN_CALENDRIER = '/admin/sessions'
+const coachingOuvert = ref(true)
+
+/**
  * Rail tablette (écran 17) : la maquette n'y garde que cinq entrées de
  * navigation, plus « Transactions & paiements » poussé en bas par son verrou.
  * La phase 1 y repliait les dix-huit liens, ce que la maquette ne montre nulle
@@ -158,6 +168,41 @@ const perimetre = computed(() => {
                 >
                   <span class="flex-1">{{ volet.libelle }}</span>
                   <span v-if="volet.verrou && !auth.estAdminSuperieur" aria-hidden="true" class="text-[11px]">🔒</span>
+                </NuxtLink>
+              </li>
+            </ul>
+          </div>
+          <!-- Coaching collectif : un groupe, le calendrier en sous-entrée. -->
+          <div v-else-if="lien.chemin === CHEMIN_CALENDRIER">
+            <button
+              type="button"
+              class="flex w-full items-center gap-2 rounded-[8px] px-3 py-2.5 text-left hover:bg-encre-800 hover:text-white"
+              :class="route.path === CHEMIN_CALENDRIER ? 'text-white' : 'text-gris-perle'"
+              :aria-expanded="coachingOuvert"
+              aria-controls="sous-menu-coaching"
+              @click="coachingOuvert = !coachingOuvert"
+            >
+              <span class="flex-1">Coaching collectif</span>
+              <Icon
+                name="ph:caret-down"
+                size="14"
+                class="transition-transform"
+                :class="coachingOuvert && 'rotate-180'"
+                aria-hidden="true"
+              />
+            </button>
+            <ul
+              v-show="coachingOuvert"
+              id="sous-menu-coaching"
+              class="mt-0.5 ml-3 flex flex-col gap-0.5 border-l border-nuit-filet pl-2"
+            >
+              <li>
+                <NuxtLink
+                  :to="lien.chemin"
+                  class="flex items-center gap-2 rounded-[8px] px-3 py-2 text-[13px] text-gris-perle hover:bg-encre-800 hover:text-white"
+                  active-class="bg-social text-white"
+                >
+                  <span class="flex-1">{{ lien.libelle }}</span>
                 </NuxtLink>
               </li>
             </ul>
