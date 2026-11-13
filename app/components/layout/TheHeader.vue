@@ -43,12 +43,12 @@ const liens = computed(() => [
       <!-- Sept entrées depuis l'ajout de « Modules », huit avec « Live
            Sessions » : sous 1280 px, l'écart, le corps et le logo se
            resserrent pour tenir sur une ligne. -->
-      <nav aria-label="Navigation principale" class="flex items-center gap-3.5 text-[14px] font-semibold xl:gap-7 xl:text-[15px]">
+      <nav aria-label="Navigation principale" class="flex items-center gap-0.5 text-[14px] font-semibold xl:gap-2 xl:text-[15px]">
         <NuxtLink
           v-for="lien in liens"
           :key="lien.chemin"
           :to="lien.chemin"
-          class="hidden border-b-2 border-transparent pb-[3px] whitespace-nowrap hover:opacity-70 lg:inline"
+          class="hidden rounded-full px-2.5 py-2 whitespace-nowrap hover:opacity-70 lg:inline xl:px-3.5"
           :class="lien.couleur || 'text-encre'"
           exact-active-class="lien-actif"
           :active-class="lien.chemin === '/' ? '' : 'lien-actif'"

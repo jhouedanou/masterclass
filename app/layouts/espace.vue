@@ -1,9 +1,13 @@
 <script setup lang="ts">
 /**
- * Chrome de l'espace apprenant (planche B) : en-tête dédié — logo, navigation
- * « Mes modules · Coaching collectif · Coaching privé · Mes certificats »,
- * pastille de compte (photo de profil, initiales à défaut), Déconnexion — et
- * barre d'onglets basse sous 1024 px.
+ * Chrome de l'espace apprenant (planche B, puis maquette du 13/11) : en-tête
+ * dédié — logo, navigation « Tableau de bord · Catalogue · Mes modules ·
+ * Coaching collectif · Coaching privé · Mes certificats », pastille de compte
+ * (photo de profil, initiales à défaut), Déconnexion — et barre d'onglets
+ * basse sous 768 px.
+ *
+ * L'entrée active est une pastille aux couleurs de la charte, et non plus un
+ * filet souligné en encre.
  */
 const auth = useAuthStore()
 
@@ -12,12 +16,15 @@ async function seDeconnecter() {
   await navigateTo('/')
 }
 const liens = [
+  { libelle: 'Tableau de bord', court: 'Accueil', chemin: '/mon-espace', icone: 'ph:house' },
+  { libelle: 'Catalogue', court: 'Catalogue', chemin: '/mon-espace/catalogue', icone: 'ph:squares-four' },
   { libelle: 'Mes modules', court: 'Modules', chemin: '/mon-espace/modules', icone: 'ph:play-circle' },
   { libelle: 'Coaching collectif', court: 'Sessions', chemin: '/mon-espace/sessions', icone: 'ph:calendar-dots' },
   { libelle: 'Coaching privé', court: 'Privé', chemin: '/mon-espace/coaching-prive', icone: 'ph:target' },
   { libelle: 'Mes certificats', court: 'Certificats', chemin: '/mon-espace/certificats', icone: 'ph:certificate' },
 ]
 const ongletsMobile = [
+  { libelle: 'Catalogue', chemin: '/mon-espace/catalogue', icone: 'ph:compass' },
   { libelle: 'Modules', chemin: '/mon-espace/modules', icone: 'ph:squares-four' },
   { libelle: 'Sessions', chemin: '/mon-espace/sessions', icone: 'ph:calendar-dots' },
   { libelle: 'Certificats', chemin: '/mon-espace/certificats', icone: 'ph:graduation-cap' },
@@ -37,13 +44,18 @@ const initiales = computed(
         <NuxtLink to="/mon-espace" aria-label="Accueil de mon espace">
           <img src="/images/brand/logo.png" alt="E-Masterclass | Big Five" class="block h-9 w-auto" width="180" height="36">
         </NuxtLink>
-        <nav aria-label="Navigation de l’espace apprenant" class="hidden items-center gap-7 text-[14.5px] font-semibold md:flex">
+        <!-- Six entrées : l'écart se resserre sous 1280 px pour tenir sur une ligne. -->
+        <nav aria-label="Navigation de l’espace apprenant" class="hidden items-center gap-0.5 text-[14px] font-semibold md:flex xl:gap-1.5 xl:text-[14.5px]">
+          <!-- `exact-active-class` : « Tableau de bord » pointe sur /mon-espace,
+               préfixe de toutes les autres entrées — il ne doit s'allumer que
+               sur sa propre page. -->
           <NuxtLink
             v-for="lien in liens"
             :key="lien.chemin"
             :to="lien.chemin"
-            class="border-b-2 border-transparent pb-[3px] text-texte hover:text-encre"
-            active-class="border-encre text-encre"
+            class="rounded-full px-2.5 py-2 whitespace-nowrap text-texte hover:bg-social-nuage hover:text-encre xl:px-3"
+            :active-class="lien.chemin === '/mon-espace' ? '' : 'onglet-actif'"
+            exact-active-class="onglet-actif"
           >
             <!-- Tablette (planche B, écran 14) : « Modules · Sessions · Certificats » -->
             <span class="lg:hidden">{{ lien.court }}</span>
