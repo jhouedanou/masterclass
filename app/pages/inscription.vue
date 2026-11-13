@@ -25,6 +25,14 @@ usePagePrivee('Créer un compte')
 
 async function soumettre() {
   erreur.value = ''
+
+  // Validation explicite : le navigateur n'affiche pas toujours le message
+  // minlength dans le cadre d'erreur, seulement un tooltip natif.
+  if (formulaire.motDePasse.length < LONGUEUR_MINIMALE) {
+    erreur.value = `Le mot de passe doit contenir au moins ${LONGUEUR_MINIMALE} caractères.`
+    return
+  }
+
   enCours.value = true
   try {
     const compte = await auth.inscription(formulaire)

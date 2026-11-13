@@ -67,5 +67,6 @@ const initiales = computed(
     </main>
 
     <LayoutBarreOngletsMobile :liens="ongletsMobile" jusqua="md" />
+    <LayoutWhatsAppFlottant />
   </div>
 </template>
