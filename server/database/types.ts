@@ -822,6 +822,15 @@ export type RecetteResultatRow = {
   maj_le: string
 }
 
+export type RecetteAnomalieRow = {
+  id: string
+  testeur_id: string
+  page: string
+  description: string
+  cree_le: string
+  corrigee_le: string | null
+}
+
 type Table<Row, Genere extends keyof Row = never> = {
   Row: Row
   Insert: Omit<Row, Genere> & Partial<Pick<Row, Genere>>
@@ -1024,6 +1033,7 @@ export type Database = {
       redirections: Table<RedirectionRow, 'id' | 'creee_le'>
       erreurs_404: Table<Erreur404Row, 'vues' | 'premiere_le' | 'derniere_le'>
       recette_resultats: Table<RecetteResultatRow, 'note' | 'maj_le'>
+      recette_anomalies: Table<RecetteAnomalieRow, 'id' | 'page' | 'cree_le' | 'corrigee_le'>
       travaux_video: Table<
         TravailVideoRow,
         | 'id'
