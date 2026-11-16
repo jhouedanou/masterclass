@@ -177,7 +177,8 @@ export const GUIDE_ADMIN: RubriqueGuide[] = [
     etapes: [
       'Jouer l’étape sur le site, comparer au résultat attendu, cliquer OK, KO ou Passé. Cliquer à nouveau efface son résultat.',
       'Un KO attend une note : ce qui s’est affiché, le compte utilisé, l’appareil, l’heure. Sans ces éléments, l’erreur ne se retrouve pas dans les journaux.',
-      '« Reste à jouer » ne garde que les contrôles sans résultat. « Exporter en CSV » sort les résultats de l’équipe ou les siens.',
+      'Un problème qui ne correspond à aucun contrôle se signale en bas de page, dans « Signaler une anomalie hors liste » : la page concernée, puis ce qui s’est affiché. Toute l’équipe peut la déclarer corrigée ; seul son auteur peut la retirer.',
+      '« Reste à jouer » ne garde que les contrôles sans résultat. « Exporter en CSV » sort les résultats et les anomalies, de l’équipe ou les siens.',
       'Les encadrés « Hors développement » disent ce qui ne peut pas passer pour une raison extérieure au code.',
     ],
   },

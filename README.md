@@ -288,6 +288,7 @@ officiel et le motif proviennent de `maquettes/maquettes/assets/`.
 /admin/acces                         comptes d'administration et droits par section
 /admin/blog  /admin/referencement  /admin/historique  /admin/parametres
 /admin/recette                       recette partagée : OK / KO / Passé par testeur, contrôles dans server/data/recette.ts
+                                     + anomalies signalées hors liste (table recette_anomalies)
 /admin/guide                         guide de l'administration, avec captures (contenu : app/utils/guideAdmin.ts)
 ```
 

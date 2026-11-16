@@ -810,6 +810,20 @@ export interface ResultatRecette {
   majLe: string
 }
 
+/** Anomalie signalée hors des contrôles prévus. */
+export interface AnomalieRecette {
+  id: string
+  testeurId: string
+  /** « Prénom N. » */
+  testeur: string
+  /** Page ou écran concerné, facultatif. */
+  page: string
+  description: string
+  creeLe: string
+  /** Posé quand l'équipe la déclare corrigée. */
+  corrigeeLe: string | null
+}
+
 export interface Recette {
   version: string
   adresse: string
@@ -817,4 +831,7 @@ export interface Recette {
   resultats: ResultatRecette[]
   /** `false` tant que la table des résultats n'existe pas en base. */
   pret: boolean
+  anomalies: AnomalieRecette[]
+  /** `false` tant que la table des anomalies n'existe pas en base. */
+  anomaliesPretes: boolean
 }

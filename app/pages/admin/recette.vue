@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ControleRecette, Recette, ResultatRecette, StatutRecette } from '#shared/types'
+import type { AnomalieRecette, ControleRecette, Recette, ResultatRecette, StatutRecette } from '#shared/types'
 import type { ColonneCsv } from '~/utils/csv'
 
 /**
@@ -7,6 +7,9 @@ import type { ColonneCsv } from '~/utils/csv'
  * avec une note ; tout le monde voit les résultats des autres. Ouverte à tout
  * compte d'administration — un compte de contenu sans section sert de compte
  * testeur. Les contrôles sont décrits dans `server/data/recette.ts`.
+ *
+ * Ce qui sort de la liste (une page qui casse, un écran oublié) se signale en
+ * bas de page, comme anomalie libre : elle n'est rattachée à aucun contrôle.
  */
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 usePagePrivee('Recette — administration')
@@ -47,6 +50,13 @@ const totaux = computed(() => {
 const anomalies = computed(() =>
   resultats.value.filter((r) => r.statut === 'ko' && (vue.value === 'equipe' || r.testeurId === moi.value)),
 )
+/** Anomalies libres : les ouvertes d'abord, puis les corrigées, chacune de la plus récente à la plus ancienne. */
+const anomaliesLibres = computed(() =>
+  (data.value?.anomalies ?? [])
+    .filter((a) => vue.value === 'equipe' || a.testeurId === moi.value)
+    .sort((a, b) => Number(!!a.corrigeeLe) - Number(!!b.corrigeeLe)),
+)
+const anomaliesOuvertes = computed(() => (data.value?.anomalies ?? []).filter((a) => !a.corrigeeLe).length)
 
 function retenu(c: ControleRecette) {
   if (filtre.value === 'a-faire') return !mien(c.k)
@@ -110,27 +120,114 @@ const noteVisible = (k: string) => {
   return !!r && (r.statut !== 'ok' || !!r.note)
 }
 
+// --- Anomalies libres ---------------------------------------------------------
+
+const signalement = reactive({ page: '', description: '' })
+const signalementEnCours = ref(false)
+const anomalieOccupee = ref<string | null>(null)
+
+async function signaler() {
+  const description = signalement.description.trim()
+  if (!description || signalementEnCours.value || !data.value?.anomaliesPretes) return
+  signalementEnCours.value = true
+  try {
+    await $fetch('/api/admin/recette/anomalies', {
+      method: 'POST',
+      body: { page: signalement.page, description },
+    })
+    signalement.page = ''
+    signalement.description = ''
+    annoncer('Anomalie signalée')
+    await refresh()
+  } catch (e) {
+    annoncer(messageErreurApi(e, 'Anomalie non signalée'), 'erreur')
+  } finally {
+    signalementEnCours.value = false
+  }
+}
+
+async function basculerCorrigee(a: AnomalieRecette) {
+  if (anomalieOccupee.value) return
+  anomalieOccupee.value = a.id
+  try {
+    await $fetch(`/api/admin/recette/anomalies/${a.id}`, { method: 'PATCH', body: { corrigee: !a.corrigeeLe } })
+    await refresh()
+  } catch (e) {
+    annoncer(messageErreurApi(e, 'Anomalie non mise à jour'), 'erreur')
+  } finally {
+    anomalieOccupee.value = null
+  }
+}
+
+async function retirer(a: AnomalieRecette) {
+  if (anomalieOccupee.value || !window.confirm('Retirer cette anomalie ? Elle disparaîtra pour toute l’équipe.')) return
+  anomalieOccupee.value = a.id
+  try {
+    await $fetch(`/api/admin/recette/anomalies/${a.id}`, { method: 'DELETE' })
+    annoncer('Anomalie retirée')
+    await refresh()
+  } catch (e) {
+    annoncer(messageErreurApi(e, 'Anomalie non retirée'), 'erreur')
+  } finally {
+    anomalieOccupee.value = null
+  }
+}
+
 /** Texte avec les segments entre accents graves rendus en chasse fixe. */
 const segments = (texte: string) => texte.split(/`([^`]+)`/).map((s, i) => ({ mono: i % 2 === 1, texte: s }))
 
 const quand = (iso: string) =>
   new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
 
+interface LigneExport {
+  controle: string
+  qui: string
+  etape: string
+  testeur: string
+  resultat: string
+  note: string
+  date: string
+}
+
+/** Les résultats par contrôle, puis les anomalies libres (« Hors liste »). */
 function exporter() {
   const index = new Map(controles.value.map((c) => [c.k, c]))
-  const lignes = resultats.value.filter((r) => vue.value === 'equipe' || r.testeurId === moi.value)
+  const utc = (iso: string) => iso.slice(0, 16).replace('T', ' ')
+  const lignes: LigneExport[] = [
+    ...resultats.value
+      .filter((r) => vue.value === 'equipe' || r.testeurId === moi.value)
+      .sort((a, b) => a.controle.localeCompare(b.controle, 'fr', { numeric: true }))
+      .map((r) => ({
+        controle: r.controle,
+        qui: index.get(r.controle)?.qui ?? '',
+        etape: index.get(r.controle)?.etape ?? '',
+        testeur: r.testeur,
+        resultat: LIBELLE[r.statut],
+        note: r.note,
+        date: utc(r.majLe),
+      })),
+    ...anomaliesLibres.value.map((a) => ({
+      controle: 'Hors liste',
+      qui: '',
+      etape: a.page,
+      testeur: a.testeur,
+      resultat: a.corrigeeLe ? 'Corrigée' : 'Ouverte',
+      note: a.description,
+      date: utc(a.creeLe),
+    })),
+  ]
   exporterCsv(
     `recette-${data.value?.version ?? ''}-${vue.value}`,
     [
       { cle: 'controle', libelle: 'Contrôle' },
-      { cle: (r) => index.get(r.controle)?.qui ?? '', libelle: 'Qui' },
-      { cle: (r) => index.get(r.controle)?.etape ?? '', libelle: 'Étape' },
+      { cle: 'qui', libelle: 'Qui' },
+      { cle: 'etape', libelle: 'Étape ou page' },
       { cle: 'testeur', libelle: 'Testeur' },
-      { cle: (r) => LIBELLE[r.statut], libelle: 'Résultat' },
+      { cle: 'resultat', libelle: 'Résultat' },
       { cle: 'note', libelle: 'Note' },
-      { cle: (r) => r.majLe.slice(0, 16).replace('T', ' '), libelle: 'Date (UTC)' },
-    ] satisfies ColonneCsv<ResultatRecette>[],
-    [...lignes].sort((a, b) => a.controle.localeCompare(b.controle, 'fr', { numeric: true })),
+      { cle: 'date', libelle: 'Date (UTC)' },
+    ] satisfies ColonneCsv<LigneExport>[],
+    lignes,
   )
 }
 
@@ -138,7 +235,7 @@ function exporter() {
 let minuterie: ReturnType<typeof setInterval> | undefined
 onMounted(() => {
   minuterie = setInterval(() => {
-    if (!occupe.value && document.visibilityState === 'visible') refresh()
+    if (!occupe.value && !anomalieOccupee.value && document.visibilityState === 'visible') refresh()
   }, 30_000)
 })
 onUnmounted(() => clearInterval(minuterie))
@@ -233,6 +330,9 @@ onUnmounted(() => clearInterval(minuterie))
         <p class="mt-1.5 font-title text-[26px] leading-none font-light" :class="totaux.ko ? 'text-erreur' : 'text-encre'">
           {{ totaux.ko }}
         </p>
+        <a v-if="anomaliesOuvertes" href="#anomalies" class="mt-2 block text-[12px] font-semibold text-erreur-fonce hover:underline">
+          + {{ anomaliesOuvertes }} anomalie{{ anomaliesOuvertes > 1 ? 's' : '' }} hors liste
+        </a>
       </div>
       <div class="rounded-[14px] border border-ligne-douce bg-white p-4">
         <p class="text-[12.5px] text-discret">Passés</p>
@@ -245,7 +345,8 @@ onUnmounted(() => clearInterval(minuterie))
       <a :href="data.adresse" target="_blank" rel="noopener" class="font-semibold text-social hover:underline">{{ data.adresse }}</a>.
       Jouez chaque étape, comparez à l’attendu, puis marquez <b>OK</b>, <b>KO</b> ou <b>Passé</b> (non joué).
       Cliquer à nouveau sur votre résultat l’efface. Un KO attend une note : ce qui s’est affiché, le compte
-      utilisé, l’appareil, l’heure.
+      utilisé, l’appareil, l’heure. Un problème qui ne correspond à aucun contrôle ?
+      <a href="#anomalies" class="font-semibold text-social hover:underline">Signalez-le en bas de page</a>.
     </div>
 
     <section v-for="section in sections" :key="section.num" class="mt-7">
@@ -387,10 +488,90 @@ onUnmounted(() => clearInterval(minuterie))
       Aucun contrôle dans ce filtre.
     </p>
 
-    <section class="mt-7 rounded-[14px] border border-ligne-douce bg-white px-5 py-4">
+    <section id="anomalies" class="mt-7 scroll-mt-6 rounded-[14px] border border-ligne-douce bg-white px-5 py-4">
       <h2 class="text-[11px] font-bold tracking-[0.08em] text-discret uppercase">Anomalies signalées</h2>
-      <p v-if="!anomalies.length" class="mt-3 text-[13px] text-discret">Aucune pour l’instant.</p>
+
+      <form class="mt-3 rounded-[10px] bg-fond-clair p-3" @submit.prevent="signaler">
+        <p class="text-[13px] font-semibold text-encre">Signaler une anomalie hors liste</p>
+        <p class="mt-0.5 text-[12.5px] text-discret">
+          Ce que vous remarquez en dehors des contrôles : une page qui casse, un libellé faux, un écran oublié.
+        </p>
+        <div class="mt-2.5 grid gap-2 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)_auto] md:items-start">
+          <label class="block">
+            <span class="sr-only">Page ou écran concerné</span>
+            <input
+              v-model="signalement.page"
+              type="text"
+              maxlength="300"
+              placeholder="Page ou écran (facultatif)"
+              class="block w-full rounded-[8px] border border-ligne bg-white px-2.5 py-2 text-[13px] text-encre"
+              :disabled="!data.anomaliesPretes"
+            >
+          </label>
+          <label class="block">
+            <span class="sr-only">Description de l’anomalie</span>
+            <textarea
+              v-model="signalement.description"
+              required
+              maxlength="2000"
+              rows="2"
+              placeholder="Ce qui s’est affiché, ce qui était attendu, compte, appareil, heure"
+              class="block min-h-[40px] w-full rounded-[8px] border border-ligne bg-white px-2.5 py-2 text-[13px] text-encre"
+              :disabled="!data.anomaliesPretes"
+            />
+          </label>
+          <button
+            type="submit"
+            class="rounded-full bg-social px-4 py-2 text-[13px] font-bold text-white disabled:opacity-50"
+            :disabled="!data.anomaliesPretes || signalementEnCours || !signalement.description.trim()"
+          >
+            {{ signalementEnCours ? 'Envoi…' : 'Signaler' }}
+          </button>
+        </div>
+        <p v-if="!data.anomaliesPretes" class="mt-2 text-[12.5px] text-alerte-fonce" role="alert">
+          La table des anomalies n’existe pas en base : exécuter
+          <code class="font-mono text-[12px]">supabase/en-ligne/53-recette-anomalies.sql</code>.
+        </p>
+      </form>
+
+      <p v-if="!anomalies.length && !anomaliesLibres.length" class="mt-3 text-[13px] text-discret">Aucune pour l’instant.</p>
       <ul v-else class="mt-1">
+        <li
+          v-for="a in anomaliesLibres"
+          :key="a.id"
+          class="flex flex-wrap gap-x-3 gap-y-1.5 border-b border-fond-voile py-3 text-[13px] last:border-0 sm:flex-nowrap"
+        >
+          <span class="w-10 shrink-0 pt-0.5 text-[10.5px] leading-tight font-bold tracking-[0.04em] text-erreur-fonce uppercase" :class="a.corrigeeLe && 'text-discret'">
+            Hors liste
+          </span>
+          <span class="min-w-0 flex-1" :class="a.corrigeeLe ? 'text-discret line-through' : 'text-encre'">
+            <b>{{ a.testeur }}</b>
+            <template v-if="a.page"> · <code class="rounded bg-fond-voile px-1 font-mono text-[12px]">{{ a.page }}</code></template>
+            — <span class="whitespace-pre-line">{{ a.description }}</span>
+          </span>
+          <span class="flex shrink-0 items-start gap-2 text-[11.5px]">
+            <span class="pt-0.5 text-discret">{{ quand(a.creeLe) }}</span>
+            <button
+              type="button"
+              class="rounded-full border border-ligne px-2.5 py-0.5 font-semibold hover:bg-fond-clair disabled:opacity-50"
+              :class="a.corrigeeLe ? 'text-discret' : 'text-succes-fonce'"
+              :disabled="anomalieOccupee === a.id"
+              @click="basculerCorrigee(a)"
+            >
+              {{ a.corrigeeLe ? 'Rouvrir' : 'Corrigée' }}
+            </button>
+            <button
+              v-if="a.testeurId === moi"
+              type="button"
+              class="rounded-full px-1.5 py-0.5 text-discret hover:bg-fond-clair hover:text-erreur-fonce disabled:opacity-50"
+              :disabled="anomalieOccupee === a.id"
+              :aria-label="`Retirer l’anomalie signalée le ${quand(a.creeLe)}`"
+              @click="retirer(a)"
+            >
+              <Icon name="ph:trash" size="14" aria-hidden="true" />
+            </button>
+          </span>
+        </li>
         <li
           v-for="r in anomalies"
           :key="r.controle + r.testeurId"
