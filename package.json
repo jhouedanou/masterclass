@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "build": "nuxt build",
+    "build:cloudflare": "NODE_OPTIONS=--max-old-space-size=8192 NITRO_PRESET=cloudflare_module nuxt build",
+    "deploy:cloudflare": "npm run build:cloudflare && wrangler deploy",
     "dev": "nuxt dev",
     "dev:rapide": "NUXT_DEVTOOLS=0 nuxt dev",
     "prod": "nuxt build && nuxt preview",
@@ -59,6 +61,7 @@
     "@vite-pwa/nuxt": "^1.1.1",
     "supabase": "^2.116.0",
     "typescript": "^5.9.3",
-    "vue-tsc": "^3.3.11"
+    "vue-tsc": "^3.3.11",
+    "wrangler": "^4.163.0"
   }
 }

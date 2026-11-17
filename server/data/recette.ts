@@ -12,7 +12,7 @@ import type { SectionRecette } from '#shared/types'
  */
 export const recette: { version: string; adresse: string; sections: SectionRecette[] } = {
   version: '2026-11-13',
-  adresse: 'https://emasterclass.bigfive.solutions',
+  adresse: 'https://bigfiveacademy.com',
   sections: [
     {
       num: '1',

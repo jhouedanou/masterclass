@@ -62,3 +62,8 @@ supabase/rattrapage-quiz-pilotes.sql
 supabase/rattrapage-modules-pilotes.sql
 medias/pilotes/
 docs/sauvegardes/
+
+# Archives et gabarit pnpm : jamais versionnés. Une archive du dossier emporte
+# les fichiers .env, donc tous les secrets de production (dépôt public).
+*.zip
+pnpm-workspace.yaml

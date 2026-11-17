@@ -1,0 +1,37 @@
+// Application E-Masterclass sur Cloudflare Workers.
+//
+// Mise en service :
+//   npx wrangler login                 // ou CLOUDFLARE_API_TOKEN dans l'environnement
+//   npx wrangler secret bulk <fichier> // les variables de .env.example, au format .env ou JSON
+//   npm run deploy:cloudflare
+//
+// Nitro lit ce fichier au build (`nitro.cloudflare.deployConfig`) et écrit la
+// configuration complète du paquet dans .output/server/wrangler.json : point
+// d'entrée, fichiers statiques et `nodejs_compat` y sont ajoutés par lui.
+//
+// Aucun secret ici : ce fichier est versionné.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "emasterclass",
+  "compatibility_date": "2026-01-01",
+  "observability": { "enabled": true },
+
+  // Domaines personnalisés : Cloudflare crée lui-même l'enregistrement DNS et
+  // le certificat de chacun au déploiement. L'adresse canonique est le domaine
+  // nu (NUXT_PUBLIC_SITE_URL) ; `www` sert le même Worker.
+  "routes": [
+    { "pattern": "bigfiveacademy.com", "custom_domain": true },
+    { "pattern": "www.bigfiveacademy.com", "custom_domain": true }
+  ],
+
+  // Tâches planifiées. Nitro ne les déduit pas de `nitro.scheduledTasks` :
+  // chaque expression de nuxt.config.ts doit figurer ici à l'identique, sans
+  // quoi la tâche n'est jamais déclenchée. Heures en UTC.
+  //
+  // ⚠ Tant que Vercel tourne sur la même base, ces tâches s'y exécutent déjà
+  // (crons de vercel.json, pg_cron pour les Live Sessions) : un Worker branché
+  // sur la base de production les ferait tourner en double.
+  "triggers": {
+    "crons": ["0 3 * * *", "0 * * * *", "*/5 * * * *"]
+  }
+}
