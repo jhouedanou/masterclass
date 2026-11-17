@@ -22,7 +22,7 @@ import { memeSecret } from './secrets'
  * la clé caractère par caractère.
  */
 export function exigerCleTache(event: H3Event): void {
-  const cle = (useRuntimeConfig().tachesCle || '').trim()
+  const cle = (process.env.TACHES_CLE || useRuntimeConfig().tachesCle || '').trim()
   const entete = getRequestHeader(event, 'authorization') ?? ''
 
   if (!cle || !memeSecret(entete, `Bearer ${cle}`)) {

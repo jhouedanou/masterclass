@@ -22,6 +22,8 @@ export default defineNitroPlugin((nitro) => {
     if (!chemin || chemin.length > 400 || IGNORES.test(chemin)) return
 
     // Sans `await` : la page d'erreur ne doit pas attendre l'écriture.
-    void enregistrerErreur404(chemin)
+    // `waitUntil` la confie à la plateforme : sous Cloudflare Workers, une
+    // promesse laissée en l'air est abandonnée dès la réponse envoyée.
+    event.waitUntil(enregistrerErreur404(chemin).catch(() => {}))
   })
 })

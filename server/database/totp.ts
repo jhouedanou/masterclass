@@ -51,8 +51,12 @@ function chiffrer(clair: string): string {
 function dechiffrer(stocke: string): string | null {
   const [ivHex, etiquetteHex, corpsHex] = stocke.split('.')
   if (!ivHex || !etiquetteHex || !corpsHex) return null
+  // Hors du `try` : une clé absente est une panne de configuration, pas un
+  // secret altéré. Avalée ici, elle faisait passer un compte enrôlé pour un
+  // compte à enrôler, puis l'enrôlement refusait — sans jamais nommer la clé.
+  const secrete = cle()
   try {
-    const dechiffreur = createDecipheriv(ALGORITHME, cle(), Buffer.from(ivHex, 'hex'))
+    const dechiffreur = createDecipheriv(ALGORITHME, secrete, Buffer.from(ivHex, 'hex'))
     dechiffreur.setAuthTag(Buffer.from(etiquetteHex, 'hex'))
     return Buffer.concat([
       dechiffreur.update(Buffer.from(corpsHex, 'hex')),

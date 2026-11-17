@@ -1,4 +1,4 @@
-import QRCode from 'qrcode'
+import { qrEnDataUrl } from '../../utils/qr'
 import { lireReglagesAttestation } from '../../database/administration'
 import { trouverFormateur, trouverModule } from '../../database/catalogue'
 import { trouverCertificat } from '../../database/commerce'
@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   }
   const config = useRuntimeConfig()
   const lienVerification = `${config.public.siteUrl}/verifier/${certificat.numero}`
-  const qrDataUrl = await QRCode.toDataURL(lienVerification, { margin: 0, width: 320 })
+  const qrDataUrl = qrEnDataUrl(lienVerification, { margin: 0, width: 320 })
 
   /**
    * Les deux griffes du pied de page, résolues à l'affichage et non figées

@@ -26,7 +26,7 @@ export async function envoyerConversionsLive(
   try {
     const config = useRuntimeConfig()
     // La simulation de paiement ne doit pas gonfler les conversions.
-    if ((config.feexpayMode || 'simulation') === 'simulation') return
+    if ((process.env.FEEXPAY_MODE || config.feexpayMode || 'simulation') === 'simulation') return
     const attribution = await attributionInscriptionLive(inscriptionId)
     if (!attribution) return
     const eventId = `achat-${commande.reference}`

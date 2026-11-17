@@ -1,6 +1,6 @@
-import QRCode from 'qrcode'
 import { trouverUtilisateur } from '../../../../database/comptes'
 import { deposerSecret, lireTotp } from '../../../../database/totp'
+import { qrEnDataUrl } from '../../../../utils/qr'
 import { lireSessionPartielle } from '../../../../utils/session'
 import { genererSecret, secretLisible, uriOtpauth } from '../../../../utils/totp'
 
@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
   const uri = uriOtpauth(utilisateur.email, secret)
   return {
     // Même fabrication que le QR des attestations (server/api/certificats).
-    qr: await QRCode.toDataURL(uri, { margin: 1, width: 240 }),
+    qr: qrEnDataUrl(uri, { margin: 1, width: 240 }),
     // Pour la saisie manuelle quand l'appareil ne peut pas scanner.
     secret: secretLisible(secret),
   }

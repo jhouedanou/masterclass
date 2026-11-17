@@ -164,7 +164,9 @@ const piloteResend: PiloteNotifications = {
 
 function pilote(): PiloteNotifications {
   const config = useRuntimeConfig()
-  const nom = config.notificationsDriver
+  // Lue d'abord dans l'environnement : sur Cloudflare, la valeur figée au build
+  // peut manquer, et seul le secret du Worker fait alors foi.
+  const nom = process.env.NOTIFICATIONS_DRIVER || config.notificationsDriver
   switch (nom) {
     case 'console':
     case '':
