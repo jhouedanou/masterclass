@@ -426,13 +426,20 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    // Cible Cloudflare Workers (`npm run build:cloudflare`, voir wrangler.jsonc).
+    // Sans effet sur Vercel, qui garde son propre preset : le bloc n'est lu
+    // que lorsque NITRO_PRESET vaut `cloudflare_module`. `deployConfig` fait
+    // écrire à Nitro la configuration Wrangler du paquet à partir de
+    // wrangler.jsonc ; `nodeCompat` ouvre `node:crypto`, dont dépendent les
+    // sessions, les mots de passe et le TOTP.
+    cloudflare: { deployConfig: true, nodeCompat: true },
     prerender: { crawlLinks: false },
     experimental: { tasks: true },
     scheduledTasks: {
       // Chaque nuit à 3 h : suppression définitive des comptes échus et rappel J-3.
       '0 3 * * *': ['comptes:purger', 'video:purger'],
       // Toutes les heures : commandes restées en attente, revérifiées chez FeexPay.
-      '0 * * * *': ['commandes:relancer'],
+      '0 * * * *': ['commerce:relancer'],
       // Toutes les 5 minutes : cycle des Live Sessions (CDC §7). Sur Vercel,
       // c'est pg_cron qui appelle /api/taches/live-sessions (supabase/planification-live.sql).
       '*/5 * * * *': ['live:cycle'],

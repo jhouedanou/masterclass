@@ -162,6 +162,28 @@ function messageEcriture(
   return `ecriture.${action}.${cle}.${uploadId}.${expiration}.${utilisateurId}`
 }
 
+/**
+ * Vérifie une autorisation contre chaque secret admis ; le premier accord
+ * l'emporte.
+ *
+ * Deux secrets pendant une bascule d'hébergement : l'ancien site et le nouveau
+ * signent chacun avec le leur, et le diffuseur doit servir les deux tant que
+ * les deux sont en ligne. `VIDEO_SIGNING_SECRET_SECONDAIRE` se retire
+ * (`wrangler secret delete`) dès qu'un seul site reste.
+ *
+ * Seul « signature invalide » fait essayer le secret suivant : une
+ * autorisation absente ou expirée l'est quel que soit le secret.
+ */
+async function premierAccord(env, verifier) {
+  const secrets = [env.VIDEO_SIGNING_SECRET, env.VIDEO_SIGNING_SECRET_SECONDAIRE].filter(Boolean)
+  let refus = 'signature invalide'
+  for (const secret of secrets) {
+    refus = await verifier(secret)
+    if (refus !== 'signature invalide') return refus
+  }
+  return refus
+}
+
 async function verifierEcriture(
   action,
   cle,
@@ -259,7 +281,9 @@ async function servirEcriture(requete, env, url, cors) {
     return json({ erreur: 'Clé invalide' }, 400, cors)
   }
 
-  const refus = await verifierEcriture(action, cle, uploadId, parametres, env.VIDEO_SIGNING_SECRET)
+  const refus = await premierAccord(env, (secret) =>
+    verifierEcriture(action, cle, uploadId, parametres, secret),
+  )
   if (refus) return json({ erreur: `Écriture refusée — ${refus}` }, 403, cors)
 
   const objet = `${cle}/video.mp4`
@@ -425,12 +449,14 @@ export default {
       return new Response('Méthode non autorisée', { status: 405, headers: cors })
     }
 
-    const refus = await verifierSignature(
-      chemin,
-      url.searchParams,
-      env.VIDEO_SIGNING_SECRET,
-      undefined,
-      ancienFormatAdmis(url.searchParams, env.LECTURE_ANCIEN_FORMAT_JUSQUA),
+    const refus = await premierAccord(env, (secret) =>
+      verifierSignature(
+        chemin,
+        url.searchParams,
+        secret,
+        undefined,
+        ancienFormatAdmis(url.searchParams, env.LECTURE_ANCIEN_FORMAT_JUSQUA),
+      ),
     )
     if (refus) {
       // Le motif aide au diagnostic sans rien révéler d'exploitable.
